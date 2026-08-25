@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../styles/tokens.css";
+
+/* =============================================================================
+   PuntoCash — Global base layer
+   The manual defines a single light interface. There is no dark theme:
+   "El software no debe parecer una réplica oscura de la fachada" (§6).
+   ========================================================================== */
+
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Focus visible for keyboard navigation (§20 "Focus visible").
+     Navy ring — never shadow-only (§15 "Focus"). */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-control);
+  }
+
+  /* Native form controls inherit the brand face. */
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  ::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 1;
+  }
+
+  /* Autofill.
+     Chrome paints a light blue (#E8F0FE) over any field it fills, which
+     overrides our surface and breaks §15 ("fondo blanco"). It is painted on
+     the <input> itself, so in a field with a prefix — where the input is
+     transparent inside a white wrapper — the blue shows as a clipped block
+     that stops short of the affixes.
+
+     `background-color` cannot be overridden on this pseudo-class, so the
+     surface is restored with a large inset shadow, and the text colour with
+     -webkit-text-fill-color, which is what Chrome actually reads. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    box-shadow: inset 0 0 0 100vw var(--color-surface);
+    -webkit-text-fill-color: var(--color-text-primary);
+    caret-color: var(--color-text-primary);
+  }
+
+  /* Tailwind draws `ring-2` with box-shadow, so the rule above would erase the
+     focus ring. Restore it for standalone inputs. Affixed inputs are excluded:
+     their ring belongs to the wrapper, and drawing one here would strike a
+     second outline inside the field. */
+  input:-webkit-autofill:focus:not([data-affixed]) {
+    box-shadow:
+      inset 0 0 0 100vw var(--color-surface),
+      0 0 0 2px color-mix(in oklab, var(--color-primary) 20%, transparent);
+  }
+
+  /* Disabled and read-only fields keep their muted surface when autofilled. */
+  input:-webkit-autofill:disabled,
+  input:-webkit-autofill:read-only {
+    box-shadow: inset 0 0 0 100vw var(--color-surface-subtle);
+    -webkit-text-fill-color: var(--color-text-secondary);
+  }
+
+  /* Amounts must align consistently across rows and columns
+     (§12 "Importes" / §17 "Números"). */
+  .pc-numeric {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+@layer utilities {
+  /* Reusable scroll container for the shell's main area. */
+  .pc-scroll-y {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Printing.
+   The shell is a viewport-height application frame with its own scroll
+   container; on paper that produces one clipped page. These rules unwind it and
+   drop the chrome so only the receipt is printed. */
+@media print {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+
+  /* Application chrome carries no meaning on a printed comprobante. */
+  header,
+  nav[aria-label] {
+    display: none !important;
+  }
+
+  main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

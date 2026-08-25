@@ -1,0 +1,220 @@
+/* =============================================================================
+   PuntoCash — Design Tokens
+   Source of truth: PuntoCash_Manual_de_Marca_y_UI_v1.pdf (v1.0 · Agosto 2026)
+
+   Layer 1  Primitives  — raw brand values, transcribed verbatim from §3 / §22.
+   Layer 2  Semantic    — UI roles from §13.
+   Layer 3  Component   — sizes, radii and shell metrics from §11 / §14–§17 / §22.
+
+   Do not add brand values that do not exist in the manual. Values the manual
+   leaves open (hover shades, tint backgrounds) are DERIVED from the official
+   hexes with color-mix() so they can never drift into a new palette.
+   ========================================================================== */
+
+@theme {
+  /* ---------------------------------------------------------------------
+     LAYER 1 — BRAND PRIMITIVES (manual §3 "Paleta de colores")
+     ------------------------------------------------------------------ */
+  --color-navy: #0b132b; /* Marca / navegación / CTA principal      */
+  --color-gold: #d4af37; /* Acentos / selección / detalles de marca */
+  --color-white: #ffffff; /* Fondos / contraste                      */
+  --color-anthracite: #1a1d23; /* Texto principal                         */
+  --color-gray: #6b7280; /* Texto secundario                        */
+  --color-gray-light: #e5e7eb; /* Bordes / divisores / campos             */
+  --color-cream: #f5f1e6; /* Fondos especiales / destacados suaves   */
+
+  /* Semantic primitives (manual §13 "Colores semánticos") */
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+  --color-info: #2563eb;
+
+  /* ---------------------------------------------------------------------
+     LAYER 2 — SEMANTIC UI ROLES (manual §13 "Color en interfaz")
+     ------------------------------------------------------------------ */
+
+  /* Primary — header, sidebar, CTA principal, focus fuerte */
+  --color-primary: var(--color-navy);
+  --color-primary-foreground: var(--color-white);
+  /* Derived interaction shades: navy lightened/darkened, never re-hued. */
+  --color-primary-hover: color-mix(in oklab, var(--color-navy) 88%, white);
+  --color-primary-active: color-mix(in oklab, var(--color-navy) 92%, black);
+  /* Navy tints for selected nav items and subtle navy washes */
+  --color-primary-subtle: color-mix(in oklab, var(--color-navy) 6%, white);
+  --color-primary-muted: color-mix(in oklab, var(--color-navy) 12%, white);
+
+  /* Accent — gold. Never a dominant surface colour (§3 "Regla de balance"). */
+  --color-accent: var(--color-gold);
+  --color-accent-foreground: var(--color-navy);
+  --color-accent-subtle: color-mix(in oklab, var(--color-gold) 14%, white);
+  --color-accent-border: color-mix(in oklab, var(--color-gold) 45%, white);
+
+  /* Surfaces — 60-75% of the interface (§3 "Proporción recomendada") */
+  --color-surface: var(--color-white);
+  --color-surface-subtle: #f8fafc;
+  --color-surface-brand: var(--color-cream);
+  /* App background behind cards: "blanco o gris muy claro" (§10) */
+  --color-canvas: #f8fafc;
+
+  /* Text */
+  --color-text-primary: var(--color-anthracite);
+  --color-text-secondary: var(--color-gray);
+  --color-text-inverse: var(--color-white);
+  /* #6B7280 reaches 7:1 on white but only ~4.3:1 on cream or gris claro, below
+     the AA threshold §20 requires. On those tinted surfaces the brand gray is
+     darkened toward antracita — the same two official values, no new hue.
+     `Card tone="accent"` and selected table rows rebind
+     --color-text-secondary to this, so `text-text-secondary` stays correct
+     everywhere without callers having to think about it. */
+  --color-text-secondary-strong: color-mix(in oklab, var(--color-gray) 68%, var(--color-anthracite));
+  /* Secondary text on navy surfaces — keeps AA contrast on #0B132B */
+  --color-text-on-primary-muted: color-mix(in oklab, var(--color-white) 72%, var(--color-navy));
+
+  /* Borders */
+  --color-border: var(--color-gray-light);
+  --color-border-strong: color-mix(in oklab, var(--color-gray-light) 70%, var(--color-gray));
+  --color-border-navy: var(--color-navy);
+
+  /* Semantic roles: base (icon) + subtle (background) + border + foreground (text).
+     "El fondo debe ser tenue y el texto suficientemente contrastado" (§18).
+
+     The subtle backgrounds and borders are SAMPLED from the approved brand
+     sheet's §7 "Estados" panels, not derived. Deriving them from the base hues
+     produced tints markedly stronger than the reference — and for warning a
+     peach/salmon, because #D97706 is red-leaning while the sheet's warning
+     panel is a pale yellow.
+
+     The `-foreground` text shades keep the sheet's hue but are darkened until
+     they clear 4.5:1 on their own background; the sheet's own glyph colours sit
+     around 3:1, which §20 does not allow for text. */
+  --color-success-subtle: #f2faf3; /* sampled */
+  --color-success-border: #d2e8da; /* sampled */
+  --color-success-foreground: #15803d; /* 4.8:1 on subtle */
+
+  --color-warning-subtle: #fefaef; /* sampled */
+  --color-warning-border: #f3e2bd; /* sampled */
+  --color-warning-foreground: #a16207; /* golden amber, 4.8:1 on subtle */
+
+  --color-error-subtle: #fef1f1; /* sampled */
+  --color-error-border: #f7c6c6; /* sampled */
+  --color-error-foreground: #b91c1c; /* 6.0:1 on subtle */
+  --color-error-hover: color-mix(in oklab, var(--color-error) 90%, black);
+
+  /* The sheet has no informational panel; these match the sampled family's
+     lightness so the four states read as one set. */
+  --color-info-subtle: #f1f6fe;
+  --color-info-border: #cfe1f8;
+  --color-info-foreground: #1d4ed8; /* 6.2:1 on subtle */
+
+  /* Neutral badge (Cancelada / estados sin carga semántica) */
+  --color-neutral-subtle: #f1f5f9;
+  --color-neutral-foreground: #475569;
+  --color-neutral-border: var(--color-gray-light);
+
+  /* ---------------------------------------------------------------------
+     TYPOGRAPHY (manual §4 + §12 "Tipografía digital")
+     Four weights only: 400 / 500 / 600 / 700.
+     ------------------------------------------------------------------ */
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  /* Tabular figures for money live on .pc-numeric, not a separate family. */
+
+  /* Título de pantalla — 28px / 700 */
+  --text-screen-title: 1.75rem;
+  --text-screen-title--line-height: 2.25rem;
+  --text-screen-title--font-weight: 700;
+  --text-screen-title--letter-spacing: -0.015em;
+
+  /* Título de sección — 20px / 600 */
+  --text-section-title: 1.25rem;
+  --text-section-title--line-height: 1.75rem;
+  --text-section-title--font-weight: 600;
+  --text-section-title--letter-spacing: -0.01em;
+
+  /* Título de tarjeta — 16px / 600 */
+  --text-card-title: 1rem;
+  --text-card-title--line-height: 1.5rem;
+  --text-card-title--font-weight: 600;
+
+  /* Texto principal — 14-16px / 400 */
+  --text-body: 0.9375rem; /* 15px, mid-point of the 14-16 range */
+  --text-body--line-height: 1.5rem;
+  --text-body--font-weight: 400;
+
+  --text-body-sm: 0.875rem; /* 14px */
+  --text-body-sm--line-height: 1.375rem;
+  --text-body-sm--font-weight: 400;
+
+  /* Label — 13-14px / 500 */
+  --text-label: 0.875rem; /* 14px */
+  --text-label--line-height: 1.25rem;
+  --text-label--font-weight: 500;
+
+  /* Texto auxiliar — 12-13px / 400 */
+  --text-caption: 0.8125rem; /* 13px */
+  --text-caption--line-height: 1.125rem;
+  --text-caption--font-weight: 400;
+
+  /* Importes — 24-32px SemiBold/Bold (§12 "Importes") */
+  --text-amount: 1.5rem; /* 24px */
+  --text-amount--line-height: 2rem;
+  --text-amount--font-weight: 600;
+
+  --text-amount-lg: 2rem; /* 32px */
+  --text-amount-lg--line-height: 2.5rem;
+  --text-amount-lg--font-weight: 700;
+  --text-amount-lg--letter-spacing: -0.02em;
+
+  /* Overline — table headers, eyebrow labels. Uppercase, tracked. */
+  --text-overline: 0.75rem;
+  --text-overline--line-height: 1rem;
+  --text-overline--font-weight: 600;
+  --text-overline--letter-spacing: 0.06em;
+
+  /* ---------------------------------------------------------------------
+     RADII (manual §11 "Radios")
+     ------------------------------------------------------------------ */
+  --radius-control: 8px; /* Inputs y botones */
+  --radius-card: 12px; /* Tarjetas        */
+  --radius-modal: 16px; /* Modales         */
+  --radius-pill: 999px; /* Badges          */
+
+  /* ---------------------------------------------------------------------
+     CONTROL SIZES & SHELL METRICS (manual §14, §15, §17, §22)
+     Exposed through the --spacing-* namespace so h-/w-/min-h- utilities work.
+     ------------------------------------------------------------------ */
+  --spacing-control-sm: 2.75rem; /* 44px — mínimo absoluto      */
+  --spacing-control: 3rem; /* 48px — estándar             */
+  --spacing-control-lg: 3.5rem; /* 56px — input de importe     */
+  --spacing-control-xl: 4rem; /* 64px — importe protagonista */
+
+  --spacing-row: 3.5rem; /* 56px — altura de fila de tabla */
+  --spacing-header: 4.5rem; /* 72px — header global           */
+  --spacing-sidebar: 15rem; /* 240px — sidebar                */
+  --spacing-form-max: 75rem; /* 1200px — ancho máx. formulario */
+  --spacing-min-desktop: 80rem; /* 1280px — ancho mínimo objetivo */
+
+  /* ---------------------------------------------------------------------
+     BREAKPOINT — the gap between the 1280px floor and the 1440px reference
+     (§10). Dense side-by-side arrangements that need the reference width to
+     stay readable use `wide:` and stack below it.
+     ------------------------------------------------------------------ */
+  /* 1400px. Declared in rem like Tailwind's built-in breakpoints: a px value
+     here does not sort into the same scale, so its media query is emitted
+     before `sm`/`lg` and loses the cascade to them at wide viewports. */
+  --breakpoint-wide: 87.5rem;
+
+  /* ---------------------------------------------------------------------
+     SHADOWS — "mínima y sutil; evitar efecto ecommerce" (§16)
+     ------------------------------------------------------------------ */
+  --shadow-card: 0 1px 2px 0 rgb(11 19 43 / 0.04);
+  --shadow-raised: 0 1px 3px 0 rgb(11 19 43 / 0.06), 0 1px 2px -1px rgb(11 19 43 / 0.04);
+  --shadow-overlay: 0 8px 24px -4px rgb(11 19 43 / 0.12), 0 2px 6px -2px rgb(11 19 43 / 0.06);
+  --shadow-header: 0 1px 0 0 rgb(11 19 43 / 0.08);
+
+  /* ---------------------------------------------------------------------
+     MOTION — "evitar animaciones decorativas que ralenticen la operación"
+     ------------------------------------------------------------------ */
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+}
