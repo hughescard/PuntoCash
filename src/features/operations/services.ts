@@ -116,11 +116,11 @@ export const WORKER_SERVICES = [
   {
     id: "giros",
     slug: "giros",
-    name: "Giros a otras provincias",
-    description: "Transfiere dinero dentro de Cuba.",
+    name: "Giros",
+    description: "Transfiere o cobra dinero dentro de Cuba.",
     category: "transferencias",
     icon: ArrowRightLeft,
-    status: "under-construction",
+    status: "available",
   },
   {
     id: "cobros-exterior",

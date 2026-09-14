@@ -356,14 +356,18 @@ function movementsFromOperations(): DraftMovement[] {
         historicalAfter: op.amount.cashSnapshot.after.amount,
       });
     } else {
+      // Enviar giro is the one registered service that RECEIVES cash from the
+      // client, so its leg is an entrada; every other single-amount service
+      // (including a giro payout) pays the client and stays a salida.
+      const entrada = op.transfer?.transferAction === "send";
       movements.push({
-        id: `${op.codigo}-salida`,
+        id: `${op.codigo}-${entrada ? "entrada" : "salida"}`,
         fechaHora: op.fechaHora,
         operationCode: op.codigo,
-        tipo: "salida",
+        tipo: entrada ? "entrada" : "salida",
         concepto: op.servicio,
         currency: op.amount.money.currency,
-        amount: -op.amount.money.amount,
+        amount: entrada ? op.amount.money.amount : -op.amount.money.amount,
         historicalAfter: op.amount.cashSnapshot?.after.amount,
       });
     }
@@ -720,13 +724,18 @@ export function ajustarEfectivo(params: {
 }
 
 /**
- * Commercial cash-out recorded only after its external service completed.
- * Unlike internal Caja actions it keeps the PuntoCash operation code, so the
- * ledger routes the worker to that operation rather than an internal detail.
+ * Commercial cash movement recorded only after its external service
+ * completed. Unlike internal Caja actions it keeps the PuntoCash operation
+ * code, so the ledger routes the worker to that operation rather than an
+ * internal detail. Shared by both cash-out (`registrarSalidaComercial`) and
+ * cash-in (`registrarEntradaComercial`) commercial services.
  */
-export type CommercialCashOutOutcome =
+export type CommercialCashMovementOutcome =
   | { ok: true; movement: CajaMovement; saldoAntes: number; saldoDespues: number }
-  | { ok: false; reason: "jornada-no-abierta" | "fondos-insuficientes" | "moneda-no-habilitada" };
+  | {
+      ok: false;
+      reason: "jornada-no-abierta" | "fondos-insuficientes" | "moneda-no-habilitada" | "monto-invalido";
+    };
 
 export function registrarSalidaComercial(params: {
   operationCode: string;
@@ -734,7 +743,7 @@ export function registrarSalidaComercial(params: {
   currency: string;
   amount: number;
   timestamp: Date;
-}): CommercialCashOutOutcome {
+}): CommercialCashMovementOutcome {
   if (!hasOpenJornada()) return { ok: false, reason: "jornada-no-abierta" };
   const balance = mutableBalances.find((item) => item.currency === params.currency);
   if (!balance) return { ok: false, reason: "moneda-no-habilitada" };
@@ -747,6 +756,37 @@ export function registrarSalidaComercial(params: {
     id: nextMovementId(params.timestamp), fechaHora: params.timestamp.toISOString(),
     operationCode: params.operationCode, tipo: "salida", concepto: params.concepto,
     currency: params.currency, amount: -params.amount, saldoAntes, saldoDespues,
+  };
+  mutableMovements.unshift(movement);
+  return { ok: true, movement, saldoAntes, saldoDespues };
+}
+
+/**
+ * Commercial cash-in — the mirror of `registrarSalidaComercial` for a
+ * service that RECEIVES cash from the client instead of paying it out (e.g.
+ * "Giros" · Enviar giro). No funds check: adding cash to
+ * the register is always possible once a jornada is open and the currency is
+ * enabled, even at a 0,00 balance.
+ */
+export function registrarEntradaComercial(params: {
+  operationCode: string;
+  concepto: string;
+  currency: string;
+  amount: number;
+  timestamp: Date;
+}): CommercialCashMovementOutcome {
+  if (!hasOpenJornada()) return { ok: false, reason: "jornada-no-abierta" };
+  const balance = mutableBalances.find((item) => item.currency === params.currency);
+  if (!balance) return { ok: false, reason: "moneda-no-habilitada" };
+  if (!(params.amount > 0)) return { ok: false, reason: "monto-invalido" };
+
+  const saldoAntes = balance.amount;
+  const saldoDespues = Math.round((saldoAntes + params.amount) * 100) / 100;
+  balance.amount = saldoDespues;
+  const movement: CajaMovement = {
+    id: nextMovementId(params.timestamp), fechaHora: params.timestamp.toISOString(),
+    operationCode: params.operationCode, tipo: "entrada", concepto: params.concepto,
+    currency: params.currency, amount: params.amount, saldoAntes, saldoDespues,
   };
   mutableMovements.unshift(movement);
   return { ok: true, movement, saldoAntes, saldoDespues };

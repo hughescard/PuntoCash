@@ -17,7 +17,14 @@ import { operationDocumentLabel, type OperationRecord } from "@/features/operati
  * rules in `globals.css`, which hide the app chrome — the same mechanism the
  * Cambio de moneda result screen already uses. No PDF pipeline is introduced.
  */
-export function ReceiptSection({ operation }: { operation: OperationRecord }): React.JSX.Element {
+export function ReceiptSection({
+  operation,
+  description = "Se generó el comprobante de la operación.",
+}: {
+  operation: OperationRecord;
+  /** Overridable wording; the default is what every existing detail shows. */
+  description?: string;
+}): React.JSX.Element {
   return (
     <>
       <Card className="print:hidden">
@@ -31,9 +38,7 @@ export function ReceiptSection({ operation }: { operation: OperationRecord }): R
             </span>
             <div className="min-w-0">
               <p className="text-card-title text-text-primary">Comprobante</p>
-              <p className="text-body-sm text-text-secondary">
-                Se generó el comprobante de la operación.
-              </p>
+              <p className="text-body-sm text-text-secondary">{description}</p>
             </div>
           </div>
 

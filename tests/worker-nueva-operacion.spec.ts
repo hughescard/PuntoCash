@@ -48,20 +48,24 @@ test.describe("nueva operación", () => {
     await expect(page.getByRole("banner").getByText("Caja 03")).toBeVisible();
   });
 
-  test("offers exactly 13 services, including Cambio de moneda and Remesas", async ({ page }) => {
+  test("offers exactly 13 services, including Cambio de moneda, Remesas and Giros", async ({
+    page,
+  }) => {
     await expect(page.locator(SERVICE_CARDS)).toHaveCount(13);
 
-    // The two approved Worker flows are ready to run.
+    // The three approved Worker flows are ready to run.
     const available = page.getByText("Disponible", { exact: true });
-    await expect(available).toHaveCount(2);
+    await expect(available).toHaveCount(3);
 
     const cambio = page.locator(SERVICE_CARDS).filter({ hasText: "Cambio de moneda" });
     await expect(cambio).toHaveCount(1);
     await expect(cambio).toContainText("Disponible");
     const remesas = page.locator(SERVICE_CARDS).filter({ hasText: "Remesas" });
     await expect(remesas).toContainText("Disponible");
+    const giros = page.locator(SERVICE_CARDS).filter({ hasText: "Giros" });
+    await expect(giros).toContainText("Disponible");
 
-    await expect(page.getByText("En construcción", { exact: true })).toHaveCount(11);
+    await expect(page.getByText("En construcción", { exact: true })).toHaveCount(10);
   });
 
   test("groups services under the four operational categories", async ({ page }) => {
@@ -152,12 +156,14 @@ test.describe("nueva operación routing", () => {
         page.getByRole("navigation", { name: "Navegación principal" }),
       ).toBeVisible();
       // Remesas requires an open Jornada, so a direct fresh-route visit
-      // correctly renders the shared operational block rather than its form.
-      await expect(
-        service.name === "Remesas"
-          ? page.getByRole("heading", { name: "Caja cerrada", level: 1 })
-          : page.getByRole("heading", { name: service.name, level: 1 }),
-      ).toBeVisible();
+      // correctly renders its own blocked state rather than the form. Giros
+      // resolves to its operation selector, whose <h1> is the service name
+      // like every other route here.
+      if (service.name === "Remesas") {
+        await expect(page.getByRole("heading", { name: "Caja cerrada", level: 1 })).toBeVisible();
+      } else {
+        await expect(page.getByRole("heading", { name: service.name, level: 1 })).toBeVisible();
+      }
     }
   });
 

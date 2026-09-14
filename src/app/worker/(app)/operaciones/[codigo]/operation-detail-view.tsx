@@ -17,6 +17,7 @@ import { OperationStatusCard } from "./operation-status-card";
 import { ReceiptSection } from "./receipt-section";
 import { OperationCashCard, ServiceDetail } from "./service-detail";
 import { RemittanceDetail } from "./remittance-detail";
+import { GiroDetail } from "./giro-detail";
 
 /**
  * Operation detail.
@@ -36,6 +37,11 @@ export function OperationDetailView({ codigo }: { codigo: string }): React.JSX.E
 
   if (!operation) return <OperationNotFound codigo={codigo} />;
   if (operation.servicio === "Remesa" && operation.remittance) return <RemittanceOperationDetail operation={operation} />;
+  // Both Giro actions — Enviar (`send`) and Cobrar (`payout`) — resolve to the
+  // same specialized historical detail; it reads only the stored snapshot.
+  if (operation.servicio === "Giros" && operation.transfer) {
+    return <GiroOperationDetail operation={operation} />;
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,6 +77,31 @@ export function OperationDetailView({ codigo }: { codigo: string }): React.JSX.E
       </div>
 
       <ReceiptSection operation={operation} />
+
+      <p className="flex items-center justify-center gap-2 pb-2 text-caption text-text-secondary print:hidden">
+        <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+        La información de esta operación está protegida y solo puede ser vista por personal
+        autorizado.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Giro detail keeps the page shell every other detail uses — back link,
+ * comprobante strip and the confidentiality note — and lets `GiroDetail` own
+ * everything between them, including its own header (the approved reference
+ * puts the local action badge beside the title).
+ */
+function GiroOperationDetail({ operation }: { operation: OperationRecord }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <BackLink />
+      <GiroDetail operation={operation} />
+      <ReceiptSection
+        operation={operation}
+        description="Puedes imprimir el detalle registrado de esta operación."
+      />
 
       <p className="flex items-center justify-center gap-2 pb-2 text-caption text-text-secondary print:hidden">
         <Lock className="size-3.5 shrink-0" aria-hidden="true" />

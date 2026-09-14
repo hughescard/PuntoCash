@@ -23,7 +23,8 @@ export type OperationServiceName =
   | "Remesa"
   | "Remesa nacional"
   | "Extracción tarjeta"
-  | "Pago de servicio";
+  | "Pago de servicio"
+  | "Giros";
 
 export const OPERATION_SERVICE_FILTERS = [
   { value: "todos", label: "Todos" },
@@ -32,6 +33,7 @@ export const OPERATION_SERVICE_FILTERS = [
   { value: "Remesa nacional", label: "Remesa nacional" },
   { value: "Extracción tarjeta", label: "Extracción tarjeta" },
   { value: "Pago de servicio", label: "Pago de servicio" },
+  { value: "Giros", label: "Giros" },
 ] as const satisfies readonly { value: string; label: string }[];
 
 /**
@@ -130,6 +132,68 @@ export interface OperationRecord {
     payoutAmount: number;
     payoutCurrency: string;
     externalStatus: import("@/features/remittances/remittance-provider").RemittanceStatus;
+  };
+  /**
+   * Historical external-Giro snapshot, for BOTH sides of the service:
+   * `transferAction: "send"` is the origin operation (Enviar giro) and
+   * `"payout"` the independent payout operation (Cobrar giro). The two are
+   * separate commercial operations with their own operation codes, and they
+   * legitimately share the same external Giro `code`.
+   *
+   * Kept separate from the generic operation fields until a specialized Giro
+   * detail is approved (this task deliberately keeps the generic Operation
+   * Detail fallback). Preserves the sender's KYC snapshot when there is one,
+   * the beneficiary as submitted, and the province/municipality catalog codes
+   * together with their labels at the time — a later catalog relabel must
+   * never make this record ambiguous.
+   */
+  transfer?: {
+    /**
+     * Which side of the Giro this operation is. Raw discriminator: these
+     * English values are never rendered as labels.
+     */
+    transferAction: "send" | "payout";
+    /** External transfer/service id, if the provider returned one. */
+    externalId?: string;
+    /** The Giro/service code — the credential Cobrar giro looks up. */
+    code: string;
+    /** Optional and never interchangeable with `code` (§44). */
+    reference?: string;
+    /**
+     * Only the origin operation captures the sender: at payout time the
+     * beneficiary presents a code, and PuntoCash never re-reads sender KYC.
+     */
+    sender?: {
+      documentType: DocumentType;
+      documentNumber: string;
+      firstName: string;
+      firstSurname: string;
+      secondSurname: string;
+      /** ISO date (yyyy-mm-dd). */
+      birthDate: string;
+      phone: string;
+      nationality: string;
+    };
+    receiverName: string;
+    /** Optional — the beneficiary is not required to provide an email. */
+    receiverEmail?: string;
+    /* Beneficiary contact/address as the service carries it. Optional on the
+       payout side: the external service is not required to return them. */
+    receiverPhone?: string;
+    receiverAddress?: string;
+    /** Beneficiary data — NOT payout-seat routing (§ no destination seat). */
+    receiverProvinceCode?: string;
+    receiverProvinceLabel?: string;
+    receiverMunicipalityCode?: string;
+    receiverMunicipalityLabel?: string;
+    receiverIdentification: string;
+    /** Raw API enum — always `"pickup"` in this flow (§9, §47). */
+    deliveryMethod: import("@/features/remittances/remittance-provider").DeliveryMethod;
+    /** Uppercase ISO currency code moved by this operation. */
+    senderCurrency: string;
+    deliveryAmount: number;
+    /** Raw external status enum (e.g. `"COMPLETED"`) — never a Spanish label. */
+    externalStatus?: string;
   };
 }
 
@@ -277,6 +341,114 @@ const HERO_RECORDS: readonly OperationRecord[] = [
     amount: { kind: "single", money: { amount: 180, currency: "USD" } },
     worker: WORKER_NAME,
     caja: REGISTER_NAME,
+  },
+  /*
+   * Both sides of one Giro, so each specialized detail has a stable historical
+   * record to render without first running the flow. They share the external
+   * code on purpose — that is exactly what a sent-then-paid giro looks like —
+   * while remaining two independent local operations with their own codes,
+   * their own client (sender vs. beneficiary) and opposite cash movements.
+   */
+  {
+    codigo: formatOperationCode(hoursAgo(7), 5007),
+    fechaHora: hoursAgo(7).toISOString(),
+    // The sender is the client of the origin operation. Deliberately its own
+    // person: reusing another hero record's name would make "Cliente" values
+    // ambiguous for every screen and test that looks one up by name.
+    cliente: {
+      nombre: "Alejandro Nieves Cabrera",
+      documentType: "CI",
+      documentNumber: "84071912345",
+      telefono: "+53 5 234 5678",
+      nacionalidad: "Cubana",
+    },
+    servicio: "Giros",
+    estado: "Completada",
+    amount: {
+      kind: "single",
+      money: { amount: 2500, currency: "CUP" },
+      // Enviar giro takes cash IN: 5.000,00 → 7.500,00 CUP.
+      cashSnapshot: {
+        before: { amount: 5000, currency: "CUP" },
+        movement: { amount: 2500, currency: "CUP" },
+        after: { amount: 7500, currency: "CUP" },
+      },
+    },
+    worker: WORKER_NAME,
+    caja: REGISTER_NAME,
+    transfer: {
+      transferAction: "send",
+      externalId: "srv-transfer-historical-245",
+      code: "TR-260901-000245",
+      reference: "REF-GIRO-245",
+      sender: {
+        documentType: "CI",
+        documentNumber: "84071912345",
+        firstName: "Alejandro",
+        firstSurname: "Nieves",
+        secondSurname: "Cabrera",
+        birthDate: "1984-07-19",
+        phone: "+53 5 234 5678",
+        nationality: "Cubana",
+      },
+      receiverName: "Dayana Quesada Peña",
+      receiverPhone: "+53 5 345 6789",
+      receiverAddress: "Calle 23 #456",
+      receiverProvinceCode: "LH",
+      receiverProvinceLabel: "La Habana",
+      receiverMunicipalityCode: "PDR",
+      receiverMunicipalityLabel: "Plaza de la Revolución",
+      receiverIdentification: "92030512345",
+      deliveryMethod: "pickup",
+      senderCurrency: "CUP",
+      deliveryAmount: 2500,
+      // Still awaiting payout when this operation was committed.
+      externalStatus: "READY",
+    },
+  },
+  {
+    codigo: formatOperationCode(hoursAgo(6), 5008),
+    fechaHora: hoursAgo(6).toISOString(),
+    // The beneficiary is the client of the payout operation.
+    cliente: {
+      nombre: "Dayana Quesada Peña",
+      documentType: "CI",
+      documentNumber: "92030512345",
+      telefono: "+53 5 345 6789",
+      nacionalidad: "Cubana",
+    },
+    servicio: "Giros",
+    estado: "Completada",
+    amount: {
+      kind: "single",
+      money: { amount: 2500, currency: "CUP" },
+      // Cobrar giro pays cash OUT: 7.500,00 → 5.000,00 CUP.
+      cashSnapshot: {
+        before: { amount: 7500, currency: "CUP" },
+        movement: { amount: 2500, currency: "CUP" },
+        after: { amount: 5000, currency: "CUP" },
+      },
+    },
+    worker: WORKER_NAME,
+    caja: REGISTER_NAME,
+    transfer: {
+      transferAction: "payout",
+      externalId: "srv-transfer-historical-245",
+      code: "TR-260901-000245",
+      reference: "REF-GIRO-245",
+      receiverName: "Dayana Quesada Peña",
+      receiverPhone: "+53 5 345 6789",
+      receiverAddress: "Calle 23 #456",
+      receiverProvinceCode: "LH",
+      receiverProvinceLabel: "La Habana",
+      receiverMunicipalityCode: "PDR",
+      receiverMunicipalityLabel: "Plaza de la Revolución",
+      receiverIdentification: "92030512345",
+      deliveryMethod: "pickup",
+      senderCurrency: "CUP",
+      deliveryAmount: 2500,
+      externalStatus: "COMPLETED",
+    },
   },
 ];
 
