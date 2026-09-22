@@ -3,14 +3,41 @@ import { test, expect, type Page } from "@playwright/test";
 /**
  * Cambio de moneda — the first complete PuntoCash operation.
  *
+ * Like every operation it needs an OPEN jornada [R1]: its cash effect is
+ * recorded as two caja movements (entrada in the source currency, salida in the
+ * destination currency) that belong to that jornada. Each test therefore opens
+ * a jornada first (Registrar fondeo inicial) and reaches the flow through links,
+ * because in-memory state does not survive a full page load (FR-IMP-1).
+ *
  * Quotes come from the mock provider and clients from the mock repository, both
- * deterministic. The seeded client is Carlos Pérez Rodríguez (CI 90010112345)
- * and the register holds 2.120,00 EUR, so 1.000,00 USD → 920,00 EUR is the
- * happy path and anything above ~2.304,00 USD exhausts the register.
+ * deterministic. The seeded client is Carlos Pérez Rodríguez (CI 90010112345).
+ * The jornada is funded with 3.850,00 USD and 2.120,00 EUR, so 1.000,00 USD →
+ * 920,00 EUR is the happy path and anything above ~2.304,00 USD exhausts the
+ * register.
  */
 
 const FLOW = "/worker/nueva-operacion/cambio-moneda";
 const SEEDED_DOCUMENT = "90010112345";
+
+/** Opens a jornada funded like the register's demo balances, ending on Caja. */
+async function openJornada(page: Page) {
+  await page.goto("/worker/caja/fondeo-inicial");
+  const funds: Record<string, string> = { CUP: "245000", USD: "3850", EUR: "2120", GBP: "950" };
+  for (const [currency, value] of Object.entries(funds)) {
+    await page.getByLabel(`Fondo inicial en ${currency}`).fill(value);
+  }
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
+  await page.getByRole("link", { name: "Ir a Caja" }).click();
+}
+
+/** Opens a jornada, then navigates (by link, never a reload) to the Cambio de moneda flow. */
+async function startCambio(page: Page) {
+  await openJornada(page);
+  await page.getByRole("link", { name: "Nueva operación" }).click();
+  await page.getByRole("link", { name: /Cambio de moneda/ }).click();
+  await expect(page.getByRole("heading", { name: "Cambio de moneda", level: 1 })).toBeVisible();
+}
 
 async function setAmount(page: Page, value: string) {
   const amount = page.getByLabel("Monto a entregar");
@@ -32,9 +59,35 @@ async function goToRevision(page: Page) {
   await expect(page.getByRole("button", { name: "Confirmar cambio" })).toBeVisible();
 }
 
+test.describe("sin jornada abierta", () => {
+  test("blocks the flow with Caja cerrada and offers the way to Caja", async ({ page }) => {
+    await page.goto(FLOW);
+
+    await expect(page.getByRole("heading", { name: "Caja cerrada" })).toBeVisible();
+    await expect(
+      page.getByText("Debes abrir una jornada antes de realizar un cambio de moneda."),
+    ).toBeVisible();
+    await expect(page.getByLabel("Monto a entregar")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Continuar", exact: true })).toHaveCount(0);
+
+    await page.getByRole("link", { name: "Ir a Caja" }).click();
+    await expect(page).toHaveURL(/\/worker\/caja$/);
+  });
+
+  test("stays blocked at 1440px and 1280px without horizontal overflow", async ({ page }) => {
+    for (const width of [1440, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(FLOW);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+        true,
+      );
+    }
+  });
+});
+
 test.describe("step 1 · cambio", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(FLOW);
+    await startCambio(page);
   });
 
   test("renders the flow with step 1 current and the quote calculated", async ({ page }) => {
@@ -119,7 +172,7 @@ test.describe("step 1 · cambio", () => {
 
 test.describe("step 2 · cliente", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(FLOW);
+    await startCambio(page);
     await goToCliente(page);
   });
 
@@ -206,7 +259,7 @@ test.describe("step 2 · cliente", () => {
 
 test.describe("step 3 · revisión", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(FLOW);
+    await startCambio(page);
     await goToCliente(page);
     await goToRevision(page);
   });
@@ -260,7 +313,7 @@ test.describe("flow action model", () => {
    *              escape hatch; "Volver" (bottom-left) returns one step.
    */
   test("step 1 shows a single Cancelar operación and no bottom Volver", async ({ page }) => {
-    await page.goto(FLOW);
+    await startCambio(page);
 
     await expect(page.getByRole("button", { name: "Cancelar operación" })).toHaveCount(1);
     await expect(page.getByRole("link", { name: "Volver a Nueva operación" })).toBeVisible();
@@ -268,7 +321,7 @@ test.describe("flow action model", () => {
   });
 
   test("step 2 hides the top-left link and shows Volver + Cancelar", async ({ page }) => {
-    await page.goto(FLOW);
+    await startCambio(page);
     await goToCliente(page);
 
     await expect(page.getByRole("link", { name: "Volver a Nueva operación" })).toHaveCount(0);
@@ -277,7 +330,7 @@ test.describe("flow action model", () => {
   });
 
   test("step 3 hides the top-left link and shows Volver + Cancelar", async ({ page }) => {
-    await page.goto(FLOW);
+    await startCambio(page);
     await goToCliente(page);
     await goToRevision(page);
 
@@ -289,7 +342,7 @@ test.describe("flow action model", () => {
 
 test.describe("navigation and cancellation", () => {
   test("going back preserves everything already entered", async ({ page }) => {
-    await page.goto(FLOW);
+    await startCambio(page);
     await setAmount(page, "1500");
     await goToCliente(page);
     await goToRevision(page);
@@ -303,7 +356,7 @@ test.describe("navigation and cancellation", () => {
   });
 
   test("cancelling a started operation asks before discarding", async ({ page }) => {
-    await page.goto(FLOW);
+    await startCambio(page);
     await setAmount(page, "1500");
 
     await page.getByRole("button", { name: "Cancelar operación" }).first().click();
@@ -325,7 +378,7 @@ test.describe("navigation and cancellation", () => {
 
 test.describe("result", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(FLOW);
+    await startCambio(page);
     await goToCliente(page);
     await goToRevision(page);
     await page.getByRole("button", { name: "Confirmar cambio" }).click();
@@ -389,6 +442,30 @@ test.describe("result", () => {
     await expect(page.getByRole("heading", { name: `Operación ${code}` })).toBeVisible();
   });
 
+  test("records an entrada and a salida in the open jornada and moves both balances", async ({
+    page,
+  }) => {
+    const code = (
+      await page.getByRole("main").getByText(/PC-\d{6}-\d{6}/).first().innerText()
+    ).trim();
+
+    await page.getByRole("navigation", { name: "Navegación principal" }).getByRole("link", { name: "Caja", exact: true }).click();
+    await expect(page).toHaveURL(/\/worker\/caja$/);
+
+    // Two commercial movements, both carrying this operation's code.
+    const rows = page.getByRole("row").filter({ has: page.getByRole("link", { name: code }) });
+    await expect(rows).toHaveCount(2);
+    await expect(rows.filter({ hasText: "Entrada" })).toContainText("+1.000,00");
+    await expect(rows.filter({ hasText: "Entrada" })).toContainText("4.850,00");
+    await expect(rows.filter({ hasText: "Salida" })).toContainText("−920,00");
+    await expect(rows.filter({ hasText: "Salida" })).toContainText("1.200,00");
+    await expect(rows.first()).toContainText("Cambio de moneda");
+
+    // Live balances reflect the exchange: +1.000 USD, −920 EUR.
+    await expect(page.getByRole("row", { name: /USD.*4\.850,00/ }).first()).toBeVisible();
+    await expect(page.getByRole("row", { name: /EUR.*1\.200,00/ }).first()).toBeVisible();
+  });
+
   test("starting another operation returns to the catalog", async ({ page }) => {
     await page.getByRole("main").getByRole("link", { name: "Nueva operación" }).click();
     await expect(page).toHaveURL(/\/worker\/nueva-operacion$/);
@@ -399,7 +476,7 @@ test.describe("shell", () => {
   for (const width of [1440, 1280]) {
     test(`stays within the shell at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto(FLOW);
+      await startCambio(page);
       await goToCliente(page);
       await goToRevision(page);
 

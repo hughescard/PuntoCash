@@ -1,9 +1,11 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos Funcionales (FRD) · v1
+## Documento de Requisitos Funcionales (FRD) · v1.3
 
 **Estado:** Línea base de entrega — especifica el comportamiento funcional de la aplicación Worker tal como está implementada actualmente.
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y de referencia para aceptación.
-**Documento complementario:** `PuntoCash_Worker_PRD_v1.md` (PRD) define el producto, sus usuarios y las reglas de negocio (R1–R12). Este FRD no las repite; las referencia como **[R#]** allí donde un comportamiento existe a causa de una de ellas.
+**Control de cambios — v1.3 (22/09/2026).** Se añade el **segundo factor de autenticación**, que faltaba: las credenciales correctas ya no abren sesión, emiten un reto de verificación. §1.2 añade la ruta `/worker/verificacion` (FR-NAV-1); §2 reescribe el desenlace de éxito de FR-AUTH-3 y añade FR-AUTH-7, que remite a `PuntoCash_Worker_2FA_Functional_Requirements_v1.md` para todo el segundo paso; §16 deja de listar la vigencia de sesión junto a lo no especificado sin matizar. El PRD pasa a v2.1 con la nueva regla **R13**. Ningún otro requisito de v1.2 cambia.
+**Control de cambios — v1.2 (21/09/2026).** Se añade **Buscar solicitud** (§7.4), la pantalla que recupera una solicitud generada en el kiosco de autoservicio (`KS-...`) y precarga sus datos en el flujo real correspondiente. Nueva ruta `/worker/nueva-operacion/solicitud` (FR-NAV-1). Se corrige §16, que ya no puede afirmar que la aplicación Kiosk carece de requisito funcional — ver `PuntoCash_Kiosk_Autoservicio_Functional_Requirements_v1.md` y `PuntoCash_Kiosk_Pantalla_Functional_Requirements_v1.md`. Se actualiza la cifra de pruebas automatizadas de FR-ACC-1 (451 → 454). Ningún requisito de v1.1 cambia.
+**Documento complementario:** `PuntoCash_Worker_PRD_v1.md` (PRD) define el producto, sus usuarios y las reglas de negocio (R1–R12). Este FRD no las repite; las referencia como **[R#]** allí donde un comportamiento existe a causa de una de ellas. `PuntoCash_PRD_v2.md` sitúa a Worker dentro del producto completo, junto al kiosco de autoservicio.
 
 **Cómo leer este documento.** Los requisitos se agrupan por área funcional y se numeran `FR-<área>-<n>`. "Debe" describe comportamiento obligatorio. La terminología sigue el glosario del Apéndice A. Solo se especifica comportamiento implementado; §16 indica lo que queda deliberadamente sin definir.
 
@@ -29,7 +31,8 @@
 
 | Ruta | Función | Estado |
 | --- | --- | --- |
-| `/worker/login` | Inicio de sesión | Implementada |
+| `/worker/login` | Inicio de sesión (paso 1: credenciales) | Implementada |
+| `/worker/verificacion` | Verificación en dos pasos (paso 2: código) | Implementada |
 | `/worker/recuperar-acceso` | Recuperación de acceso | Solo marcador de posición |
 | `/worker/inicio` | Inicio operativo | Implementada |
 | `/worker/nueva-operacion` | Catálogo de servicios | Implementada |
@@ -38,6 +41,7 @@
 | `/worker/nueva-operacion/giros` | Selector de operación de Giros | Implementada |
 | `/worker/nueva-operacion/giros/enviar` | Enviar giro | Implementada |
 | `/worker/nueva-operacion/giros/cobrar` | Cobrar giro | Implementada |
+| `/worker/nueva-operacion/solicitud` | Buscar solicitud (código de kiosco) | Implementada |
 | `/worker/nueva-operacion/{otros}` | Servicios no disponibles | Solo marcador de posición |
 | `/worker/operaciones` | Listado de operaciones | Implementada |
 | `/worker/operaciones/{codigo}` | Detalle de operación | Implementada |
@@ -86,7 +90,7 @@
 
 | Resultado | Comportamiento |
 | --- | --- |
-| Éxito | Mensaje de éxito, formulario bloqueado contra un segundo envío, navegación a `/worker/inicio` |
+| Credenciales correctas | **No abre sesión** [R13]: se emite un código al correo del trabajador, se confirma el envío, el formulario queda bloqueado contra un segundo envío y se navega a `/worker/verificacion` |
 | Credenciales inválidas | Error a nivel de formulario; el formulario sigue habilitado; el foco vuelve al identificador |
 | Cuenta bloqueada | Error a nivel de formulario; **el formulario queda bloqueado** — reintentar no puede resolverlo |
 | Error de red | Error a nivel de formulario; el formulario sigue habilitado para reintentar |
@@ -96,6 +100,8 @@
 **FR-AUTH-5** Los mensajes de fallo no llevan acción de reintento incorporada; el propio botón de envío es la única acción primaria.
 
 **FR-AUTH-6** El enlace de recuperación de acceso resuelve a una pantalla marcador de posición que devuelve al inicio de sesión. No hay comportamiento de recuperación implementado.
+
+**FR-AUTH-7** El inicio de sesión es solo el primer paso del acceso. El segundo — el reto de verificación, la pantalla `/worker/verificacion`, el correo del código y sus límites — se especifica íntegramente en `PuntoCash_Worker_2FA_Functional_Requirements_v1.md` (códigos `FR-2FA-*`). Este documento no lo repite. La sesión existe únicamente cuando ese segundo paso se verifica **[R13]**.
 
 > Comportamiento de demostración actual: cualquier identificador con la contraseña `puntocash` tiene éxito; `bloqueado@puntocash.com` devuelve cuenta bloqueada; `error@puntocash.com` devuelve error de red.
 
@@ -129,7 +135,7 @@
 
 ## 5. Cambio de moneda
 
-Operación de tres pasos: **Cambio → Cliente → Revisión**, seguida de una pantalla de resultado. Un stepper muestra el avance; el resultado no es un paso.
+Operación de tres pasos: **Cambio → Cliente → Revisión**, seguida de una pantalla de resultado. Un stepper muestra el avance; el resultado no es un paso. Como toda operación, exige una Jornada abierta (FR-CM-16 y FR-CM-17).
 
 ### 5.1 Paso 1 — Cambio
 
@@ -159,15 +165,23 @@ Operación de tres pasos: **Cambio → Cliente → Revisión**, seguida de una p
 
 **FR-CM-11** La pantalla de revisión muestra el cambio fijado, el cliente, la tasa aplicada y el impacto en caja. Es el último punto antes del registro.
 
-**FR-CM-12** Confirmar deshabilita la acción mientras dura el envío, de modo que la operación no pueda crearse dos veces. La confirmación se rechaza si la cotización, el cliente o la comprobación de efectivo dejaron de ser válidos.
+**FR-CM-12** Confirmar deshabilita la acción mientras dura el envío, de modo que la operación no pueda crearse dos veces. La confirmación se rechaza si la cotización, el cliente, la Jornada o la comprobación de efectivo dejaron de ser válidos.
 
-**FR-CM-13** En caso de éxito el sistema registra una Operación completada con: la instantánea del cliente, servicio `Cambio de moneda`, estado `Completada`, los importes de origen y destino, la tasa aplicada y la instantánea de caja (antes / movimiento / después) en la moneda de destino **[R9]**.
+**FR-CM-13** En caso de éxito el sistema registra una Operación completada con: la instantánea del cliente, servicio `Cambio de moneda`, estado `Completada`, los importes de origen y destino, la tasa aplicada y la instantánea de caja (antes / movimiento / después) en la moneda de destino **[R9]**, junto con los dos movimientos de caja comerciales de FR-CM-18.
 
 **FR-CM-14** La pantalla de resultado muestra el código de operación y sus cifras, y ofrece impresión y una vía hacia Operaciones.
 
 **FR-CM-15** Retroceder entre pasos nunca descarta los datos introducidos. Abandonar el flujo con datos significativos introducidos debe pedir confirmación previa; los valores predefinidos no cuentan como datos introducidos.
 
-**FR-CM-16** Cambio de moneda no exige Jornada abierta y no escribe por sí mismo un movimiento de caja; su efecto en efectivo se representa mediante la instantánea de la propia operación y el libro derivado (véase FR-CAJA-12).
+**FR-CM-16** Cambio de moneda exige Jornada abierta **[R1]**. Toda operación debe realizarse dentro de una Jornada porque su efecto en efectivo se registra como movimiento de caja, y ese movimiento debe quedar asociado a la Jornada en que ocurrió.
+
+**FR-CM-17** Sin Jornada abierta, el flujo representa un estado bloqueado ("Caja cerrada" / "Debes abrir una jornada antes de realizar un cambio de moneda.") con una vía hacia Caja, y sin ninguno de los pasos ni del formulario de cambio **[R1]**. Este estado se evalúa al entrar al flujo; el catálogo sigue mostrando la tarjeta como Disponible.
+
+**FR-CM-18** Al confirmar, y solo si todo es válido, el sistema registra **dos** movimientos de caja comerciales, ambos con el código de la operación y la instantánea de la Jornada abierta: una **Entrada** en la moneda de origen (lo que el cliente entrega; saldo antes → saldo antes + importe) y una **Salida** en la moneda de destino (lo que el cliente recibe; saldo antes → saldo antes − importe), con el concepto `Cambio de moneda`. Ambos ajustan el saldo vivo de su moneda **[R7]**. Los registros son propios del libro, no filas derivadas de la operación.
+
+**FR-CM-19** Al confirmar se revalida, en este orden exacto y antes de registrar nada **[R3]**: Jornada abierta → ambas monedas habilitadas → saldo suficiente en la moneda de destino. Si alguna falla, no se registra ninguna operación ni ningún movimiento ni cambio de saldo, y el Worker permanece en la pantalla de revisión con el motivo (por ejemplo, "La jornada ya no está abierta. Abre una jornada en Caja para registrar la operación."). Los dos movimientos y los dos cambios de saldo son atómicos: se registran ambos o ninguno.
+
+**FR-CM-20** La pantalla de revisión advierte del efecto antes de confirmar: se registrarán dos movimientos de caja en la Jornada abierta, con su entrada y su salida. La comprobación de efectivo de los pasos 1 a 3 lee el saldo vivo de la caja en la moneda de destino.
 
 ---
 
@@ -321,6 +335,28 @@ No se intenta reintento automático ni asiento compensatorio **[R2]**.
 
 **FR-GC-17** Un giro cuyo estado sea `COMPLETED` resuelve normalmente en la búsqueda y representa su pantalla de revisión, con **Continuar a confirmar** deshabilitado y mostrando el mensaje de no pagable de FR-GC-9 **[R6]**.
 
+### 7.4 Buscar solicitud
+
+`/worker/nueva-operacion/solicitud`, alcanzada desde una tarjeta propia del catálogo ("¿El cliente trae un código de kiosco?"). Recupera una solicitud generada en el kiosco de autoservicio (`KS-yyMMdd-NNNNNN`, ver `PuntoCash_Kiosk_Autoservicio_Functional_Requirements_v1.md` §8) y continúa la operación real correspondiente con esos datos precargados. No es en sí misma un servicio ni un paso de ningún flujo de operación: es una puerta de entrada alternativa a los flujos ya descritos en §5–§7.
+
+**FR-SOL-1** La pantalla presenta un único campo de código, sin autocompletado, y una acción "Buscar solicitud" deshabilitada hasta que se introduce un valor. No hay Jornada exigida para *buscar* — la exigencia de Jornada abierta sigue perteneciendo a cada flujo de destino (FR-CM-16, FR-RM-1, FR-GE-1, FR-GC-1) y se evalúa quien la recibe, no esta pantalla.
+
+**FR-SOL-2** La búsqueda invoca `findSelfServiceRequestByCode`, que solo reconoce el código exacto — sin listados ni búsqueda por ningún otro atributo, igual que Remesas y Giros **[R4]**.
+
+**FR-SOL-3** A diferencia de las búsquedas orientadas al cliente (FR-RM-3, FR-GC-5), aquí el motivo del rechazo **sí se distingue**, porque quien busca es un Worker autenticado, no la persona a quien podría beneficiar descubrir el estado de un código ajeno: "Código no encontrado", "Esta solicitud ya venció" (código válido pero fuera de su ventana de 30 minutos) y "Esta solicitud ya fue utilizada" (código ya consumido por otro Worker) son tres mensajes distintos.
+
+**FR-SOL-4** Una solicitud encontrada se representa como un resumen (`RequestSummary`) con filas propias de su servicio (`summaryRows()`): Cambio de moneda muestra el par de monedas y el monto de origen; Remesas y Cobrar giro muestran beneficiario e importe; Enviar giro muestra remitente, beneficiario y monto — nunca el detalle completo de la instantánea, solo lo suficiente para que el Worker confirme que es la solicitud correcta antes de continuar.
+
+**FR-SOL-5** "Continuar" es la única acción sobre una solicitud encontrada. No hay edición del resumen ni posibilidad de fusionar dos solicitudes.
+
+**FR-SOL-6** Al pulsar "Continuar", el sistema, en este orden: marca la solicitud como consumida (`markSelfServiceRequestConsumed`, ver FR-AS-DOM-4 del FRD de Autoservicio), registra los datos como una entrega pendiente para el flujo de destino (`setPendingWorkerHandoff`) y navega a la ruta de ese servicio. Ninguna operación ni movimiento de caja se registra aquí — Buscar solicitud solo entrega datos a un flujo que ya existía; el registro real ocurre donde siempre ocurrió, en la confirmación de ese flujo. En **Cambio de moneda** específicamente, la cotización del kiosco nunca se hereda como definitiva: el flujo de destino vuelve a cotizar en vivo (FR-CM-4) desde cero, de modo que una tasa que cambió entre el kiosco y el mostrador no puede colarse en una operación real **[R9]**.
+
+**FR-SOL-7** El flujo de destino consume la entrega pendiente una sola vez y la limpia inmediatamente después de leerla, de modo que una recarga de página o una doble invocación (React Strict Mode) no la reaplique dos veces. En **Cobrar remesa** y **Cobrar giro**, el código de la solicitud dispara automáticamente la misma búsqueda por código que el Worker haría a mano (FR-RM-2, FR-GC-2), sin adivinar ni completar el resto del flujo por él.
+
+**FR-SOL-8** En **Enviar giro**, si los datos precargados de remitente, beneficiario y monto son completos y válidos, el flujo salta directamente al paso de revisión (FR-GE-9) — pero la confirmación sigue siendo un paso manual y explícito del Worker (FR-GE-10), y el **código real del giro** (el que el beneficiario necesitará para cobrarlo) solo se genera cuando esa confirmación invoca al proveedor externo con éxito (FR-GE-12): una solicitud de kiosco nunca trae ni simula un código de giro por adelantado.
+
+**FR-SOL-9** Un Worker puede llegar al catálogo de servicios y elegir un flujo directamente, sin pasar por Buscar solicitud, exactamente como antes de que existiera esta pantalla — Buscar solicitud es una vía adicional, nunca obligatoria.
+
 ---
 
 ## 8. Caja
@@ -362,9 +398,9 @@ No se intenta reintento automático ni asiento compensatorio **[R2]**.
 
 **FR-CAJA-11** Desde el formulario el Worker puede salir a habilitar una moneda que falte; los importes ya escritos se conservan para su regreso.
 
-### 8.3 Libro derivado
+### 8.3 Movimientos comerciales en el libro
 
-**FR-CAJA-12** Además de los movimientos registrados explícitamente, el libro deriva filas de las operaciones completadas: un Cambio de moneda produce dos tramos (una entrada en la moneda de origen y una salida en la de destino, compartiendo el código de operación); toda otra operación de importe único produce un tramo, cuya dirección sigue a la operación — un giro **enviado** es una *entrada*, y tanto un giro **cobrado** como una remesa son *salidas*. Las operaciones que no estén `Completada` no producen fila en el libro.
+**FR-CAJA-12** Toda operación completada que mueve efectivo registra sus movimientos comerciales en el libro en el momento de completarse, dentro de una Jornada abierta, con el código de la operación y la instantánea de esa Jornada: un Cambio de moneda registra dos (una entrada en la moneda de origen y una salida en la de destino, compartiendo el código de operación); toda otra operación de importe único registra uno, cuya dirección sigue a la operación — un giro **enviado** es una *entrada*, y tanto un giro **cobrado** como una remesa son *salidas*. Las operaciones que no estén `Completada` no producen movimiento. Los movimientos comerciales enlazan a su operación (FR-CAJA-4); no tienen pantalla de detalle propia.
 
 ### 8.4 Añadir moneda
 
@@ -509,7 +545,7 @@ No se intenta reintento automático ni asiento compensatorio **[R2]**.
 **FR-HIST-1** Los registros de operación almacenan el cliente, la tasa aplicada, el estado externo y el antes/después de la caja tal como se capturaron en el momento del registro.
 **FR-HIST-2** Los valores geográficos se almacenan **tanto** como código de catálogo **como** etiqueta resuelta en su momento, de modo que un reetiquetado posterior del catálogo no pueda volver ambiguo un registro antiguo.
 **FR-HIST-3** El estado externo de un registro nunca se actualiza, ni siquiera cuando el mismo elemento externo ha cambiado de estado por otra operación.
-**FR-HIST-4** Los movimientos internos almacenan la Jornada a la que pertenecieron, incluida una que ya se haya cerrado.
+**FR-HIST-4** Todo movimiento de caja —interno o comercial— almacena la Jornada a la que pertenece, incluida una que ya se haya cerrado.
 **FR-HIST-5** Nada en la aplicación Worker edita ni elimina un registro histórico.
 
 ---
@@ -518,23 +554,25 @@ No se intenta reintento automático ni asiento compensatorio **[R2]**.
 
 | Capacidad | Depende de |
 | --- | --- |
+| Cambio de moneda | Jornada abierta; monedas de origen y destino habilitadas en esta Caja; saldo suficiente en la moneda de destino |
 | Remesas, Enviar giro, Cobrar giro | Jornada abierta; moneda habilitada en esta Caja; proveedor accesible |
 | Cobrar remesa / Cobrar giro | Saldo suficiente en la moneda de pago |
 | Ajustar efectivo, Arqueo y cierre | Jornada abierta |
 | Registrar fondeo inicial | **Ninguna** Jornada abierta |
 | Detalle de operación (todas las variantes) | Únicamente un registro almacenado existente |
-| Filas del libro derivadas de operaciones | Estado de operación `Completada` |
+| Movimientos comerciales del libro | Operación `Completada` registrada dentro de una Jornada abierta |
 | Cobro de un giro | Nada de la operación de envío que lo originó — un giro se alcanza solo por su código |
+| Buscar solicitud | Nada — la búsqueda no exige Jornada; el flujo de destino exige la suya propia al continuar |
 
 ---
 
 ## 14. Comportamiento relevante para aceptación
 
-**FR-ACC-1** Los comportamientos anteriores están cubiertos por una batería automatizada de Playwright (451 pruebas al momento de redactar este documento) que abarca: inicio de sesión, inicio, catálogo, los tres servicios, todos los flujos de Caja, el detalle de movimiento, el listado de operaciones y todas las variantes de detalle, más pruebas a nivel de dominio que ejercitan directamente el orden de registro y la aritmética de efectivo.
+**FR-ACC-1** Los comportamientos anteriores están cubiertos por una batería automatizada de Playwright (454 pruebas al momento de redactar este documento) que abarca: inicio de sesión, inicio, catálogo, los tres servicios, Buscar solicitud, todos los flujos de Caja, el detalle de movimiento, el listado de operaciones y todas las variantes de detalle, más pruebas a nivel de dominio que ejercitan directamente el orden de registro y la aritmética de efectivo.
 
 **FR-ACC-2** Comportamientos críticos para la aceptación — una regresión aquí es un defecto, no una preferencia:
 1. Ningún registro local sin éxito externo (FR-RM-7, FR-GC-13).
-2. Exactamente un movimiento comercial por operación completada que mueva efectivo, con la dirección y la aritmética correctas (FR-RM-8, FR-GE-12, FR-GC-14).
+2. Exactamente un movimiento comercial por cada tramo de efectivo de una operación completada —uno en remesas y giros, dos en Cambio de moneda—, con la dirección y la aritmética correctas y asociado a la Jornada (FR-CM-18, FR-RM-8, FR-GE-12, FR-GC-14).
 3. Rechazo indistinguible de código inexistente / coincidencia solo por referencia / tipo de servicio incorrecto (FR-RM-3, FR-GC-5).
 4. Un giro `COMPLETED` no puede pagarse dos veces (FR-GC-17).
 5. Coherencia motivo/signo en ambos flujos de ajuste (FR-CAJA-18, FR-CAJA-20, FR-CAJA-24).
@@ -542,6 +580,7 @@ No se intenta reintento automático ni asiento compensatorio **[R2]**.
 7. Los detalles se representan desde la instantánea almacenada y nunca invocan a un proveedor (FR-OPD-2, FR-HIST-3).
 8. Ningún enum en bruto ni discriminador interno visible en ningún lugar (FR-OPD-10, FR-EXT-5).
 9. Sin desplazamiento horizontal a 1440px ni a 1280px (FR-SHELL-5).
+10. Ninguna operación sin Jornada abierta, sin excepción; ningún movimiento de caja sin Jornada asociada (FR-CM-16, FR-CM-19, FR-RM-1, FR-GE-1, FR-GC-1).
 
 ---
 
@@ -562,9 +601,12 @@ Para todo lo siguiente **no existe requisito funcional alguno y ninguno puede in
 - Los diez servicios del catálogo marcados como no disponibles.
 - Las pantallas Perfil, Tasas y Alertas, y la recuperación de acceso.
 - El historial de Jornadas anteriores.
-- Permisos, roles, aprobación de supervisor y vigencia de sesión.
+- Permisos, roles y aprobación de supervisor.
+- Cierre de sesión, vigencia de sesión y sesión concurrente en dos equipos. El **acceso** sí está especificado por completo: credenciales en §2 y segundo factor en el FRD de 2FA (FR-AUTH-7).
 - Reportes, analítica y exportaciones.
-- Las aplicaciones Kiosk, Branch Admin y Super Admin.
+- Las aplicaciones Branch Admin y Super Admin.
+
+El kiosco de autoservicio y su pantalla de señalización **sí** tienen requisito funcional propio, en documentos independientes: `PuntoCash_Kiosk_Autoservicio_Functional_Requirements_v1.md` y `PuntoCash_Kiosk_Pantalla_Functional_Requirements_v1.md`. Este FRD solo especifica, dentro de su propio alcance, la puerta de entrada que Worker les ofrece (§7.4 Buscar solicitud).
 
 La ausencia de implementación significa que la capacidad aún no ha sido definida funcionalmente: debe diseñarse y aprobarse antes de poder especificarse o construirse.
 

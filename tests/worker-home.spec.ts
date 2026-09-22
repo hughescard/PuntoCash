@@ -264,12 +264,18 @@ test.describe("worker home layout", () => {
   }
 });
 
-test("a successful login lands on the worker home", async ({ page }) => {
+test("a verified access lands on the worker home", async ({ page }) => {
   await page.goto("/worker/login");
   await page.getByLabel("Usuario o correo electrónico").fill("juan.perez");
   await page.getByLabel("Contraseña", { exact: true }).fill("puntocash");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
 
+  // Credentials alone do not open a session: the second factor is obligatory
+  // for every sign-in [R13]. `482913` is the mock's accepted code.
+  await expect(page).toHaveURL(/\/worker\/verificacion$/);
+  await page.getByLabel("Código de verificación").fill("482913");
+
+  // The sixth digit submits on its own; the button is the manual equivalent.
   await expect(page).toHaveURL(/\/worker\/inicio$/);
   await expect(page.getByRole("heading", { name: "Hola, Juan" })).toBeVisible();
 });

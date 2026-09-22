@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import {
+  Alert,
   Button,
   Card,
   CardContent,
@@ -47,6 +48,12 @@ import { DOCUMENT_TYPES, type DocumentType } from "@/features/customers/customer
 import { getCurrentWorker } from "@/features/worker/session";
 import { PROVINCE_CATALOG, getMunicipalitiesForProvince } from "@/features/geography/cuba-provinces";
 import { CAJA_BALANCES, CAJA_SUMMARY, findCajaCurrency, hasOpenJornada } from "@/features/caja/caja-data";
+import { formatAmount } from "@/lib/format";
+import {
+  birthDateFromCubanId,
+  clearPendingWorkerHandoff,
+  readPendingWorkerHandoff,
+} from "@/features/kiosk/self-service-request";
 import { EMPTY_BENEFICIARY, EMPTY_SENDER, type GiroDraft, type GiroFormValues } from "./giro-types";
 import { NO_ERRORS, hasAnyError, municipalityLabel, provinceLabel, validateGiroForm } from "./giro-validation";
 import { GiroConfirmation, GiroReview } from "./giro-review-confirm";
@@ -69,6 +76,40 @@ const INITIAL_VALUES: GiroFormValues = {
   giro: { senderCurrency: "", amountInput: "" },
 };
 
+interface InitialFlow {
+  step: Step;
+  values: GiroFormValues;
+  draft: GiroDraft | null;
+  kioskCode: string | null;
+}
+
+/**
+ * Starting point of the flow. Opened from "Buscar solicitud", the kiosk
+ * request fills the whole form (the sender's birth date comes from the
+ * carné number; nationality keeps its "Cubana" default). If that already
+ * validates, the flow opens straight on "Revisar giro": the client did the
+ * data entry, the worker only receives the cash and confirms. Anything
+ * missing (e.g. a passport instead of a carné) leaves it on Step 1 with the
+ * rest filled in.
+ */
+function buildInitialFlow(): InitialFlow {
+  const handoff = readPendingWorkerHandoff("giros-enviar");
+  if (!handoff) return { step: "registrar", values: INITIAL_VALUES, draft: null, kioskCode: null };
+
+  const { sender, beneficiary, senderCurrency, deliveryAmount } = handoff.data;
+  const values: GiroFormValues = {
+    sender: {
+      ...EMPTY_SENDER,
+      ...sender,
+      birthDate: sender.documentType === "CI" ? birthDateFromCubanId(sender.documentNumber) : "",
+    },
+    beneficiary: { ...EMPTY_BENEFICIARY, ...beneficiary },
+    giro: { senderCurrency, amountInput: formatAmount(deliveryAmount, 2) },
+  };
+  const { draft } = validateGiroForm(values, CAJA_BALANCES.map((balance) => balance.currency));
+  return { step: draft ? "revisar" : "registrar", values, draft, kioskCode: handoff.code };
+}
+
 /**
  * "Giros" — Enviar giro.
  *
@@ -87,12 +128,16 @@ export function EnviarGiroFlow(): React.JSX.Element {
   // retroactively lock a result screen this same flow already produced.
   const [blocked] = React.useState(() => !hasOpenJornada());
 
-  const [step, setStep] = React.useState<Step>("registrar");
-  const [values, setValues] = React.useState<GiroFormValues>(INITIAL_VALUES);
+  const [initial] = React.useState(buildInitialFlow);
+  const [step, setStep] = React.useState<Step>(initial.step);
+  const [values, setValues] = React.useState<GiroFormValues>(initial.values);
   const [errors, setErrors] = React.useState(NO_ERRORS);
   const [cancelOpen, setCancelOpen] = React.useState(false);
 
-  const [draft, setDraft] = React.useState<GiroDraft | null>(null);
+  const [draft, setDraft] = React.useState<GiroDraft | null>(initial.draft);
+
+  // The kiosk prefill (if any) now lives in local state — drop the handoff.
+  React.useEffect(() => clearPendingWorkerHandoff(), []);
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmError, setConfirmError] = React.useState<string | undefined>();
   const [completed, setCompleted] = React.useState<GiroCompleted | null>(null);
@@ -183,6 +228,12 @@ export function EnviarGiroFlow(): React.JSX.Element {
     );
   } else if (step === "revisar" && draft) {
     stepContent = (
+      <>
+      {initial.kioskCode ? (
+        <Alert variant="info" title={`Solicitud de kiosco ${initial.kioskCode}`} className="mb-6">
+          El cliente ya registró estos datos en el kiosco. Recibe el efectivo y confirma el envío.
+        </Alert>
+      ) : null}
       <GiroReview
         draft={draft}
         worker={worker.fullName}
@@ -190,6 +241,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
         onCancel={requestCancel}
         onContinue={() => setStep("confirmar")}
       />
+      </>
     );
   } else {
     stepContent = (
@@ -202,6 +254,12 @@ export function EnviarGiroFlow(): React.JSX.Element {
           Registra un giro para que el beneficiario lo cobre en otra provincia.
         </p>
       </div>
+
+      {initial.kioskCode ? (
+        <Alert variant="info" title={`Solicitud de kiosco ${initial.kioskCode}`}>
+          Datos precargados desde el kiosco. Completa lo que falte para continuar.
+        </Alert>
+      ) : null}
 
       <Card>
         <CardContent className="grid grid-cols-2 gap-6 py-5 wide:grid-cols-4">

@@ -17,6 +17,7 @@ import { Alert, Button, Card, CardContent, CardHeader, CardTitle, Input } from "
 import { CAJA_BALANCES, hasOpenJornada, isCurrencyEnabled } from "@/features/caja/caja-data";
 import { getCurrentWorker } from "@/features/worker/session";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
+import { clearPendingWorkerHandoff, readPendingWorkerHandoff } from "@/features/kiosk/self-service-request";
 import { BackLink, ContextStrip, GIROS_ROUTE, Rows, row } from "./cobrar-giro-parts";
 import { GiroPayoutConfirmation, GiroPayoutReview, type PayoutBlock } from "./cobrar-giro-screens";
 import { GiroPayoutResult } from "./cobrar-giro-result";
@@ -49,8 +50,10 @@ export function CobrarGiroFlow(): React.JSX.Element {
   // retroactively lock a result screen this flow already produced.
   const [blocked] = React.useState(() => !hasOpenJornada());
 
+  // Code handed over by "Buscar solicitud" (kiosk request), if any.
+  const [handoffCode] = React.useState(() => readPendingWorkerHandoff("giros-cobrar")?.data.code ?? null);
   const [step, setStep] = React.useState<Step>("codigo");
-  const [code, setCode] = React.useState("");
+  const [code, setCode] = React.useState(handoffCode ?? "");
   const [searching, setSearching] = React.useState(false);
   const [notFound, setNotFound] = React.useState(false);
   const [transfer, setTransfer] = React.useState<TransferPayoutSnapshot | null>(null);
@@ -76,7 +79,19 @@ export function CobrarGiroFlow(): React.JSX.Element {
 
   async function search(event: React.FormEvent) {
     event.preventDefault();
-    const entered = code.trim();
+    await runSearch(code.trim());
+  }
+
+  // From a kiosk request the code is already known: look it up right away,
+  // so the worker lands on "Revisar giro" and only has to compare the carné
+  // photo with the person in front of them.
+  React.useEffect(() => {
+    clearPendingWorkerHandoff();
+    if (handoffCode) void runSearch(handoffCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function runSearch(entered: string) {
     if (!entered || searching) return;
 
     setSearching(true);

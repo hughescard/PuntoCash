@@ -155,11 +155,12 @@ test.describe("nueva operación routing", () => {
       await expect(
         page.getByRole("navigation", { name: "Navegación principal" }),
       ).toBeVisible();
-      // Remesas requires an open Jornada, so a direct fresh-route visit
-      // correctly renders its own blocked state rather than the form. Giros
+      // Cambio de moneda and Remesas require an open Jornada (no operation
+      // exists outside one), so a direct fresh-route visit correctly renders
+      // their own blocked state rather than the form. Giros
       // resolves to its operation selector, whose <h1> is the service name
       // like every other route here.
-      if (service.name === "Remesas") {
+      if (service.name === "Remesas" || service.name === "Cambio de moneda") {
         await expect(page.getByRole("heading", { name: "Caja cerrada", level: 1 })).toBeVisible();
       } else {
         await expect(page.getByRole("heading", { name: service.name, level: 1 })).toBeVisible();

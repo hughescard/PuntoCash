@@ -10,6 +10,7 @@ import { formatDateTime, formatMoney } from "@/lib/format";
 import { CAJA_BALANCES, CAJA_SUMMARY, hasOpenJornada, registrarSalidaComercial } from "@/features/caja/caja-data";
 import { registerCompletedOperation } from "@/features/operations/operations-history";
 import { DELIVERY_METHOD_LABEL, REMITTANCE_STATUS_LABEL, remittanceProvider, type RemittanceSnapshot, type RemittanceStatus } from "@/features/remittances/remittance-provider";
+import { clearPendingWorkerHandoff, readPendingWorkerHandoff } from "@/features/kiosk/self-service-request";
 
 type Step = "codigo" | "revision" | "confirmar" | "resultado";
 interface Completed { remittance: RemittanceSnapshot; operationCode: string; completedAt: string; }
@@ -19,8 +20,10 @@ function nextCode(now: Date) { const p = (n: number) => String(n).padStart(2, "0
 
 export function RemesasFlow(): React.JSX.Element {
   const [blocked] = React.useState(() => !hasOpenJornada());
+  // Code handed over by "Buscar solicitud" (kiosk request), if any.
+  const [handoffCode] = React.useState(() => readPendingWorkerHandoff("remesas")?.data.code ?? null);
   const [step, setStep] = React.useState<Step>("codigo");
-  const [code, setCode] = React.useState("");
+  const [code, setCode] = React.useState(handoffCode ?? "");
   const [remittance, setRemittance] = React.useState<RemittanceSnapshot | null>(null);
   const [searching, setSearching] = React.useState(false);
   const [notFound, setNotFound] = React.useState(false);
@@ -32,8 +35,7 @@ export function RemesasFlow(): React.JSX.Element {
   const sufficient = !!remittance && !!cash && cash.amount >= remittance.deliveryAmount;
   const payable = remittance?.status === "READY";
 
-  async function search(event: React.FormEvent) {
-    event.preventDefault(); const normalized = code.trim();
+  async function runSearch(normalized: string) {
     if (!normalized || searching) return;
     setSearching(true); setNotFound(false); setError(null);
     const result = await remittanceProvider.findByCode(normalized);
@@ -41,6 +43,20 @@ export function RemesasFlow(): React.JSX.Element {
     if (!result.ok) { setRemittance(null); setNotFound(true); return; }
     setCode(normalized); setRemittance(result.remittance); setStep("revision");
   }
+
+  async function search(event: React.FormEvent) {
+    event.preventDefault();
+    await runSearch(code.trim());
+  }
+
+  // The code came pre-verified from the kiosk handoff (it's the exact code
+  // that request was registered under) — searching automatically saves the
+  // worker retyping it, same as if they had pressed "Buscar remesa" themselves.
+  React.useEffect(() => {
+    clearPendingWorkerHandoff();
+    if (handoffCode) void runSearch(handoffCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function confirm() {
     if (!remittance || !sufficient || !payable || submitting) return;

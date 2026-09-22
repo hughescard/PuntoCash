@@ -115,7 +115,7 @@ test("a network failure explains the next step", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Iniciar sesión" })).toBeEnabled();
 });
 
-test("submitting locks the form, then success leaves the screen", async ({ page }) => {
+test("submitting locks the form, then correct credentials reach the 2FA step", async ({ page }) => {
   await signIn(page, "juan.perez", VALID_PASSWORD);
 
   // In flight: the button reports busy and the fields are locked.
@@ -123,8 +123,14 @@ test("submitting locks the form, then success leaves the screen", async ({ page 
   await expect(submit).toHaveAttribute("aria-busy", "true");
   await expect(page.getByLabel("Usuario o correo electrónico")).toBeDisabled();
 
-  // Success no longer dead-ends; the destination is asserted in worker-home.
-  await expect(page).toHaveURL(/\/worker\/inicio$/);
+  // Correct credentials do not open a session: they emit a verification
+  // challenge, and the session only exists once the code is accepted [R13].
+  await expect(page).toHaveURL(/\/worker\/verificacion$/);
+  await expect(page.getByRole("heading", { name: "Verifica que eres tú" })).toBeVisible();
+
+  // Nothing of the session may be on screen before the code is verified: no
+  // worker name, no caja, no sede.
+  await expect(page.getByLabel("Código de verificación")).toBeVisible();
 });
 
 test("the password toggle switches visibility and reports its state", async ({ page }) => {

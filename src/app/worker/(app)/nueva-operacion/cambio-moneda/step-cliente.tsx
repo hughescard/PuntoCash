@@ -45,6 +45,7 @@ import {
   type NewCustomerInput,
 } from "@/features/customers/customers";
 import { SCAN_SCENARIOS, simulateDocumentScan } from "@/features/customers/document-scan";
+import { birthDateFromCubanId, type KioskClientInput } from "@/features/kiosk/self-service-request";
 
 type SearchMode = "manual" | "qr";
 type LookupState =
@@ -59,18 +60,33 @@ const DOC_NUMBER: FieldSpec = { id: "numero-documento", label: "Número de docum
 export function StepCliente({
   selectedCustomer,
   onSelectCustomer,
+  kioskClient = null,
 }: {
   selectedCustomer: Customer | null;
   onSelectCustomer: (customer: Customer) => void;
+  /**
+   * Self-declared client data from a kiosk solicitud. Only used to pre-run
+   * the search (and prefill registration) — the worker still compares the
+   * physical document and selects the customer themselves (Worker PRD R5).
+   */
+  kioskClient?: KioskClientInput | null;
 }): React.JSX.Element {
   const [mode, setMode] = React.useState<SearchMode>("manual");
-  const [documentType, setDocumentType] = React.useState<DocumentType>("CI");
-  const [documentNumber, setDocumentNumber] = React.useState("");
+  const [documentType, setDocumentType] = React.useState<DocumentType>(
+    kioskClient?.documentType ?? "CI",
+  );
+  const [documentNumber, setDocumentNumber] = React.useState(kioskClient?.documentNumber ?? "");
   const [numberError, setNumberError] = React.useState<string | undefined>();
   const [lookup, setLookup] = React.useState<LookupState>(
     selectedCustomer ? { status: "found", customer: selectedCustomer } : { status: "idle" },
   );
   const [scanning, setScanning] = React.useState(false);
+
+  // Kiosk handoff: search once on arrival so the worker lands on the result.
+  React.useEffect(() => {
+    if (kioskClient && !selectedCustomer) runSearch(kioskClient.documentType, kioskClient.documentNumber);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function runSearch(type: DocumentType, rawNumber: string) {
     const number = rawNumber.trim();
@@ -239,6 +255,7 @@ export function StepCliente({
 
         {!scanning && lookup.status === "registering" ? (
           <RegisterCustomer
+            prefill={kioskClient?.documentNumber === lookup.documentNumber ? kioskClient : null}
             documentType={lookup.documentType}
             documentNumber={lookup.documentNumber}
             onCancel={() => setLookup({ status: "idle" })}
@@ -488,11 +505,13 @@ const KYC_FIELDS = {
 type KycKey = keyof typeof KYC_FIELDS;
 
 function RegisterCustomer({
+  prefill,
   documentType,
   documentNumber,
   onCancel,
   onCreated,
 }: {
+  prefill: KioskClientInput | null;
   documentType: DocumentType;
   documentNumber: string;
   onCancel: () => void;
@@ -501,11 +520,11 @@ function RegisterCustomer({
   const [values, setValues] = React.useState<Record<KycKey, string>>({
     documentType,
     documentNumber,
-    firstName: "",
-    firstSurname: "",
-    secondSurname: "",
-    birthDate: "",
-    phone: "",
+    firstName: prefill?.firstName ?? "",
+    firstSurname: prefill?.firstSurname ?? "",
+    secondSurname: prefill?.secondSurname ?? "",
+    birthDate: documentType === "CI" ? birthDateFromCubanId(documentNumber) : "",
+    phone: prefill?.phone ?? "",
     nationality: "Cubana",
   });
   const [errors, setErrors] = React.useState<Partial<Record<KycKey, string>>>({});

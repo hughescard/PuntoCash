@@ -9,11 +9,15 @@ import { Alert, Button, Field, fieldAria, Input, PasswordInput, type FieldSpec }
 import { authenticate, type LoginResult } from "@/features/auth/mock-auth";
 
 /**
- * Worker login form.
+ * Worker login form — first of the two steps that make up access.
  *
  * State lives here and the screen renders from it, so wiring a real backend
  * means replacing the `authenticate` call — the `LoginResult` union already
  * describes every outcome the UI knows how to present.
+ *
+ * There is no successful *login* outcome here: the best case is a verification
+ * challenge, and the session only exists once `/worker/verificacion` confirms
+ * the code [R13].
  */
 
 const IDENTIFIER: FieldSpec = {
@@ -26,7 +30,7 @@ const PASSWORD: FieldSpec = {
   label: "Contraseña",
 };
 
-type Status = "idle" | "submitting" | "success";
+type Status = "idle" | "submitting" | "challenge-sent";
 
 interface FieldErrors {
   identifier?: string;
@@ -57,8 +61,12 @@ const FAILURES = {
 
 type FailureKind = keyof typeof FAILURES;
 
-/** Where a signed-in worker lands (manual §21: Inicio is the Worker entry). */
-const AFTER_LOGIN = "/worker/inicio" as const;
+/**
+ * Correct credentials do not open a session: every PuntoCash product requires a
+ * second factor, so the next screen is the verification challenge, not Inicio
+ * [R13].
+ */
+const AFTER_LOGIN = "/worker/verificacion" as const;
 
 export function LoginForm(): React.JSX.Element {
   const router = useRouter();
@@ -71,7 +79,7 @@ export function LoginForm(): React.JSX.Element {
 
   const submitting = status === "submitting";
   // A blocked account cannot be resolved by retrying, so the form is closed.
-  const locked = status === "success" || failure === "account-blocked";
+  const locked = status === "challenge-sent" || failure === "account-blocked";
   const disabled = submitting || locked;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -102,10 +110,11 @@ export function LoginForm(): React.JSX.Element {
 
     const result: LoginResult = await authenticate({ identifier, password });
 
-    if (result.status === "success") {
+    if (result.status === "challenge-required") {
       // Stays locked while the destination loads, so the form cannot be
-      // submitted twice during navigation.
-      setStatus("success");
+      // submitted twice during navigation — and so a second submit cannot
+      // open a second challenge and invalidate the code just sent.
+      setStatus("challenge-sent");
       router.push(AFTER_LOGIN);
       return;
     }
@@ -124,9 +133,9 @@ export function LoginForm(): React.JSX.Element {
           own submit button sits just below and stays enabled, so a second
           button would duplicate the one primary action the context allows
           (§9 "Jerarquía"). */}
-      {status === "success" ? (
-        <Alert variant="success" title="Sesión iniciada">
-          Bienvenido a PuntoCash. Tu jornada está lista para comenzar.
+      {status === "challenge-sent" ? (
+        <Alert variant="success" title="Credenciales verificadas">
+          Te enviamos un código de verificación a tu correo. Ya puedes continuar.
         </Alert>
       ) : failure ? (
         <Alert variant="error" title={FAILURES[failure].title}>

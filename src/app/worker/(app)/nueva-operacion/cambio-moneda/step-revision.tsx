@@ -183,6 +183,12 @@ export function StepRevision({
                 ? "La caja cuenta con efectivo suficiente para realizar esta operación."
                 : "Vuelve al paso Cambio y ajusta el monto o la moneda destino."}
             </p>
+            <p className="text-caption text-text-secondary">
+              Al confirmar se registrarán dos movimientos de caja en la jornada abierta: una
+              entrada de {formatMoney({ amount: quote.sourceAmount, currency: quote.sourceCurrency })}{" "}
+              y una salida de{" "}
+              {formatMoney({ amount: quote.destinationAmount, currency: quote.destinationCurrency })}.
+            </p>
           </CardContent>
         </Card>
       </div>

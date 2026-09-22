@@ -1,5 +1,7 @@
 import type { ExchangeQuote } from "@/features/exchange/quote";
 import type { Customer } from "@/features/customers/customers";
+import { readPendingWorkerHandoff, type KioskClientInput } from "@/features/kiosk/self-service-request";
+import { formatAmount } from "@/lib/format";
 
 /**
  * State machine for the Cambio de moneda operation.
@@ -50,9 +52,18 @@ export interface FlowState {
    * of warning before discarding (§17).
    */
   touched: boolean;
+  /**
+   * Set only when the flow was opened from "Buscar solicitud": the kiosk code
+   * and the client's self-declared data, used to pre-run the customer search
+   * on step 2. It never selects a customer by itself — the worker still checks
+   * the document in person and selects (Worker PRD R5).
+   */
+  kioskCode: string | null;
+  kioskClient: KioskClientInput | null;
 }
 
-export const INITIAL_STATE: FlowState = {
+/** Fallback demo starting point when no "Buscar solicitud" handoff is pending. */
+const DEFAULT_STATE: FlowState = {
   step: "cambio",
   sourceCurrency: "USD",
   destinationCurrency: "EUR",
@@ -62,7 +73,35 @@ export const INITIAL_STATE: FlowState = {
   submitting: false,
   completed: null,
   touched: false,
+  kioskCode: null,
+  kioskClient: null,
 };
+
+/**
+ * Lazy initial state for `useReducer`. If a worker just arrived here from
+ * "Buscar solicitud" (`/worker/nueva-operacion/solicitud`), this is the ONE
+ * place that prefill is applied — the currency pair and amount the client
+ * chose at the kiosk, plus the client's data for step 2. It still lands on step "cambio" rather
+ * than skipping to "cliente": the kiosk's quote is minutes old by the time a
+ * worker sits down, and this product's rule is that a live quote is always
+ * recomputed and freshly committed by the worker pressing Continuar (never a
+ * stale one trusted as-is). On step 2 the customer is only pre-searched by
+ * the client's document — never auto-selected (Worker PRD R5).
+ */
+export function createInitialState(): FlowState {
+  const handoff = readPendingWorkerHandoff("cambio-moneda");
+  if (!handoff) return DEFAULT_STATE;
+
+  const { quote } = handoff.data;
+  return {
+    ...DEFAULT_STATE,
+    sourceCurrency: quote.sourceCurrency,
+    destinationCurrency: quote.destinationCurrency,
+    amountInput: formatAmount(quote.sourceAmount, 2),
+    kioskCode: handoff.code,
+    kioskClient: handoff.data.client,
+  };
+}
 
 export type FlowAction =
   | { type: "set-source-currency"; currency: string }

@@ -1,9 +1,10 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos de Producto (PRD) · v1
+## Documento de Requisitos de Producto (PRD) · v1.1
 
 **Estado:** Línea base de entrega. Describe el producto Worker tal como está diseñado, implementado y aprobado.
 **Destinatarios:** Producto, negocio, liderazgo técnico, jefatura de proyecto y desarrollo.
 **Alcance:** Únicamente la aplicación Worker.
+**Control de cambios — v1.1 (21/09/2026):** Ninguna operación puede realizarse sin una Jornada abierta. Cambio de moneda, que en v1 podía realizarse sin Jornada, pasa a exigirla y a registrar su efecto en efectivo como movimientos de caja asociados a ella. Secciones afectadas: §4 (Jornada, Movimiento de caja), §5.2, R1 y R7.
 **Documento complementario:** `PuntoCash_Worker_Functional_Requirements_v1.md` (FRD), que especifica el comportamiento funcional pantalla por pantalla. Este documento no entra en ese nivel.
 
 ---
@@ -49,10 +50,12 @@ Cinco conceptos sostienen el producto. Lo que lo hace auditable no es cada uno p
 | Concepto | Qué es | De qué responde |
 | --- | --- | --- |
 | **Caja** | La gaveta asignada al Worker, como saldos por moneda. Solo las monedas habilitadas pueden tener saldo u operarse. | Es la única realidad financiera del producto. |
-| **Jornada** | El día de trabajo de una Caja: se abre declarando el efectivo inicial y se cierra contando el efectivo final y conciliándolo. | Legitima el movimiento de efectivo. Sin Jornada abierta, la caja no mueve dinero. |
+| **Jornada** | El día de trabajo de una Caja: se abre declarando el efectivo inicial y se cierra contando el efectivo final y conciliándolo. | Legitima el movimiento de efectivo. Sin Jornada abierta no se puede realizar ninguna operación y la caja no mueve dinero. |
 | **Operación** | Un acto de servicio completado para un cliente, con servicio, importe, estado y código permanente. | Es la unidad comercial y la unidad de auditoría. |
-| **Movimiento de caja** | Una línea del libro. **Comercial** si es la contraparte en efectivo de una Operación (lleva su código); **interno** si es gestión propia de la caja (fondeo, corrección, ajuste de cierre) y lleva su propio motivo. | Explica cada cambio de saldo. |
+| **Movimiento de caja** | Una línea del libro. **Comercial** si es la contraparte en efectivo de una Operación (lleva su código); **interno** si es gestión propia de la caja (fondeo, corrección, ajuste de cierre) y lleva su propio motivo. Todo movimiento pertenece a la Jornada en que se registró. | Explica cada cambio de saldo. |
 | **Instantánea histórica** | El estado congelado que cada registro conserva: datos del cliente, tasa aplicada, estado del proveedor, saldo antes y después. | Hace que el pasado no cambie. |
+
+Ninguna operación existe fuera de una Jornada: toda operación mueve efectivo, su efecto se registra como movimiento de caja, y ese movimiento queda asociado a la Jornada en la que ocurrió.
 
 La cadena, en una línea: **la Jornada habilita la Operación, la Operación produce el Movimiento, el Movimiento modifica el saldo de la Caja, y los tres quedan congelados en el histórico.**
 
@@ -78,11 +81,11 @@ El acceso es una compuerta de identidad. El producto no modela permisos, roles n
 
 ### 5.2 Servicios
 
-Tres servicios están operativos. Su comportamiento de negocio:
+Tres servicios están operativos, y los tres exigen una Jornada abierta. Su comportamiento de negocio:
 
 | Servicio | Qué hace el negocio | Cliente en el mostrador | Efecto en caja | Qué lo confirma |
 | --- | --- | --- | --- | --- |
-| **Cambio de moneda** | Cambia una moneda por otra a una tasa que calcula el sistema. | El cliente que cambia, identificado por documento. | La caja entrega la moneda de destino. | La propia validación local: tasa vigente y efectivo suficiente. |
+| **Cambio de moneda** | Cambia una moneda por otra a una tasa que calcula el sistema. | El cliente que cambia, identificado por documento. | La caja **recibe** la moneda de origen y entrega la de destino (dos movimientos). | La propia validación local: Jornada abierta, tasa vigente y efectivo suficiente. |
 | **Remesas** (Cobrar remesa) | Paga una remesa entrante creada fuera de PuntoCash. | El **beneficiario**, que presenta un código. | La caja entrega efectivo. | La confirmación del proveedor externo. |
 | **Giros · Enviar giro** | Registra un giro para que otra persona lo cobre en otra provincia. | El **remitente**. | La caja **recibe** efectivo. | La creación del giro en el proveedor externo. |
 | **Giros · Cobrar giro** | Paga un giro ya registrado a quien lo reclama, identificándolo por el código que presenta. | El **beneficiario**. | La caja entrega efectivo. | La confirmación del proveedor externo. |
@@ -114,13 +117,13 @@ Reglas adoptadas por el negocio. Explican casi toda la rigidez del sistema, y el
 
 | # | Regla | Por qué existe |
 | --- | --- | --- |
-| **R1** | Los servicios que mueven efectivo exigen Jornada abierta. | Un cobro o una entrada fuera de una jornada declarada no puede conciliarse en el cierre. |
+| **R1** | Ninguna operación puede realizarse sin una Jornada abierta. | Toda operación mueve efectivo y debe registrarse como movimiento de caja asociado a su Jornada; un cobro o una entrada fuera de una jornada declarada no puede conciliarse en el cierre. |
 | **R2** | La confirmación externa ocurre antes de cualquier registro local: si el proveedor falla o entra en conflicto, no hay operación, ni movimiento, ni cambio de saldo, ni reintento silencioso, ni asiento compensatorio. | La sucursal nunca debe quedar habiendo registrado un efectivo que el proveedor no aceptó. |
 | **R3** | Las condiciones locales —Jornada, moneda habilitada, saldo suficiente— se validan al momento de pagar y se revalidan al confirmar. | Un saldo agotado entre la revisión y la confirmación debe bloquear el pago. |
 | **R4** | La credencial de cobro es el código, y solo el código: una referencia no sirve, y todo rechazo es indistinguible de cualquier otro. | Antifraude: el personal no debe poder descubrir ni explorar transferencias ajenas, ni deducir por qué falló una búsqueda. |
 | **R5** | La identidad se verifica físicamente, por una persona. | El sistema muestra quién debería ser el beneficiario y obliga a confirmarlo; autenticar a la persona es un acto humano en el mostrador. |
 | **R6** | Solo un estado explícitamente pagable permite entregar efectivo; lo ya completado puede consultarse, nunca pagarse otra vez. | Impide la doble entrega sobre un mismo servicio externo. |
-| **R7** | Una operación, un efecto en caja: exactamente un movimiento comercial vinculado a su código, con el saldo antes y después. | Hace trazable cada cambio de saldo hasta su operación. |
+| **R7** | Una operación, un efecto en caja: exactamente un movimiento comercial por cada tramo de efectivo —uno por operación; dos en Cambio de moneda, entrada y salida—, vinculado(s) a su código y a la Jornada, con el saldo antes y después. | Hace trazable cada cambio de saldo hasta su operación. |
 | **R8** | Las correcciones se declaran, nunca son silenciosas: solo contra conteo físico, con un motivo coherente con lo contado. | Un sobrante declarado no puede explicar un faltante; el cierre aplica la misma disciplina a todas las monedas. |
 | **R9** | El histórico es inmutable: los registros conservan lo que era cierto en su momento y las pantallas de detalle nunca reconsultan a un proveedor. | Sin esto, el pasado cambiaría solo y la auditoría dejaría de valer. |
 | **R10** | Los valores internos nunca se muestran como lenguaje de usuario: los estados y métodos del proveedor se almacenan en bruto y se presentan como etiquetas en español; los identificadores internos no llegan al mostrador ni al comprobante. | Protege al trabajador del vocabulario técnico y a la integración de la traducción. |

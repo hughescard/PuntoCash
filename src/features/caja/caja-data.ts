@@ -207,10 +207,13 @@ export interface CajaMovement {
   /** Only set for "Ajuste de efectivo" movements — the registered balance immediately before this adjustment. */
   saldoAntes?: number;
   /**
-   * A snapshot of the jornada this INTERNAL movement belongs to, captured at
-   * the movement's own creation time — never a live read of "whichever
-   * jornada happens to be open now". Only set for internal (no
-   * `operationCode`) movements, which are the only ones with a detail route.
+   * A snapshot of the jornada this movement belongs to, captured at the
+   * movement's own creation time — never a live read of "whichever jornada
+   * happens to be open now". Every movement recorded live carries it, commercial
+   * (with `operationCode`) and internal alike: no operation exists outside a
+   * jornada, so no commercial movement is ever detached from one. Only the
+   * seeded, pre-existing demo history of commercial rows lacks it. Internal
+   * movements are the only ones with a detail route.
    */
   jornada?: CajaMovementJornadaSnapshot;
 }
@@ -316,6 +319,11 @@ const STANDALONE_MOVEMENTS: readonly DraftMovement[] = [
 ];
 
 /**
+ * SEEDED history only: movements derived from the pre-existing demo operations.
+ * Operations completed live never pass through here — each records its own
+ * movements at confirmation time (`registrarSalidaComercial`,
+ * `registrarEntradaComercial`, `registrarCambioMoneda`), inside an open jornada.
+ *
  * Movements derived from completed operations: only a finished operation
  * actually moved cash — a Rechazada, Fallida, Cancelada or still En proceso
  * one did not, so none of those produce a ledger row. Cambio de moneda
@@ -540,6 +548,17 @@ export function getJornadaActual(): CajaJornada | null {
   return jornadaActual;
 }
 
+/**
+ * Snapshot of the currently open jornada, stamped on every movement recorded
+ * while it is open. `undefined` only when no jornada is open — callers that
+ * move cash reject that case before ever reaching a movement.
+ */
+function currentJornadaSnapshot(): CajaMovementJornadaSnapshot | undefined {
+  return jornadaActual && jornadaActual.status === "OPEN"
+    ? { register: jornadaActual.register, worker: jornadaActual.worker, openedAt: jornadaActual.openedAt }
+    : undefined;
+}
+
 /** Caja 03 cannot have a second open jornada while this one is open. */
 export function hasOpenJornada(): boolean {
   return jornadaActual !== null && jornadaActual.status === "OPEN";
@@ -756,6 +775,7 @@ export function registrarSalidaComercial(params: {
     id: nextMovementId(params.timestamp), fechaHora: params.timestamp.toISOString(),
     operationCode: params.operationCode, tipo: "salida", concepto: params.concepto,
     currency: params.currency, amount: -params.amount, saldoAntes, saldoDespues,
+    jornada: currentJornadaSnapshot(),
   };
   mutableMovements.unshift(movement);
   return { ok: true, movement, saldoAntes, saldoDespues };
@@ -787,9 +807,93 @@ export function registrarEntradaComercial(params: {
     id: nextMovementId(params.timestamp), fechaHora: params.timestamp.toISOString(),
     operationCode: params.operationCode, tipo: "entrada", concepto: params.concepto,
     currency: params.currency, amount: params.amount, saldoAntes, saldoDespues,
+    jornada: currentJornadaSnapshot(),
   };
   mutableMovements.unshift(movement);
   return { ok: true, movement, saldoAntes, saldoDespues };
+}
+
+/**
+ * Cambio de moneda's cash effect: the register RECEIVES the source currency
+ * (entrada) and PAYS OUT the destination currency (salida). Both are
+ * commercial movements sharing the operation's code and stamped with the open
+ * jornada — no exchange exists outside a jornada.
+ *
+ * All-or-nothing: every check (jornada open → both currencies enabled →
+ * destination funds sufficient) finishes before any balance or ledger mutation,
+ * so a rejection leaves the register untouched. This is also the
+ * confirmation-time revalidation of the same conditions the flow showed
+ * during review.
+ */
+export type CambioMonedaCashOutcome =
+  | {
+      ok: true;
+      entrada: CajaMovement;
+      salida: CajaMovement;
+      source: { saldoAntes: number; saldoDespues: number };
+      destination: { saldoAntes: number; saldoDespues: number };
+    }
+  | {
+      ok: false;
+      reason: "jornada-no-abierta" | "moneda-no-habilitada" | "fondos-insuficientes" | "monto-invalido";
+      /** Currency the rejection refers to, when it is currency-specific. */
+      currency?: string;
+    };
+
+export function registrarCambioMoneda(params: {
+  operationCode: string;
+  sourceCurrency: string;
+  sourceAmount: number;
+  destinationCurrency: string;
+  destinationAmount: number;
+  timestamp: Date;
+}): CambioMonedaCashOutcome {
+  if (!hasOpenJornada()) return { ok: false, reason: "jornada-no-abierta" };
+  if (!(params.sourceAmount > 0) || !(params.destinationAmount > 0)) {
+    return { ok: false, reason: "monto-invalido" };
+  }
+
+  const sourceBalance = mutableBalances.find((item) => item.currency === params.sourceCurrency);
+  if (!sourceBalance) return { ok: false, reason: "moneda-no-habilitada", currency: params.sourceCurrency };
+  const destinationBalance = mutableBalances.find((item) => item.currency === params.destinationCurrency);
+  if (!destinationBalance) {
+    return { ok: false, reason: "moneda-no-habilitada", currency: params.destinationCurrency };
+  }
+  if (destinationBalance.amount < params.destinationAmount) {
+    return { ok: false, reason: "fondos-insuficientes", currency: params.destinationCurrency };
+  }
+
+  const round = (value: number) => Math.round(value * 100) / 100;
+  const sourceAntes = sourceBalance.amount;
+  const sourceDespues = round(sourceAntes + params.sourceAmount);
+  const destinationAntes = destinationBalance.amount;
+  const destinationDespues = round(destinationAntes - params.destinationAmount);
+  sourceBalance.amount = sourceDespues;
+  destinationBalance.amount = destinationDespues;
+
+  const fechaHora = params.timestamp.toISOString();
+  const jornada = currentJornadaSnapshot();
+  const entrada: CajaMovement = {
+    id: nextMovementId(params.timestamp), fechaHora,
+    operationCode: params.operationCode, tipo: "entrada", concepto: "Cambio de moneda",
+    currency: params.sourceCurrency, amount: params.sourceAmount,
+    saldoAntes: sourceAntes, saldoDespues: sourceDespues, jornada,
+  };
+  const salida: CajaMovement = {
+    id: nextMovementId(params.timestamp), fechaHora,
+    operationCode: params.operationCode, tipo: "salida", concepto: "Cambio de moneda",
+    currency: params.destinationCurrency, amount: -params.destinationAmount,
+    saldoAntes: destinationAntes, saldoDespues: destinationDespues, jornada,
+  };
+  mutableMovements.unshift(salida, entrada);
+
+  return {
+    ok: true,
+    entrada,
+    salida,
+    source: { saldoAntes: sourceAntes, saldoDespues: sourceDespues },
+    destination: { saldoAntes: destinationAntes, saldoDespues: destinationDespues },
+  };
 }
 
 /* -------------------------------------------------------------------------

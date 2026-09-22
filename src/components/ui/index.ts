@@ -18,6 +18,7 @@ export {
   CardFooter,
   type CardProps,
 } from "./card";
+export { CodeInput, type CodeInputProps } from "./code-input";
 export {
   Dialog,
   DialogPortal,

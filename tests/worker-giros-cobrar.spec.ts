@@ -319,7 +319,7 @@ test.describe("Cobrar giro — Revisar giro", () => {
   test("renders the identity-verification warning", async ({ page }) => {
     await expect(onScreen(page, "Verificación de identidad")).toBeVisible();
     await expect(
-      onScreen(page, /Solicita el documento de identidad del beneficiario/),
+      onScreen(page, /Pide el carné al beneficiario/),
     ).toBeVisible();
   });
 

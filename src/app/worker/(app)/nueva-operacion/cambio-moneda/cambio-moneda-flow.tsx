@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, CircleCheck, Lock } from "lucide-react";
 
 import {
+  Alert,
   Button,
+  Card,
+  CardContent,
   Dialog,
   DialogBody,
   DialogContent,
@@ -18,7 +21,12 @@ import {
 import { Stepper } from "@/components/patterns/stepper";
 import { formatDateTime, formatMoney, parseAmountInput } from "@/lib/format";
 import { getExchangeQuote, type ExchangeQuote } from "@/features/exchange/quote";
-import { getCashBalance } from "@/features/worker/home-data";
+import {
+  CAJA_BALANCES,
+  hasOpenJornada,
+  registrarCambioMoneda,
+  type CambioMonedaCashOutcome,
+} from "@/features/caja/caja-data";
 import { getCurrentWorker } from "@/features/worker/session";
 import {
   customerFullName,
@@ -35,7 +43,7 @@ import {
 } from "./exchange-summary";
 import {
   FLOW_STEPS,
-  INITIAL_STATE,
+  createInitialState,
   flowReducer,
   generateOperationCode,
   hasMeaningfulData,
@@ -44,6 +52,7 @@ import {
 } from "./flow-state";
 import { StepCambio } from "./step-cambio";
 import { StepCliente } from "./step-cliente";
+import { clearPendingWorkerHandoff } from "@/features/kiosk/self-service-request";
 import { StepRevision } from "./step-revision";
 import { OperationComplete } from "./operation-complete";
 
@@ -53,11 +62,75 @@ const CATALOG_ROUTE = "/worker/nueva-operacion";
 const CONFIRM_MS = 900;
 let operationSequence = 123;
 
+/**
+ * Cambio de moneda is a cash operation like every other: it can only happen
+ * inside an open jornada, because its cash effect (an entrada in the source
+ * currency and a salida in the destination currency) must be recorded as caja
+ * movements that belong to that jornada [R1]. Without one the flow is a
+ * blocked state with a way to Caja, and no form at all.
+ */
 export function CambioMonedaFlow(): React.JSX.Element {
+  const [blocked] = React.useState(() => !hasOpenJornada());
+  // A kiosk prefill is only ever handed over from "Buscar solicitud", which is
+  // itself blocked without a jornada — but never leave one dangling here.
+  React.useEffect(() => {
+    if (blocked) clearPendingWorkerHandoff();
+  }, [blocked]);
+
+  return blocked ? <BlockedNoJornada /> : <CambioMonedaOperation />;
+}
+
+function BlockedNoJornada(): React.JSX.Element {
+  return (
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+      <Link
+        href={CATALOG_ROUTE}
+        className="inline-flex w-fit items-center gap-2 rounded-control text-label font-medium text-text-secondary transition-colors hover:text-text-primary outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" />
+        Volver a Nueva operación
+      </Link>
+      <Card>
+        <CardContent className="flex flex-col items-center px-8 py-12 text-center">
+          <span className="grid size-12 place-items-center rounded-control bg-warning-subtle text-warning-foreground">
+            <Lock aria-hidden="true" />
+          </span>
+          <h1 className="mt-5 text-screen-title text-text-primary">Caja cerrada</h1>
+          <p className="mt-2 text-body text-text-secondary">
+            Debes abrir una jornada antes de realizar un cambio de moneda.
+          </p>
+          <Button className="mt-6" asChild>
+            <Link href="/worker/caja">Ir a Caja</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/** Worker-facing message for each reason the caja can refuse the cash effect at confirmation. */
+function cashRejectionMessage(outcome: Extract<CambioMonedaCashOutcome, { ok: false }>): string {
+  switch (outcome.reason) {
+    case "jornada-no-abierta":
+      return "La jornada ya no está abierta. Abre una jornada en Caja para registrar la operación.";
+    case "moneda-no-habilitada":
+      return `${outcome.currency ?? "La moneda"} no está habilitada en esta caja.`;
+    case "fondos-insuficientes":
+      return `La caja no dispone de suficiente ${outcome.currency ?? "efectivo"} para completar este cambio.`;
+    default:
+      return "No se pudo registrar el cambio. Revisa los importes e inténtalo de nuevo.";
+  }
+}
+
+function CambioMonedaOperation(): React.JSX.Element {
   const router = useRouter();
   const worker = getCurrentWorker();
-  const [state, dispatch] = React.useReducer(flowReducer, INITIAL_STATE);
+  const [state, dispatch] = React.useReducer(flowReducer, undefined, createInitialState);
   const [cancelOpen, setCancelOpen] = React.useState(false);
+  const [confirmError, setConfirmError] = React.useState<string | null>(null);
+
+  // The kiosk prefill (if any) was read into the initial state — drop it.
+  React.useEffect(() => clearPendingWorkerHandoff(), []);
 
   /* ---- Step 1 derivations: quoted live, committed on Continuar ---- */
   const parsedAmount = parseAmountInput(state.amountInput);
@@ -83,7 +156,7 @@ export function CambioMonedaFlow(): React.JSX.Element {
   function cashFor(quote: { destinationCurrency: string; destinationAmount: number } | null) {
     if (!quote) return null;
     return evaluateCash(
-      getCashBalance(quote.destinationCurrency),
+      liveBalance(quote.destinationCurrency),
       quote.destinationAmount,
       quote.destinationCurrency,
     );
@@ -112,6 +185,7 @@ export function CambioMonedaFlow(): React.JSX.Element {
     // valid while the worker was reading the review.
     if (state.submitting || !state.quote || !state.customer || !committedCash?.sufficient) return;
 
+    setConfirmError(null);
     dispatch({ type: "submit-start" });
     await new Promise((resolve) => setTimeout(resolve, CONFIRM_MS));
 
@@ -119,24 +193,28 @@ export function CambioMonedaFlow(): React.JSX.Element {
     const code = generateOperationCode(completedAt, (operationSequence += 1));
     const { quote, customer } = state;
 
-    dispatch({
-      type: "submit-success",
-      operation: {
-        code,
-        quote,
-        customer,
-        worker: worker.fullName,
-        register: worker.register,
-        completedAt: completedAt.toISOString(),
-      },
+    // The cash effect is recorded FIRST and validated again right here (jornada
+    // still open → currencies enabled → funds still sufficient) [R3]. If the
+    // caja refuses, nothing exists: no operation, no movement, no balance
+    // change, and the worker stays on the review with the reason.
+    const cash = registrarCambioMoneda({
+      operationCode: code,
+      sourceCurrency: quote.sourceCurrency,
+      sourceAmount: quote.sourceAmount,
+      destinationCurrency: quote.destinationCurrency,
+      destinationAmount: quote.destinationAmount,
+      timestamp: completedAt,
     });
+    if (!cash.ok) {
+      setConfirmError(cashRejectionMessage(cash));
+      dispatch({ type: "submit-failure" });
+      return;
+    }
 
     // So this operation's own "Ver detalle" link resolves on the Operaciones
-    // list/detail screens instead of hitting the not-found card (§11).
-    // `committedCash` is the exact before/required/remaining the worker just
-    // reviewed on screen — reused as the cash snapshot rather than
-    // recomputed later, since nothing in this mock actually decrements
-    // `CASH_BALANCES` on submit.
+    // list/detail screens instead of hitting the not-found card (§11). The
+    // snapshot is the register's real before/movement/after in the destination
+    // currency, taken from the movement just recorded.
     registerCompletedOperation({
       codigo: code,
       fechaHora: completedAt.toISOString(),
@@ -155,13 +233,25 @@ export function CambioMonedaFlow(): React.JSX.Element {
         destination: { amount: quote.destinationAmount, currency: quote.destinationCurrency },
         appliedRate: quote.appliedRate,
         cashSnapshot: {
-          before: { amount: committedCash.available, currency: quote.destinationCurrency },
-          movement: { amount: committedCash.required, currency: quote.destinationCurrency },
-          after: { amount: committedCash.remaining, currency: quote.destinationCurrency },
+          before: { amount: cash.destination.saldoAntes, currency: quote.destinationCurrency },
+          movement: { amount: quote.destinationAmount, currency: quote.destinationCurrency },
+          after: { amount: cash.destination.saldoDespues, currency: quote.destinationCurrency },
         },
       },
       worker: worker.fullName,
       caja: worker.register,
+    });
+
+    dispatch({
+      type: "submit-success",
+      operation: {
+        code,
+        quote,
+        customer,
+        worker: worker.fullName,
+        register: worker.register,
+        completedAt: completedAt.toISOString(),
+      },
     });
   }
 
@@ -197,6 +287,11 @@ export function CambioMonedaFlow(): React.JSX.Element {
             <div className="flex items-start justify-between gap-6">
               <div className="min-w-0">
                 <h1 className="text-screen-title text-text-primary">Cambio de moneda</h1>
+                {state.kioskCode ? (
+                  <p className="mt-2 text-body-sm font-medium text-primary">
+                    Solicitud de kiosco {state.kioskCode} · datos precargados
+                  </p>
+                ) : null}
                 <p className="mt-2 text-body text-text-secondary">
                   {state.step === "cambio"
                     ? "Define el cambio que realizará el cliente."
@@ -241,6 +336,7 @@ export function CambioMonedaFlow(): React.JSX.Element {
         {state.step === "cliente" && state.quote && committedCash ? (
           <div className="grid grid-cols-1 gap-6 wide:grid-cols-[minmax(0,1fr)_20rem]">
             <StepCliente
+              kioskClient={state.kioskClient}
               selectedCustomer={state.customer}
               onSelectCustomer={(customer: Customer) =>
                 dispatch({ type: "select-customer", customer })
@@ -266,6 +362,10 @@ export function CambioMonedaFlow(): React.JSX.Element {
         ) : null}
 
         {completed && state.completed ? <OperationComplete operation={state.completed} /> : null}
+
+        {state.step === "revision" && confirmError ? (
+          <Alert variant="error" title={confirmError} />
+        ) : null}
 
         {/* ---------------- Footer actions ---------------- */}
         {!completed ? (
@@ -346,6 +446,11 @@ export function CambioMonedaFlow(): React.JSX.Element {
       />
     </>
   );
+}
+
+/** Live cash the register holds in one currency (0 when the currency is not enabled). */
+function liveBalance(currency: string): number {
+  return CAJA_BALANCES.find((balance) => balance.currency === currency)?.amount ?? 0;
 }
 
 /** Compact context so the worker never loses the numbers on step 2 (§14). */

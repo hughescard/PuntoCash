@@ -97,8 +97,8 @@ export function GiroPayoutReview({
       </div>
 
       <Alert variant="warning" title="Verificación de identidad">
-        Solicita el documento de identidad del beneficiario y verifica que coincida con la
-        información mostrada antes de continuar.
+        Pide el carné al beneficiario, comprueba que la foto corresponde a la persona y que el
+        número coincide con el mostrado antes de continuar.
       </Alert>
 
       {block === "estado" ? (

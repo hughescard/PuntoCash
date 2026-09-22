@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Search, SearchX, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Search, SearchX, TicketCheck, X } from "lucide-react";
 
 import { Button, Input } from "@/components/ui";
 import { PageHeader } from "@/components/shell/app-shell";
@@ -89,6 +90,35 @@ export function ServiceCatalog(): React.JSX.Element {
           ? `${groups.reduce((total, group) => total + group.services.length, 0)} servicios encontrados`
           : ""}
       </p>
+
+      {/* Kiosk handoff: the fastest path when the client already prepared the
+          operation at the self-service kiosk. Hidden while searching so it
+          never reads as a search result. */}
+      {!searching ? (
+        <Link
+          href="/worker/nueva-operacion/solicitud"
+          className="mb-8 flex items-center gap-4 rounded-card border border-gold bg-accent-subtle p-5 transition-colors duration-(--duration-fast) ease-(--ease-standard) hover:bg-primary-subtle outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          <span
+            aria-hidden="true"
+            className="grid size-11 shrink-0 place-items-center rounded-control bg-surface text-primary"
+          >
+            <TicketCheck className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-card-title font-semibold text-text-primary">
+              ¿El cliente trae un código de kiosco?
+            </span>
+            <span className="mt-0.5 block text-body-sm text-text-secondary">
+              Busca la solicitud y continúa con los datos que el cliente ya registró.
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2 text-label font-semibold text-primary">
+            Buscar solicitud
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </span>
+        </Link>
+      ) : null}
 
       {noResults ? (
         <EmptyState onClear={clearSearch} />
