@@ -54,7 +54,8 @@ export function CobrarGiroFlow(): React.JSX.Element {
   const [handoffCode] = React.useState(() => readPendingWorkerHandoff("giros-cobrar")?.data.code ?? null);
   const [step, setStep] = React.useState<Step>("codigo");
   const [code, setCode] = React.useState(handoffCode ?? "");
-  const [searching, setSearching] = React.useState(false);
+  // A kiosk handoff starts searching straight away (see the effect below).
+  const [searching, setSearching] = React.useState(handoffCode !== null);
   const [notFound, setNotFound] = React.useState(false);
   const [transfer, setTransfer] = React.useState<TransferPayoutSnapshot | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
@@ -77,19 +78,28 @@ export function CobrarGiroFlow(): React.JSX.Element {
           ? "fondos"
           : null;
 
-  async function search(event: React.FormEvent) {
-    event.preventDefault();
-    await runSearch(code.trim());
-  }
-
   // From a kiosk request the code is already known: look it up right away,
   // so the worker lands on "Revisar giro" and only has to compare the carné
   // photo with the person in front of them.
+  // State only changes once the lookup answers, never synchronously here.
   React.useEffect(() => {
     clearPendingWorkerHandoff();
-    if (handoffCode) void runSearch(handoffCode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!handoffCode) return;
+    let active = true;
+    void transferProvider.findTransferByCode(handoffCode).then((result) => {
+      if (!active) return;
+      setSearching(false);
+      if (!result.ok) {
+        setNotFound(true);
+        return;
+      }
+      setTransfer(result.transfer);
+      setStep("revisar");
+    });
+    return () => {
+      active = false;
+    };
+  }, [handoffCode]);
 
   async function runSearch(entered: string) {
     if (!entered || searching) return;
@@ -107,6 +117,11 @@ export function CobrarGiroFlow(): React.JSX.Element {
     setCode(entered);
     setTransfer(result.transfer);
     setStep("revisar");
+  }
+
+  async function search(event: React.FormEvent) {
+    event.preventDefault();
+    await runSearch(code.trim());
   }
 
   async function handleConfirm() {

@@ -11,24 +11,33 @@ function capitalize(value: string): string {
  * Live clock for the signage header. Sized in `em` from the signage base
  * font size (see `layout.tsx`).
  *
- * Renders a placeholder until mounted, then ticks every second: a
+ * Renders a placeholder until hydrated, then ticks every second: a
  * server-rendered timestamp would disagree with the client's the instant it
  * hydrates, and "now" is meaningless pre-hydration anyway on a screen nobody
  * touches.
  */
 export function ClockDisplay(): React.JSX.Element {
-  const [now, setNow] = React.useState<Date | null>(null);
+  const hydrated = React.useSyncExternalStore(subscribeNever, () => true, () => false);
 
-  React.useEffect(() => {
-    setNow(new Date());
-    const id = setInterval(() => setNow(new Date()), 1_000);
-    return () => clearInterval(id);
-  }, []);
-
-  if (!now) {
+  if (!hydrated) {
     // Reserves the same footprint so the header never jumps on mount.
     return <span className="inline-block h-[3.5em] w-[12em]" aria-hidden="true" />;
   }
+  return <LiveClock />;
+}
+
+function subscribeNever(): () => void {
+  return () => {};
+}
+
+/** Only ever rendered in the browser, so it can read the clock when it starts. */
+function LiveClock(): React.JSX.Element {
+  const [now, setNow] = React.useState(() => new Date());
+
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1_000);
+    return () => clearInterval(id);
+  }, []);
 
   const time = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(now);
   const date = capitalize(

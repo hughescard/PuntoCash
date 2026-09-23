@@ -33,7 +33,10 @@ import { ClockDisplay } from "./clock-display";
  * The logo is the one element sized in `rem` by the shared brand component,
  * so it switches lockup size by viewport height instead of scaling.
  *
- * Nothing in this subtree renders a link, a button or any focusable control.
+ * While it plays, nothing in this subtree renders a link, a button or any
+ * focusable control. The two exceptions are configuration, never content:
+ * the first-start sede picker (`branch-picker.tsx`) and the "¿Cambiar la
+ * sede?" confirmation that Atrás/Esc opens (`signage-screen.tsx`).
  */
 export default function KioskPantallaLayout({ children }: { children: React.ReactNode }) {
   return (

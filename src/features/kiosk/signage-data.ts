@@ -29,19 +29,12 @@ export const PUBLIC_RATE_BOARD: readonly PublicRate[] = [
   { currency: "MXN", name: "Peso mexicano", buy: 16, sell: 18 },
 ];
 
-export interface BranchInfo {
-  name: string;
-  address: string;
-  hours: string;
-  phone: string;
-}
-
-export const BRANCH_INFO: BranchInfo = {
-  name: "PuntoCash · Casa de cambio",
-  address: "Calle 23 esq. a L, Vedado, La Habana",
-  hours: "Lunes a sábado · 8:30 a.m. – 6:00 p.m.",
-  phone: "+53 7 838 1234",
-};
+/*
+ * Branch information no longer lives here: each signage screen shows the sede
+ * it was set up for (`signage-branch.ts`), read from the network's sede list
+ * (`@/features/branches/branches`). Rates and promotions below are still one
+ * fixed table for the whole demo — see Pantalla FRD §7.
+ */
 
 export interface Promotion {
   id: string;

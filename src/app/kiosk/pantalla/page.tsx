@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { SignageCarousel } from "./signage-carousel";
+import { SignageScreen } from "./signage-screen";
 
 export const metadata: Metadata = {
   title: "PuntoCash",
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function KioskPantallaPage() {
-  return <SignageCarousel />;
+  return <SignageScreen />;
 }

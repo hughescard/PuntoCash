@@ -47,6 +47,11 @@ const FAILURES = {
     message:
       "El usuario o la contraseña no son correctos. Verifica los datos e intenta nuevamente.",
   },
+  "other-branch": {
+    title: "Esta caja no es de tu sede",
+    message:
+      "Solo pueden iniciar sesión en esta caja los trabajadores de su sede. Usa una caja de tu sede o solicita asistencia al administrador.",
+  },
   "account-blocked": {
     title: "Cuenta bloqueada",
     message:
@@ -122,7 +127,7 @@ export function LoginForm(): React.JSX.Element {
     setStatus("idle");
     setFailure(result.status);
 
-    if (result.status === "invalid-credentials") {
+    if (result.status === "invalid-credentials" || result.status === "other-branch") {
       identifierRef.current?.focus();
     }
   }

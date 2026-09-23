@@ -55,14 +55,29 @@ function formatCountdown(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function VerificationForm(): React.JSX.Element | null {
-  const router = useRouter();
+/** `false` on the server and during hydration, `true` once mounted in the browser. */
+function subscribeNever(): () => void {
+  return () => {};
+}
 
+function useHydrated(): boolean {
+  return React.useSyncExternalStore(subscribeNever, () => true, () => false);
+}
+
+export function VerificationForm(): React.JSX.Element | null {
   // El reto vive en memoria del cliente (mock), así que solo se conoce tras
   // montar. Hasta entonces no se representa nada, para no mostrar un estado
   // que se contradice medio segundo después.
-  const [ready, setReady] = React.useState(false);
-  const [challenge, setChallenge] = React.useState<TwoFactorChallengeView | null>(null);
+  const hydrated = useHydrated();
+  return hydrated ? <VerificationFormBody /> : null;
+}
+
+function VerificationFormBody(): React.JSX.Element {
+  const router = useRouter();
+
+  // Solo se monta en el navegador (ver `VerificationForm`), así que el reto
+  // en memoria ya se puede leer al inicializar el estado.
+  const [challenge, setChallenge] = React.useState<TwoFactorChallengeView | null>(() => peekChallenge());
 
   const [code, setCode] = React.useState("");
   const [status, setStatus] = React.useState<Status>("idle");
@@ -75,11 +90,6 @@ export function VerificationForm(): React.JSX.Element | null {
      coincidir en el mismo tick, y el estado de React todavía no lo refleja: el
      testigo es una ref para que solo una verificación salga. */
   const inFlight = React.useRef(false);
-
-  React.useEffect(() => {
-    setChallenge(peekChallenge());
-    setReady(true);
-  }, []);
 
   // Un único intervalo alimenta las dos cuentas atrás — vigencia y espera de
   // reenvío — para no encadenar temporizadores por cada una.
@@ -206,7 +216,6 @@ export function VerificationForm(): React.JSX.Element | null {
     router.push("/worker/login");
   }
 
-  if (!ready) return null;
 
   /* Sin reto vigente no hay nada que verificar. Es lo que ocurre al recargar la
      pantalla o al llegar por enlace directo, y se dice tal cual en vez de
@@ -411,11 +420,9 @@ function FormNotice({ notice }: { notice: Notice }): React.JSX.Element {
  * enmascarado es lo único que revela — nunca la dirección completa.
  */
 export function VerificationHeading(): React.JSX.Element {
-  const [maskedEmail, setMaskedEmail] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    setMaskedEmail(peekChallenge()?.maskedEmail ?? null);
-  }, []);
+  // Vacío en el servidor y durante la hidratación; el reto solo existe en el navegador.
+  const hydrated = useHydrated();
+  const maskedEmail = hydrated ? (peekChallenge()?.maskedEmail ?? null) : null;
 
   return (
     <header className="mb-10 flex flex-col items-center text-center">

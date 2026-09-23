@@ -25,7 +25,8 @@ export function RemesasFlow(): React.JSX.Element {
   const [step, setStep] = React.useState<Step>("codigo");
   const [code, setCode] = React.useState(handoffCode ?? "");
   const [remittance, setRemittance] = React.useState<RemittanceSnapshot | null>(null);
-  const [searching, setSearching] = React.useState(false);
+  // A kiosk handoff starts searching straight away (see the effect below).
+  const [searching, setSearching] = React.useState(handoffCode !== null);
   const [notFound, setNotFound] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
@@ -52,11 +53,19 @@ export function RemesasFlow(): React.JSX.Element {
   // The code came pre-verified from the kiosk handoff (it's the exact code
   // that request was registered under) — searching automatically saves the
   // worker retyping it, same as if they had pressed "Buscar remesa" themselves.
+  // State only changes once the lookup answers, never synchronously here.
   React.useEffect(() => {
     clearPendingWorkerHandoff();
-    if (handoffCode) void runSearch(handoffCode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!handoffCode) return;
+    let active = true;
+    void remittanceProvider.findByCode(handoffCode).then((result) => {
+      if (!active) return;
+      setSearching(false);
+      if (!result.ok) { setNotFound(true); return; }
+      setRemittance(result.remittance); setStep("revision");
+    });
+    return () => { active = false; };
+  }, [handoffCode]);
 
   async function confirm() {
     if (!remittance || !sufficient || !payable || submitting) return;

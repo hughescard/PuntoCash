@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CircleDot, FileText, Palette, Table2, Type, Wallet } from "lucide-react";
+import { CircleDot, FileText, Mail, Palette, Table2, Type, Wallet } from "lucide-react";
 
 import { AppSidebar } from "@/components/shell/app-shell";
 import { SidebarNavLink, type NavItem } from "@/components/shell/sidebar-nav";
@@ -20,6 +20,9 @@ const navItems: readonly NavItem[] = [
   { href: "#formularios", label: "Formularios", icon: FileText },
   { href: "#contenedores", label: "Contenedores", icon: Wallet },
   { href: "#tablas", label: "Tablas", icon: Table2 },
+  /* La única entrada que no es un ancla: los correos no pueden representarse
+     dentro de esta página, porque su documento lo reescribe otro programa. */
+  { href: "/design-system/correos", label: "Correos", icon: Mail },
 ];
 
 export function DesignSystemSidebar(): React.JSX.Element {

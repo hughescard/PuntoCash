@@ -2,22 +2,23 @@ import * as React from "react";
 import { Clock, MapPin, Phone } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { BRANCH_INFO } from "@/features/kiosk/signage-data";
+import type { Branch } from "@/features/branches/branches";
 import { SlideHeading } from "./slide-tasas";
 
 /**
- * "Info de la sucursal" — where we are, when we are open, how to reach us.
+ * "Info de la sucursal" — where we are, when we are open, how to reach us —
+ * for the sede this screen was set up for (Pantalla FRD FR-PANT-SUC-1).
  * Three columns on a landscape TV, stacked on a vertical screen.
  */
-export function SlideSucursal(): React.JSX.Element {
+export function SlideSucursal({ branch }: { branch: Branch }): React.JSX.Element {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <SlideHeading eyebrow={BRANCH_INFO.name} title="Estamos aquí para ayudarte" />
+      <SlideHeading eyebrow={branch.name} title="Estamos aquí para ayudarte" />
 
       <div className="mt-[1.5em] grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-[1.25em] landscape:grid-cols-3">
-        <InfoTile icon={MapPin} label="Dirección" value={BRANCH_INFO.address} />
-        <InfoTile icon={Clock} label="Horario" value={BRANCH_INFO.hours} />
-        <InfoTile icon={Phone} label="Teléfono" value={BRANCH_INFO.phone} numeric />
+        <InfoTile icon={MapPin} label="Dirección" value={`${branch.address}, ${branch.locality}`} />
+        <InfoTile icon={Clock} label="Horario" value={branch.hours} />
+        <InfoTile icon={Phone} label="Teléfono" value={branch.phone} numeric />
       </div>
     </div>
   );

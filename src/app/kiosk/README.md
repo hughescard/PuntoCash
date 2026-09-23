@@ -8,3 +8,6 @@ with its own shell:
 - `pantalla/` — non-touch signage; the one deliberate exception to
   "the shell is composed from `@/components/shell` and must not be
   re-implemented". See its `layout.tsx` for why.
+- `simulador-admin/` — DEMO-ONLY stand-in for the admin panel: links and
+  unlinks the self-service kiosk and the Worker caja, which cannot be used
+  until they are linked.

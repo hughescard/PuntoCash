@@ -16,10 +16,12 @@
  *   bloqueado@puntocash.com   → account-blocked
  *   error@puntocash.com       → network-error
  *   caduca@puntocash.com      → challenge whose code expires in 20 s
+ *   otrasede@puntocash.com    → other-branch (a Worker of another sede)
  *   anything else             → challenge when the password is "puntocash",
  *                               invalid-credentials otherwise
  */
 
+import { currentLinkedRegister } from "@/features/worker/register-device";
 import { openChallenge, type TwoFactorChallengeView } from "./two-factor";
 
 export interface Credentials {
@@ -34,6 +36,12 @@ export type LoginResult =
    */
   | { status: "challenge-required"; challenge: TwoFactorChallengeView }
   | { status: "invalid-credentials" }
+  /**
+   * Credenciales correctas, pero el trabajador no pertenece a la sede de la
+   * caja donde intenta entrar (Worker FRD FR-AUTH-8). No se emite código: una
+   * cuenta de otra sede no tiene nada que verificar en este equipo.
+   */
+  | { status: "other-branch" }
   | { status: "account-blocked" }
   | { status: "network-error" };
 
@@ -52,6 +60,10 @@ export async function authenticate({ identifier, password }: Credentials): Promi
   if (account === "error@puntocash.com") return { status: "network-error" };
 
   if (password === DEMO_PASSWORD) {
+    // The Worker's sede is checked against the caja's, which the device
+    // session knows (`register-device.ts`). In the demo every account belongs
+    // to whatever sede this caja is linked to, except the one below.
+    if (account === "otrasede@puntocash.com" || !currentLinkedRegister()) return { status: "other-branch" };
     return { status: "challenge-required", challenge: openChallenge(account) };
   }
 

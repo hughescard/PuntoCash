@@ -3,6 +3,7 @@ import type { ExchangeQuote } from "@/features/exchange/quote";
 import type { RemittanceSnapshot } from "@/features/remittances/remittance-provider";
 import type { TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import type { KioskServiceId } from "./kiosk-catalog";
+import { currentKioskDevice } from "./device-session";
 
 /**
  * FRONTEND-ONLY MOCK of the self-service "solicitud" (request) a kiosk
@@ -91,6 +92,15 @@ interface KioskRequestBase {
   expiresAt: string;
   /** Set once a Worker picks the request up via "Buscar solicitud" — see `markSelfServiceRequestConsumed`. */
   consumedAt: string | null;
+  /**
+   * The sede of the linked kiosk that produced it (see `device-session.ts`).
+   * A request belongs to that sede: in the real product only that sede's
+   * counters can redeem it (Autoservicio FRD FR-AS-DOM-7). The demo's Worker
+   * has no sede of its own yet, so it does not filter on this.
+   */
+  branchId: string | null;
+  /** Which kiosk produced it — traceability for the sede's admin. */
+  deviceId: string | null;
 }
 
 export type KioskRequest =
@@ -146,11 +156,15 @@ function generateRequestCode(now: Date): string {
 function buildBase(now: Date): KioskRequestBase {
   const createdAt = now;
   const expiresAt = new Date(now.getTime() + VALIDITY_MINUTES * 60_000);
+  const device = currentKioskDevice();
+  const linked = device?.status === "linked" ? device : null;
   return {
     code: generateRequestCode(now),
     createdAt: createdAt.toISOString(),
     expiresAt: expiresAt.toISOString(),
     consumedAt: null,
+    branchId: linked?.branchId ?? null,
+    deviceId: linked?.deviceId ?? null,
   };
 }
 

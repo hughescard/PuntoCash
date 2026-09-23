@@ -5,14 +5,16 @@ import { LogOut, Wallet } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { WorkerSession } from "@/features/worker/session";
+import { LinkedRegister } from "./linked-register";
 
 /**
  * Right-hand header cluster — the approved Worker header content (manual §10):
  *
  *   PuntoCash | Juan Pérez | Caja 03 | Perfil / Cerrar sesión
  *
- * Each identity block pairs its value with a quiet caption, so "Caja 03" is
- * never mistaken for something other than the assigned register. The operator
+ * Each identity block pairs its value with a quiet caption: "Trabajador" under
+ * the name, the sede under the caja. The caja comes from this computer's
+ * device session, not from the Worker's account. The operator
  * company that administers the sede is deliberately absent: "PuntoCash
  * permanece como identidad visible principal."
  */
@@ -41,13 +43,10 @@ export function WorkerIdentity({ worker }: { worker: WorkerSession }): React.JSX
 
       <Divider />
 
-      {/* The assigned register is persistent context for every operation. */}
+      {/* The caja this computer is linked to — persistent context for every operation. */}
       <div className="flex items-center gap-2.5">
         <Wallet className="size-5 shrink-0 text-gold" aria-hidden="true" />
-        <div className="flex flex-col leading-tight">
-          <span className="text-label font-semibold text-white">{worker.register}</span>
-          <span className="text-caption text-text-on-primary-muted">Caja asignada</span>
-        </div>
+        <LinkedRegister fallback={worker.register} />
       </div>
 
       <Divider />
@@ -66,7 +65,8 @@ export function WorkerIdentity({ worker }: { worker: WorkerSession }): React.JSX
         {worker.initials}
       </Link>
 
-      {/* No session to clear yet, so this returns to the sign-in screen. */}
+      {/* Ends the Worker's session only: the computer stays linked to its caja,
+          so this returns to the sign-in screen, never to the pairing screen. */}
       <Link href={"/worker/login" as Route} className={headerLink}>
         <LogOut className="size-[18px]" aria-hidden="true" />
         Cerrar sesión
