@@ -24,7 +24,7 @@
  *
  * ── Cuentas de demostración ───────────────────────────────────────────────
  *
- *   código `482913`            → verificado
+ *   código `123456`            → verificado
  *   código `000000`            → error de red (para ver el estado)
  *   cualquier otro             → código incorrecto, descuenta un intento
  *   caduca@puntocash.com       → el reto nace con 20 s de vigencia
@@ -52,7 +52,7 @@ const MAX_SENDS = 3;
 const LATENCY_MS = 700;
 
 /** Código que el mock acepta. Solo existe en este archivo. */
-const DEMO_CODE = "482913";
+const DEMO_CODE = "123456";
 
 /** Código que fuerza un fallo de transporte. */
 const NETWORK_FAILURE_CODE = "000000";

@@ -207,6 +207,10 @@ test.describe("operation detail — layout", () => {
     test(`fits without page-level horizontal scroll at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`/worker/operaciones/${EXCHANGE_CODE}`);
+      // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+      // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+      // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+      await page.getByRole("main").waitFor();
 
       const overflows = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

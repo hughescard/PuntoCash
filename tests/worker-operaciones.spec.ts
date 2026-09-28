@@ -11,6 +11,10 @@ import { test, expect } from "@playwright/test";
 test.describe("worker operaciones — render and shell", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/operaciones");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   test("renders the page header with no primary action", async ({ page }) => {
@@ -58,6 +62,10 @@ test.describe("worker operaciones — render and shell", () => {
 test.describe("worker operaciones — Importe formatting", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/operaciones");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   test("shows dual-currency Cambio de moneda rows with an arrow and both flags", async ({
@@ -134,6 +142,10 @@ test.describe("worker operaciones — status", () => {
 test.describe("worker operaciones — filters", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/operaciones");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   test("searches by código, cliente and documento, case- and accent-insensitively", async ({
@@ -236,6 +248,10 @@ test.describe("worker operaciones — filters", () => {
 test.describe("worker operaciones — custom date range", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/operaciones");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   test("Fecha offers Personalizado alongside the four existing options", async ({ page }) => {
@@ -353,6 +369,10 @@ test.describe("worker operaciones — custom date range", () => {
 test.describe("worker operaciones — pagination", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/operaciones");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   test('shows "Mostrando 1–20 de 128 operaciones" and the numbered page window', async ({
@@ -425,6 +445,9 @@ test.describe("worker operaciones — layout", () => {
     test(`fits without page-level horizontal scroll at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/worker/operaciones");
+      // El shell de `/worker` solo existe tras la hidratación (ver `tests/README.md`):
+      // medir antes mide una página vacía, y la aserción pasaría en falso.
+      await page.getByRole("main").waitFor();
 
       const overflows = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

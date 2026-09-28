@@ -11,7 +11,7 @@ import { buildVerificationCodeEmail } from "@/features/auth/emails/verification-
 
 const { subject, html, text } = buildVerificationCodeEmail({
   workerName: "Juan Pérez",
-  code: "482913",
+  code: "123456",
   expiresInMinutes: 5,
   requestedAt: new Date(),
   timeZone: "America/Havana",

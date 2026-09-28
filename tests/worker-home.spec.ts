@@ -211,6 +211,10 @@ test.describe("shell scroll containment", () => {
   test("only the main area scrolls, and the wheel drives it", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/worker/inicio");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
 
     const before = await page.evaluate(() => {
       const main = document.querySelector("main")!;
@@ -247,6 +251,9 @@ test.describe("worker home layout", () => {
     test(`fits without horizontal scroll at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/worker/inicio");
+      // El shell de `/worker` solo existe tras la hidratación (ver `tests/README.md`):
+      // medir antes mide una página vacía, y la aserción pasaría en falso.
+      await page.getByRole("main").waitFor();
 
       const overflows = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -271,9 +278,9 @@ test("a verified access lands on the worker home", async ({ page }) => {
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
 
   // Credentials alone do not open a session: the second factor is obligatory
-  // for every sign-in [R13]. `482913` is the mock's accepted code.
+  // for every sign-in [R13]. `123456` is the mock's accepted code.
   await expect(page).toHaveURL(/\/worker\/verificacion$/);
-  await page.getByLabel("Código de verificación").fill("482913");
+  await page.getByLabel("Código de verificación").fill("123456");
 
   // The sixth digit submits on its own; the button is the manual equivalent.
   await expect(page).toHaveURL(/\/worker\/inicio$/);

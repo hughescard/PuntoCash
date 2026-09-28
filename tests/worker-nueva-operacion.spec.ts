@@ -143,6 +143,10 @@ test.describe("nueva operación search", () => {
 test.describe("nueva operación routing", () => {
   test("every service card resolves inside the shell", async ({ page }) => {
     await page.goto("/worker/nueva-operacion");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
     const services = await renderedServices(page);
     expect(services).toHaveLength(13);
 
@@ -201,6 +205,10 @@ test.describe("nueva operación layout", () => {
     test(`fits without horizontal scroll at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/worker/nueva-operacion");
+      // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+      // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+      // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+      await page.getByRole("main").waitFor();
 
       const layout = await page.evaluate(() => {
         const main = document.querySelector("main")!;

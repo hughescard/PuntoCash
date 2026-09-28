@@ -27,6 +27,10 @@ async function readDisponibleDespues(page: Page): Promise<string | undefined> {
 test.describe("worker caja — render and shell", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/caja");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   test("renders the page header and marks Caja as the active nav item", async ({ page }) => {
@@ -50,6 +54,10 @@ test.describe("worker caja — render and shell", () => {
 test.describe("worker caja — balances", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/caja");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   test("shows CUP, USD, EUR and GBP with SVG flags and canonical amounts", async ({ page }) => {
@@ -114,6 +122,10 @@ test.describe("worker caja — metrics and alerts", () => {
 test.describe("worker caja — movements", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/caja");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   test("renders the ledger with pagination", async ({ page }) => {
@@ -202,6 +214,10 @@ test.describe("worker caja — movements", () => {
 test.describe("worker caja — historical cash-balance consistency", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/caja");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   /**
@@ -261,6 +277,9 @@ test.describe("worker caja — historical cash-balance consistency", () => {
 
     for (let i = 0; i < sampleSize; i++) {
       const row = salidaRows.nth(i);
+      // Cada iteración vuelve a /worker/caja, así que la tabla se rehace:
+      // `allTextContents()` no espera y leería un array vacío.
+      await row.waitFor();
       const cells = await row.locator("td").allTextContents();
       const code = cells[1]?.trim();
       const ledgerCurrency = cells[4]?.trim();
@@ -321,6 +340,10 @@ test.describe("worker caja — historical cash-balance consistency", () => {
 test.describe("worker caja — actions", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/caja");
+    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
+    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
+    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
+    await page.getByRole("main").waitFor();
   });
 
   test("Imprimir resumen is enabled and triggers print", async ({ page }) => {
@@ -375,6 +398,9 @@ test.describe("worker caja — layout", () => {
     test(`fits without page-level horizontal scroll at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/worker/caja");
+      // El shell de `/worker` solo existe tras la hidratación (ver `tests/README.md`):
+      // medir antes mide una página vacía, y la aserción pasaría en falso.
+      await page.getByRole("main").waitFor();
 
       const overflows = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

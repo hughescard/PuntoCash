@@ -28,6 +28,13 @@ export const useRegisterDevice = registerLink.useDevice;
 export const ensureRegisterPairingChallenge = registerLink.ensurePairingChallenge;
 export const unlinkRegisterDevice = registerLink.unlink;
 export const currentRegisterDevice = registerLink.current;
+/**
+ * Reescribe la cookie espejo desde el estado actual. La llama el cliente al
+ * montar, para que un navegador ya vinculado antes de que el espejo existiera
+ * —o uno al que le limpiaron las cookies— converja en lugar de rebotar entre
+ * la pantalla de vinculación y la aplicación.
+ */
+export const syncRegisterDeviceCookie = registerLink.syncCookie;
 
 export function registerPairingQrPayload(state: UnlinkedDevice): string {
   return registerLink.pairingQrPayload(state);

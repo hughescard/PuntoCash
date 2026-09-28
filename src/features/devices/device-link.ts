@@ -1,6 +1,11 @@
 import * as React from "react";
 
 import { findBranchById } from "@/features/branches/branches";
+import {
+  DEVICE_COOKIE_MAX_AGE_SECONDS,
+  DEVICE_COOKIE_NAMES,
+  serializeDeviceCookie,
+} from "./device-cookie";
 
 /**
  * FRONTEND-ONLY MOCK of a DEVICE SESSION — shared by every PuntoCash terminal
@@ -119,6 +124,43 @@ export interface DeviceLink {
   link(input: LinkInput, now?: Date): LinkResult;
   /** What the admin panel does to unlink the terminal. */
   unlink(now?: Date): void;
+  /**
+   * Re-writes the cookie mirror from the current `localStorage` state. The
+   * client calls this once on mount so a browser that was already linked
+   * before the mirror existed — or one whose cookie was cleared while its
+   * `localStorage` survived — converges instead of bouncing between the
+   * pairing screen and the application.
+   */
+  syncCookie(): void;
+}
+
+/**
+ * Mirrors the link into a cookie so the SERVER can read it (`device-cookie.ts`
+ * explains why). Called on every write, so the two never drift: `localStorage`
+ * stays the source of truth the terminal reacts to, the cookie is what the
+ * layout reads before rendering.
+ *
+ * An unlinked device clears the cookie rather than storing its unlinked state:
+ * the server only has one question to answer, and the pairing screen's live
+ * parts — the countdown, the QR — are the client's business anyway.
+ */
+function mirrorToCookie(kind: DeviceKind, state: DeviceState | null): void {
+  const name = DEVICE_COOKIE_NAMES[kind];
+  try {
+    if (state?.status === "linked") {
+      const value = serializeDeviceCookie({
+        deviceId: state.deviceId,
+        branchId: state.branchId,
+        ...(state.registerId === undefined ? {} : { registerId: state.registerId }),
+      });
+      document.cookie = `${name}=${value}; path=/; max-age=${DEVICE_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+    } else {
+      document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+    }
+  } catch {
+    /* Sin cookies (modo privado, sitio bloqueado) el terminal sigue
+       funcionando: el cliente reconcilia con `localStorage` al hidratar. */
+  }
 }
 
 /** One device-session store per kind of terminal. */
@@ -143,6 +185,7 @@ export function createDeviceLink(kind: DeviceKind): DeviceLink {
     } catch {
       // The memory copy is still valid for this tab.
     }
+    mirrorToCookie(kind, state);
     for (const listener of listeners) listener();
   }
 
@@ -242,6 +285,10 @@ export function createDeviceLink(kind: DeviceKind): DeviceLink {
         pairing: newPairing(now),
         unlinkedFrom: { branchId: current.branchId, registerId: current.registerId, at: now.toISOString() },
       });
+    },
+
+    syncCookie() {
+      mirrorToCookie(kind, getSnapshot());
     },
   };
 }

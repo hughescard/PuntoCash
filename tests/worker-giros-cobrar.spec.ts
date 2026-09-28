@@ -485,6 +485,9 @@ test.describe("Cobrar giro — external failures", () => {
     // baseline first; `confirmPayout` starts with a hard navigation of its
     // own, which resets the client-side module state anyway.
     await page.goto("/worker/operaciones");
+    // El shell de `/worker` solo existe tras la hidratación (ver `tests/README.md`):
+    // medir antes mide una página vacía, y la aserción pasaría en falso.
+    await page.getByRole("main").waitFor();
     const giroRows = page.locator("tbody tr").filter({ hasText: "Giros" });
     const before = await giroRows.count();
     expect(before).toBeGreaterThan(0);

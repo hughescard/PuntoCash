@@ -58,6 +58,9 @@ test.describe("Remesas", () => {
     for (const width of [1440, 1280]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/worker/nueva-operacion/remesas");
+      // El shell de `/worker` solo existe tras la hidratación (ver `tests/README.md`):
+      // medir antes mide una página vacía, y la aserción pasaría en falso.
+      await page.getByRole("main").waitFor();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
   });
