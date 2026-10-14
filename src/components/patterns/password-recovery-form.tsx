@@ -214,7 +214,7 @@ export function PasswordRecoveryForm({
           verificado, y en el desenlace el botón principal ya lleva al mismo
           sitio: en los dos casos este enlace sobra. */}
       {paso !== "contrasena" && paso !== "listo" ? (
-        <Button variant="ghost" size="sm" asChild className="self-center font-medium">
+        <Button variant="tertiary" size="sm" asChild className="self-center font-medium">
           <Link href={copy.loginHref}>
             <ArrowLeft aria-hidden="true" />
             Volver a iniciar sesión
@@ -285,7 +285,7 @@ function PasoIdentificador({
           autoFocus
           disabled={enVuelo}
           invalid={Boolean(error)}
-          leading={<User aria-hidden="true" />}
+          prefix={<User aria-hidden="true" />}
         />
       </Field>
 
@@ -490,7 +490,7 @@ function PasoCodigo({
 
       <Button
         type="button"
-        variant="ghost"
+        variant="tertiary"
         size="sm"
         block
         onClick={() => void reenviar()}
