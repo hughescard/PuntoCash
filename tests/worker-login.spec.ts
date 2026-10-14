@@ -1,16 +1,27 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { esperarBotonVivo } from "./worker-helpers";
+
 /**
  * Worker login — state and accessibility coverage.
  *
  * Outcomes are driven by the frontend mock in `src/features/auth/mock-auth.ts`,
  * which selects a result from the identifier. When a real backend replaces it,
  * these tests should be pointed at seeded accounts rather than rewritten.
+ *
+ * El botón de «Iniciar sesión» está **deshabilitado hasta que el formulario
+ * hidrata** —sin eso, pulsarlo antes de tiempo haría un GET con la contraseña
+ * en la barra de direcciones—, así que toda prueba que lo pulse espera antes a
+ * que se habilite. Sin esa espera, un `chunk` que se pierde en una recompilación
+ * del servidor de desarrollo agota los sesenta segundos y el fallo dice
+ * «esperando getByRole('button')», que señala al localizador y no a la causa.
+ * Ya ocurrió una vez, en una corrida de 3,6 minutos con las otras 556 en verde.
  */
 
 const VALID_PASSWORD = "puntocash";
 
 async function signIn(page: Page, identifier: string, password: string) {
+  await esperarBotonVivo(page, "Iniciar sesión", "el inicio de sesión de Worker");
   await page.getByLabel("Usuario o correo electrónico").fill(identifier);
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
@@ -41,12 +52,24 @@ test("the default state carries no credentials", async ({ page }) => {
   );
 });
 
-test("the recovery link reaches a real screen that returns to login", async ({ page }) => {
+test("the recovery link reaches the real flow and returns to login", async ({ page }) => {
   await page.getByRole("link", { name: "¿Olvidaste tu contraseña?" }).click();
 
   await expect(page).toHaveURL(/\/worker\/recuperar-acceso$/);
-  await expect(page.getByRole("heading", { name: "Recuperación de acceso" })).toBeVisible();
-  await expect(page.getByText("En construcción")).toBeVisible();
+
+  /* Hasta la v1.7 esto era un marcador que decía «En construcción» y mandaba
+     a pedírselo al administrador. Ahora es el trámite de tres pasos de §2.13,
+     y lo que se afirma aquí es el primero: pide un identificador y nada más,
+     porque la contraseña no se toca hasta haber verificado el código. */
+  await expect(page.getByRole("heading", { name: "¿Olvidaste tu contraseña?" })).toBeVisible();
+  await expect(page.getByLabel("Usuario o correo electrónico")).toBeVisible();
+
+  // Habilitado **es** hidratado: el botón no vive hasta que React se engancha.
+  await expect(page.getByRole("button", { name: "Enviarme un código" })).toBeEnabled();
+
+  /* **FR-REC-3**: se dice **antes** de enviar nada a quién pedir ayuda si el
+     correo registrado ya no sirve — en Worker, a su administrador de sede. */
+  await expect(page.getByText(/administrador de sede/)).toBeVisible();
 
   await page.getByRole("link", { name: /Volver a iniciar sesión/ }).click();
   await expect(page).toHaveURL(/\/worker\/login$/);
@@ -63,6 +86,7 @@ test("labels resolve to their controls with the right autocomplete", async ({ pa
 });
 
 test("empty submit reports both fields and marks them invalid", async ({ page }) => {
+  await esperarBotonVivo(page, "Iniciar sesión", "el inicio de sesión de Worker");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
 
   await expect(page.getByText("Introduce tu usuario o correo electrónico.")).toBeVisible();

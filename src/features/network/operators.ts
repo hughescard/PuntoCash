@@ -51,9 +51,26 @@ export interface AdminUser {
   fullName: string;
   /** Canal del segundo factor: sin correo no podría acceder nunca [R13]. */
   email: string;
+  phone: string;
   status: AdminUserStatus;
-  /** El que entregó PuntoCash al dar de alta al operador (FR-SA-OPE-5). */
+  /**
+   * El que entregó PuntoCash al dar de alta al operador (FR-SA-OPE-5).
+   *
+   * Es un **hecho histórico**, no un papel: dice qué cuenta creó PuntoCash y
+   * no cambia nunca. Quien manda hoy sobre los usuarios es `isPrincipal`, que
+   * nace igual a este y **se puede traspasar**.
+   */
   isInitial: boolean;
+  /**
+   * **El administrador principal del mercante** (**FR-AD-USR-11**).
+   *
+   * Es el único que entra en §8: da de alta, edita, desactiva y reactiva
+   * usuarios. Los demás administradores pueden todo lo demás de la consola y
+   * **nada** de esto. Hay **exactamente uno activo** por operador en todo
+   * momento: nace con el que entregó PuntoCash y solo cambia de manos cuando
+   * él lo traspasa.
+   */
+  isPrincipal: boolean;
   createdAt: string;
   lastAccessAt?: string;
 }
@@ -97,6 +114,34 @@ const mutableOperators: Operator[] = [
     },
   },
   {
+    /* Activo y **sin ninguna sede asignada**: PuntoCash ya dio de alta al
+       mercante y le entregó su usuario inicial, pero todavía no le ha
+       asignado nada. Es el estado que exigen FR-AD-ACC-7 y FR-AD-HOME-8 —
+       la sesión se abre y el Inicio lo explica— y sin él no habría forma de
+       recorrerlo en la demostración. */
+    id: "op-cienfuegos",
+    name: "Cienfuegos Cambio S.R.L.",
+    legalId: "CI-9312076610",
+    contactName: "Liudmila Pérez",
+    phone: "+53 5 677 4412",
+    email: "lperez@cienfuegoscambio.cu",
+    status: "activo",
+    createdAt: "2026-09-18T09:00:00.000Z",
+  },
+  {
+    /* **Una sola sede.** Es el mercante que hace recorrible FR-AD-SCOPE-3
+       (**FR-AD-DOM-9**): su cabecera no muestra selector, sino el código y el
+       nombre de su única sede como texto fijo. */
+    id: "op-centro",
+    name: "Centro Divisas S.R.L.",
+    legalId: "CI-8604092117",
+    contactName: "Idalmis Betancourt",
+    phone: "+53 5 304 6618",
+    email: "ibetancourt@centrodivisas.cu",
+    status: "activo",
+    createdAt: "2026-03-12T09:00:00.000Z",
+  },
+  {
     /* Dado de baja y sin sedes: su historial sigue accesible [R9]. */
     id: "op-atlantico",
     name: "Atlántico Casas de Cambio",
@@ -118,8 +163,10 @@ const mutableAdminUsers: AdminUser[] = [
     identifier: "marta@antillasf.cu",
     fullName: "Marta Sánchez",
     email: "marta@antillasf.cu",
+    phone: "+53 5 234 1190",
     status: "activo",
     isInitial: true,
+    isPrincipal: true,
     createdAt: "2026-01-15T09:00:00.000Z",
     lastAccessAt: "2026-09-23T08:12:00.000Z",
   },
@@ -130,8 +177,10 @@ const mutableAdminUsers: AdminUser[] = [
     identifier: "dcastro@antillasf.cu",
     fullName: "Daniel Castro",
     email: "dcastro@antillasf.cu",
+    phone: "+53 5 234 1204",
     status: "activo",
     isInitial: false,
+    isPrincipal: false,
     createdAt: "2026-04-11T10:30:00.000Z",
     lastAccessAt: "2026-09-22T17:40:00.000Z",
   },
@@ -141,10 +190,41 @@ const mutableAdminUsers: AdminUser[] = [
     identifier: "rortega@caribecambios.cu",
     fullName: "Reinaldo Ortega",
     email: "rortega@caribecambios.cu",
+    phone: "+53 5 611 7788",
     status: "activo",
     isInitial: true,
+    isPrincipal: true,
     createdAt: "2026-02-02T09:00:00.000Z",
     lastAccessAt: "2026-09-23T07:55:00.000Z",
+  },
+  {
+    /* El usuario de un mercante con **una sola sede**: su cabecera muestra el
+       código y el nombre fijos, no un selector (**FR-AD-SCOPE-3**). */
+    id: "adm-centro-1",
+    operatorId: "op-centro",
+    identifier: "ibetancourt@centrodivisas.cu",
+    fullName: "Idalmis Betancourt",
+    email: "ibetancourt@centrodivisas.cu",
+    phone: "+53 5 442 3310",
+    status: "activo",
+    isInitial: true,
+    isPrincipal: true,
+    createdAt: "2026-03-12T09:00:00.000Z",
+    lastAccessAt: "2026-09-29T08:20:00.000Z",
+  },
+  {
+    /* El usuario inicial de un mercante que todavía no administra ninguna
+       sede. Entra con normalidad; lo que ve es un Inicio vacío explicado. */
+    id: "adm-cienfuegos-1",
+    operatorId: "op-cienfuegos",
+    identifier: "lperez@cienfuegoscambio.cu",
+    fullName: "Liudmila Pérez",
+    email: "lperez@cienfuegoscambio.cu",
+    phone: "+53 5 330 9025",
+    status: "activo",
+    isInitial: true,
+    isPrincipal: true,
+    createdAt: "2026-09-18T09:00:00.000Z",
   },
   {
     id: "adm-oriente-1",
@@ -152,8 +232,10 @@ const mutableAdminUsers: AdminUser[] = [
     identifier: "yperez@orientedivisas.cu",
     fullName: "Yuliet Pérez",
     email: "yperez@orientedivisas.cu",
+    phone: "+53 5 228 4471",
     status: "activo",
     isInitial: true,
+    isPrincipal: true,
     createdAt: "2026-05-04T09:00:00.000Z",
     lastAccessAt: "2026-09-19T11:02:00.000Z",
   },
@@ -183,6 +265,16 @@ export function activeAdminUsersOf(operatorId: string): readonly AdminUser[] {
  * Si el operador está suspendido o dado de baja, ninguno de sus usuarios
  * entra, aunque su propia cuenta esté activa (regla A14, FR-AD-ACC-6).
  */
+/** El administrador principal del operador, o `null` si no lo hubiera. */
+export function administradorPrincipalDe(operatorId: string): AdminUser | null {
+  return mutableAdminUsers.find((u) => u.operatorId === operatorId && u.isPrincipal) ?? null;
+}
+
+/** Si este usuario es el principal de su empresa (**FR-AD-USR-11**). */
+export function esAdministradorPrincipal(userId: string): boolean {
+  return findAdminUserById(userId)?.isPrincipal === true;
+}
+
 export function adminUserPuedeAcceder(user: AdminUser): boolean {
   if (user.status !== "activo") return false;
   const operator = findOperatorById(user.operatorId);
@@ -204,8 +296,23 @@ export type OperatorWriteDenial =
   | "dado-de-baja"
   | "tiene-sedes"
   | "usuario-no-encontrado"
+  /* FR-AD-USR-7 y FR-AD-USR-8 son dos reglas distintas con dos mensajes
+     distintos, así que no pueden compartir motivo: devolver el del último
+     activo a quien solo intentó desactivarse a sí mismo le daría una razón
+     falsa («nadie de tu empresa podría entrar») habiendo otros activos. */
+  | "es-uno-mismo"
   | "ultimo-usuario-activo"
-  | "no-es-el-inicial";
+  | "no-es-el-inicial"
+  | "correo-invalido"
+  /* **FR-AD-USR-11**: §8 entera pertenece al administrador principal. */
+  | "no-es-el-principal"
+  /* Al principal no lo desactiva nadie: es lo que garantiza que la empresa
+     nunca se quede sin quien administre sus usuarios. */
+  | "es-el-principal"
+  /* Traspasar el papel exige un destino **activo**: dárselo a alguien
+     desactivado dejaría a la empresa sin nadie que pueda administrar
+     usuarios, que es justo lo que el papel existe para impedir. */
+  | "destino-no-activo";
 
 export type OperatorWriteResult<T> = { ok: true; value: T } | { ok: false; reason: OperatorWriteDenial };
 
@@ -222,7 +329,7 @@ export interface CrearOperadorInput {
   phone: string;
   email: string;
   /** El usuario administrador inicial, que se entrega a la empresa. */
-  initialUser: { id: string; identifier: string; fullName: string; email: string };
+  initialUser: { id: string; identifier: string; fullName: string; email: string; phone: string };
 }
 
 /**
@@ -254,8 +361,10 @@ export function crearOperador(
     identifier: input.initialUser.identifier,
     fullName: input.initialUser.fullName,
     email: input.initialUser.email,
+    phone: input.initialUser.phone,
     status: "activo",
     isInitial: true,
+    isPrincipal: true,
     createdAt: now.toISOString(),
   };
   mutableOperators.push(operator);
@@ -354,15 +463,18 @@ export interface CrearUsuarioAdminInput {
   identifier: string;
   fullName: string;
   email: string;
+  phone: string;
 }
 
 export function crearUsuarioAdmin(
   scope: Scope,
+  actingUserId: string,
   input: CrearUsuarioAdminInput,
   now = new Date(),
 ): OperatorWriteResult<AdminUser> {
   const operatorScope = requireOperatorScope(scope);
   if (!operatorScope.ok) return { ok: false, reason: "alcance-insuficiente" };
+  if (!esAdministradorPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
   const operator = findOperatorById(operatorScope.value);
   if (!operator) return { ok: false, reason: "operador-no-encontrado" };
   if (identifierTaken(input.identifier)) return { ok: false, reason: "identificador-duplicado" };
@@ -373,8 +485,10 @@ export function crearUsuarioAdmin(
     identifier: input.identifier,
     fullName: input.fullName,
     email: input.email,
+    phone: input.phone,
     status: "activo",
     isInitial: false,
+    isPrincipal: false,
     createdAt: now.toISOString(),
   };
   mutableAdminUsers.push(user);
@@ -382,11 +496,18 @@ export function crearUsuarioAdmin(
 }
 
 /**
- * Desactiva otro usuario de la misma empresa. Dos guardas:
+ * Desactiva otro usuario de la misma empresa. Dos guardas, y las dos son
+ * consecuencia de **FR-AD-USR-11**:
  *
- *   · nadie se desactiva a sí mismo (FR-AD-USR-7);
- *   · no se desactiva al último activo, porque dejaría al mercante fuera de su
- *     propia consola sin poder volver a entrar (FR-AD-USR-8).
+ *   · solo el **administrador principal** desactiva a nadie;
+ *   · **al principal no lo desactiva nadie**, él incluido —que es a la vez la
+ *     regla de «nadie se desactiva a sí mismo», porque el principal es el
+ *     único que puede intentarlo—.
+ *
+ * De las dos se sigue que **nunca se llega a cero administradores activos**:
+ * siempre queda el principal. Eso vuelve innecesaria la guarda del «último
+ * activo» que existía antes, y tampoco hay carrera que proteger, porque hay un
+ * solo actor posible.
  */
 export function desactivarUsuarioAdmin(
   scope: Scope,
@@ -395,24 +516,153 @@ export function desactivarUsuarioAdmin(
 ): OperatorWriteResult<AdminUser> {
   const operatorScope = requireOperatorScope(scope);
   if (!operatorScope.ok) return { ok: false, reason: "alcance-insuficiente" };
+  if (!esAdministradorPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
 
   const user = findAdminUserById(userId);
   if (!user || user.operatorId !== operatorScope.value) return { ok: false, reason: "usuario-no-encontrado" };
-  if (user.id === actingUserId) return { ok: false, reason: "ultimo-usuario-activo" };
+  if (user.isPrincipal) return { ok: false, reason: "es-el-principal" };
   if (user.status !== "activo") return { ok: true, value: user };
-  if (activeAdminUsersOf(user.operatorId).length <= 1) return { ok: false, reason: "ultimo-usuario-activo" };
 
   user.status = "desactivado";
   return { ok: true, value: user };
 }
 
-export function reactivarUsuarioAdmin(scope: Scope, userId: string): OperatorWriteResult<AdminUser> {
+export function reactivarUsuarioAdmin(
+  scope: Scope,
+  actingUserId: string,
+  userId: string,
+): OperatorWriteResult<AdminUser> {
   const operatorScope = requireOperatorScope(scope);
   if (!operatorScope.ok) return { ok: false, reason: "alcance-insuficiente" };
+  if (!esAdministradorPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
 
   const user = findAdminUserById(userId);
   if (!user || user.operatorId !== operatorScope.value) return { ok: false, reason: "usuario-no-encontrado" };
 
   user.status = "activo";
   return { ok: true, value: user };
+}
+
+/**
+ * **Traspasar el papel de administrador principal** — **FR-AD-USR-12**.
+ *
+ * Existe porque la alternativa es peor: atar el papel para siempre a la cuenta
+ * que creó PuntoCash convierte cualquier relevo —incluso uno planificado, con
+ * su preaviso y su entrega— en un ticket con PuntoCash.
+ *
+ * **Es inmediato y en un solo acto**: al terminar, quien lo traspasó **deja de
+ * ver §8**. No hay estado intermedio con dos principales, ni con ninguno.
+ */
+export function transferirAdministradorPrincipal(
+  scope: Scope,
+  actingUserId: string,
+  destinoId: string,
+): OperatorWriteResult<{ anterior: AdminUser; nuevo: AdminUser }> {
+  const operatorScope = requireOperatorScope(scope);
+  if (!operatorScope.ok) return { ok: false, reason: "alcance-insuficiente" };
+
+  const actor = findAdminUserById(actingUserId);
+  if (!actor || !actor.isPrincipal) return { ok: false, reason: "no-es-el-principal" };
+
+  const destino = findAdminUserById(destinoId);
+  if (!destino || destino.operatorId !== operatorScope.value) {
+    return { ok: false, reason: "usuario-no-encontrado" };
+  }
+  if (destino.id === actor.id) return { ok: false, reason: "es-uno-mismo" };
+  if (destino.status !== "activo") return { ok: false, reason: "destino-no-activo" };
+
+  actor.isPrincipal = false;
+  destino.isPrincipal = true;
+  return { ok: true, value: { anterior: actor, nuevo: destino } };
+}
+
+/* -------------------------------------------------------------------------
+ * Más escrituras del mercante sobre sus propios usuarios — FR-AD-USR-6
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Editar los datos de un usuario administrador.
+ *
+ * Cambian **nombre y teléfono**. **No el identificador**, que es con lo que
+ * inicia sesión —cambiarlo en caliente deja fuera a alguien que está
+ * trabajando—, ni el **correo**, que no es un dato de contacto sino el canal
+ * del segundo factor **[R13]** y tiene su propia escritura. Es la misma
+ * división que en trabajadores (**FR-AD-TRAB-9**), y por los mismos motivos.
+ *
+ * **Sí se puede editar a uno mismo**: corregir tu propio nombre o tu teléfono
+ * no te deja fuera de nada. La guarda de **FR-AD-USR-7** protege la
+ * desactivación, que es irreversible desde el lado de quien la sufre, no la
+ * edición.
+ */
+export interface EditarUsuarioAdminInput {
+  fullName: string;
+  phone: string;
+}
+
+export function editarUsuarioAdmin(
+  scope: Scope,
+  actingUserId: string,
+  userId: string,
+  input: EditarUsuarioAdminInput,
+): OperatorWriteResult<AdminUser> {
+  const operatorScope = requireOperatorScope(scope);
+  if (!operatorScope.ok) return { ok: false, reason: "alcance-insuficiente" };
+  if (!esAdministradorPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
+
+  const user = findAdminUserById(userId);
+  if (!user || user.operatorId !== operatorScope.value) {
+    return { ok: false, reason: "usuario-no-encontrado" };
+  }
+
+  user.fullName = input.fullName.trim();
+  user.phone = input.phone.trim();
+  return { ok: true, value: user };
+}
+
+/**
+ * Cambiar el correo de verificación de un usuario administrador.
+ *
+ * Aparte de la edición a propósito: de este correo depende que esa persona
+ * pueda entrar **[R13]**, y también que pueda recuperar su contraseña, porque
+ * el código de recuperación va al mismo sitio.
+ */
+export function cambiarCorreoUsuarioAdmin(
+  scope: Scope,
+  actingUserId: string,
+  userId: string,
+  email: string,
+): OperatorWriteResult<{ user: AdminUser; anterior: string }> {
+  const operatorScope = requireOperatorScope(scope);
+  if (!operatorScope.ok) return { ok: false, reason: "alcance-insuficiente" };
+  if (!esAdministradorPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
+
+  const user = findAdminUserById(userId);
+  if (!user || user.operatorId !== operatorScope.value) {
+    return { ok: false, reason: "usuario-no-encontrado" };
+  }
+
+  const valor = email.trim();
+  if (valor.length <= 3 || !valor.includes("@") || valor.includes(" ")) {
+    return { ok: false, reason: "correo-invalido" };
+  }
+
+  const anterior = user.email;
+  user.email = valor;
+  return { ok: true, value: { user, anterior } };
+}
+
+/**
+ * Deja constancia de que este usuario acaba de entrar — **FR-AD-USR-1**.
+ *
+ * Lo llama el **segundo paso** del acceso, no el primero: la sesión no existe
+ * hasta que el código se verifica **[R13]**, así que anotar el acceso al
+ * acertar la contraseña contaría como entrada algo que puede no haber
+ * terminado nunca.
+ *
+ * No devuelve nada ni falla: es un apunte, y que no se pueda escribir jamás
+ * debe impedir que alguien entre.
+ */
+export function registrarAccesoUsuarioAdmin(userId: string, now = new Date()): void {
+  const user = findAdminUserById(userId);
+  if (user) user.lastAccessAt = now.toISOString();
 }

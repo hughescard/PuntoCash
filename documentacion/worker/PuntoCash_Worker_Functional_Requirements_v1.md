@@ -1,8 +1,12 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos Funcionales (FRD) · v1.5
+## Documento de Requisitos Funcionales (FRD) · v1.8
 
 **Estado:** Línea base de entrega — especifica el comportamiento funcional de la aplicación Worker tal como está implementada actualmente.
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y de referencia para aceptación.
+**Control de cambios — v1.8 (13/10/2026).** **Se dice qué es una «cuenta bloqueada», que estaba sin decir.** El desenlace existía en **FR-AUTH-3** y en el contrato del backend desde la línea base, pero ningún requisito decía **cuándo** se entra en él, y el FRD de Admin lo daba por especificado aquí. Nuevo **FR-AUTH-9**: significa **trabajador desactivado**, lo desactiva su administrador de sede y lo resuelve reactivándolo; **no hay bloqueo por contraseñas ni por códigos fallados**, y se explica por qué no debe haberlo. §16 deja de remitir a una capacidad sin nombre y nombra **FR-AD-TRAB-15**. Esto acompaña a la v4.13 del FRD de Admin, que por la misma razón retira de su asistencia de acceso el «liberar el bloqueo del reto»: un reto agotado no bloquea nada.
+
+**Control de cambios — v1.7 (13/10/2026).** **La recuperación de contraseña deja de ser un marcador.** El enlace «¿Olvidaste tu contraseña?» existía desde la línea base y llevaba a una pantalla que decía «pídeselo a tu administrador»; §16 listaba la recuperación entre lo no especificado. Nuevo **§2.13** con **FR-REC-1 a FR-REC-12**: tres pasos —identificador, código y contraseña nueva—, con dos decisiones que no son obvias y que el backend debe respetar: **no se dice a dónde fue el código**, ni enmascarado, porque a esta pantalla se llega sin probar nada (a diferencia de **FR-2FA-5**), y **la respuesta es idéntica exista la cuenta o no**. Al terminar **no se abre sesión** **[R13]**. **FR-AUTH-6** se reescribe, el inventario de rutas marca la ruta como implementada, §16 retira «la recuperación de acceso» y §2.12 añade sus cuentas de demostración. Se corrige además el encabezado, que seguía diciendo v1.5 desde la v1.6.
+
 **Control de cambios — v1.6 (28/09/2026).** **La decisión de vinculación pasa al servidor.** El gate era un componente de cliente que envolvía toda la aplicación, y eso tenía tres consecuencias que nadie había visto: una ruta inexistente de `/worker` respondía **200 en lugar de 404** —porque `notFound()` nunca llegaba a ejecutarse en el servidor—, la aplicación perdía su primer pintado, y un equipo ya vinculado pasaba por un fotograma en blanco. El vínculo pasa a **espejarse en una cookie** que el layout de `/worker` lee en el servidor para decidir qué renderizar. Nuevo **FR-DEV-1.1**; FR-DEV-1 no cambia. Lo destapó la prueba «an unknown service slug is a 404».
 
 
@@ -38,7 +42,7 @@
 | --- | --- | --- |
 | `/worker/login` | Inicio de sesión (paso 1: credenciales) | Implementada |
 | `/worker/verificacion` | Verificación en dos pasos (paso 2: código) | Implementada |
-| `/worker/recuperar-acceso` | Recuperación de acceso | Solo marcador de posición |
+| `/worker/recuperar-acceso` | Recuperación de contraseña | Implementada |
 | `/worker/inicio` | Inicio operativo | Implementada |
 | `/worker/nueva-operacion` | Catálogo de servicios | Implementada |
 | `/worker/nueva-operacion/cambio-moneda` | Cambio de moneda | Implementada |
@@ -139,18 +143,20 @@ Acordadas con el equipo. Se enuncian porque el resto de esta sección es su cons
 | Credenciales correctas | **No abre sesión** [R13]: se emite un código al correo del trabajador, se confirma el envío, el formulario queda bloqueado contra un segundo envío y se navega a `/worker/verificacion`. La confirmación dice lo que ocurrió — credenciales verificadas y código enviado — nunca "sesión iniciada" |
 | Credenciales inválidas | Error a nivel de formulario; el formulario sigue habilitado; el foco vuelve al identificador |
 | Credenciales correctas de un trabajador de **otra sede** | Error a nivel de formulario, "Esta caja no es de tu sede" (FR-AUTH-8); **no se emite código**; el formulario sigue habilitado; el foco vuelve al identificador |
-| Cuenta bloqueada | Error a nivel de formulario; **el formulario queda bloqueado** — reintentar no puede resolverlo |
+| Cuenta bloqueada — es decir, **trabajador desactivado** (FR-AUTH-9) | Error a nivel de formulario; **el formulario queda bloqueado** — reintentar no puede resolverlo |
 | Error de red | Error a nivel de formulario; el formulario sigue habilitado para reintentar |
 
 **FR-AUTH-4** Durante el envío el formulario se deshabilita, y sigue deshabilitado mientras carga el destino. Un segundo envío no puede producir un segundo reto, porque emitir un código nuevo invalidaría el que acaba de salir (FR-2FA-10).
 
 **FR-AUTH-5** Los mensajes de fallo no llevan acción de reintento incorporada; el propio botón de envío es la única acción primaria.
 
-**FR-AUTH-6** El enlace de recuperación de acceso resuelve a una pantalla marcador de posición que devuelve al inicio de sesión. No hay comportamiento de recuperación implementado.
+**FR-AUTH-6** La pantalla ofrece un enlace «¿Olvidaste tu contraseña?» que resuelve a `/worker/recuperar-acceso`, especificada en **§2.13**.
 
 **FR-AUTH-7** Ninguno de los desenlaces de fallo emite código alguno. Solo unas credenciales correctas abren un reto.
 
 **FR-AUTH-8** Unas credenciales correctas solo abren un reto si el trabajador pertenece a la **sede de la caja** de este equipo (FR-DEV-6). Si pertenece a otra, el resultado es un rechazo con el título "Esta caja no es de tu sede" y el mensaje "Solo pueden iniciar sesión en esta caja los trabajadores de su sede. Usa una caja de tu sede o solicita asistencia al administrador." No se envía código, porque una cuenta de otra sede no tiene nada que verificar en este equipo. El mensaje no nombra la sede de la caja ni la del trabajador (FR-2FA-4).
+
+**FR-AUTH-9** **«Cuenta bloqueada» significa una sola cosa: el trabajador está desactivado**, y lo desactivó su administrador de sede (Admin FRD **FR-AD-TRAB-12**). No existe ningún otro bloqueo de cuenta en el producto —**no se bloquea por contraseñas falladas ni por códigos fallados**— y es deliberado: acertar la contraseña no abre nada sin el segundo factor **[R13]**, así que un bloqueo por acumulación no compraría seguridad y sí dejaría una caja sin operar con público delante. Lo resuelve **FR-AD-TRAB-15**, reactivando al trabajador, y por eso el mensaje remite al administrador de sede. Un **reto** agotado no bloquea nada: muere, y el siguiente inicio de sesión abre otro entero (**FR-2FA-15**).
 
 ### 2.4 El reto de verificación
 
@@ -278,7 +284,39 @@ El reto tal como lo ve el cliente: identificador opaco, correo enmascarado, long
 >
 > Verificación: el código `123456` verifica; `000000` fuerza un error de red; cualquier otro descuenta un intento. El identificador `caduca@puntocash.com` crea un reto con 20 s de vigencia, para poder ver el estado caducado sin esperar cinco minutos.
 >
+> Recuperación (§2.13): el código es el mismo `123456` y `000000` fuerza el mismo error de red. `desconocido@puntocash.com` simula una **cuenta inexistente** —la pantalla es idéntica y ningún código funciona, que es justo lo que **FR-REC-4** exige— y `error@puntocash.com` hace fallar la solicitud. La contraseña fijada **se recuerda en memoria del navegador** y a partir de ahí esa cuenta deja de aceptar `puntocash` y acepta la nueva, para que el recorrido se pueda terminar; una recarga completa lo borra, como todo lo demás de la demostración. En producción rige **FR-REC-10**.
+>
 > El código correcto es fijo en el mock: es un demo de interfaz, no un generador. FR-2FA-23 es requisito del backend. **No se envía ningún correo**: `buildVerificationCodeEmail()` lo construye y nada lo despacha.
+
+### 2.13 Recuperación de contraseña
+
+Es el destino del enlace «¿Olvidaste tu contraseña?» de **FR-AUTH-6**, y **el único sitio del producto donde un trabajador elige su propia contraseña**. La que recibe al darse de alta se la entrega su administrador de sede (Admin FRD **FR-AD-TRAB-8**) y le sirve indefinidamente; esta pantalla es la que la sustituye por una suya.
+
+**FR-REC-1** `/worker/recuperar-acceso` se representa **fuera del shell**, con el mismo armazón que el inicio de sesión y la verificación (FR-SHELL-3). Aquí no hay sesión, así que no aparece ni el nombre del trabajador, ni su caja, ni la sede.
+
+**FR-REC-2** El trámite tiene **tres pasos en una sola pantalla**: identificador, código y contraseña nueva. No son tres rutas: el reto vive mientras dure la pantalla, y **recargarla o abandonarla lo cancela**, igual que el reto de verificación (FR-2FA-13). Cuando eso ocurre se dice y se ofrece empezar de nuevo, en vez de redirigir en silencio.
+
+**FR-REC-3** Paso 1. Se pide un identificador —usuario o correo— y se envía un código al **correo registrado** de esa cuenta. Antes de enviarlo, la pantalla advierte de que el código va a ese correo y de que, si ya no puede entrar en él, debe pedirle al administrador de su sede que lo corrija (Admin FRD **FR-AD-TRAB-10**). Se dice **antes**, no después de agotar tres intentos.
+
+**FR-REC-4** **La respuesta es idéntica exista la cuenta o no.** Un identificador desconocido avanza al paso 2 exactamente igual, sin código emitido detrás, y agota sus intentos como los agotaría alguien que teclea mal el suyo. Ningún mensaje, código de estado ni tiempo de respuesta debe permitir distinguir los dos casos: quien no tiene cuenta no debe poder averiguar quién sí la tiene.
+
+**FR-REC-5** **No se dice a dónde fue el código, ni enmascarado.** **FR-2FA-5** sí lo dice en la verificación, y lo justifica: a aquella pantalla se llega con una contraseña acertada. A esta se llega escribiendo un identificador que cualquiera puede teclear, así que mostrar `j•••z@…` la convertiría en un buscador de correos ajenos. El texto dice «tu correo registrado» y nada más.
+
+**FR-REC-6** Paso 2. El código tiene los **mismos parámetros que el del acceso** (**FR-2FA-2**): seis dígitos, cinco minutos de vigencia, tres intentos, tres envíos contando el inicial y sesenta segundos de espera entre envíos. El campo es el mismo control, con el mismo comportamiento de pegado, borrado y envío automático al último dígito (**FR-2FA-29** a **FR-2FA-32**).
+
+**FR-REC-7** Desenlaces del paso 2: código correcto → pasa al paso 3; código incorrecto → descuenta un intento y lo dice con el número que queda; código caducado → se distingue del incorrecto y no descuenta intento; fallo de transporte → no descuenta intento y lo dice; intentos o envíos agotados → el reto muere. Un reto muerto **no se reabre** (**FR-2FA-15**): se ofrece empezar otra recuperación, y se nombra al administrador de sede como la salida si tampoco así entra.
+
+**FR-REC-8** Reenviar emite un código nuevo, **invalida el anterior** y repone los intentos; lo que no repone es el número de envíos, que es el límite real del reto (**FR-2FA-10** a **FR-2FA-12**).
+
+**FR-REC-9** Paso 3. Se piden la contraseña nueva y su repetición, en campos de contraseña con `autocomplete="new-password"`. Mínimo **ocho caracteres**; la política fina es del backend y el mensaje de rechazo debe nombrarla. Las dos deben coincidir, y el rechazo señala el segundo campo, no el primero.
+
+**FR-REC-10** Guardar **invalida la contraseña anterior** —venga del alta o de una recuperación previa— y **cierra las sesiones abiertas de esa cuenta**. Es lo que hace que recuperar sirva también cuando la contraseña se comprometió.
+
+**FR-REC-11** **Terminar no abre sesión** **[R13]**. Un código verificado aquí demuestra el correo, no sustituye al acceso: el desenlace devuelve al inicio de sesión, donde se pasa por los dos pasos de siempre. Pesa además que esto corre en el equipo de una caja, que es una máquina compartida.
+
+**FR-REC-12** Seguridad que corresponde al backend, además de lo anterior: el código **no viaja al cliente** en ninguna respuesta, cabecera ni registro (**FR-2FA-23**); el reto se ata a la cuenta en el servidor y no a lo que el cliente diga ser; y las solicitudes se limitan por cuenta y por origen, porque este es el único punto del producto donde un desconocido puede provocar el envío de un correo.
+
+---
 
 ---
 
@@ -782,13 +820,13 @@ No se intenta reintento automático ni asiento compensatorio **[R2]**.
 Para todo lo siguiente **no existe requisito funcional alguno y ninguno puede inferirse** — ni de una entrada del catálogo, ni de una pantalla marcador de posición, ni de una ruta existente, ni de un campo sin uso en un contrato de integración:
 
 - Los diez servicios del catálogo marcados como no disponibles.
-- Las pantallas Perfil, Tasas y Alertas, y la recuperación de acceso.
+- Las pantallas Perfil, Tasas y Alertas. **El cambio voluntario de contraseña** —fuera de la recuperación de §2.13— viviría en Perfil y tampoco está especificado: hoy, quien quiera cambiarla usa la recuperación.
 - El historial de Jornadas anteriores.
 - Permisos, roles y aprobación de supervisor.
 - Cierre de sesión, vigencia de sesión y sesión concurrente en dos equipos. El **acceso** sí está especificado por completo, en §2.
 - El alta y el cambio del correo del trabajador: ocurren al crear o editar el trabajador, capacidad del Admin de sede (regla A4).
 - Segundos factores alternativos (TOTP, llave física) y códigos de respaldo: descartados en §2.2, no diseñados.
-- El desbloqueo de una cuenta por el Admin de sede: §2 remite a él, pero la capacidad se especifica en el FRD de Admin de sede.
+- La **reactivación** de un trabajador desactivado, que es el único desbloqueo de cuenta que existe (**FR-AUTH-9**): §2 remite a su administrador de sede y la capacidad se especifica allí, en **FR-AD-TRAB-15**.
 - Reportes, analítica y exportaciones.
 - Las aplicaciones Branch Admin y Super Admin.
 

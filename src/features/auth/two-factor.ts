@@ -52,7 +52,14 @@ const MAX_SENDS = 3;
 const LATENCY_MS = 700;
 
 /** Código que el mock acepta. Solo existe en este archivo. */
-const DEMO_CODE = "123456";
+/**
+ * El código que acepta la demostración. Exportado porque el servidor de
+ * `/admin` necesita comprobar el mismo que esta pantalla acepta
+ * (`features/admin/pending-access.ts`): en el producto lo genera el servidor
+ * al azar y esta constante desaparece, pero mientras sea fijo tiene que haber
+ * **una** definición y no dos que puedan separarse.
+ */
+export const DEMO_CODE = "123456";
 
 /** Código que fuerza un fallo de transporte. */
 const NETWORK_FAILURE_CODE = "000000";

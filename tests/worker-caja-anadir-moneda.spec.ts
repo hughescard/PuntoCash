@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { esperarFondeoVivo, openJornada, rellenar } from "./worker-helpers";
+
 /**
  * Worker Caja — Añadir moneda (/worker/caja/anadir-moneda).
  *
@@ -36,8 +38,13 @@ test.describe("añadir moneda — render and navigation", () => {
     await page.goto("/worker/caja/anadir-moneda");
     await expect(page.getByText("Caja 03").first()).toBeVisible();
     await expect(page.getByText("Juan Pérez").first()).toBeVisible();
-    await expect(page.getByText("Monedas habilitadas")).toBeVisible();
-    await expect(page.getByText("4", { exact: true })).toBeVisible();
+    /* Acotado a su etiqueta: `getByText("4")` sin acotar afirma que existe
+       algún "4" en la página, no que ese sea el recuento de monedas, y en modo
+       estricto se rompería el día que aparezca otro. El valor es el hermano
+       siguiente de la etiqueta en `InfoItem`. */
+    await expect(
+      page.getByText("Monedas habilitadas").locator("xpath=following-sibling::*[1]"),
+    ).toHaveText("4");
     await expect(page.getByText("Pendiente de apertura")).toBeVisible();
     await expect(page.getByText("Sin abrir")).toBeVisible();
   });
@@ -175,6 +182,37 @@ test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
     await expect(page.getByRole("option", { name: /^CAD/ })).toHaveCount(0);
   });
 
+  test("una moneda sin par de cotización se explica en Cambio de moneda", async ({ page }) => {
+    /* La lista de monedas de una sede no depende del servicio de Cambio de
+       moneda (Admin FRD **FR-AD-MON-5**): una remesa y un giro también se
+       pagan en una moneda. Así que habilitar CAD es correcto y aun así no se
+       puede cambiar, porque PuntoCash no tiene par con tasa para él. Lo que no
+       vale es que desaparezca del selector sin decir por qué. */
+    /* La jornada primero: Cambio de moneda sin jornada abierta muestra su
+       estado bloqueado y no el formulario (**FR-CM-16**).
+
+       Y de aquí al final, **todo por enlace y ni una recarga**. Las dos cosas
+       que esta prueba necesita a la vez —la jornada abierta y CAD habilitado—
+       viven en el módulo en memoria del navegador, y un `goto` lo devuelve a
+       su estado inicial: sin jornada y sin CAD. La prueba lo hacía y afirmaba
+       un aviso que acababa de borrar ella misma. */
+    await openJornada(page);
+
+    await page.getByRole("link", { name: /Añadir moneda/ }).click();
+    await expect(page).toHaveURL(/\/worker\/caja\/anadir-moneda$/);
+    await openPicker(page);
+    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("button", { name: "Añadir moneda" }).click();
+    await expect(page).toHaveURL(/\/worker\/caja$/, { timeout: 3000 });
+
+    await page.getByRole("link", { name: "Nueva operación" }).click();
+    await page.getByRole("link", { name: /Cambio de moneda/ }).click();
+    await expect(page.getByRole("heading", { name: "Cambio de moneda", level: 1 })).toBeVisible();
+
+    await expect(page.getByText("CAD no se puede cambiar en este servicio")).toBeVisible();
+    await expect(page.getByText(/el administrador de tu sede tiene que definir el par/)).toBeVisible();
+  });
+
   test("Cancelar returns to Caja without enabling anything", async ({ page }) => {
     await page.goto("/worker/caja/anadir-moneda");
     await openPicker(page);
@@ -192,7 +230,8 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
     page,
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
-    await page.getByLabel("Fondo inicial en CUP").fill("200000");
+    await esperarFondeoVivo(page);
+    await rellenar(page.getByLabel("Fondo inicial en CUP"), "200000");
     await page.getByLabel("Fondo inicial en USD").fill("4000");
 
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
@@ -215,6 +254,7 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
     page,
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
+    await esperarFondeoVivo(page);
     await page.getByLabel("Fondo inicial en CUP").fill("200000");
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await openPicker(page);
@@ -241,6 +281,7 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
     page,
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
+    await esperarFondeoVivo(page);
     await page.getByLabel("Fondo inicial en EUR").fill("1500");
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await page.getByRole("link", { name: "Cancelar" }).click();

@@ -104,6 +104,7 @@ export function habilitarMoneda(currency: string): HabilitarMonedaResult {
 
   const balance: CajaBalance = { currency, amount: 0 };
   mutableBalances.push(balance);
+  persistirCaja();
   return { ok: true, balance };
 }
 
@@ -237,12 +238,16 @@ export interface CajaMovementJornadaSnapshot {
  * only real requirement is that it uniquely and reliably resolves a
  * movement, never an array index.
  */
+function idDeMovimiento(date: Date, secuencia: number): string {
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  const datePart = `${String(date.getFullYear()).slice(2)}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}`;
+  return `CM-${datePart}-${String(secuencia).padStart(6, "0")}`;
+}
+
 let movementIdSequence = 0;
 function nextMovementId(date: Date): string {
   movementIdSequence += 1;
-  const pad2 = (n: number) => String(n).padStart(2, "0");
-  const datePart = `${String(date.getFullYear()).slice(2)}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}`;
-  return `CM-${datePart}-${String(movementIdSequence).padStart(6, "0")}`;
+  return idDeMovimiento(date, movementIdSequence);
 }
 
 /**
@@ -458,9 +463,20 @@ const mutableMovements: CajaMovement[] = [...buildMovements()];
 
 export const CAJA_MOVEMENTS: readonly CajaMovement[] = mutableMovements;
 
-/** Resolves one movement by its stable `id` — the `/worker/caja/movimientos/[id]` lookup. */
-export function findCajaMovement(movementId: string): CajaMovement | undefined {
-  return CAJA_MOVEMENTS.find((movement) => movement.id === movementId);
+/**
+ * Resuelve un movimiento **interno** por su `id` — la búsqueda de
+ * `/worker/caja/movimientos/[id]`.
+ *
+ * Solo interno, a propósito (**FR-CAJA-27**): un movimiento comercial enlaza a
+ * su operación y «no tiene pantalla de detalle propia» (**FR-CAJA-12**), así
+ * que su `id` no debe resolver aquí. El libro no ofrece ese enlace, pero la
+ * URL se puede escribir a mano, y la regla pertenece al dominio y no a la
+ * disciplina de quien dibuje la tabla. Un movimiento comercial se reconoce
+ * por llevar `operationCode`.
+ */
+export function findInternalCajaMovement(movementId: string): CajaMovement | undefined {
+  const movement = CAJA_MOVEMENTS.find((m) => m.id === movementId);
+  return movement && movement.operationCode === undefined ? movement : undefined;
 }
 
 export function movementMatchesQuery(movement: CajaMovement, query: string): boolean {
@@ -616,6 +632,7 @@ export function abrirJornada(params: {
     status: "OPEN",
   };
 
+  persistirCaja();
   return jornadaActual;
 }
 
@@ -670,7 +687,12 @@ export interface AjustarEfectivoResult {
 
 export type AjustarEfectivoOutcome =
   | { ok: true; result: AjustarEfectivoResult }
-  | { ok: false; reason: "motivo-incompatible" };
+  /* Dos rechazos normales y anticipables, los dos devueltos. «La moneda no
+     está habilitada» existía antes como `throw`, que es un 500 del servidor
+     donde debía haber un estado de producto — y el mismo motivo ya estaba
+     declarado unas líneas más abajo, en `CommercialCashMovementOutcome`. */
+  | { ok: false; reason: "motivo-incompatible" }
+  | { ok: false; reason: "moneda-no-habilitada" };
 
 /**
  * Corrects the selected currency's CURRENT balance to exactly the counted
@@ -680,9 +702,10 @@ export type AjustarEfectivoOutcome =
  * its status — the jornada stays open (§22, §28).
  *
  * Rejects a `motivo` that contradicts the computed difference's sign at the
- * domain boundary itself — not only through the UI's own filtering — the
- * same "return a result, don't throw" convention already used by
- * `habilitarMoneda` for a normal, anticipatable rejection.
+ * domain boundary itself — not only through the UI's own filtering — and a
+ * currency that is no longer enabled in this register. Los dos siguen la
+ * convención «return a result, don't throw» que ya usa `habilitarMoneda`
+ * para un rechazo normal y anticipable.
  */
 export function ajustarEfectivo(params: {
   currency: string;
@@ -692,9 +715,7 @@ export function ajustarEfectivo(params: {
   timestamp: Date;
 }): AjustarEfectivoOutcome {
   const balance = mutableBalances.find((b) => b.currency === params.currency);
-  if (!balance) {
-    throw new Error(`Ajustar efectivo: "${params.currency}" no está habilitada en esta caja.`);
-  }
+  if (!balance) return { ok: false, reason: "moneda-no-habilitada" };
 
   const saldoAnterior = balance.amount;
   const diferencia = Math.round((params.efectivoContado - saldoAnterior) * 100) / 100;
@@ -725,6 +746,7 @@ export function ajustarEfectivo(params: {
       : undefined,
   };
   mutableMovements.unshift(movement);
+  persistirCaja();
 
   return {
     ok: true,
@@ -778,6 +800,7 @@ export function registrarSalidaComercial(params: {
     jornada: currentJornadaSnapshot(),
   };
   mutableMovements.unshift(movement);
+  persistirCaja();
   return { ok: true, movement, saldoAntes, saldoDespues };
 }
 
@@ -810,6 +833,7 @@ export function registrarEntradaComercial(params: {
     jornada: currentJornadaSnapshot(),
   };
   mutableMovements.unshift(movement);
+  persistirCaja();
   return { ok: true, movement, saldoAntes, saldoDespues };
 }
 
@@ -886,6 +910,7 @@ export function registrarCambioMoneda(params: {
     saldoAntes: destinationAntes, saldoDespues: destinationDespues, jornada,
   };
   mutableMovements.unshift(salida, entrada);
+  persistirCaja();
 
   return {
     ok: true,
@@ -993,6 +1018,7 @@ export function cerrarJornada(params: {
 
   jornadaActual = { ...jornadaActual, closedAt: confirmedAt, status: "CLOSED", closingAudit: audit };
   mutableMovements.unshift(...movements);
+  persistirCaja();
 
   return { ok: true, result: { jornada: jornadaActual, audit, movements } };
 }
@@ -1124,4 +1150,252 @@ export function getCajaActions(): readonly CajaAction[] {
     }
     return action;
   });
+}
+
+/* -------------------------------------------------------------------------
+ * Persistencia en el equipo — que una recarga no borre la jornada
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Todo lo mutable de este módulo es memoria de módulo, y los flujos que lo
+ * mutan corren en el navegador del trabajador. Eso bastaba mientras toda la
+ * navegación fuera de cliente, pero una recarga —o abrir una ruta de Caja
+ * escribiendo su URL— volvía a evaluar el módulo y la jornada abierta
+ * desaparecía: había que volver a fondear para poder recorrer las pantallas
+ * que dependen de ella. En una demostración cuyo valor es que los flujos se
+ * puedan recorrer, eso es un defecto, no una limitación tolerable del
+ * simulacro.
+ *
+ * Así que el estado operativo de la caja —jornada, saldos, y los movimientos
+ * que esta sesión creó— se guarda en el propio equipo (`localStorage`), igual
+ * que el vínculo del equipo (FR-DEV-1.1), y se repone al cargar la página.
+ *
+ * **Se repone después de hidratar, nunca antes.** El servidor renderiza estas
+ * pantallas y no puede leer `localStorage`. Si el cliente restaurara durante
+ * su primer render, su árbol no coincidiría con el HTML que llegó del
+ * servidor y React avisaría de un desajuste de hidratación — la clase de
+ * fallo que más caro ha costado en este proyecto. Por eso la reposición vive
+ * en un efecto de disposición (`features/caja/use-caja.ts`): el primer render
+ * del cliente es idéntico al del servidor, y el estado guardado entra en el
+ * mismo fotograma, antes de que el navegador pinte.
+ *
+ * Lo que **no** hace: enterar al servidor. `features/admin/register-guards.ts`
+ * sigue sin ver esta jornada, porque sigue viviendo en el navegador del
+ * trabajador. La jornada que el administrador necesita (FR-AD-EQ-5) llega con
+ * §9 y con la sesión de equipo emitida por el servidor, no desde aquí. Y
+ * tampoco se guarda nada en el servidor a propósito: seis trabajadores de
+ * Playwright pegando contra un solo `next dev` compartirían ese estado, que
+ * es exactamente la clase de carrera que ya obligó a `workers: 1` en CI.
+ */
+export const CAJA_STORAGE_KEY = "puntocash.caja.estado";
+
+interface CajaEstadoPersistido {
+  /** Versión del formato. Un valor distinto se descarta en silencio. */
+  v: 1;
+  jornada: CajaJornada | null;
+  balances: CajaBalance[];
+  /** Solo lo que esta sesión creó: el historial simulado se reconstruye solo en cada carga. */
+  movimientos: CajaMovement[];
+  secuenciaMovimientos: number;
+}
+
+/**
+ * Los ids del historial simulado, capturados antes de que nada mute el libro.
+ * Sirven para distinguir, al guardar, lo que esta sesión creó de lo que
+ * `buildMovements()` vuelve a construir sola — guardar el libro completo
+ * sería guardar una copia de los datos de muestra.
+ */
+const IDS_MOVIMIENTOS_SEMILLA: ReadonlySet<string> = new Set(mutableMovements.map((m) => m.id));
+
+/* --- Quién tiene que volver a pintar cuando el dominio cambia --- */
+
+let versionCaja = 0;
+const oyentesDeCaja = new Set<() => void>();
+
+/** Para `useSyncExternalStore`; ver `features/caja/use-caja.ts`. */
+export function subscribeCaja(oyente: () => void): () => void {
+  oyentesDeCaja.add(oyente);
+  return () => {
+    oyentesDeCaja.delete(oyente);
+  };
+}
+
+export function getVersionCaja(): number {
+  return versionCaja;
+}
+
+/**
+ * En el servidor la versión es siempre 0 — y en el cliente también lo es
+ * mientras React hidrata, porque la reposición ocurre después. Esa igualdad
+ * es justo lo que evita el desajuste.
+ */
+export function getVersionCajaServidor(): number {
+  return 0;
+}
+
+function notificarCaja(): void {
+  versionCaja += 1;
+  for (const oyente of oyentesDeCaja) oyente();
+}
+
+/* --- Guardar --- */
+
+/**
+ * Vuelca el estado operativo al equipo y avisa a quien lo esté leyendo. La
+ * llaman las mutaciones del dominio, no las pantallas: guardar es
+ * consecuencia de mutar, y dejarlo en manos de quien dibuja sería dejar que
+ * una pantalla nueva se olvide.
+ *
+ * No hace nada en el servidor. Y un almacenamiento lleno o bloqueado (modo
+ * privado, cuota agotada) no rompe nada: el simulacro sigue funcionando en
+ * memoria, solo deja de sobrevivir a la recarga.
+ */
+function persistirCaja(): void {
+  notificarCaja();
+  if (typeof window === "undefined") return;
+
+  const estado: CajaEstadoPersistido = {
+    v: 1,
+    jornada: jornadaActual,
+    balances: mutableBalances.map((balance) => ({ ...balance })),
+    movimientos: mutableMovements.filter((movement) => !IDS_MOVIMIENTOS_SEMILLA.has(movement.id)),
+    secuenciaMovimientos: movementIdSequence,
+  };
+
+  try {
+    window.localStorage.setItem(CAJA_STORAGE_KEY, JSON.stringify(estado));
+  } catch {
+    /* Sin sitio o sin permiso: el estado sigue en memoria, solo no sobrevive a la recarga. */
+  }
+}
+
+/* --- Reponer --- */
+
+let cajaRepuesta = false;
+
+/**
+ * Repone lo guardado, una sola vez por carga de página. La llama `useCaja`
+ * desde un efecto de disposición; no se llama al evaluar el módulo, a
+ * propósito (ver la nota sobre la hidratación, arriba).
+ *
+ * Reemplaza los saldos **en su sitio** —nunca reasigna el array— porque
+ * `CAJA_BALANCES` es una vista congelada del mismo, y vuelve a poner delante
+ * los movimientos de la sesión en el mismo orden en que estaban, que es el
+ * orden en que el libro los espera. La secuencia de ids se adelanta para que
+ * un movimiento nuevo no reutilice el id de uno repuesto.
+ *
+ * Devuelve si repuso algo, para que quien la llama sepa si tiene que volver a
+ * renderizar — y no pague un render de más cuando el equipo no guardaba nada.
+ */
+export function restaurarCaja(): boolean {
+  if (cajaRepuesta) return false;
+  cajaRepuesta = true;
+  if (typeof window === "undefined") return false;
+
+  let estado: CajaEstadoPersistido | null = null;
+  try {
+    const crudo = window.localStorage.getItem(CAJA_STORAGE_KEY);
+    estado = crudo ? (JSON.parse(crudo) as CajaEstadoPersistido) : null;
+  } catch {
+    estado = null;
+  }
+
+  if (!estado || estado.v !== 1) return false;
+  if (!Array.isArray(estado.balances) || !Array.isArray(estado.movimientos)) return false;
+
+  mutableBalances.splice(
+    0,
+    mutableBalances.length,
+    ...estado.balances.map((balance) => ({ ...balance })),
+  );
+  if (estado.movimientos.length > 0) mutableMovements.unshift(...estado.movimientos);
+  jornadaActual = estado.jornada ?? null;
+  movementIdSequence = Math.max(movementIdSequence, estado.secuenciaMovimientos ?? 0);
+
+  notificarCaja();
+  return true;
+}
+
+/**
+ * Olvida lo guardado y deja que la próxima carga arranque con los datos de
+ * muestra. Es la vía de escape de la demostración: hoy la jornada abierta
+ * sobrevive a la recarga, así que sin esto la única salida sería recorrer
+ * «Arqueo y cierre». No deshace lo que ya está en memoria — quien la llama
+ * recarga después.
+ */
+export function olvidarCajaPersistida(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(CAJA_STORAGE_KEY);
+  } catch {
+    /* Si no se puede tocar el almacenamiento, no hay nada guardado que olvidar. */
+  }
+}
+
+/**
+ * El estado que habría dejado una jornada abierta con estos fondos, listo para
+ * sembrarlo en `localStorage` **sin pasar por la pantalla de fondeo inicial**.
+ *
+ * Existe para las pruebas: abrir la jornada por la interfaz cuesta una
+ * navegación, una espera de hidratación, un formulario y dos confirmaciones, y
+ * eso se pagaba unas ciento sesenta veces por corrida — en pantallas que no
+ * tenían nada que ver con abrir la caja. Sembrar el resultado las deja probar
+ * lo suyo. Ver `tests/storage-state.ts`.
+ *
+ * **Es un espejo deliberado de `abrirJornada`**, no su implementación
+ * compartida: refactorizar la función de la que depende toda la suite para que
+ * las pruebas puedan reutilizarla costaría más de lo que vale. Lo que mantiene
+ * los dos lados honestos es `worker-caja-fondeo-inicial.spec.ts`, que recorre
+ * la apertura de verdad y afirma el mismo resultado —saldos de apertura iguales
+ * a lo confirmado, un movimiento «Fondeo inicial» por moneda con fondo
+ * positivo, ninguno para una moneda en cero—. Si este espejo se desvía, esa
+ * prueba y la pantalla que siembre dejan de contar lo mismo.
+ */
+export function instantaneaConJornadaAbierta(params: {
+  openedAt: Date;
+  fondos: readonly FondoInicial[];
+  register?: string;
+  worker?: string;
+}): string {
+  const register = params.register ?? CAJA_SUMMARY.register;
+  const worker = params.worker ?? CAJA_SUMMARY.worker;
+  const openedAtIso = params.openedAt.toISOString();
+  const snapshot: CajaMovementJornadaSnapshot = { register, worker, openedAt: openedAtIso };
+
+  /* Igual que al abrir: cada moneda habilitada arranca en lo confirmado, y una
+     sin fondo arranca en cero — nunca se suma sobre lo que la caja tuviera. */
+  const balances: CajaBalance[] = CAJA_BALANCES.map((balance) => ({
+    ...balance,
+    amount: params.fondos.find((fondo) => fondo.currency === balance.currency)?.amount ?? 0,
+  }));
+
+  /* Y un movimiento por moneda con fondo mayor que cero, al frente del libro y
+     en el mismo orden en que los deja la apertura. La secuencia arranca donde
+     la dejó el historial simulado, así que los ids son los mismos que habría
+     generado la pantalla. */
+  const movimientos: CajaMovement[] = [];
+  let secuencia = movementIdSequence;
+  for (const fondo of params.fondos) {
+    if (!(fondo.amount > 0)) continue;
+    secuencia += 1;
+    movimientos.unshift({
+      id: idDeMovimiento(params.openedAt, secuencia),
+      fechaHora: openedAtIso,
+      tipo: "entrada",
+      concepto: "Fondeo inicial",
+      currency: fondo.currency,
+      amount: fondo.amount,
+      saldoDespues: Math.round(fondo.amount * 100) / 100,
+      jornada: snapshot,
+    });
+  }
+
+  const estado: CajaEstadoPersistido = {
+    v: 1,
+    jornada: { register, worker, openedAt: openedAtIso, closedAt: null, status: "OPEN" },
+    balances,
+    movimientos,
+    secuenciaMovimientos: secuencia,
+  };
+  return JSON.stringify(estado);
 }

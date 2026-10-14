@@ -18,13 +18,27 @@ import { cn } from "@/lib/utils";
 export function AppShell({
   header,
   sidebar,
+  bottomBar,
   children,
+  fluid = false,
   className,
 }: {
   header: React.ReactNode;
   /** Omit for products without lateral navigation, such as the Kiosk. */
   sidebar?: React.ReactNode;
+  /**
+   * Navegación inferior, para un producto que también se usa en un teléfono.
+   * Se coloca fuera del área que se desplaza, igual que la cabecera: en una
+   * pantalla pequeña la navegación no puede irse con el contenido.
+   */
+  bottomBar?: React.ReactNode;
   children: React.ReactNode;
+  /**
+   * Quita el ancho mínimo de escritorio. Worker y Kiosco corren en máquinas de
+   * una sucursal y lo conservan (manual §10); la consola de administración se
+   * usa desde un teléfono y no puede imponerlo (**FR-AD-SHELL-6**).
+   */
+  fluid?: boolean;
   className?: string;
 }): React.JSX.Element {
   return (
@@ -37,13 +51,21 @@ export function AppShell({
      * `min-h-0` on the row is required — without it a flex child refuses to
      * shrink below its content height and the overflow escapes again.
      */
-    <div className={cn("flex h-dvh min-w-min-desktop flex-col overflow-hidden bg-canvas", className)}>
+    <div
+      className={cn(
+        "flex h-dvh flex-col overflow-hidden bg-canvas",
+        !fluid && "min-w-min-desktop",
+        className,
+      )}
+    >
       {header}
 
       <div className="flex min-h-0 flex-1">
         {sidebar}
         {children}
       </div>
+
+      {bottomBar}
     </div>
   );
 }
@@ -65,8 +87,8 @@ export function AppHeader({
     <header
       className={cn(
         // No `sticky` needed: the header sits outside the scroll container.
-        "z-30 flex h-header shrink-0 items-center justify-between gap-6",
-        "bg-primary px-6 text-primary-foreground shadow-header",
+        "z-30 flex h-header shrink-0 items-center justify-between gap-3 sm:gap-6",
+        "bg-primary px-4 text-primary-foreground shadow-header sm:px-6",
         className,
       )}
     >
@@ -99,7 +121,11 @@ export function AppSidebar({
         className,
       )}
     >
-      <div className="pc-scroll-y min-h-0 flex-1 px-3 py-6">{children}</div>
+      {/* `pc-scroll-dark` mantiene la barra de desplazamiento dentro del
+          bloque navy: sin ella el navegador pinta su banda clara con flechas y
+          la columna parece cortarse justo encima del pie. Solo aparece cuando
+          los destinos no caben — la consola de administración tiene trece. */}
+      <div className="pc-scroll-y pc-scroll-dark min-h-0 flex-1 px-3 py-6">{children}</div>
       {footer ? <div className="border-t border-white/10 px-3 py-4">{footer}</div> : null}
     </nav>
   );
@@ -119,7 +145,7 @@ export function AppMain({
   return (
     /* The one scroll container in the shell. `min-h-0` lets it shrink to the
        row's height so `overflow-y-auto` actually engages. */
-    <main className={cn("pc-scroll-y min-h-0 min-w-0 flex-1 bg-canvas p-8", className)}>
+    <main className={cn("pc-scroll-y min-h-0 min-w-0 flex-1 bg-canvas p-5 sm:p-6 lg:p-8", className)}>
       <div className={cn(constrained && "max-w-form-max")}>{children}</div>
     </main>
   );
@@ -141,7 +167,7 @@ export function PageHeader({
   className?: string;
 }): React.JSX.Element {
   return (
-    <div className={cn("mb-8 flex items-start justify-between gap-6", className)}>
+    <div className={cn("mb-8 flex flex-wrap items-start justify-between gap-4 sm:gap-6", className)}>
       <div className="min-w-0">
         <h1 className="text-screen-title text-text-primary">{title}</h1>
         {description ? (

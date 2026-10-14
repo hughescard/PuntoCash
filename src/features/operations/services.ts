@@ -196,18 +196,30 @@ export const WORKER_SERVICES = [
  * Referenced by slug so the catalog above stays the only place a service is
  * described.
  */
+/** Los slugs que el catálogo declara, como unión de literales. */
+type CatalogSlug = (typeof WORKER_SERVICES)[number]["slug"];
+
+/* Tipado contra el catálogo: una errata aquí es un error de compilación, no
+   una excepción del servidor al pintar el Inicio de Worker. */
 export const HOME_QUICK_ACTION_SLUGS = [
   "cambio-moneda",
   "remesas",
   "extraccion-tarjeta-antilla",
   "insercion-efectivo",
-] as const;
+] as const satisfies readonly CatalogSlug[];
 
 export function findService(slug: string): WorkerService | undefined {
   return WORKER_SERVICES.find((service) => service.slug === slug);
 }
 
-/** Quick actions in the order the home screen shows them. */
+/**
+ * Quick actions in the order the home screen shows them.
+ *
+ * El `throw` es defensivo y ya inalcanzable: `HOME_QUICK_ACTION_SLUGS` se
+ * comprueba contra el catálogo con `satisfies`, así que una errata no llega a
+ * ejecutarse — se detiene en la compilación. Antes rompía el Inicio de Worker
+ * con una excepción de servidor en vez de con un error de tipos.
+ */
 export function getHomeQuickActions(): readonly WorkerService[] {
   return HOME_QUICK_ACTION_SLUGS.map((slug) => {
     const service = findService(slug);

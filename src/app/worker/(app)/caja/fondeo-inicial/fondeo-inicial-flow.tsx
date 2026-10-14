@@ -20,6 +20,7 @@ import {
 import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, fieldAria, type FieldSpec } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatDateTime, formatMoney, parseAmountInput } from "@/lib/format";
+import { useHydrated } from "@/lib/use-hydrated";
 import { findCurrency } from "@/features/exchange/quote";
 import { getCurrentWorker } from "@/features/worker/session";
 import {
@@ -33,6 +34,7 @@ import {
   type CajaJornada,
   type FondoInicial,
 } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 
 const CAJA_ROUTE = "/worker/caja" as Route;
 const ANADIR_MONEDA_ROUTE = "/worker/caja/anadir-moneda?returnTo=fondeo-inicial" as Route;
@@ -52,10 +54,11 @@ type Step = "form" | "revision" | "completado";
  * goes through "Añadir moneda" instead.
  */
 export function FondeoInicialFlow(): React.JSX.Element {
-  // Captured once, on entry: a jornada opened by a PRIOR visit blocks this
-  // screen entirely. A jornada this same flow just opened (step "completado")
-  // must not retroactively lock the success screen the worker is looking at.
-  const [blocked] = React.useState(() => hasOpenJornada());
+  const hydrated = useHydrated();
+  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
+  // cambia (`features/caja/use-caja.ts`). Sin esto, una recarga de esta ruta
+  // ofrecería el formulario de una caja que ya está abierta.
+  useCaja();
 
   const worker = getCurrentWorker();
   const [step, setStep] = React.useState<Step>("form");
@@ -70,6 +73,18 @@ export function FondeoInicialFlow(): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmedFondos, setConfirmedFondos] = React.useState<readonly FondoInicial[]>([]);
   const [jornada, setJornada] = React.useState<CajaJornada | null>(null);
+
+  /*
+   * Una jornada que abrió una visita ANTERIOR bloquea esta pantalla por
+   * completo; la que acaba de abrir este mismo flujo, no — su pantalla de
+   * éxito no puede quedar tapada por su propio efecto, y `jornada` es
+   * precisamente lo que distingue los dos casos.
+   *
+   * Se lee en cada render, no se captura al entrar: el estado guardado en el
+   * equipo se repone justo después de hidratar, y una captura hecha antes de
+   * eso diría que la caja está cerrada para siempre.
+   */
+  const blocked = hasOpenJornada() && jornada === null;
 
   function setAmount(currency: string, value: string) {
     setAmounts((prev) => ({ ...prev, [currency]: value }));
@@ -264,7 +279,14 @@ export function FondeoInicialFlow(): React.JSX.Element {
               <Button variant="secondary" type="button" asChild>
                 <Link href={CAJA_ROUTE}>Cancelar</Link>
               </Button>
-              <Button type="submit">
+              {/* Cerrado hasta que React se engancha, por la misma razón que el
+                  botón de acceso: el marcado del servidor ya es un `submit`
+                  nativo y, sin `action`, pulsarlo antes de tiempo hace un GET a
+                  esta misma URL — se pierde lo escrito y la pantalla vuelve a
+                  empezar. Es el único submit de este flujo que nace habilitado;
+                  los de los pasos siguientes nacen cerrados por validación, y
+                  además solo existen después de hidratar. */}
+              <Button type="submit" disabled={!hydrated}>
                 Continuar
                 <ArrowRight aria-hidden="true" />
               </Button>

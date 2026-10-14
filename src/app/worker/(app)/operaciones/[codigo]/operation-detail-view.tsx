@@ -78,11 +78,7 @@ export function OperationDetailView({ codigo }: { codigo: string }): React.JSX.E
 
       <ReceiptSection operation={operation} />
 
-      <p className="flex items-center justify-center gap-2 pb-2 text-caption text-text-secondary print:hidden">
-        <Lock className="size-3.5 shrink-0" aria-hidden="true" />
-        La información de esta operación está protegida y solo puede ser vista por personal
-        autorizado.
-      </p>
+      <ConfidentialityNote />
     </div>
   );
 }
@@ -103,17 +99,36 @@ function GiroOperationDetail({ operation }: { operation: OperationRecord }) {
         description="Puedes imprimir el detalle registrado de esta operación."
       />
 
-      <p className="flex items-center justify-center gap-2 pb-2 text-caption text-text-secondary print:hidden">
-        <Lock className="size-3.5 shrink-0" aria-hidden="true" />
-        La información de esta operación está protegida y solo puede ser vista por personal
-        autorizado.
-      </p>
+      <ConfidentialityNote />
     </div>
   );
 }
 
 function RemittanceOperationDetail({ operation }: { operation: OperationRecord }) {
-  return <div className="flex flex-col gap-6"><BackLink /><OperationDetailHeader operation={operation} remittance /><RemittanceDetail operation={operation} /><ReceiptSection operation={operation} /></div>;
+  return (
+    <div className="flex flex-col gap-6">
+      <BackLink />
+      <OperationDetailHeader operation={operation} remittance />
+      <RemittanceDetail operation={operation} />
+      <ReceiptSection operation={operation} />
+      <ConfidentialityNote />
+    </div>
+  );
+}
+
+/**
+ * **FR-OPD-4**: todo detalle cierra con la franja de comprobante y esta nota.
+ * Vivía copiada en cada variante, y la de Remesa se quedó sin ella — de ahí
+ * que ahora sea una sola pieza: el requisito es de todas, no de cada una.
+ */
+function ConfidentialityNote() {
+  return (
+    <p className="flex items-center justify-center gap-2 pb-2 text-caption text-text-secondary print:hidden">
+      <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+      La información de esta operación está protegida y solo puede ser vista por personal
+      autorizado.
+    </p>
+  );
 }
 
 function BackLink() {

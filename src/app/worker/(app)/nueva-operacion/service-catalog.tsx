@@ -6,6 +6,7 @@ import { ArrowRight, Search, SearchX, TicketCheck, X } from "lucide-react";
 
 import { Button, Input } from "@/components/ui";
 import { PageHeader } from "@/components/shell/app-shell";
+import { useHydrated } from "@/lib/use-hydrated";
 import { ServiceCard } from "@/components/patterns/service-card";
 import {
   SERVICE_CATEGORIES,
@@ -20,8 +21,17 @@ import {
  * there is no other state here and no store: a single query string filters the
  * catalog. Non-matching services are removed from the DOM rather than hidden
  * with CSS, so they leave the tab order too (§20).
+ *
+ * ── Por qué el buscador está deshabilitado hasta hidratar ────────────────
+ * El filtro es del cliente y el campo es controlado, así que lo que se escriba
+ * antes de que React se engancha no filtra nada **y además se pierde**: al
+ * hidratar, React vuelve a pintar el campo desde su propio estado, que está
+ * vacío. Un buscador que acepta texto y lo tira es peor que uno que todavía no
+ * se puede usar, así que se aplica la misma regla que al botón de acceso: no
+ * se ofrece un control antes de que funcione (`lib/use-hydrated.ts`).
  */
 export function ServiceCatalog(): React.JSX.Element {
+  const hydrated = useHydrated();
   const [query, setQuery] = React.useState("");
   const searchId = React.useId();
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -64,6 +74,7 @@ export function ServiceCatalog(): React.JSX.Element {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              disabled={!hydrated}
               placeholder="Buscar servicio"
               autoComplete="off"
               prefix={<Search className="size-[18px]" aria-hidden="true" />}

@@ -5,8 +5,7 @@ import * as React from "react";
 import { Alert } from "@/components/ui";
 import { DevicePairingPanel, SimulatorLink } from "@/components/patterns/device-pairing-panel";
 import { findBranchById } from "@/features/branches/branches";
-import type { UnlinkedDevice } from "@/features/devices/device-link";
-import { ensurePairingChallenge, pairingQrPayload } from "@/features/kiosk/device-session";
+import { ensurePairingChallenge, pairingQrPayload, useKioskDevice } from "@/features/kiosk/device-session";
 
 /**
  * What an unlinked kiosk shows instead of the catalog (Autoservicio FRD §1.1).
@@ -14,8 +13,15 @@ import { ensurePairingChallenge, pairingQrPayload } from "@/features/kiosk/devic
  * Nothing a client can do here: no catalog, no "Inicio", no way around the
  * link. Until an admin links it, this terminal cannot prepare a request.
  */
-export function KioskPairingScreen({ device }: { device: UnlinkedDevice }): React.JSX.Element {
-  const previousBranch = findBranchById(device.unlinkedFrom?.branchId);
+export function KioskPairingScreen(): React.JSX.Element {
+  /* Lee el equipo ella misma, como su gemela de Worker: el servidor puede
+     decidir que esta pantalla es la correcta antes de que el navegador haya
+     podido consultar `localStorage`, así que la copia se pinta de inmediato y
+     el panel del reto aparece en cuanto el equipo lo ha generado. */
+  const device = useKioskDevice();
+  const unlinked = device?.status === "unlinked" ? device : null;
+
+  const previousBranch = findBranchById(unlinked?.unlinkedFrom?.branchId);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col items-center py-8 text-center">
@@ -34,18 +40,21 @@ export function KioskPairingScreen({ device }: { device: UnlinkedDevice }): Reac
         </Alert>
       ) : null}
 
-      <DevicePairingPanel
-        className="mt-8 w-full"
-        device={device}
-        qrPayload={pairingQrPayload(device)}
-        onExpired={ensurePairingChallenge}
-        demoNote={
-          <>
-            Versión de demostración: el panel del administrador aún no existe. Para simular la vinculación,
-            abre <SimulatorLink /> en otra pestaña. El QR es ilustrativo y no se puede escanear.
-          </>
-        }
-      />
+      {unlinked ? (
+        <DevicePairingPanel
+          className="mt-8 w-full"
+          device={unlinked}
+          qrPayload={pairingQrPayload(unlinked)}
+          onExpired={ensurePairingChallenge}
+          demoNote={
+            <>
+              Versión de demostración: el panel del administrador aún no existe. Para simular la
+              vinculación, abre <SimulatorLink /> en otra pestaña. El QR es ilustrativo y no se puede
+              escanear.
+            </>
+          }
+        />
+      ) : null}
     </div>
   );
 }

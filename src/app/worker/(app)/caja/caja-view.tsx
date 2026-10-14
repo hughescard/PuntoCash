@@ -9,13 +9,13 @@ import { Pagination } from "@/components/patterns/pagination";
 import {
   CAJA_BALANCES,
   CAJA_METRICS,
-  CAJA_MOVEMENTS,
   CAJA_SUMMARY,
   getCajaActions,
   movementMatchesDateFilter,
   movementMatchesQuery,
   type CajaMovementDateFilter,
 } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 import { CajaAlerts } from "./caja-alerts";
 import { CajaActionsCard } from "./caja-actions-card";
 import { CajaBalancesCard } from "./caja-balances-card";
@@ -50,19 +50,22 @@ function isDefaultFilters(value: CajaMovementsFiltersValue): boolean {
  * this first phase does not implement yet (see `CAJA_ACTIONS`).
  */
 export function CajaView(): React.JSX.Element {
+  // Repone la jornada que el equipo tenga guardada y vuelve a pintar cuando el
+  // libro cambia (`features/caja/use-caja.ts`).
+  const caja = useCaja();
   const [filters, setFilters] = React.useState<CajaMovementsFiltersValue>(INITIAL_FILTERS);
   const [page, setPage] = React.useState(1);
 
   const filtered = React.useMemo(
     () =>
-      CAJA_MOVEMENTS.filter(
+      caja.movimientos.filter(
         (movement) =>
           movementMatchesQuery(movement, filters.query) &&
           (filters.tipo === "todos" || movement.tipo === filters.tipo) &&
           (filters.moneda === "todas" || movement.currency === filters.moneda) &&
           movementMatchesDateFilter(movement, filters.fecha as CajaMovementDateFilter),
       ),
-    [filters],
+    [filters, caja.movimientos],
   );
 
   function updateFilters(next: CajaMovementsFiltersValue) {

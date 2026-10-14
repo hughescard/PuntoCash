@@ -18,6 +18,7 @@
  * comportamiento de pantallas ya aprobadas sin que ninguna lo pidiera.
  */
 
+import { type DocumentType } from "@/features/customers/customers";
 import { findSedeById, isMotivoValido } from "./sedes";
 import { findOperatorById } from "./operators";
 import { operadorVigente } from "./assignments";
@@ -37,6 +38,8 @@ export interface NetworkWorker {
   fullName: string;
   firstName: string;
   initials: string;
+  /** Tipo y número son dos datos, no uno (**FR-AD-TRAB-3**). */
+  documentType: DocumentType;
   documentId: string;
   phone: string;
   /** Canal del segundo factor: sin correo no podría acceder nunca [R13]. */
@@ -55,6 +58,7 @@ function worker(
   documentId: string,
   branchId: string,
   status: WorkerStatus = "activo",
+  documentType: DocumentType = "CI",
 ): NetworkWorker {
   const parts = fullName.split(" ");
   const firstName = parts[0] ?? fullName;
@@ -65,9 +69,18 @@ function worker(
     fullName,
     firstName,
     initials: `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase(),
+    documentType,
     documentId,
     phone: "+53 5 000 0000",
-    email: identifier,
+    /* El correo se **deriva** del identificador para no inventar dos valores
+       por cada trabajador de muestra, pero son dos campos distintos: el alta
+       pide los dos por separado (FR-AD-TRAB-3), valida el formato del correo
+       (FR-AD-TRAB-6) y comprueba duplicados del identificador. Antes la
+       semilla los hacía idénticos —`email: identifier`—, y en la ficha se leía
+       el correo entero en «identificador de acceso» tres líneas por encima del
+       mismo correo enmascarado, de modo que el enmascarado parecía un adorno y
+       la pantalla sugería que eran el mismo campo. */
+    email: `${identifier}@puntocash.com`,
     branchId,
     status,
     createdAt: "2026-02-01T09:00:00.000Z",
@@ -75,19 +88,24 @@ function worker(
 }
 
 const mutableWorkers: NetworkWorker[] = [
-  worker("trb-1", "jperez@puntocash.com", "Juan Pérez", "88041203211", "sede-vedado"),
-  worker("trb-2", "lgomez@puntocash.com", "Lidia Gómez", "91072355442", "sede-vedado"),
-  worker("trb-3", "afonseca@puntocash.com", "Alberto Fonseca", "85110488763", "sede-vedado"),
-  worker("trb-4", "mrivas@puntocash.com", "Marisol Rivas", "79031188204", "sede-habana-vieja"),
-  worker("trb-5", "cdiaz@puntocash.com", "Carlos Díaz", "94022177315", "sede-habana-vieja"),
-  worker("trb-6", "ynunez@puntocash.com", "Yanet Núñez", "88122099436", "sede-miramar"),
-  worker("trb-7", "rmesa@puntocash.com", "Ramón Mesa", "76050433127", "sede-matanzas"),
-  worker("trb-8", "ecabrera@puntocash.com", "Elena Cabrera", "90081566248", "sede-santa-clara"),
-  worker("trb-9", "jvaldes@puntocash.com", "Jorge Valdés", "83030711059", "sede-santa-clara"),
-  worker("trb-10", "sperdomo@puntocash.com", "Sonia Perdomo", "92110322160", "sede-camaguey"),
-  worker("trb-11", "gsuarez@puntocash.com", "Gabriel Suárez", "87070988271", "sede-holguin"),
+  worker("trb-1", "jperez", "Juan Pérez", "88041203211", "sede-vedado"),
+  worker("trb-2", "lgomez", "Lidia Gómez", "91072355442", "sede-vedado"),
+  worker("trb-3", "afonseca", "Alberto Fonseca", "85110488763", "sede-vedado"),
+  worker("trb-4", "mrivas", "Marisol Rivas", "79031188204", "sede-habana-vieja"),
+  worker("trb-5", "cdiaz", "Carlos Díaz", "94022177315", "sede-habana-vieja"),
+  worker("trb-6", "ynunez", "Yanet Núñez", "88122099436", "sede-miramar"),
+  worker("trb-7", "rmesa", "Ramón Mesa", "76050433127", "sede-matanzas"),
+  worker("trb-8", "ecabrera", "Elena Cabrera", "90081566248", "sede-santa-clara"),
+  worker("trb-9", "jvaldes", "Jorge Valdés", "83030711059", "sede-santa-clara"),
+  worker("trb-10", "sperdomo", "Sonia Perdomo", "92110322160", "sede-camaguey"),
+  worker("trb-11", "gsuarez", "Gabriel Suárez", "87070988271", "sede-holguin"),
   /* Desactivado por su Admin: el único que puede volver a activarlo (FR-AD-TRAB-15). */
-  worker("trb-12", "nalonso@puntocash.com", "Noelia Alonso", "95041255382", "sede-holguin", "desactivado"),
+  worker("trb-12", "nalonso", "Noelia Alonso", "95041255382", "sede-holguin", "desactivado"),
+  /* La sede única de Centro Divisas (FR-AD-DOM-9): con cajas y con personal,
+     para que su Inicio y su ficha se lean como una sede en marcha y no como un
+     caso a medio sembrar. */
+  worker("trb-13", "dmoreno", "Dayana Moreno", "89061744593", "sede-centro-habana"),
+  worker("trb-14", "ifuentes", "Ismael Fuentes", "81092066404", "sede-centro-habana"),
 ];
 
 const deactivated = mutableWorkers.find((w) => w.id === "trb-12");
@@ -196,6 +214,7 @@ export interface CrearTrabajadorInput {
   identifier: string;
   fullName: string;
   firstName: string;
+  documentType: DocumentType;
   documentId: string;
   phone: string;
   email: string;
@@ -232,6 +251,7 @@ export function crearTrabajador(
     fullName: input.fullName.trim(),
     firstName: first,
     initials: `${first.charAt(0)}${second.charAt(0)}`.toUpperCase(),
+    documentType: input.documentType,
     documentId: input.documentId.trim(),
     phone: input.phone.trim(),
     email: input.email.trim(),
@@ -314,4 +334,96 @@ export function reasignarTrabajador(
 
   target.branchId = branchId;
   return { ok: true, value: target };
+}
+
+/**
+ * Editar los datos personales — **FR-AD-TRAB-9**.
+ *
+ * ── Qué se puede cambiar aquí, y qué no ──────────────────────────────────
+ * Cambian **nombre, apellidos, tipo y número de documento, y teléfono**: los
+ * datos que describen a la persona y que se corrigen cuando se escribieron
+ * mal o cuando cambia su documento.
+ *
+ * **No cambian aquí dos cosas, y por motivos distintos.** El **identificador
+ * de acceso** es con lo que inicia sesión: cambiarlo en caliente dejaría
+ * fuera a alguien que está trabajando, y no hay ninguna pantalla que avise de
+ * eso. El **correo** no es un dato de contacto sino el canal del segundo
+ * factor **[R13]**, y por eso **FR-AD-TRAB-9** lo nombra aparte y
+ * **FR-AD-TRAB-10** lo mete dentro de la asistencia de acceso, donde quien lo
+ * corrige está mirando precisamente el problema que causa.
+ *
+ * La **sede** tampoco: tiene su propia acción porque cambia dónde puede
+ * iniciar sesión (**FR-AD-TRAB-14**), y eso no es una edición de datos.
+ */
+export interface EditarTrabajadorInput {
+  fullName: string;
+  firstName: string;
+  documentType: DocumentType;
+  documentId: string;
+  phone: string;
+}
+
+export function editarTrabajador(
+  scope: Scope,
+  ctx: WorkerScopeContext,
+  workerId: string,
+  input: EditarTrabajadorInput,
+): WorkerWriteResult<NetworkWorker> {
+  const target = findWorkerById(workerId);
+  if (!target) return { ok: false, reason: "trabajador-no-encontrado" };
+
+  const denial = guardScope(scope, target.branchId, ctx);
+  if (denial) return { ok: false, reason: denial };
+
+  /* El documento sigue siendo único en la red, pero **el suyo propio no
+     cuenta**: guardar la ficha sin tocar el documento no puede fallar por
+     duplicado contra sí mismo. */
+  const documento = input.documentId.trim();
+  if (mutableWorkers.some((w) => w.id !== target.id && w.documentId === documento)) {
+    return { ok: false, reason: "documento-duplicado" };
+  }
+
+  const first = input.firstName.trim() || input.fullName.trim().split(" ")[0] || input.fullName;
+  const second = input.fullName.trim().split(" ")[1] ?? "";
+
+  target.fullName = input.fullName.trim();
+  target.firstName = first;
+  target.initials = `${first.charAt(0)}${second.charAt(0)}`.toUpperCase();
+  target.documentType = input.documentType;
+  target.documentId = documento;
+  target.phone = input.phone.trim();
+
+  return { ok: true, value: target };
+}
+
+/**
+ * Cambiar el correo de verificación — **FR-AD-TRAB-10**.
+ *
+ * Es una escritura aparte de `editarTrabajador` a propósito. El correo **no es
+ * un dato de contacto**: es el canal por el que llega el segundo factor
+ * **[R13]**, así que tocarlo decide si esa persona puede entrar o no. Por eso
+ * vive dentro de la asistencia de acceso, donde quien lo cambia está mirando
+ * el problema que causa, y por eso exige motivo.
+ *
+ * Un correo inválido se rechaza con el mismo motivo que en el alta: sin correo
+ * válido no hay segundo factor, y sin segundo factor no hay sesión.
+ */
+export function cambiarCorreoTrabajador(
+  scope: Scope,
+  ctx: WorkerScopeContext,
+  workerId: string,
+  email: string,
+  motivo: string,
+): WorkerWriteResult<{ worker: NetworkWorker; anterior: string }> {
+  const target = findWorkerById(workerId);
+  if (!target) return { ok: false, reason: "trabajador-no-encontrado" };
+
+  const denial = guardScope(scope, target.branchId, ctx);
+  if (denial) return { ok: false, reason: denial };
+  if (!isMotivoValido(motivo)) return { ok: false, reason: "motivo-requerido" };
+  if (!isCorreoValido(email)) return { ok: false, reason: "correo-requerido" };
+
+  const anterior = target.email;
+  target.email = email.trim();
+  return { ok: true, value: { worker: target, anterior } };
 }

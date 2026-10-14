@@ -1,5 +1,15 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { esperarFondeoVivo, rellenar } from "./worker-helpers";
+import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
+
+/*
+ * La jornada se siembra con 1.200 EUR, que es lo que abría el fondeo que había
+ * aquí. El grupo de encaminamiento trata justo de la caja cerrada y de la
+ * transición al abrirla, así que se sale de la siembra y abre por la interfaz.
+ */
+test.use({ storageState: cajaConJornadaAbierta({ EUR: 1_200 }) });
+
 /**
  * Worker Nueva operación — Giros — Enviar giro
  * (/worker/nueva-operacion/giros/enviar, also reachable at the bare
@@ -22,8 +32,9 @@ function onScreen(page: Page, text: string | RegExp) {
 
 async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "1200" }) {
   await page.goto("/worker/caja/fondeo-inicial");
+  await esperarFondeoVivo(page);
   for (const [currency, value] of Object.entries(fondos)) {
-    await page.getByLabel(`Fondo inicial en ${currency}`).fill(value);
+    await rellenar(page.getByLabel(`Fondo inicial en ${currency}`), value);
   }
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
@@ -34,6 +45,7 @@ async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "
 }
 
 async function goToGiros(page: Page) {
+  await page.goto("/worker/caja");
   await page.getByRole("link", { name: "Nueva operación" }).click();
   await page.getByRole("link", { name: /Giros/ }).click();
   // The service slug is an operation selector now — Enviar giro is one of
@@ -46,6 +58,9 @@ async function openJornadaAndGoToGiros(page: Page, fondos?: Record<string, strin
   await openJornada(page, fondos);
   await goToGiros(page);
 }
+
+/* `goToGiros` ya entra por Caja, así que con la jornada sembrada no hace falta
+   abrirla antes: donde el grupo no se sale de la siembra, se llama directa. */
 
 interface FillOverrides {
   currency?: string;
@@ -95,6 +110,14 @@ async function completeGiro(page: Page, overrides: FillOverrides = {}) {
 }
 
 test.describe("Giros — service and routing", () => {
+  /*
+   * Necesita la caja CERRADA, así que se sale de la siembra del archivo. Y no
+   * solo por afirmar lo contrario de lo que habría: el estado sembrado se
+   * repone al hidratar, de modo que la pantalla bloqueada que pintó el
+   * servidor se sustituye por la de trabajo a media prueba.
+   */
+  test.use({ storageState: EQUIPO_SIN_JORNADA });
+
   test("is enabled in Nueva operación and its card leads to the operation selector", async ({ page }) => {
     await page.goto("/worker/nueva-operacion");
     const card = page.getByRole("link", { name: /Giros/ });
@@ -128,7 +151,7 @@ test.describe("Giros — service and routing", () => {
 
 test.describe("Registrar giro — form", () => {
   test.beforeEach(async ({ page }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
   });
 
   test("renders the Remitente, Beneficiario and Datos del giro sections", async ({ page }) => {
@@ -240,7 +263,7 @@ test.describe("Registrar giro — form", () => {
 
 test.describe("Revisar giro", () => {
   test.beforeEach(async ({ page }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await fillValidForm(page);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible();
@@ -285,7 +308,7 @@ test.describe("Revisar giro", () => {
 
 test.describe("Confirmar envío", () => {
   test.beforeEach(async ({ page }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await fillValidForm(page);
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Continuar a confirmar" }).click();
@@ -330,7 +353,7 @@ test.describe("External failure", () => {
   test("provider failure creates no operation, no Caja movement, no balance change, and no success screen", async ({
     page,
   }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await fillValidForm(page, { beneficiaryName: "Falla Externa" });
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Continuar a confirmar" }).click();
@@ -349,7 +372,7 @@ test.describe("External failure", () => {
 
 test.describe("Success — Caja, Operaciones and result", () => {
   test("confirming creates one commercial Entrada linked to the operation code", async ({ page }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await completeGiro(page);
 
     // The result screen has no "Ir a Caja" action either — same shell nav.
@@ -365,7 +388,7 @@ test.describe("Success — Caja, Operaciones and result", () => {
   });
 
   test("the new operation appears in Operaciones with the sender as Cliente", async ({ page }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await completeGiro(page);
 
     await page.getByRole("link", { name: "Ir a Operaciones" }).click();
@@ -377,7 +400,7 @@ test.describe("Success — Caja, Operaciones and result", () => {
   });
 
   test("Operation Detail resolves to the specialized Giro detail", async ({ page }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await completeGiro(page);
     await page.getByRole("link", { name: "Ir a Operaciones" }).click();
 
@@ -396,7 +419,7 @@ test.describe("Success — Caja, Operaciones and result", () => {
   });
 
   test("Result screen shows both codes, sender, beneficiary and canonical timestamp", async ({ page }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await completeGiro(page);
 
     await expect(onScreen(page, "Código de operación")).toBeVisible();
@@ -412,7 +435,7 @@ test.describe("Success — Caja, Operaciones and result", () => {
   });
 
   test('"Imprimir comprobante" triggers the existing browser-print mechanism', async ({ page }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await completeGiro(page);
 
     let printed = false;
@@ -427,7 +450,7 @@ test.describe("Success — Caja, Operaciones and result", () => {
   });
 
   test("does not auto-redirect away from the result screen", async ({ page }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await completeGiro(page);
     await page.waitForTimeout(800);
     await expect(page.getByText("Giro registrado correctamente")).toBeVisible();
@@ -438,7 +461,7 @@ test.describe("Cancellation and back navigation", () => {
   test("Cancelar on Step 1 with an untouched form exits without a confirmation dialog", async ({
     page,
   }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await page.getByRole("button", { name: "Cancelar" }).click();
     await expect(page).toHaveURL(/\/worker\/nueva-operacion$/);
   });
@@ -446,7 +469,7 @@ test.describe("Cancellation and back navigation", () => {
   test("Cancelar on Step 1 with entered data shows the abandonment dialog and discards nothing until confirmed", async ({
     page,
   }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await page.locator("#giro-remitente-nombre").fill("Carlos");
     await page.getByRole("button", { name: "Cancelar" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
@@ -459,7 +482,7 @@ test.describe("Scope protection", () => {
   test("no delivery-method selector, no delivery/transfer option, no bank-account field, no fee/exchange-rate UI", async ({
     page,
   }) => {
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await expect(page.getByText("Entrega", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Transferencia", { exact: true })).toHaveCount(0);
     await expect(page.getByText(/cuenta bancaria/i)).toHaveCount(0);
@@ -471,7 +494,7 @@ test.describe("Giros — layout", () => {
   for (const width of [1440, 1280]) {
     test(`fits without page-level horizontal scroll at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await openJornadaAndGoToGiros(page);
+      await goToGiros(page);
       await fillValidForm(page);
 
       const overflows = await page.evaluate(
@@ -488,7 +511,7 @@ test.describe("Giros — layout", () => {
       if (message.type() === "error") errors.push(message.text());
     });
 
-    await openJornadaAndGoToGiros(page);
+    await goToGiros(page);
     await completeGiro(page);
     await page.getByRole("link", { name: "Ir a Operaciones" }).click();
 

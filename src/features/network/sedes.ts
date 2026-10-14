@@ -27,6 +27,19 @@ import { isGlobal, type Scope } from "./scope";
 /** La cara pública de una sede. Idéntica a la que Kiosco y Pantalla ya leían. */
 export interface Branch {
   id: string;
+  /**
+   * Código de sede: **único en la red** (**FR-SA-SEDE-7**) y parte de los
+   * datos maestros que fija PuntoCash (**FR-SA-SEDE-5**, regla A3). Es lo que
+   * identifica una sede en un listado o en una conversación, donde el nombre
+   * público puede repetirse o cambiar.
+   *
+   * Lo piden cuatro requisitos a la vez: **FR-AD-SEDE-1** (listado),
+   * **FR-AD-SCOPE-2** y **FR-AD-SCOPE-3** (selector y cabecera) y
+   * **FR-AD-HOME-6** (tabla por sede). Ningún requisito fija su **formato**;
+   * solo su unicidad, así que estos tres caracteres son una convención de la
+   * demostración y no un contrato.
+   */
+  code: string;
   /** Nombre público, siempre bajo la marca PuntoCash. */
   name: string;
   address: string;
@@ -68,6 +81,7 @@ export interface Sede extends Branch {
 const mutableSedes: Sede[] = [
   {
     id: "sede-vedado",
+    code: "VED",
     name: "PuntoCash Vedado",
     address: "Calle 23 esq. a L, Vedado",
     locality: "Plaza de la Revolución, La Habana",
@@ -79,6 +93,7 @@ const mutableSedes: Sede[] = [
   },
   {
     id: "sede-habana-vieja",
+    code: "OBI",
     name: "PuntoCash Obispo",
     address: "Obispo No. 257 e/ Aguiar y Cuba",
     locality: "La Habana Vieja, La Habana",
@@ -90,6 +105,7 @@ const mutableSedes: Sede[] = [
   },
   {
     id: "sede-miramar",
+    code: "MIR",
     name: "PuntoCash Miramar",
     address: "5ta Avenida esq. a 42, Miramar",
     locality: "Playa, La Habana",
@@ -101,6 +117,7 @@ const mutableSedes: Sede[] = [
   },
   {
     id: "sede-matanzas",
+    code: "MTZ",
     name: "PuntoCash Matanzas",
     address: "Calle Medio No. 28004 e/ Jovellanos y Matanzas",
     locality: "Matanzas, Matanzas",
@@ -115,6 +132,7 @@ const mutableSedes: Sede[] = [
   },
   {
     id: "sede-santa-clara",
+    code: "SCL",
     name: "PuntoCash Santa Clara",
     address: "Boulevard No. 12 e/ Villuendas y Plácido",
     locality: "Santa Clara, Villa Clara",
@@ -126,6 +144,7 @@ const mutableSedes: Sede[] = [
   },
   {
     id: "sede-camaguey",
+    code: "CMG",
     name: "PuntoCash Camagüey",
     address: "República No. 356 e/ San Martín y Correa",
     locality: "Camagüey, Camagüey",
@@ -136,7 +155,24 @@ const mutableSedes: Sede[] = [
     createdAt: "2026-05-04T09:00:00.000Z",
   },
   {
+    /* La única sede de su mercante. Existe para que **FR-AD-SCOPE-3** —con una
+       sola sede en el alcance, la cabecera muestra su código y nombre como
+       texto fijo en vez de un selector— se pueda recorrer y probar sin
+       construir datos a mano, que es lo que pide **FR-AD-DOM-9**. */
+    id: "sede-centro-habana",
+    code: "CHB",
+    name: "PuntoCash Centro Habana",
+    address: "Avenida Salvador Allende No. 412 e/ Infanta y Belascoaín",
+    locality: "Centro Habana, La Habana",
+    hours: "Lunes a sábado · 9:00 a.m. – 6:00 p.m.",
+    phone: "+53 7 878 4410",
+    status: "activa",
+    services: ["cambio-moneda", "remesas", "giros"],
+    createdAt: "2026-03-12T09:00:00.000Z",
+  },
+  {
     id: "sede-holguin",
+    code: "HOL",
     name: "PuntoCash Holguín",
     address: "Calle Libertad No. 187 e/ Frexes y Aguilera",
     locality: "Holguín, Holguín",
@@ -147,11 +183,28 @@ const mutableSedes: Sede[] = [
     createdAt: "2026-05-04T09:00:00.000Z",
   },
   {
+    /* Recién entregada y todavía **sin ninguna caja**: es el estado en que
+       llega toda sede nueva, y el que FR-AD-CAJA-3 exige poder ver. Sin una
+       así, el aviso de Inicio, el indicador de la barra lateral y el bloque
+       vacío de Cajas quedaban implementados y sin forma de recorrerlos. */
+    id: "sede-cerro",
+    code: "CER",
+    name: "PuntoCash Cerro",
+    address: "Calzada del Cerro No. 1204 esq. a Patria",
+    locality: "Cerro, La Habana",
+    hours: "Lunes a sábado · 9:00 a.m. – 5:30 p.m.",
+    phone: "+53 7 877 4410",
+    status: "activa",
+    services: ["cambio-moneda", "remesas", "giros"],
+    createdAt: "2026-09-25T09:00:00.000Z",
+  },
+  {
     /* Recién entrada en la red y todavía sin operador: nace suspendida porque
        sin administrador responsable nadie puede crearle cajas ni vincularle
        equipos (FR-SA-SEDE-10). Es el caso que el Inicio del Super Admin debe
        destacar (FR-SA-HOME-7). */
     id: "sede-santiago",
+    code: "STG",
     name: "PuntoCash Santiago",
     address: "Enramadas No. 402 e/ San Félix y Carnicería",
     locality: "Santiago de Cuba, Santiago de Cuba",
@@ -176,6 +229,13 @@ export const BRANCHES: readonly Branch[] = mutableSedes;
 export function findSedeById(id: string | null | undefined): Sede | null {
   if (!id) return null;
   return mutableSedes.find((sede) => sede.id === id) ?? null;
+}
+
+/** Busca por código de sede, sin distinguir mayúsculas ni espacios sobrantes. */
+export function findSedeByCode(code: string | null | undefined): Sede | null {
+  if (!code) return null;
+  const needle = code.trim().toUpperCase();
+  return mutableSedes.find((sede) => sede.code === needle) ?? null;
 }
 
 export function findBranchById(id: string | null | undefined): Branch | null {
@@ -241,6 +301,7 @@ export function isMotivoValido(reason: string): boolean {
 
 export interface CrearSedeInput {
   id: string;
+  code: string;
   name: string;
   address: string;
   locality: string;
@@ -256,11 +317,17 @@ export interface CrearSedeInput {
  */
 export function crearSede(scope: Scope, input: CrearSedeInput, now = new Date()): SedeWriteResult<Sede> {
   if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
-  if (findSedeById(input.id)) return { ok: false, reason: "codigo-duplicado" };
+  /* Dos comprobaciones y no una: el identificador interno y el **código** son
+     cosas distintas, y el que **FR-SA-SEDE-7** exige único en la red es el
+     código ("Ya existe una sede con ese código."). */
+  if (findSedeById(input.id) || findSedeByCode(input.code)) {
+    return { ok: false, reason: "codigo-duplicado" };
+  }
   if (input.services.length === 0) return { ok: false, reason: "sin-servicios" };
 
   const sede: Sede = {
     id: input.id,
+    code: input.code.trim().toUpperCase(),
     name: input.name,
     address: input.address,
     locality: input.locality,
@@ -274,13 +341,23 @@ export function crearSede(scope: Scope, input: CrearSedeInput, now = new Date())
   return { ok: true, value: sede };
 }
 
-export type EditarSedeInput = Partial<Pick<Sede, "name" | "address" | "locality" | "hours" | "phone">>;
+export type EditarSedeInput = Partial<
+  Pick<Sede, "code" | "name" | "address" | "locality" | "hours" | "phone">
+>;
 
 export function editarSede(scope: Scope, sedeId: string, input: EditarSedeInput): SedeWriteResult<Sede> {
   if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
   const sede = findSedeById(sedeId);
   if (!sede) return { ok: false, reason: "sede-no-encontrada" };
   if (sede.status === "cerrada") return { ok: false, reason: "sede-cerrada" };
+
+  /* Cambiar el código sigue estando sujeto a su unicidad (**FR-SA-SEDE-7**):
+     editar no es una puerta trasera para duplicarlo. */
+  if (input.code !== undefined) {
+    const otra = findSedeByCode(input.code);
+    if (otra && otra.id !== sede.id) return { ok: false, reason: "codigo-duplicado" };
+    input = { ...input, code: input.code.trim().toUpperCase() };
+  }
 
   Object.assign(sede, input);
   return { ok: true, value: sede };

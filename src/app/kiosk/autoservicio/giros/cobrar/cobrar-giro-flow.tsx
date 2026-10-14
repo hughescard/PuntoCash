@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, BadgeCheck, CircleCheck, KeyRound, Search } from
 
 import { Alert, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/components/ui";
 import { KioskRequestTicket, TicketRow } from "@/components/patterns/kiosk-request-ticket";
+import { KioskCancelDialog } from "@/components/patterns/kiosk-cancel-dialog";
 import { formatMoney } from "@/lib/format";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import { registerSelfServiceRequest, type KioskRequest } from "@/features/kiosk/self-service-request";
@@ -30,12 +31,30 @@ type Step = "codigo" | "revisar" | "solicitud";
 export function CobrarGiroAutoservicioFlow(): React.JSX.Element {
   const router = useRouter();
   const [step, setStep] = React.useState<Step>("codigo");
+  const [cancelOpen, setCancelOpen] = React.useState(false);
   const [code, setCode] = React.useState("");
   const [searching, setSearching] = React.useState(false);
   const [notFound, setNotFound] = React.useState(false);
   const [transfer, setTransfer] = React.useState<TransferPayoutSnapshot | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [request, setRequest] = React.useState<KioskRequest | null>(null);
+
+  /* **FR-AS-IMP-3**: «Cancelar» de cada flujo pide confirmación cuando hay
+     datos significativos introducidos. Aquí lo significativo es un código
+     escrito o un transfer ya localizado — descartarlo sin preguntar obliga a
+     volver a pedir el código a quien está de pie frente al kiosco. */
+  const dirty = code.trim() !== "" || transfer !== null;
+
+  function requestCancel() {
+    if (dirty) setCancelOpen(true);
+    else router.push(GIROS_HOME);
+  }
+
+  function confirmCancel() {
+    setCancelOpen(false);
+    router.push(GIROS_HOME);
+  }
+
 
   async function search(event: React.FormEvent) {
     event.preventDefault();
@@ -90,7 +109,7 @@ export function CobrarGiroAutoservicioFlow(): React.JSX.Element {
         <FlowHeader
           title="Revisa tu giro"
           description="Confirma que estos datos son correctos antes de generar tu código."
-          onCancel={() => router.push(GIROS_HOME)}
+          onCancel={requestCancel}
         />
 
         <Card>
@@ -121,6 +140,8 @@ export function CobrarGiroAutoservicioFlow(): React.JSX.Element {
             {submitting ? "Generando…" : "Generar código"}
           </Button>
         </div>
+
+        <KioskCancelDialog open={cancelOpen} onOpenChange={setCancelOpen} onConfirm={confirmCancel} />
       </div>
     );
   }
@@ -130,7 +151,7 @@ export function CobrarGiroAutoservicioFlow(): React.JSX.Element {
       <FlowHeader
         title="Cobrar giro"
         description="Introduce el código que te dio el remitente para localizar tu giro."
-        onCancel={() => router.push(GIROS_HOME)}
+        onCancel={requestCancel}
       />
 
       <div className="grid grid-cols-1 items-start gap-6 wide:grid-cols-2">
@@ -190,6 +211,8 @@ export function CobrarGiroAutoservicioFlow(): React.JSX.Element {
           </CardContent>
         </Card>
       </div>
+
+      <KioskCancelDialog open={cancelOpen} onOpenChange={setCancelOpen} onConfirm={confirmCancel} />
     </div>
   );
 }

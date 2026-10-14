@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import { LOCALE } from "@/lib/format";
+
 /** Capitalizes the first letter — `Intl` weekday/month names come back lowercase in es-ES. */
 function capitalize(value: string): string {
   return value.length ? value[0]!.toUpperCase() + value.slice(1) : value;
@@ -39,9 +41,12 @@ function LiveClock(): React.JSX.Element {
     return () => clearInterval(id);
   }, []);
 
-  const time = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(now);
+  /* **FR-PANT-CLOCK-3**: el mismo criterio de localización que el resto de
+     PuntoCash. `LOCALE` es la constante compartida; repetir el literal aquí
+     dejaba el criterio escrito en dos sitios. */
+  const time = new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" }).format(now);
   const date = capitalize(
-    new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" }).format(now),
+    new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long" }).format(now),
   );
 
   return (

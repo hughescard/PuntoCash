@@ -45,9 +45,17 @@ export interface Register {
  * vincular mientras `/admin/equipos` no exista. El número varía entre sedes
  * para que los listados de administración no se vean uniformes.
  *
- * `sede-santiago` es la excepción deliberada: recién entrada en la red, sin
- * operador y sin poner en marcha. Es el caso que el Inicio de las dos consolas
- * debe destacar (FR-AD-CAJA-3, FR-SA-HOME-3).
+ * Hay **dos** sedes sin cajas, y cada una sirve a una consola distinta:
+ *
+ *   · `sede-santiago` — recién entrada en la red, sin operador asignado. Al no
+ *     tener operador queda fuera del alcance de todo administrador, así que es
+ *     el caso del Inicio de **Super Admin** (FR-SA-HOME-3).
+ *   · `sede-cerro` — asignada a Antilla y sin poner en marcha. Es la que
+ *     recorre **FR-AD-CAJA-3** y el indicador de Cajas del shell de `/admin`.
+ *
+ * Las dos se declaran en cero a propósito, en vez de quedarse fuera del mapa:
+ * una ausencia se lee como olvido, y un valor por defecto futuro las llenaría
+ * de cajas sin que nadie lo note.
  */
 const SEED_REGISTERS_PER_BRANCH: Readonly<Record<string, number>> = {
   "sede-vedado": 4,
@@ -56,7 +64,9 @@ const SEED_REGISTERS_PER_BRANCH: Readonly<Record<string, number>> = {
   "sede-matanzas": 4,
   "sede-santa-clara": 3,
   "sede-camaguey": 4,
+  "sede-centro-habana": 3,
   "sede-holguin": 3,
+  "sede-cerro": 0,
   "sede-santiago": 0,
 };
 

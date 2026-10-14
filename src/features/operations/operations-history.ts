@@ -574,7 +574,13 @@ const TOTAL_OPERATIONS = 128;
 const mutableOperations: OperationRecord[] = [
   ...HERO_RECORDS,
   ...Array.from({ length: TOTAL_OPERATIONS - HERO_RECORDS.length }, (_, i) => filler(i)),
-];
+  /* **FR-OPS-1**: «de la más reciente a la más antigua». Se ordena una vez, al
+     cargar el módulo, en vez de en cada lectura: los registros precargados se
+     declaran agrupados por servicio para que se lean bien como datos, no por
+     fecha, y `registerCompletedOperation` inserta al principio, que es donde
+     corresponde una operación recién creada. Así el orden es una propiedad del
+     conjunto y ninguna pantalla tiene que acordarse de ordenar. */
+].sort((a, b) => Date.parse(b.fechaHora) - Date.parse(a.fechaHora));
 
 export const OPERATIONS: readonly OperationRecord[] = mutableOperations;
 

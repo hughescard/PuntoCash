@@ -87,6 +87,22 @@ const mutableAssignments: Assignment[] = [
     startedAt: "2026-05-04T09:00:00.000Z",
     startedReason: "Entrega inicial de la sede al operador seleccionado",
   },
+  {
+    /* La sede recién entregada, todavía sin montar. */
+    id: "asg-9",
+    branchId: "sede-cerro",
+    operatorId: "op-antilla",
+    startedAt: "2026-09-25T09:00:00.000Z",
+    startedReason: "Entrega de una sede nueva al operador que ya administra la zona",
+  },
+  {
+    /* La única sede de Centro Divisas: el caso de FR-AD-SCOPE-3. */
+    id: "asg-10",
+    branchId: "sede-centro-habana",
+    operatorId: "op-centro",
+    startedAt: "2026-03-12T09:00:00.000Z",
+    startedReason: "Apertura de la sucursal con su mercante inicial",
+  },
   /* sede-santiago no aparece: está sin operador asignado a propósito. */
 ];
 

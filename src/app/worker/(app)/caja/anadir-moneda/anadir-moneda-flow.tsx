@@ -30,6 +30,7 @@ import {
   habilitarMoneda,
   type CajaCurrencyCatalogEntry,
 } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 
 const CAJA_ROUTE = "/worker/caja" as Route;
 const FONDEO_INICIAL_ROUTE = "/worker/caja/fondeo-inicial" as Route;
@@ -49,6 +50,9 @@ function noopSubscribe() {
  */
 export function AnadirMonedaFlow(): React.JSX.Element {
   const router = useRouter();
+  // Repone lo que el equipo tenga guardado —qué monedas están habilitadas,
+  // entre otras cosas— y vuelve a pintar si cambia (`features/caja/use-caja.ts`).
+  const caja = useCaja();
   const worker = getCurrentWorker();
   const jornada = getJornadaActual();
 
@@ -78,8 +82,13 @@ export function AnadirMonedaFlow(): React.JSX.Element {
     const q = normalizeForSearch(query);
     if (!q) return available;
     return available.filter((entry) => normalizeForSearch(`${entry.code} ${entry.name}`).includes(q));
+    /* `available` se recalcula en cada render, así que ponerlo en las
+       dependencias anularía el memo. `caja.version` sí cambia justo cuando el
+       catálogo habilitado cambia de verdad —al habilitar una moneda, o al
+       reponer lo guardado en el equipo—, que es lo único que debe
+       recalcularlo. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, caja.version]);
 
   const selectedEntry = available.find((entry) => entry.code === selected) ?? null;
 

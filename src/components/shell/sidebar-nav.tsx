@@ -97,3 +97,46 @@ export function SidebarNavLink({
     </Link>
   );
 }
+
+/* -------------------------------------------------------------------------
+ * Navegación agrupada
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Un bloque de la barra lateral. Lo necesita la consola de administración:
+ * trece destinos planos no se leen, así que se agrupan en Operación, Sucursal
+ * y Configuración (**FR-AD-SHELL-2**).
+ */
+export interface NavGroup {
+  /** Rótulo del bloque. Es una etiqueta, no un destino: nunca es un enlace. */
+  label: string;
+  items: readonly NavItem[];
+}
+
+/**
+ * Los rótulos usan el estilo de "overline" del manual (§12) y un tono apagado
+ * sobre navy: deben ordenar la lista sin competir con los destinos, que son lo
+ * único pulsable. El activo se sigue marcando igual que en la barra plana —
+ * riel dorado más superficie clara— porque la agrupación no cambia qué es el
+ * estado actual, solo dónde está.
+ */
+export function SidebarNavGroups({
+  groups,
+  className,
+}: {
+  groups: readonly NavGroup[];
+  className?: string;
+}): React.JSX.Element {
+  return (
+    <div className={cn("flex flex-col gap-6", className)}>
+      {groups.map((group) => (
+        <div key={group.label}>
+          <p className="px-3 pb-2 text-overline uppercase text-text-on-primary-muted">
+            {group.label}
+          </p>
+          <SidebarNav items={group.items} />
+        </div>
+      ))}
+    </div>
+  );
+}

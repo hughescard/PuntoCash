@@ -1,44 +1,78 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const BASE_URL = "http://localhost:3000";
+import { BASE_URL, EQUIPO_SIN_JORNADA } from "./tests/storage-state";
 
 /**
- * UI regression tests for the PuntoCash design system.
+ * La batería de pruebas de PuntoCash.
  *
- * Scope is deliberately narrow: these guard the accessibility contract of the
- * form foundation, not visual appearance. See `tests/README.md`.
+ * Tres clases de prueba conviven aquí:
+ *
+ *   · **Extremo a extremo** de `/worker` y `/admin`, en navegador.
+ *   · **De dominio**, sin navegador (`caja-domain-*`, `network-domain`), que
+ *     ejercitan los módulos de `src/features` directamente.
+ *   · El **contrato de accesibilidad** del formulario (`design-system-forms`),
+ *     que fue la primera y da nombre a la carpeta `design-system`.
+ *
+ * El alcance era deliberadamente estrecho cuando solo existía la tercera; hoy
+ * es una de veintiocho. Ver `tests/README.md`.
  */
-
-/**
- * Every `/worker` route now runs on a computer that is linked to one caja of
- * one sede (Worker FRD §2.1): `RegisterDeviceGate` shows the pairing screen —
- * not the sign-in, not the shell — until that link exists, and the link lives
- * in the device's own `localStorage`.
- *
- * A browser context starts empty, so without this every Worker test would see
- * the pairing screen instead of the app. Seeding the device session here is
- * the honest baseline: in production a caja is a machine an admin already
- * linked, and no test is about the moment before that.
- *
- * Points at **Caja 03 of PuntoCash Vedado** because that is the only caja with
- * simulated operational data (balances, jornada, movements) — the same one the
- * demo's admin simulator lets you choose (FR-DEV-9).
- *
- * A future test that needs the pairing screen itself opts out per file with
- * `test.use({ storageState: undefined })`.
- */
-const LINKED_CAJA_DEVICE = {
-  status: "linked",
-  deviceId: "CAJ-0000-0001",
-  branchId: "sede-vedado",
-  registerId: "sede-vedado:caja-03",
-  linkedAt: "2026-09-01T08:00:00.000Z",
-  linkMethod: "codigo",
-};
 
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
+
+  /*
+   * Seis en local, uno en CI.
+   *
+   * La máquina aguanta más, pero el cuello de botella no es la CPU: los seis
+   * trabajadores pegan contra **un solo** servidor de desarrollo, que compila
+   * cada ruta la primera vez que alguien la pide. Con más paralelismo, esa
+   * primera compilación se solapa con más pruebas a la vez, y lo que aparece
+   * no son fallos nuevos sino esperas más largas — justo la clase de carrera
+   * que ya obligó a esperar a `main` tras navegar (ver README).
+   *
+   * Si vuelven tiempos de espera agotados en pruebas que antes pasaban, bajar
+   * este número es lo primero que hay que probar, antes de tocar la prueba.
+   * Ya ocurrió con diez: la corrida pasó de 3 a 8 fallos sin que cambiara una
+   * línea del producto.
+   *
+   * En CI se queda en uno: `admin-cajas` escribe contra el dominio en memoria
+   * del servidor, y un solo trabajador hace ese estado predecible.
+   */
+  workers: process.env.CI ? 1 : 6,
+
+  /*
+   * Sesenta segundos, no los treinta de serie.
+   *
+   * No mide nada del producto: mide el servidor de desarrollo. `next dev`
+   * compila cada ruta la primera vez que alguien la pide, y con seis
+   * trabajadores esa primera compilación se solapa con las de otras rutas. Una
+   * prueba que entra por la interfaz puede gastar la mitad de su plazo
+   * esperando a que llegue el JavaScript de la pantalla.
+   *
+   * Ya ocurrió: `admin-acceso` agotó los treinta segundos esperando que el
+   * botón de «Iniciar sesión» se habilitara —está deshabilitado hasta que el
+   * formulario hidrata— en una corrida de 6 minutos, habiendo pasado en dos de
+   * 3,6. Lo que cambió fue la carga, no el código.
+   *
+   * El coste de subirlo es que una prueba de verdad colgada tarda el doble en
+   * rendirse. Se paga solo cuando algo falla, y a cambio los fallos que
+   * aparecen son fallos.
+   */
+  timeout: 60_000,
+
+  /*
+   * Y diez segundos por aserción, no los cinco de serie, por lo mismo: una
+   * aserción que cae justo después de navegar compite con la compilación de esa
+   * ruta. Ya pasó con la pantalla de verificación, que esperaba un aviso que el
+   * cliente todavía no había pintado.
+   *
+   * Es un margen para el servidor de desarrollo, no una licencia para no
+   * esperar lo que hay que esperar: una prueba que necesita más que esto está
+   * esperando la cosa equivocada.
+   */
+  expect: { timeout: 10_000 },
+
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "line" : "list",
@@ -49,41 +83,12 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     trace: "on-first-retry",
 
-    storageState: {
-      /*
-       * El vínculo vive en dos sitios que deben contar lo mismo: `localStorage`,
-       * que es la fuente de verdad a la que el terminal reacciona, y la cookie
-       * espejo, que es lo que el layout de servidor lee para decidir qué
-       * renderizar (FR-DEV-1.1). Sembrar solo uno deja al servidor y al cliente
-       * en desacuerdo, y la suite entraría en un refresco por navegación.
-       */
-      cookies: [
-        {
-          name: "pc_caja_device",
-          value: encodeURIComponent(
-            JSON.stringify({
-              deviceId: LINKED_CAJA_DEVICE.deviceId,
-              branchId: LINKED_CAJA_DEVICE.branchId,
-              registerId: LINKED_CAJA_DEVICE.registerId,
-            }),
-          ),
-          domain: "localhost",
-          path: "/",
-          expires: -1,
-          httpOnly: false,
-          secure: false,
-          sameSite: "Lax" as const,
-        },
-      ],
-      origins: [
-        {
-          origin: BASE_URL,
-          localStorage: [
-            { name: "puntocash.caja.device", value: JSON.stringify(LINKED_CAJA_DEVICE) },
-          ],
-        },
-      ],
-    },
+    /*
+     * La línea de salida: equipo vinculado a Caja 03, caja sin abrir. Vive en
+     * `tests/storage-state.ts`, junto a `cajaConJornadaAbierta(fondos)`, que es
+     * con lo que un archivo se sale de aquí cuando necesita la caja ya abierta.
+     */
+    storageState: EQUIPO_SIN_JORNADA,
   },
 
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

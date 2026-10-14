@@ -1,10 +1,16 @@
 /**
  * ALCANCE — quién puede ver y escribir qué (Administración PRD regla A1).
  *
- * Toda consulta y toda escritura de este dominio recibe un `Scope` explícito.
- * El alcance global es un VALOR de ese parámetro, no su ausencia: así una
- * llamada sin alcance es un error de compilación y no una fuga silenciosa de
- * datos de una sede a otra (FR-AD-DOM-5, FR-SA-DOM-2).
+ * La resolución del alcance y **toda escritura** de este dominio reciben un
+ * `Scope` explícito. El alcance global es un VALOR de ese parámetro, no su
+ * ausencia: así una llamada sin alcance es un error de compilación y no una
+ * fuga silenciosa de datos de una sede a otra (FR-AD-DOM-5, FR-SA-DOM-2).
+ *
+ * Las **lecturas por sede** se acotan en `scoped-reads.ts`: una consola no las
+ * pide sueltas, pide `redEnAlcance(scope)` y lee de ahí. Siguen exportadas sin
+ * alcance porque Worker y Kiosco las necesitan así —tienen sesión de
+ * dispositivo, no alcance de administración—, y una regla de lint impide que
+ * una pantalla de `/admin` las use.
  *
  * Este módulo es deliberadamente de tipos y guardas puras, sin lecturas de
  * datos: quién administra qué sede lo resuelve `assignments.ts`, que sí

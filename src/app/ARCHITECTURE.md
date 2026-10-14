@@ -7,7 +7,7 @@ groups separate screens that need the application shell from those that do not.
 | ---------------- | --------------------- | ------------------------------------------------------------------- |
 | `/worker/*`      | Worker                | Header + 240px sidebar (Inicio, Nueva operación, Operaciones, Caja) |
 | `/kiosk/*`       | Kiosco inteligente    | Two sub-products, each with its own shell — see below               |
-| `/admin/*`       | Admin de sede         | Header + sidebar, higher table density                              |
+| `/admin/*`       | Admin de sede         | Header + sidebar en tres bloques, higher table density              |
 | `/super-admin/*` | Super Admin PuntoCash | Header + sidebar, global views and auditing                         |
 
 ## Route groups inside a product
@@ -26,13 +26,60 @@ A Worker computer carries two sessions. The **device session** (the computer
 is Caja 03 of a sede) is created once by the sede's admin and remembered — see
 `src/features/devices/device-link.ts`, shared with the self-service kiosk. The
 **Worker session** (a person operating it) is opened with password + second
-factor on top of it. `worker/layout.tsx` enforces the first; `(auth)` the second.
+factor on top of it.
+
+`worker/layout.tsx` enforces the device session: it reads the mirror cookie and
+`RegisterDeviceGate` decides between the pairing screen and the application.
+The worker session is **opened** in `(auth)` — the verification screen is the
+only way through — but nothing re-checks it afterwards: `(app)/layout.tsx`
+calls `getCurrentWorker()`, which is a mock that always returns Juan Pérez, so
+typing an in-shell URL reaches it. That is deliberate in the demo (session
+validity is out of the Worker FRD's scope, §16, and an in-memory gate would
+expel a worker mid-jornada on any full reload), and it is the one place where
+Worker and `/admin` differ: the admin shell does redirect on a missing session.
+A real implementation puts the check in `(app)/layout.tsx`, mirroring
+`admin/(app)/layout.tsx`.
 
 `(auth)` exists so authentication screens never inherit the application shell.
 Both access steps live there for the same reason: until the verification code is
 accepted there is no session, so no worker name, caja or sede may be on screen.
 When the first in-shell Worker screen arrives it goes in `(app)/layout.tsx`,
 which composes `AppShell` + `AppHeader` + `AppSidebar` + `AppMain`.
+
+## Admin console
+
+```
+admin/
+  page.tsx       redirects to Inicio — `/admin` is the product's name, not a screen
+  _actions.ts    the three state writes: open session, close it, pick a sede
+  (auth)/        screens with no shell — login, 2FA verification, recovery
+  (app)/         screens inside the shell
+    layout.tsx   resolves the session AND the scope, on the server, before
+                 rendering anything; redirects to `(auth)` when there is none
+    not-found.tsx what an unknown route AND another operator's sede both return
+```
+
+Unlike Worker, `/admin` is **not** used on a linked terminal: there is no device
+gate and no pairing screen (FR-AD-NAV-4). It opens from any browser, a phone
+included — which §3 of its FRD actually requires, because linking a caja by QR
+means holding the console in front of the machine being linked.
+
+Two decisions worth keeping:
+
+- **The session decides on the server.** `(app)/layout.tsx` reads the session
+  cookie and composes the scope before a single tag is sent. This is the
+  Worker device-gate lesson applied up front: an access decision taken in the
+  client forces the whole app out of server rendering, and with it go the first
+  paint and the real 404s (FR-DEV-1.1).
+- **Scope is derived, never chosen** (rule A1). The header selector only
+  filters *within* what the session already reaches, and screens read their
+  sedes through `sedesVisibles(session)` rather than querying the domain — so
+  filtering is not a precaution someone has to remember.
+
+Both access steps of both products share one screen component,
+`@/components/patterns/two-factor-form`: the FRD is explicit that the flow is
+the same without variation (FR-AD-ACC-2), and a security formality is the last
+thing worth keeping in two places.
 
 ## Kiosk sub-products
 

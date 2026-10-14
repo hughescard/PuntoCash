@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { esperarFondeoVivo, rellenar } from "./worker-helpers";
+
 /**
  * Worker Caja — Registrar fondeo inicial (/worker/caja/fondeo-inicial).
  *
@@ -13,10 +15,22 @@ import { test, expect } from "@playwright/test";
 
 async function fillAndReview(page: import("@playwright/test").Page, amounts: Record<string, string>) {
   await page.goto("/worker/caja/fondeo-inicial");
+  /* El paso de revisión vive en estado de cliente, así que hasta que el árbol
+     no está puesto «Continuar» es un botón pintado sin nadie escuchando. Esta
+     spec esperaba a `main` por ese motivo, y `main` no servía: lo pinta el
+     servidor y está ahí desde el primer byte. Lo que sí lo demuestra es que el
+     botón esté habilitado, que es lo que espera `esperarFondeoVivo`. */
+  await esperarFondeoVivo(page);
+
   for (const [currency, value] of Object.entries(amounts)) {
-    await page.getByLabel(`Fondo inicial en ${currency}`).fill(value);
+    await rellenar(page.getByLabel(`Fondo inicial en ${currency}`), value);
   }
   await page.getByRole("button", { name: "Continuar" }).click();
+
+  // Y se comprueba aquí que la revisión llegó. Sin esto, un clic perdido no
+  // falla en su sitio: falla más abajo, esperando un control que nunca existió,
+  // y el error apunta a la prueba equivocada.
+  await expect(page.getByRole("heading", { name: "Revisión del fondeo inicial" })).toBeVisible();
 }
 
 async function fillReviewAndConfirm(
@@ -84,6 +98,7 @@ test.describe("fondeo inicial — form (Step 1, unchanged)", () => {
 
   test("blocks an empty submission — cannot continue", async ({ page }) => {
     await page.goto("/worker/caja/fondeo-inicial");
+    await esperarFondeoVivo(page);
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(
       page.getByText("Introduce el fondo inicial de al menos una moneda."),
@@ -93,7 +108,8 @@ test.describe("fondeo inicial — form (Step 1, unchanged)", () => {
 
   test("rejects an invalid amount inline", async ({ page }) => {
     await page.goto("/worker/caja/fondeo-inicial");
-    await page.getByLabel("Fondo inicial en USD").fill("abc");
+    await esperarFondeoVivo(page);
+    await rellenar(page.getByLabel("Fondo inicial en USD"), "abc");
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page.getByLabel("Fondo inicial en USD")).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByText("Introduce un monto válido.")).toBeVisible();
@@ -101,10 +117,11 @@ test.describe("fondeo inicial — form (Step 1, unchanged)", () => {
 
   test("updates 'Monedas con fondos' live as amounts are entered", async ({ page }) => {
     await page.goto("/worker/caja/fondeo-inicial");
+    await esperarFondeoVivo(page);
     const summaryCount = page.locator("dd").filter({ hasText: /^\d+$/ }).last();
     await expect(summaryCount).toHaveText("0");
 
-    await page.getByLabel("Fondo inicial en CUP").fill("100000");
+    await rellenar(page.getByLabel("Fondo inicial en CUP"), "100000");
     await expect(summaryCount).toHaveText("1");
 
     await page.getByLabel("Fondo inicial en USD").fill("1000");

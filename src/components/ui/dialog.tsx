@@ -45,26 +45,60 @@ const dialogSize = {
   lg: "max-w-[40rem]",
 } as const;
 
+/**
+ * Dónde se abre el diálogo.
+ *
+ * `center` es el diálogo de siempre: una decisión que interrumpe. `left` es una
+ * hoja lateral a altura completa, que es la forma que toma la navegación
+ * cuando no hay barra lateral — en un teléfono, `/admin` tiene trece destinos y
+ * ninguna columna donde ponerlos. Comparte el mismo primitivo para no perder lo
+ * que hace que un diálogo sea usable: foco atrapado, cierre con Escape, y el
+ * resto de la página anunciado como inerte.
+ */
+const dialogPlacement = {
+  center: [
+    /* `calc(100% - 2rem)` y no `w-full`: a 360px el diálogo iba de borde a
+       borde. El alto máximo con desplazamiento propio evita lo peor de
+       **FR-AD-SHELL-16** —que la acción primaria quede fuera de la pantalla—
+       cuando el contenido crece con un aviso y un error a la vez. */
+    "left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2",
+    "max-h-[calc(100dvh-2rem)] overflow-y-auto",
+    "rounded-modal border border-border shadow-overlay",
+    "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
+  ].join(" "),
+  left: [
+    "inset-y-0 left-0 h-dvh w-[min(20rem,86vw)] max-w-none",
+    "border-r border-white/10 shadow-overlay",
+    "data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left",
+  ].join(" "),
+} as const;
+
 const DialogContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
     size?: keyof typeof dialogSize;
     /** Hides the corner close button for decisions that must be answered. */
     hideClose?: boolean;
+    /** `left` abre una hoja lateral a altura completa en lugar del diálogo centrado. */
+    placement?: keyof typeof dialogPlacement;
   }
->(function DialogContent({ className, children, size = "md", hideClose = false, ...props }, ref) {
+>(function DialogContent(
+  { className, children, size = "md", hideClose = false, placement = "center", ...props },
+  ref,
+) {
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
-          "rounded-modal border border-border bg-surface shadow-overlay",
+          "fixed z-50 bg-surface",
           "duration-(--duration-fast)",
-          "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-          "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-          dialogSize[size],
+          "data-[state=open]:animate-in data-[state=open]:fade-in-0",
+          "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
+          dialogPlacement[placement],
+          // El ancho de la hoja lateral lo fija su colocación, no el tamaño.
+          placement === "center" && dialogSize[size],
           className,
         )}
         {...props}
@@ -96,11 +130,27 @@ function DialogBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement
   return <div className={cn("px-6 py-4 text-body-sm text-text-primary", className)} {...props} />;
 }
 
-/** Actions sit right-aligned; a single primary action per context (§9). */
+/**
+ * Las acciones van a la derecha, con una sola acción primaria por contexto (§9).
+ *
+ * En pantalla estrecha se **apilan** (**FR-AD-SHELL-16**), en el mismo orden
+ * del marcado: la secundaria arriba y la que decide abajo, que es la
+ * traducción vertical de la jerarquía horizontal —secundaria a la izquierda,
+ * primaria a la derecha— y deja el orden visual y el del foco coincidiendo.
+ * Importa porque varias de estas acciones son destructivas: la última
+ * posición es la que no se pulsa por inercia. Que sea alcanzable sin
+ * desplazar lo garantiza el alto máximo de `DialogContent`, no el orden.
+ * `items-stretch` las hace de ancho completo, que a 360px es lo que las
+ * vuelve cómodas de pulsar.
+ */
 function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex items-center justify-end gap-3 border-t border-border px-6 py-4", className)}
+      className={cn(
+        "flex flex-col items-stretch gap-3 border-t border-border px-6 py-4",
+        "sm:flex-row sm:items-center sm:justify-end",
+        className,
+      )}
       {...props}
     />
   );

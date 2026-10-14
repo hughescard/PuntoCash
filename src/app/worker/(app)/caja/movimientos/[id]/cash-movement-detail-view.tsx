@@ -5,7 +5,8 @@ import Link from "next/link";
 import { FileSearch, Lock } from "lucide-react";
 
 import { Button, Card, CardContent } from "@/components/ui";
-import { findCajaMovement, type CajaMovement } from "@/features/caja/caja-data";
+import { findInternalCajaMovement, type CajaMovement } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 import { BackLink, CashJornadaCard, MovementDetailHeader, MovementInfoCard, MovementResultCard } from "./movement-detail-parts";
 import { CashAdjustmentDetail } from "./cash-adjustment-detail";
 import { MovementReceiptSection } from "./movement-receipt-section";
@@ -22,6 +23,11 @@ import { MovementReceiptSection } from "./movement-receipt-section";
  * a Server Component here would render the not-found card for a movement
  * that genuinely exists in this session.
  *
+ * Y por eso llama a `useCaja`: un movimiento de esta sesión vive en lo que el
+ * equipo tiene guardado, que se repone justo después de hidratar. Sin esa
+ * suscripción, entrar a esta ruta por recarga o pegando la URL se quedaría
+ * con la tarjeta de «no encontrado» del render de servidor.
+ *
  * `MovementSpecificDetail` is a plain typed switch on `concepto`, not a
  * plugin/registry framework — "Ajuste de efectivo" is the only concept with
  * a specialized card today; every other internal concept (Fondeo inicial,
@@ -29,7 +35,8 @@ import { MovementReceiptSection } from "./movement-receipt-section";
  * fabricated for a concept this screen doesn't specifically know about.
  */
 export function CashMovementDetailView({ movementId }: { movementId: string }): React.JSX.Element {
-  const movement = findCajaMovement(movementId);
+  useCaja();
+  const movement = findInternalCajaMovement(movementId);
 
   if (!movement) return <MovementNotFound movementId={movementId} />;
 

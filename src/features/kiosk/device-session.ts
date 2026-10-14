@@ -34,6 +34,14 @@ export const ensurePairingChallenge = kioskLink.ensurePairingChallenge;
 export const unlinkKioskDevice = kioskLink.unlink;
 export const currentKioskDevice = kioskLink.current;
 
+/**
+ * Reescribe la cookie espejo desde `localStorage`. La necesita un kiosco ya
+ * vinculado antes de que el espejo existiera, o uno al que le limpiaron las
+ * cookies: sin esto, la próxima carga empezaría mostrando la pantalla de
+ * vinculación aunque el equipo esté vinculado.
+ */
+export const syncKioskDeviceCookie = kioskLink.syncCookie;
+
 export function pairingQrPayload(state: UnlinkedDevice): string {
   return kioskLink.pairingQrPayload(state);
 }

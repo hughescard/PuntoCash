@@ -22,6 +22,19 @@ import { confirmGiroPayout } from "@/app/worker/(app)/nueva-operacion/giros/cobr
  * external completion succeeded.
  */
 
+/*
+ * Serie a nivel de archivo, no solo en el bloque que muta.
+ *
+ * El bloque de consulta afirma que `TR-260901-000245` está `READY`, y el
+ * bloque de pago **cobra ese mismo giro** y lo deja `COMPLETED`. Playwright
+ * solo garantiza el orden *dentro* de un bloque serie: con `fullyParallel`,
+ * el grupo de consulta podía ejecutarse después del de pago en el mismo
+ * proceso trabajador y leer `COMPLETED`. Que hasta ahora no ocurriera
+ * dependía de la planificación, no del código. En serie, los bloques corren
+ * en el orden en que están escritos y el de consulta va primero.
+ */
+test.describe.configure({ mode: "serial" });
+
 /**
  * Guarantees the precondition this block needs, instead of assuming this spec
  * is the first to touch the shared domain module: other domain specs run in

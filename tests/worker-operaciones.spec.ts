@@ -1,6 +1,19 @@
 import { test, expect } from "@playwright/test";
 
 /**
+ * Fecha de una celda "dd/MM/yyyy · HH:mm".
+ *
+ * Las comprobaciones de rango se envuelven en `expect.poll`: `allTextContents()`
+ * es una lectura sincrónica que no espera, y rellenar «Desde»/«Hasta» se
+ * resuelve antes de que React rehaga la tabla. `poll` repite la lectura y el
+ * recorrido completos hasta que la tabla ya está filtrada.
+ */
+function cellDate(cell: string): Date {
+  const [day, month, year] = cell.split(" · ")[0]!.split("/");
+  return new Date(Number(year), Number(month) - 1, Number(day));
+}
+
+/**
  * Worker operaciones — list, filters, pagination and detail route.
  *
  * Data comes from the frontend mock in `src/features/operations/operations-history.ts`.
@@ -170,17 +183,26 @@ test.describe("worker operaciones — filters", () => {
     await page.getByLabel("Servicio").click();
     await page.getByRole("option", { name: "Cambio de moneda" }).click();
 
+    /* `allTextContents()` no reintenta y el click del filtro se resuelve antes
+       de que React rehaga la tabla: la forma que sí espera es afirmar que no
+       queda ninguna celda distinta. */
     const services = page.locator("tbody tr td:nth-child(4)");
-    expect(await services.count()).toBeGreaterThan(0);
-    for (const text of await services.allTextContents()) {
-      expect(text.trim()).toBe("Cambio de moneda");
-    }
+    await expect(services.filter({ hasNotText: "Cambio de moneda" })).toHaveCount(0);
+    await expect(services).not.toHaveCount(0);
   });
 
   test("Estado offers all five states plus Todos", async ({ page }) => {
     await page.getByLabel("Estado").click();
-    const options = await page.getByRole("option").allTextContents();
-    expect(options).toEqual(["Todos", "Completada", "En proceso", "Rechazada", "Fallida", "Cancelada"]);
+    /* El contenido de Radix se monta en un portal y entra con animación:
+       `toHaveText` en forma de array espera y compara en orden. */
+    await expect(page.getByRole("option")).toHaveText([
+      "Todos",
+      "Completada",
+      "En proceso",
+      "Rechazada",
+      "Fallida",
+      "Cancelada",
+    ]);
   });
 
   test("filters by Estado = Rechazada, distinct from Fallida", async ({ page }) => {
@@ -188,10 +210,8 @@ test.describe("worker operaciones — filters", () => {
     await page.getByRole("option", { name: "Rechazada", exact: true }).click();
 
     const statuses = page.locator("tbody tr td:nth-child(6)");
-    expect(await statuses.count()).toBeGreaterThan(0);
-    for (const text of await statuses.allTextContents()) {
-      expect(text.trim()).toBe("Rechazada");
-    }
+    await expect(statuses.filter({ hasNotText: "Rechazada" })).toHaveCount(0);
+    await expect(statuses).not.toHaveCount(0);
     await expect(page.getByText("Fallida", { exact: true })).toHaveCount(0);
   });
 
@@ -200,21 +220,20 @@ test.describe("worker operaciones — filters", () => {
     await page.getByRole("option", { name: "Fallida", exact: true }).click();
 
     const statuses = page.locator("tbody tr td:nth-child(6)");
-    expect(await statuses.count()).toBeGreaterThan(0);
-    for (const text of await statuses.allTextContents()) {
-      expect(text.trim()).toBe("Fallida");
-    }
+    await expect(statuses.filter({ hasNotText: "Fallida" })).toHaveCount(0);
+    await expect(statuses).not.toHaveCount(0);
     await expect(page.getByText("Rechazada", { exact: true })).toHaveCount(0);
   });
 
   test("filters by Fecha", async ({ page }) => {
-    const totalBefore = await page.getByText(/de \d+ operaciones/).textContent();
+    const total = page.getByText(/de \d+ operaciones/);
+    const totalBefore = (await total.textContent()) ?? "";
 
     await page.getByLabel("Fecha").click();
     await page.getByRole("option", { name: "Hoy" }).click();
 
-    const totalAfter = await page.getByText(/de \d+ operaciones/).textContent();
-    expect(totalAfter).not.toEqual(totalBefore);
+    // `not.toHaveText` reintenta; leer el texto dos veces seguidas no.
+    await expect(total).not.toHaveText(totalBefore);
   });
 
   test("Limpiar filtros restores the full list and is disabled at rest", async ({ page }) => {
@@ -256,8 +275,13 @@ test.describe("worker operaciones — custom date range", () => {
 
   test("Fecha offers Personalizado alongside the four existing options", async ({ page }) => {
     await page.getByLabel("Fecha").click();
-    const options = await page.getByRole("option").allTextContents();
-    expect(options).toEqual(["Todos", "Hoy", "Últimos 7 días", "Últimos 30 días", "Personalizado"]);
+    await expect(page.getByRole("option")).toHaveText([
+      "Todos",
+      "Hoy",
+      "Últimos 7 días",
+      "Últimos 30 días",
+      "Personalizado",
+    ]);
   });
 
   test("selecting Personalizado reveals Desde/Hasta, and leaving it hides them", async ({
@@ -281,14 +305,18 @@ test.describe("worker operaciones — custom date range", () => {
     await page.getByLabel("Desde").fill("2026-08-15");
     await page.getByLabel("Hasta").fill("2026-08-17");
 
-    const dates = await page.locator("tbody tr td:nth-child(2)").allTextContents();
-    expect(dates.length).toBeGreaterThan(0);
-    for (const cell of dates) {
-      const [day, month, year] = cell.split(" · ")[0]!.split("/");
-      const recordDate = new Date(Number(year), Number(month) - 1, Number(day));
-      expect(recordDate >= new Date(2026, 7, 15)).toBe(true);
-      expect(recordDate <= new Date(2026, 7, 17)).toBe(true);
-    }
+    await expect
+      .poll(async () => {
+        const dates = await page.locator("tbody tr td:nth-child(2)").allTextContents();
+        return (
+          dates.length > 0 &&
+          dates.every(
+            (cell) =>
+              cellDate(cell) >= new Date(2026, 7, 15) && cellDate(cell) <= new Date(2026, 7, 17),
+          )
+        );
+      })
+      .toBe(true);
     // The boundary dates themselves are included, not excluded.
     await expect(page.getByRole("cell", { name: "15/08/2026 · 10:00" })).toBeVisible();
     await expect(page.getByRole("cell", { name: "17/08/2026 · 10:00" })).toBeVisible();
@@ -299,13 +327,12 @@ test.describe("worker operaciones — custom date range", () => {
     await page.getByRole("option", { name: "Personalizado" }).click();
     await page.getByLabel("Desde").fill("2026-08-16");
 
-    const dates = await page.locator("tbody tr td:nth-child(2)").allTextContents();
-    expect(dates.length).toBeGreaterThan(0);
-    for (const cell of dates) {
-      const [day, month, year] = cell.split(" · ")[0]!.split("/");
-      const recordDate = new Date(Number(year), Number(month) - 1, Number(day));
-      expect(recordDate >= new Date(2026, 7, 16)).toBe(true);
-    }
+    await expect
+      .poll(async () => {
+        const dates = await page.locator("tbody tr td:nth-child(2)").allTextContents();
+        return dates.length > 0 && dates.every((cell) => cellDate(cell) >= new Date(2026, 7, 16));
+      })
+      .toBe(true);
   });
 
   test("Hasta alone filters up to that date", async ({ page }) => {
@@ -313,13 +340,12 @@ test.describe("worker operaciones — custom date range", () => {
     await page.getByRole("option", { name: "Personalizado" }).click();
     await page.getByLabel("Hasta").fill("2026-08-10");
 
-    const dates = await page.locator("tbody tr td:nth-child(2)").allTextContents();
-    expect(dates.length).toBeGreaterThan(0);
-    for (const cell of dates) {
-      const [day, month, year] = cell.split(" · ")[0]!.split("/");
-      const recordDate = new Date(Number(year), Number(month) - 1, Number(day));
-      expect(recordDate <= new Date(2026, 7, 10)).toBe(true);
-    }
+    await expect
+      .poll(async () => {
+        const dates = await page.locator("tbody tr td:nth-child(2)").allTextContents();
+        return dates.length > 0 && dates.every((cell) => cellDate(cell) <= new Date(2026, 7, 10));
+      })
+      .toBe(true);
   });
 
   test("Desde after Hasta shows a validation message and does not apply the range", async ({

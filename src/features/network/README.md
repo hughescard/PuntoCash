@@ -29,15 +29,42 @@ PuntoCash  ──decide qué sedes existen, a quién se entregan y dentro de qu�
 
 ## Dos principios, ejecutables y no solo documentados
 
-**El alcance se deriva de la sesión, no se elige** (A1). Toda consulta recibe
-un `Scope`, y el alcance global es un **valor** de ese parámetro y no su
-ausencia: una llamada sin alcance es un error de compilación, no una fuga
-silenciosa de datos de una sede a otra.
+**El alcance se deriva de la sesión, no se elige** (A1). La resolución del
+alcance y todas las escrituras reciben un `Scope`, y el alcance global es un
+**valor** de ese parámetro y no su ausencia: una llamada sin alcance es un
+error de compilación, no una fuga silenciosa de datos de una sede a otra.
 
 ```ts
 sedesEnAlcance(GLOBAL_SCOPE);              // la red entera
 sedesEnAlcance(operatorScope("op-antilla")); // solo sus sedes vigentes
 ```
+
+Las **lecturas por sede** cumplen lo mismo, y por una vía que conviene leer
+antes de implementar el backend: una consola no pide `registersOf`, pide una
+**vista ya atada a su alcance**. Fuera de ese alcance toda respuesta es la de
+algo que no existe, que es lo que exigen FR-AD-NAV-2 y FR-AD-NAV-3 — una sede
+ajena y una inexistente no se distinguen.
+
+```ts
+const red = redEnAlcance(session.scope);
+red.sede("sede-vedado")?.name;        // "PuntoCash Vedado"
+red.cajasActivas("sede-vedado");      // sus cajas operables
+red.sede("sede-matanzas");            // null: es de otro mercante
+red.trabajadores("sede-matanzas");    // []
+```
+
+Las lecturas en bruto siguen exportadas, y no es un olvido: **Worker y Kiosco
+no tienen alcance de administración**, tienen una sesión de dispositivo, y leen
+su sede y su caja con toda legitimidad. Lo que impide que una pantalla de
+`/admin` las use es una regla de `eslint.config.mjs`, no la buena memoria de
+quien la escriba. Dos módulos de `features/admin` quedan fuera de la regla a
+propósito: `session.ts`, que es quien **resuelve** el alcance y por tanto no
+puede tenerlo todavía, y `register-guards.ts`, que alimenta una escritura ya
+comprobada.
+
+Quien implemente el backend tiene que construir el endpoint **con el alcance
+dentro**, no un endpoint abierto que el cliente filtre después. Esta es la
+forma que debe copiar.
 
 **PuntoCash observa dentro de la sede y actúa solo sobre la sede entera**
 (A14). Las escrituras sobre cajas, trabajadores y usuarios exigen alcance de
@@ -53,11 +80,44 @@ El recurso de PuntoCash ante un problema dentro de una sede es
 `suspenderSede` o `suspenderOperador`: corta el acceso de todos a la vez, es
 reversible y queda auditado.
 
+## La vinculación de equipos vive en el servidor
+
+Hasta el Paso 3 había dos registros para lo mismo, contra FR-AD-DOM-4: este, y
+el `localStorage` de cada terminal (`features/devices/device-link.ts`). Y no
+era un descuido reparable con un puente: son dos navegadores distintos, así que
+mientras la verdad viviera en el terminal, vincular desde `/admin/equipos` no
+podía ser más que una fachada.
+
+Ahora el reparto es el del producto real (FR-AD-EQ-25, FR-DEV-8): el terminal
+se nombra con un identificador opaco que guarda en una cookie —el «quién
+pregunta», no una credencial—, el **reto lo emite el servidor**
+(`emitirReto`), **vincular y desvincular** son actos del administrador que
+reciben alcance, y el terminal pregunta quién es (`resolverTerminal`) y pinta
+lo que le contesten.
+
+```ts
+emitirReto("kiosco", deviceId);              // el terminal pide su código
+vincularEquipo(scope, SCOPE_CONTEXT, {       // el administrador lo canjea
+  reto: { method: "codigo", code: "482 913" },
+  branchId: "sede-vedado",
+  by: "Marta Sánchez",
+});
+resolverTerminal("kiosco", deviceId);        // → { status: "vinculado", terminal }
+```
+
+El identificador sigue siendo autodeclarado: un terminal podría afirmar ser
+otro, y en el producto la credencial va firmada. Lo que ya está en su sitio es
+**quién decide** — el reto y el vínculo no se pueden fabricar desde el
+cliente—, y eso es lo que convierte la vinculación en un control y no en una
+declaración.
+
 ## Los módulos
 
 | Archivo | Qué guarda |
 | --- | --- |
 | `scope.ts` | Tipos y guardas de alcance. Sin datos, a propósito: evita un ciclo de imports. |
+| `scoped-reads.ts` | `redEnAlcance(scope)`: las lecturas por sede ya acotadas. Es por donde lee `/admin`. |
+| `devices.ts` | Los equipos, **y los retos de vinculación**. La verdad del vínculo vive aquí, no en el terminal. |
 | `sedes.ts` | El registro de sedes. `Branch` es su cara pública; `Sede` añade estado y servicios. Escribe solo PuntoCash. |
 | `registers.ts` | Las cajas de cada sede. Las crea y retira el mercante. |
 | `operators.ts` | Mercantes y sus usuarios administradores. |

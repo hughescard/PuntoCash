@@ -221,3 +221,41 @@ The target is not a prototype appearance.
 
 Every approved screen should look suitable for a production financial
 application installed in a real PuntoCash exchange house.
+
+---
+
+# Método de trabajo — obligatorio antes de entregar
+
+Estas reglas salieron de un patrón real: cada tramo terminaba con dos o tres
+rondas de correcciones que descubría la usuaria corriendo `typecheck` y la
+suite. El diagnóstico completo, con los casos que las motivaron, está en el
+documento **`claude/metodo-de-trabajo.md`** del proyecto de Claude. Resumen:
+
+1. **Comprobar tipos antes de cada entrega**, aunque el cambio sea de una
+   línea. Sin `node_modules` en el contenedor de Claude, se monta una copia del
+   árbol con declaraciones `any` de las dependencias externas y se corre `tsc`
+   con los flags de este repo. No comprueba los tipos de React/Next/Radix, pero
+   sí imports locales rotos, sintaxis y **variables e imports sin usar**.
+
+2. **Contar los elementos en la página real antes de escribir una aserción de
+   Playwright.** Un texto que también aparece en un control de filtro encuentra
+   de más; `getByText` encuentra lo oculto y `getByRole` no; «esto no debe verse
+   a este ancho» se comprueba con `toBeHidden()`, nunca con `toHaveCount(0)`.
+
+3. **Verificar en el disco de la usuaria**, leyendo el directorio y comparando
+   tamaño y fecha. El acuse `written` de la herramienta de escritura ha mentido
+   varias veces, y comprobar la copia propia no es verificar.
+
+4. **Recorrer lo construido en el navegador antes de decir que está listo**, a
+   1440 y a 390 (FR-AD-STATE-7).
+
+Dos trampas del entorno que cuestan tiempo si se olvidan:
+
+- **`next dev` no ve las escrituras que llegan por el puente de archivos**:
+  sigue sirviendo la compilación anterior. Hay que **reiniciarlo** antes de
+  revisar nada o de correr la suite.
+- **Claude no tiene consola sobre la máquina de la usuaria.** `npm run
+  typecheck` y `npm run test:ui` los corre ella.
+
+Los tramos se cortan en trozos de dos o tres pantallas, y cada trozo se recorre
+en el navegador antes de empezar el siguiente.

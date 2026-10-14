@@ -14,11 +14,14 @@ import {
   crearTrabajador,
   desactivarTrabajador,
   desactivarUsuarioAdmin,
+  esAdministradorPrincipal,
+  equipoDeCaja,
   estaEnAlcance,
   findRegisterById,
   findSedeById,
   findWorkerById,
   historialDeSede,
+  kioscosDeSede,
   listarEventos,
   motivoDeBloqueo,
   operadorVigenteEn,
@@ -27,6 +30,8 @@ import {
   reactivarSede,
   reactivarTrabajador,
   reactivarUsuarioAdmin,
+  transferirAdministradorPrincipal,
+  redEnAlcance,
   registersOf,
   registrarEvento,
   retirarCaja,
@@ -76,6 +81,94 @@ test("una sede sin operador asignado no está en el alcance de ningún mercante"
   expect(estaEnAlcance(ANTILLA, "sede-santiago")).toBe(false);
   expect(estaEnAlcance(CARIBE, "sede-santiago")).toBe(false);
   expect(estaEnAlcance(GLOBAL_SCOPE, "sede-santiago")).toBe(true);
+});
+
+/* -------------------------------------------------------------------------
+ * Lecturas con alcance — `redEnAlcance` (regla A1, FR-AD-NAV-2, FR-AD-NAV-3)
+ *
+ * Lo que estas pruebas comprueban no es que la vista lea bien: es que **una
+ * sede ajena se lea exactamente como una inexistente**. Si se distinguieran,
+ * probar identificadores bastaría para averiguar qué administra otra empresa.
+ *
+ * Cada caso contrasta además la vista con la lectura en bruto, que sigue
+ * existiendo para Worker y Kiosco: así se ve que la diferencia es real y no
+ * que el dato simplemente no estaba.
+ * ---------------------------------------------------------------------- */
+
+test("la vista contesta por las sedes del alcance", () => {
+  const red = redEnAlcance(ANTILLA);
+
+  expect(red.sede("sede-vedado")?.name).toBe("PuntoCash Vedado");
+  expect(red.cajasActivas("sede-vedado").length).toBeGreaterThan(0);
+  expect(red.trabajadores("sede-vedado").length).toBeGreaterThan(0);
+  expect(red.kioscos("sede-vedado")).toHaveLength(2);
+  expect(red.asignacionVigente("sede-vedado")?.operatorId).toBe("op-antilla");
+});
+
+test("una sede ajena se lee igual que una que no existe", () => {
+  const red = redEnAlcance(ANTILLA);
+
+  /* Matanzas es de Caribe. En bruto se lee entera; por la vista, nada. */
+  expect(findSedeById("sede-matanzas")).not.toBeNull();
+  expect(workersOf("sede-matanzas").length).toBeGreaterThan(0);
+
+  expect(red.sede("sede-matanzas")).toBeNull();
+  expect(red.cajasActivas("sede-matanzas")).toEqual([]);
+  expect(red.cajasConHistorico("sede-matanzas")).toEqual([]);
+  expect(red.trabajadores("sede-matanzas")).toEqual([]);
+  expect(red.kioscos("sede-matanzas")).toEqual([]);
+  expect(red.asignacionVigente("sede-matanzas")).toBeNull();
+
+  // Y lo mismo, exactamente, para un identificador inventado.
+  expect(red.sede("sede-inventada")).toBeNull();
+  expect(red.cajasActivas("sede-inventada")).toEqual([]);
+  expect(red.trabajadores("sede-inventada")).toEqual([]);
+  expect(red.kioscos("sede-inventada")).toEqual([]);
+  expect(red.asignacionVigente("sede-inventada")).toBeNull();
+});
+
+test("el equipo de una caja ajena no se ve, aunque la caja exista", () => {
+  /* Miramar es de Caribe desde el 30 de junio, y su Caja 01 tiene equipo. */
+  expect(equipoDeCaja("sede-miramar:caja-01")).not.toBeNull();
+
+  expect(redEnAlcance(CARIBE).equipoDeCaja("sede-miramar:caja-01")).not.toBeNull();
+  expect(redEnAlcance(CARIBE).cajaTieneEquipo("sede-miramar:caja-01")).toBe(true);
+
+  expect(redEnAlcance(ANTILLA).equipoDeCaja("sede-miramar:caja-01")).toBeNull();
+  expect(redEnAlcance(ANTILLA).cajaTieneEquipo("sede-miramar:caja-01")).toBe(false);
+});
+
+test("una caja que no existe se lee como una ajena", () => {
+  const red = redEnAlcance(ANTILLA);
+  expect(red.equipoDeCaja("sede-vedado:caja-99")).toBeNull();
+  expect(red.cajaTieneEquipo("sede-vedado:caja-99")).toBe(false);
+});
+
+test("el alcance global ve la red entera por la misma vista", () => {
+  const red = redEnAlcance(GLOBAL_SCOPE);
+
+  expect(red.sede("sede-matanzas")?.name).toBeTruthy();
+  expect(red.trabajadores("sede-matanzas").length).toBeGreaterThan(0);
+  expect(red.equipoDeCaja("sede-miramar:caja-01")).not.toBeNull();
+
+  /* Incluso la sede sin operador asignado, que es de PuntoCash y de nadie
+     más (**FR-SA-HOME-3**). */
+  expect(red.sede("sede-santiago")).not.toBeNull();
+  expect(redEnAlcance(ANTILLA).sede("sede-santiago")).toBeNull();
+});
+
+test("la vista no fotografía su alcance: lo comprueba en cada lectura", () => {
+  /* Dos vistas del mismo alcance creadas en momentos distintos contestan lo
+     mismo, y una creada antes de leer no conserva nada del momento en que
+     nació. La propiedad importa porque el dominio es mutable: una vista que
+     hubiera guardado sus sedes al nacer seguiría contestando por una sede que
+     ya no administra nadie. */
+  const temprana = redEnAlcance(ANTILLA);
+  const tardia = redEnAlcance(ANTILLA);
+
+  expect(temprana.sede("sede-vedado")).toEqual(tardia.sede("sede-vedado"));
+  expect(temprana.cajasActivas("sede-vedado")).toEqual(tardia.cajasActivas("sede-vedado"));
+  expect(temprana.kioscos("sede-vedado")).toEqual(kioscosDeSede("sede-vedado"));
 });
 
 /* -------------------------------------------------------------------------
@@ -199,6 +292,7 @@ test("un trabajador se adscribe a una sede, y el alta exige correo", () => {
     identifier: "prueba@puntocash.com",
     fullName: "Ana Prueba",
     firstName: "Ana",
+    documentType: "CI" as const,
     documentId: "00000000001",
     phone: "+53 5 111 1111",
     email: "",
@@ -212,6 +306,7 @@ test("un trabajador se adscribe a una sede, y el alta exige correo", () => {
     identifier: "prueba@puntocash.com",
     fullName: "Ana Prueba",
     firstName: "Ana",
+    documentType: "CI" as const,
     documentId: "00000000001",
     phone: "+53 5 111 1111",
     email: "prueba@puntocash.com",
@@ -225,9 +320,10 @@ test("un trabajador se adscribe a una sede, y el alta exige correo", () => {
 test("no se repite un identificador de acceso en toda la red", () => {
   const result = crearTrabajador(ANTILLA, SCOPE_CONTEXT, {
     id: "trb-test-2",
-    identifier: "jperez@puntocash.com",
+    identifier: "jperez",
     fullName: "Otro Juan",
     firstName: "Otro",
+    documentType: "CI" as const,
     documentId: "00000000002",
     phone: "+53 5 222 2222",
     email: "otro@puntocash.com",
@@ -272,20 +368,47 @@ test("distingue por qué un trabajador no puede entrar", () => {
  * Usuarios administradores (FR-AD-USR-7, FR-AD-USR-8)
  * ---------------------------------------------------------------------- */
 
-test("un usuario administrador no se desactiva a sí mismo ni deja a su empresa sin acceso", () => {
+test("solo el administrador principal gobierna los usuarios, y a él no lo desactiva nadie", () => {
+  /* **FR-AD-USR-11**: §8 entera pertenece al principal. Antilla tiene dos
+     usuarios; el principal es el que entregó PuntoCash. */
+  expect(esAdministradorPrincipal("adm-antilla-1")).toBe(true);
+  expect(esAdministradorPrincipal("adm-antilla-2")).toBe(false);
+
+  /* Un administrador corriente no puede dar de alta ni desactivar a nadie. */
+  const ajeno = desactivarUsuarioAdmin(ANTILLA, "adm-antilla-1", "adm-antilla-2");
+  expect(ajeno.ok).toBe(false);
+  if (!ajeno.ok) expect(ajeno.reason).toBe("no-es-el-principal");
+
+  /* **Al principal no lo desactiva nadie, él incluido.** Es lo que garantiza
+     que la empresa nunca se quede sin quien administre sus usuarios, y lo que
+     vuelve innecesaria la vieja guarda del «último activo». */
   const propio = desactivarUsuarioAdmin(ANTILLA, "adm-antilla-1", "adm-antilla-1");
   expect(propio.ok).toBe(false);
+  if (!propio.ok) expect(propio.reason).toBe("es-el-principal");
 
-  /* Antilla tiene dos: desactivar uno se permite, el último no. */
-  expect(activeAdminUsersOf("op-antilla")).toHaveLength(2);
+  /* El principal sí desactiva y reactiva a los demás. */
   expect(desactivarUsuarioAdmin(ANTILLA, "adm-antilla-2", "adm-antilla-1").ok).toBe(true);
+  expect(activeAdminUsersOf("op-antilla")).toHaveLength(1);
 
-  const ultimo = desactivarUsuarioAdmin(ANTILLA, "adm-antilla-1", "adm-antilla-2");
-  expect(ultimo.ok).toBe(false);
-  if (!ultimo.ok) expect(ultimo.reason).toBe("ultimo-usuario-activo");
+  /* **FR-AD-USR-12**: no se traspasa a alguien desactivado, porque dejaría a
+     la empresa sin nadie que pueda administrar usuarios. */
+  const aDesactivado = transferirAdministradorPrincipal(ANTILLA, "adm-antilla-1", "adm-antilla-2");
+  expect(aDesactivado.ok).toBe(false);
+  if (!aDesactivado.ok) expect(aDesactivado.reason).toBe("destino-no-activo");
 
-  reactivarUsuarioAdmin(ANTILLA, "adm-antilla-2");
+  reactivarUsuarioAdmin(ANTILLA, "adm-antilla-1", "adm-antilla-2");
   expect(activeAdminUsersOf("op-antilla")).toHaveLength(2);
+
+  /* El traspaso es inmediato y en un solo acto: nunca hay dos principales ni
+     ninguno. */
+  const traspaso = transferirAdministradorPrincipal(ANTILLA, "adm-antilla-1", "adm-antilla-2");
+  expect(traspaso.ok).toBe(true);
+  expect(esAdministradorPrincipal("adm-antilla-2")).toBe(true);
+  expect(esAdministradorPrincipal("adm-antilla-1")).toBe(false);
+
+  // Se devuelve el papel para no alterar el resto de la corrida.
+  expect(transferirAdministradorPrincipal(ANTILLA, "adm-antilla-2", "adm-antilla-1").ok).toBe(true);
+  expect(esAdministradorPrincipal("adm-antilla-1")).toBe(true);
 });
 
 /* -------------------------------------------------------------------------

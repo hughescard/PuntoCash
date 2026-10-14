@@ -1,5 +1,14 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { cajaConJornadaAbierta } from "./storage-state";
+
+/*
+ * La jornada se siembra con 50.000 CUP, que es lo que abría el fondeo que
+ * había aquí: las dieciocho pruebas la necesitan abierta y ninguna trata de
+ * abrirla.
+ */
+test.use({ storageState: cajaConJornadaAbierta({ CUP: 50_000 }) });
+
 /**
  * Worker Operaciones — specialized historical detail for
  * "Giros" (/worker/operaciones/[codigo]).
@@ -19,25 +28,31 @@ function onScreen(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true });
 }
 
-async function openJornada(page: Page) {
-  await page.goto("/worker/caja/fondeo-inicial");
-  await page.getByLabel("Fondo inicial en CUP").fill("50000");
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-  await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
-    timeout: 5000,
-  });
-  await page.getByRole("link", { name: "Ir a Caja" }).click();
+/**
+ * Entra al selector de Giros **cargando el shell**: solo al principio de una
+ * prueba, nunca después de que la prueba haya creado una operación.
+ */
+async function entrarAGiros(page: Page) {
+  await page.goto("/worker/caja");
+  await irAGiros(page);
 }
 
-async function goToGiros(page: Page) {
+/**
+ * Lo mismo, pero **por enlace**, desde una pantalla ya cargada.
+ *
+ * La diferencia importa: el historial de operaciones es memoria de módulo del
+ * navegador y esta sesión no lo persiste —a diferencia de la caja—, así que un
+ * `page.goto` borra el giro que la prueba acaba de registrar y su código deja
+ * de resolver. Es lo que hay que usar a mitad de una prueba.
+ */
+async function irAGiros(page: Page) {
   await page.getByRole("link", { name: "Nueva operación" }).click();
   await page.getByRole("link", { name: /Giros/ }).click();
 }
 
 /** Registers a giro of 2.500,00 CUP and returns to Operaciones. Returns its Giro code. */
 async function sendGiro(page: Page): Promise<string> {
-  await goToGiros(page);
+  await entrarAGiros(page);
   await page.getByRole("link", { name: /Enviar giro/ }).click();
   await expect(page.getByRole("heading", { name: "Giros" })).toBeVisible();
 
@@ -75,7 +90,7 @@ async function sendGiro(page: Page): Promise<string> {
 
 /** Pays out the giro with the given code and returns to Operaciones. */
 async function payoutGiro(page: Page, code: string) {
-  await goToGiros(page);
+  await irAGiros(page);
   await page.getByRole("link", { name: /Cobrar giro/ }).click();
   await page.getByLabel("Código del giro").fill(code);
   await page.getByRole("button", { name: "Buscar giro" }).click();
@@ -107,7 +122,6 @@ async function openNewestGiroDetail(page: Page) {
 
 test.describe("Operation Detail — giro enviado", () => {
   test.beforeEach(async ({ page }) => {
-    await openJornada(page);
     await sendGiro(page);
     await openNewestGiroDetail(page);
   });
@@ -220,8 +234,7 @@ test.describe("Operation Detail — giro enviado", () => {
 
 test.describe("Operation Detail — giro cobrado", () => {
   test.beforeEach(async ({ page }) => {
-    await openJornada(page);
-    await goToGiros(page);
+    await entrarAGiros(page);
     await page.getByRole("link", { name: /Cobrar giro/ }).click();
     await page.getByLabel("Código del giro").fill("TR-260901-000245");
     await page.getByRole("button", { name: "Buscar giro" }).click();
@@ -293,7 +306,6 @@ test.describe("Operation Detail — giro history is frozen", () => {
   test("the send detail keeps its stored status after the giro is paid out elsewhere", async ({
     page,
   }) => {
-    await openJornada(page);
     const code = await sendGiro(page);
 
     await openNewestGiroDetail(page);
@@ -321,7 +333,6 @@ test.describe("Operation Detail — giro history is frozen", () => {
   });
 
   test("opening a giro detail performs no API request", async ({ page }) => {
-    await openJornada(page);
     await sendGiro(page);
 
     const apiCalls: string[] = [];
@@ -345,8 +356,7 @@ for (const width of [1440, 1280] as const) {
     test.use({ viewport: { width, height: 900 } });
 
     test("both giro details fit without page-level horizontal scroll", async ({ page }) => {
-      await openJornada(page);
-      await sendGiro(page);
+        await sendGiro(page);
       await openNewestGiroDetail(page);
 
       const overflows = async () =>

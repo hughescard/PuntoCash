@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
+
 /**
  * Cambio de moneda — the first complete PuntoCash operation.
  *
@@ -20,20 +22,16 @@ const FLOW = "/worker/nueva-operacion/cambio-moneda";
 const SEEDED_DOCUMENT = "90010112345";
 
 /** Opens a jornada funded like the register's demo balances, ending on Caja. */
-async function openJornada(page: Page) {
-  await page.goto("/worker/caja/fondeo-inicial");
-  const funds: Record<string, string> = { CUP: "245000", USD: "3850", EUR: "2120", GBP: "950" };
-  for (const [currency, value] of Object.entries(funds)) {
-    await page.getByLabel(`Fondo inicial en ${currency}`).fill(value);
-  }
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-  await page.getByRole("link", { name: "Ir a Caja" }).click();
-}
+/*
+ * La jornada se siembra con los mismos fondos que abría el fondeo que había
+ * aquí: veintitrés de estas pruebas la necesitan abierta y ninguna trata de
+ * abrirla. El único grupo que trata de la caja cerrada se sale de la siembra.
+ */
+test.use({ storageState: cajaConJornadaAbierta({ CUP: 245_000, USD: 3_850, EUR: 2_120, GBP: 950 }) });
 
-/** Opens a jornada, then navigates (by link, never a reload) to the Cambio de moneda flow. */
+/** Entra al flujo de Cambio de moneda por donde entra el trabajador. */
 async function startCambio(page: Page) {
-  await openJornada(page);
+  await page.goto("/worker/caja");
   await page.getByRole("link", { name: "Nueva operación" }).click();
   await page.getByRole("link", { name: /Cambio de moneda/ }).click();
   await expect(page.getByRole("heading", { name: "Cambio de moneda", level: 1 })).toBeVisible();
@@ -60,6 +58,14 @@ async function goToRevision(page: Page) {
 }
 
 test.describe("sin jornada abierta", () => {
+  /*
+   * Necesita la caja CERRADA, así que se sale de la siembra del archivo. Y no
+   * solo por afirmar lo contrario de lo que habría: el estado sembrado se
+   * repone al hidratar, de modo que la pantalla bloqueada que pintó el
+   * servidor se sustituye por la de trabajo a media prueba.
+   */
+  test.use({ storageState: EQUIPO_SIN_JORNADA });
+
   test("blocks the flow with Caja cerrada and offers the way to Caja", async ({ page }) => {
     await page.goto(FLOW);
 
@@ -209,6 +215,12 @@ test.describe("step 2 · cliente", () => {
 
     await expect(page.getByText("Cliente no encontrado")).toBeVisible();
     await page.getByRole("button", { name: "Registrar nuevo cliente" }).click();
+
+    /* El formulario de alta se monta en estado de cliente; `$$eval` no espera
+       a nada, así que sin esta ancla podía leer las etiquetas del formulario
+       anterior o una lista a medio montar. «Nacionalidad» es el último campo
+       del conjunto: cuando está, el formulario está entero. */
+    await expect(page.getByLabel("Nacionalidad")).toBeVisible();
 
     const labels = await page.$$eval("form label", (els) =>
       els.map((el) => el.textContent?.replace("*", "").trim() ?? ""),

@@ -102,6 +102,43 @@
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+
+  /* La barra de desplazamiento de una superficie navy.
+     El navegador pinta la suya sobre una banda clara, con sus flechas y su
+     surco: dentro de la columna navy eso se lee como una caja distinta metida
+     dentro de la barra lateral, y el corte se nota justo donde empieza el pie.
+     Aquí el surco es transparente y el pulgar es la misma familia de blancos
+     con los que ya está construida la columna (mismo tratamiento que el
+     `hover` y el separador), así que la barra pertenece al bloque en lugar de
+     partirlo.
+
+     No se oculta: seguiría habiendo desplazamiento sin nada que lo anuncie. */
+  .pc-scroll-dark {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.28) transparent;
+  }
+
+  .pc-scroll-dark::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .pc-scroll-dark::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .pc-scroll-dark::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.28);
+  }
+
+  .pc-scroll-dark::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 0.4);
+  }
+
+  /* Las flechas de los extremos son las que dejan el escalón contra el pie. */
+  .pc-scroll-dark::-webkit-scrollbar-button {
+    display: none;
+  }
 }
 
 /* Printing.

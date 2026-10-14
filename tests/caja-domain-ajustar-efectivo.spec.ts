@@ -47,7 +47,10 @@ test.describe("isReasonCompatibleWithDifference / getValidAdjustmentReasons (pur
   });
 });
 
-test.describe("ajustarEfectivo — domain boundary rejects an invalid combination", () => {
+/* En serie: la tercera prueba muta el saldo del módulo compartido y lo deja
+   así. Es el único `caja-domain-*` que mutaba sin declararlo, y sus tres
+   hermanos ya lo hacen. */
+test.describe.serial("ajustarEfectivo — domain boundary rejects an invalid combination", () => {
   test("rejects Sobrante detectado when the computed difference is negative", () => {
     const balance = CAJA_BALANCES.find((b) => b.currency === "GBP");
     expect(balance).toBeTruthy();

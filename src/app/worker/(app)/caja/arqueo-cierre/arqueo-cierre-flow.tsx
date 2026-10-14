@@ -37,6 +37,7 @@ import {
   type CajaClosingAuditCurrency,
   type CerrarJornadaResult,
 } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 
 const CAJA_ROUTE = "/worker/caja" as Route;
 const OBSERVACIONES_MAX = 250;
@@ -62,7 +63,9 @@ interface ClosingFormRow {
 }
 
 export function ArqueoCierreFlow(): React.JSX.Element {
-  const [blocked] = React.useState(() => !hasOpenJornada());
+  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
+  // cambia (`features/caja/use-caja.ts`).
+  useCaja();
   const jornada = getJornadaActual();
   const worker = getCurrentWorker();
   const [step, setStep] = React.useState<Step>("form");
@@ -74,6 +77,17 @@ export function ArqueoCierreFlow(): React.JSX.Element {
   const [result, setResult] = React.useState<CerrarJornadaResult | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmError, setConfirmError] = React.useState<string | undefined>();
+
+  /*
+   * Sin jornada abierta no hay nada que arquear — salvo que la haya cerrado
+   * este mismo flujo, porque entonces lo que el trabajador está mirando es su
+   * propio resultado y no puede quedar tapado por su propio efecto.
+   *
+   * Se lee en cada render, no se captura al entrar: el estado guardado en el
+   * equipo se repone justo después de hidratar, y una captura hecha antes de
+   * eso diría que no hay jornada para siempre.
+   */
+  const blocked = !hasOpenJornada() && result === null;
 
   const rows = CAJA_BALANCES.map((balance) => {
     const raw = amounts[balance.currency] ?? "";

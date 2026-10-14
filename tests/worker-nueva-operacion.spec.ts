@@ -22,7 +22,14 @@ async function renderedServices(page: Page) {
   );
 }
 
-/** Names of the service cards currently visible, in DOM order. */
+/**
+ * Names of the service cards currently visible, in DOM order.
+ *
+ * `$$eval` es una lectura sincrónica: **no reintenta**. `fill()` se resuelve
+ * cuando el valor está puesto, no cuando React ha vuelto a pintar, así que
+ * toda llamada a esta función debe ir precedida de una aserción que sí espere
+ * —un `toHaveCount` sobre las tarjetas— o medirá el catálogo a medio filtrar.
+ */
 async function visibleServiceNames(page: Page) {
   return page.$$eval(
     SERVICE_CARDS,
@@ -101,17 +108,21 @@ test.describe("nueva operación search", () => {
 
     // Matches the name and descriptions that mention Tarjeta Antilla.
     await box.fill("tarjeta");
+    await expect(page.locator(SERVICE_CARDS)).toHaveCount(4);
     expect(await visibleServiceNames(page)).toContain("Tarjeta Antilla");
     expect(await visibleServiceNames(page)).toContain("Extracción Tarjeta Antilla");
 
     // Accent-insensitive in both directions.
     await box.fill("importacion");
+    await expect(page.locator(SERVICE_CARDS)).toHaveCount(1);
     expect(await visibleServiceNames(page)).toEqual(["Pago de importaciones"]);
     await box.fill("importación");
+    await expect(page.locator(SERVICE_CARDS)).toHaveCount(1);
     expect(await visibleServiceNames(page)).toEqual(["Pago de importaciones"]);
 
     // Case-insensitive, and the category label is searchable.
     await box.fill("EMPRESAS");
+    await expect(page.locator(SERVICE_CARDS)).toHaveCount(2);
     expect(await visibleServiceNames(page)).toEqual([
       "Depósitos de Pymes",
       "Pago de importaciones",

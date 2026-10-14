@@ -48,6 +48,7 @@ import { DOCUMENT_TYPES, type DocumentType } from "@/features/customers/customer
 import { getCurrentWorker } from "@/features/worker/session";
 import { PROVINCE_CATALOG, getMunicipalitiesForProvince } from "@/features/geography/cuba-provinces";
 import { CAJA_BALANCES, CAJA_SUMMARY, findCajaCurrency, hasOpenJornada } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 import { formatAmount } from "@/lib/format";
 import {
   birthDateFromCubanId,
@@ -124,9 +125,9 @@ export function EnviarGiroFlow(): React.JSX.Element {
   const router = useRouter();
   const worker = getCurrentWorker();
 
-  // Captured once, on entry — a jornada closed by another tab later must not
-  // retroactively lock a result screen this same flow already produced.
-  const [blocked] = React.useState(() => !hasOpenJornada());
+  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
+  // cambia (`features/caja/use-caja.ts`).
+  useCaja();
 
   const [initial] = React.useState(buildInitialFlow);
   const [step, setStep] = React.useState<Step>(initial.step);
@@ -141,6 +142,17 @@ export function EnviarGiroFlow(): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmError, setConfirmError] = React.useState<string | undefined>();
   const [completed, setCompleted] = React.useState<GiroCompleted | null>(null);
+
+  /*
+   * Sin jornada abierta esta pantalla no opera — salvo que el flujo ya haya
+   * terminado: que la jornada se cierre desde otra pestaña no puede tapar
+   * retroactivamente el resultado que el trabajador está mirando.
+   *
+   * Se lee en cada render, no se captura al entrar: el estado guardado en el
+   * equipo se repone justo después de hidratar, y una captura hecha antes de
+   * eso diría que no hay jornada para siempre.
+   */
+  const blocked = !hasOpenJornada() && completed === null;
 
   const enabledCurrencies = CAJA_BALANCES.map((balance) => balance.currency);
 

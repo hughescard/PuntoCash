@@ -80,7 +80,7 @@ export function KioskRequestTicket({
 
         <p className="mt-4 flex items-center gap-2 text-body-sm text-text-secondary">
           <Clock className="size-4 shrink-0" aria-hidden="true" />
-          Válido hasta las {timeOf(expiresAt)} de hoy · generado a las {timeOf(createdAt)}
+          Válido hasta las {timeOf(expiresAt)} · generado a las {timeOf(createdAt)}
         </p>
 
         {printFailed ? (

@@ -55,6 +55,15 @@ import {
   type CajaAdjustmentReason,
   type CajaBalance,
 } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
+
+/** Un mensaje por cada rechazo que el dominio puede devolver. */
+const CONFIRM_ERROR: Readonly<Record<"motivo-incompatible" | "moneda-no-habilitada", string>> = {
+  "motivo-incompatible":
+    'El motivo seleccionado ya no es compatible con la diferencia calculada. Vuelve a "Registrar conteo" y selecciona un motivo válido.',
+  "moneda-no-habilitada":
+    "Esa moneda ya no está habilitada en esta caja, así que no se puede ajustar su efectivo. Vuelve a Caja y comprueba las monedas habilitadas.",
+};
 
 const CAJA_ROUTE = "/worker/caja" as Route;
 
@@ -79,9 +88,9 @@ interface AjusteDraft {
  * efectivo — corrección de saldo").
  */
 export function AjustarEfectivoFlow(): React.JSX.Element {
-  // Captured once, on entry: closing the jornada from another tab later must
-  // not retroactively lock a result screen this same flow already produced.
-  const [blocked] = React.useState(() => !hasOpenJornada());
+  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
+  // cambia (`features/caja/use-caja.ts`).
+  useCaja();
 
   const worker = getCurrentWorker();
   const jornada = getJornadaActual();
@@ -100,6 +109,17 @@ export function AjustarEfectivoFlow(): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const [result, setResult] = React.useState<AjustarEfectivoResult | null>(null);
   const [confirmError, setConfirmError] = React.useState<string | undefined>();
+
+  /*
+   * Sin jornada abierta no hay nada que ajustar — salvo que esta pantalla ya
+   * haya producido un resultado: que la jornada se cierre desde otra pestaña
+   * no puede tapar retroactivamente lo que el trabajador está mirando.
+   *
+   * Se lee en cada render, no se captura al entrar: el estado guardado en el
+   * equipo se repone justo después de hidratar, y una captura hecha antes de
+   * eso diría que no hay jornada para siempre.
+   */
+  const blocked = !hasOpenJornada() && result === null;
 
   const selectedBalance = CAJA_BALANCES.find((b) => b.currency === currency) ?? null;
   const selectedCurrencyEntry = currency ? findCajaCurrency(currency) : undefined;
@@ -213,12 +233,12 @@ export function AjustarEfectivoFlow(): React.JSX.Element {
     });
 
     if (!outcome.ok) {
-      // Unreachable through the form's own filtering and reset — a defensive
-      // domain-level stop, not a normal product state.
+      /* Ninguno de los dos es alcanzable con el filtrado del propio
+         formulario: son paradas del dominio, no estados normales del
+         producto. Cada rechazo dice qué pasó y cuál es el paso siguiente
+         (§5), nunca "Algo salió mal". */
       setSubmitting(false);
-      setConfirmError(
-        'El motivo seleccionado ya no es compatible con la diferencia calculada. Vuelve a "Registrar conteo" y selecciona un motivo válido.',
-      );
+      setConfirmError(CONFIRM_ERROR[outcome.reason]);
       return;
     }
 

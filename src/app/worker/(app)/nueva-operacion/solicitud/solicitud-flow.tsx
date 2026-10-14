@@ -4,11 +4,21 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
-import { ArrowLeft, ArrowRight, Lock, Search, TicketCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search, TicketCheck } from "lucide-react";
 
-import { Alert, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/components/ui";
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Field,
+  fieldAria,
+  Input,
+  type FieldSpec,
+} from "@/components/ui";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import { hasOpenJornada } from "@/features/caja/caja-data";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 import {
   findSelfServiceRequestByCode,
@@ -21,6 +31,13 @@ import {
 } from "@/features/kiosk/self-service-request";
 
 const CATALOG_ROUTE = "/worker/nueva-operacion";
+
+/* El código se resuelve desde su etiqueta visible, no desde un `aria-label`
+   (**FR-A11Y-1**, manual §15: «placeholders no sustituyen labels»). */
+const CODIGO: FieldSpec = {
+  id: "kiosk-request-code",
+  label: "Código de solicitud",
+};
 
 /** Where each kind of kiosk request is completed. */
 const TARGET: Record<KioskRequestService, { label: string; route: Route }> = {
@@ -52,15 +69,15 @@ const NEXT_STEP: Record<KioskRequestService, { title: string; body: string }> = 
 
 const LOOKUP_ERROR: Record<Exclude<SelfServiceLookupResult, { ok: true }>["reason"], { title: string; body: string }> = {
   "not-found": {
-    title: "Solicitud no encontrada",
+    title: "Código no encontrado",
     body: "Verifica el código con el cliente. Los códigos de kiosco empiezan por KS-.",
   },
   expired: {
-    title: "Solicitud vencida",
+    title: "Esta solicitud ya venció",
     body: "Las solicitudes caducan a los 30 minutos. El cliente puede generar una nueva en el kiosco o puedes iniciar la operación manualmente.",
   },
   consumed: {
-    title: "Solicitud ya utilizada",
+    title: "Esta solicitud ya fue utilizada",
     body: "Este código ya fue atendido en caja y no puede usarse de nuevo.",
   },
 };
@@ -77,7 +94,6 @@ const LOOKUP_ERROR: Record<Exclude<SelfServiceLookupResult, { ok: true }>["reaso
  */
 export function SolicitudFlow(): React.JSX.Element {
   const router = useRouter();
-  const [blocked] = React.useState(() => !hasOpenJornada());
   const [code, setCode] = React.useState("");
   const [searching, setSearching] = React.useState(false);
   const [result, setResult] = React.useState<SelfServiceLookupResult | null>(null);
@@ -100,28 +116,6 @@ export function SolicitudFlow(): React.JSX.Element {
     router.push(TARGET[request.service].route);
   }
 
-  if (blocked) {
-    return (
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
-        <BackLink />
-        <Card>
-          <CardContent className="flex flex-col items-center px-8 py-12 text-center">
-            <span className="grid size-12 place-items-center rounded-control bg-primary-subtle text-primary">
-              <Lock aria-hidden="true" />
-            </span>
-            <h1 className="mt-5 text-screen-title text-text-primary">Caja cerrada</h1>
-            <p className="mt-2 text-body text-text-secondary">
-              Debes abrir una jornada antes de atender una solicitud del kiosco.
-            </p>
-            <Button className="mt-6" asChild>
-              <Link href="/worker/caja">Ir a Caja</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const found = result?.ok ? result.request : null;
   const error = result && !result.ok ? LOOKUP_ERROR[result.reason] : null;
 
@@ -138,11 +132,10 @@ export function SolicitudFlow(): React.JSX.Element {
 
       <Card>
         <CardContent className="pt-6">
-          <form noValidate onSubmit={search} className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <div className="flex-1">
+          <form noValidate onSubmit={search} className="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <Field {...CODIGO} className="flex-1">
               <Input
-                id="kiosk-request-code"
-                aria-label="Código de solicitud"
+                {...fieldAria(CODIGO)}
                 value={code}
                 onChange={(event) => {
                   setCode(event.target.value);
@@ -155,7 +148,7 @@ export function SolicitudFlow(): React.JSX.Element {
                 invalid={Boolean(error)}
                 aria-describedby={error ? "kiosk-request-error" : undefined}
               />
-            </div>
+            </Field>
             <Button type="submit" loading={searching} disabled={!code.trim()}>
               {searching ? null : <Search aria-hidden="true" />}
               {searching ? "Buscando…" : "Buscar solicitud"}

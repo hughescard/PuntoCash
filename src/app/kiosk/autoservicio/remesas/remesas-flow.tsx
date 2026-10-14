@@ -14,6 +14,7 @@ import {
   Input,
 } from "@/components/ui";
 import { KioskRequestTicket, TicketRow } from "@/components/patterns/kiosk-request-ticket";
+import { KioskCancelDialog } from "@/components/patterns/kiosk-cancel-dialog";
 import { formatMoney } from "@/lib/format";
 import { remittanceProvider, type RemittanceSnapshot } from "@/features/remittances/remittance-provider";
 import { registerSelfServiceRequest, type KioskRequest } from "@/features/kiosk/self-service-request";
@@ -35,12 +36,30 @@ type Step = "codigo" | "revisar" | "solicitud";
 export function RemesasAutoservicioFlow(): React.JSX.Element {
   const router = useRouter();
   const [step, setStep] = React.useState<Step>("codigo");
+  const [cancelOpen, setCancelOpen] = React.useState(false);
   const [code, setCode] = React.useState("");
   const [searching, setSearching] = React.useState(false);
   const [notFound, setNotFound] = React.useState(false);
   const [remittance, setRemittance] = React.useState<RemittanceSnapshot | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [request, setRequest] = React.useState<KioskRequest | null>(null);
+
+  /* **FR-AS-IMP-3**: «Cancelar» de cada flujo pide confirmación cuando hay
+     datos significativos introducidos. Aquí lo significativo es un código
+     escrito o un remittance ya localizado — descartarlo sin preguntar obliga a
+     volver a pedir el código a quien está de pie frente al kiosco. */
+  const dirty = code.trim() !== "" || remittance !== null;
+
+  function requestCancel() {
+    if (dirty) setCancelOpen(true);
+    else router.push(KIOSK_HOME);
+  }
+
+  function confirmCancel() {
+    setCancelOpen(false);
+    router.push(KIOSK_HOME);
+  }
+
 
   async function search(event: React.FormEvent) {
     event.preventDefault();
@@ -95,7 +114,7 @@ export function RemesasAutoservicioFlow(): React.JSX.Element {
         <FlowHeader
           title="Revisa tu remesa"
           description="Confirma que estos datos son correctos antes de generar tu código."
-          onCancel={() => router.push(KIOSK_HOME)}
+          onCancel={requestCancel}
         />
 
         <Card>
@@ -126,6 +145,8 @@ export function RemesasAutoservicioFlow(): React.JSX.Element {
             {submitting ? "Generando…" : "Generar código"}
           </Button>
         </div>
+
+        <KioskCancelDialog open={cancelOpen} onOpenChange={setCancelOpen} onConfirm={confirmCancel} />
       </div>
     );
   }
@@ -135,7 +156,7 @@ export function RemesasAutoservicioFlow(): React.JSX.Element {
       <FlowHeader
         title="Cobrar remesa"
         description="Introduce el código que te dieron para localizar tu remesa."
-        onCancel={() => router.push(KIOSK_HOME)}
+        onCancel={requestCancel}
       />
 
       <div className="grid grid-cols-1 items-start gap-6 wide:grid-cols-2">
@@ -195,6 +216,8 @@ export function RemesasAutoservicioFlow(): React.JSX.Element {
           </CardContent>
         </Card>
       </div>
+
+      <KioskCancelDialog open={cancelOpen} onOpenChange={setCancelOpen} onConfirm={confirmCancel} />
     </div>
   );
 }

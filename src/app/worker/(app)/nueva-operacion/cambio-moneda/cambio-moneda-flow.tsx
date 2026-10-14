@@ -20,13 +20,14 @@ import {
 } from "@/components/ui";
 import { Stepper } from "@/components/patterns/stepper";
 import { formatDateTime, formatMoney, parseAmountInput } from "@/lib/format";
-import { getExchangeQuote, type ExchangeQuote } from "@/features/exchange/quote";
+import { findCurrency, getExchangeQuote, type ExchangeQuote } from "@/features/exchange/quote";
 import {
   CAJA_BALANCES,
   hasOpenJornada,
   registrarCambioMoneda,
   type CambioMonedaCashOutcome,
 } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 import { getCurrentWorker } from "@/features/worker/session";
 import {
   customerFullName,
@@ -70,7 +71,13 @@ let operationSequence = 123;
  * blocked state with a way to Caja, and no form at all.
  */
 export function CambioMonedaFlow(): React.JSX.Element {
-  const [blocked] = React.useState(() => !hasOpenJornada());
+  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
+  // cambia (`features/caja/use-caja.ts`).
+  useCaja();
+  /* Se lee en cada render, no se captura al entrar: lo guardado en el equipo
+     se repone justo después de hidratar. Un cambio de moneda no abre ni
+     cierra la jornada. */
+  const blocked = !hasOpenJornada();
   // A kiosk prefill is only ever handed over from "Buscar solicitud", which is
   // itself blocked without a jornada — but never leave one dangling here.
   React.useEffect(() => {
@@ -168,6 +175,14 @@ function CambioMonedaOperation(): React.JSX.Element {
   const canContinueFromCambio = Boolean(liveQuote && liveCash?.sufficient && !amountError);
 
   /* ---- Navigation ---- */
+  /* Monedas que la caja tiene habilitadas y este servicio no puede cambiar,
+     porque no hay par con tasa para ellas (**FR-AD-MON-5**: la lista de
+     monedas de una sede no depende de Cambio de moneda). Se calculan aquí y se
+     dicen en la pantalla, en vez de desaparecer del selector sin explicación. */
+  const monedasSinTasa = CAJA_BALANCES.filter((b) => !findCurrency(b.currency)).map(
+    (b) => b.currency,
+  );
+
   const dirty = hasMeaningfulData(state);
 
   function leaveFlow() {
@@ -316,6 +331,7 @@ function CambioMonedaOperation(): React.JSX.Element {
 
         {state.step === "cambio" ? (
           <StepCambio
+            monedasSinTasa={monedasSinTasa}
             sourceCurrency={state.sourceCurrency}
             destinationCurrency={state.destinationCurrency}
             amountInput={state.amountInput}

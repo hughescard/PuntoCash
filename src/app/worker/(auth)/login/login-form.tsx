@@ -7,6 +7,7 @@ import { Lock, User } from "lucide-react";
 
 import { Alert, Button, Field, fieldAria, Input, PasswordInput, type FieldSpec } from "@/components/ui";
 import { authenticate, type LoginResult } from "@/features/auth/mock-auth";
+import { useHydrated } from "@/lib/use-hydrated";
 
 /**
  * Worker login form — first of the two steps that make up access.
@@ -75,6 +76,7 @@ const AFTER_LOGIN = "/worker/verificacion" as const;
 
 export function LoginForm(): React.JSX.Element {
   const router = useRouter();
+  const hydrated = useHydrated();
   const [status, setStatus] = React.useState<Status>("idle");
   const [failure, setFailure] = React.useState<FailureKind | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({});
@@ -180,7 +182,11 @@ export function LoginForm(): React.JSX.Element {
       {/* The primary action is separated from the fields so it reads as the
           conclusion of the form rather than another row in it. */}
       <div className="flex flex-col gap-3 pt-2">
-        <Button type="submit" size="md" block loading={submitting} disabled={locked}>
+        {/* Deshabilitado hasta que React se engancha al formulario: el marcado
+            del servidor ya es un `submit` nativo y, sin `action`, pulsarlo
+            antes de tiempo hace un GET a esta misma URL con el usuario y la
+            contraseña en la barra de direcciones. */}
+        <Button type="submit" size="md" block loading={submitting} disabled={locked || !hydrated}>
           {submitting ? "Verificando…" : "Iniciar sesión"}
         </Button>
 

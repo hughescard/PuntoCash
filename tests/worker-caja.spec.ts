@@ -141,22 +141,26 @@ test.describe("worker caja — movements", () => {
     const table = page.getByRole("table").nth(1);
     await page.getByLabel("Tipo").click();
     await page.getByRole("option", { name: "Entrada", exact: true }).click();
-    await expect(table.locator("tbody tr").first()).toBeVisible();
-
-    const types = await table.locator("tbody tr td:nth-child(3)").allTextContents();
-    expect(types.length).toBeGreaterThan(0);
-    for (const text of types) expect(text.trim()).toBe("Entrada");
+    /* La fila visible anterior al filtro ya satisface `toBeVisible()`, así que
+       esa espera no demuestra nada y la lectura sincrónica podía medir la tabla
+       sin filtrar. La forma que sí espera es afirmar que no queda ninguna fila
+       distinta. */
+    const types = table.locator("tbody tr td:nth-child(3)");
+    await expect(types.filter({ hasNotText: "Entrada" })).toHaveCount(0);
+    await expect(types).not.toHaveCount(0);
   });
 
   test("filters by Moneda", async ({ page }) => {
     const table = page.getByRole("table").nth(1);
     await page.getByLabel("Moneda").click();
     await page.getByRole("option", { name: "EUR", exact: true }).click();
-    await expect(table.locator("tbody tr").first()).toBeVisible();
-
-    const currencies = await table.locator("tbody tr td:nth-child(5)").allTextContents();
-    expect(currencies.length).toBeGreaterThan(0);
-    for (const text of currencies) expect(text.trim()).toBe("EUR");
+    /* La fila visible anterior al filtro ya satisface `toBeVisible()`, así que
+       esa espera no demuestra nada y la lectura sincrónica podía medir la tabla
+       sin filtrar. La forma que sí espera es afirmar que no queda ninguna fila
+       distinta. */
+    const currencies = table.locator("tbody tr td:nth-child(5)");
+    await expect(currencies.filter({ hasNotText: "EUR" })).toHaveCount(0);
+    await expect(currencies).not.toHaveCount(0);
   });
 
   test("a currency with no movements shows the empty state, not an error", async ({ page }) => {
@@ -168,13 +172,13 @@ test.describe("worker caja — movements", () => {
   test("searches by operation code", async ({ page }) => {
     const table = page.getByRole("table").nth(1);
     await page.getByPlaceholder("Buscar por operación o concepto").fill("PC-260818-005004");
-    await expect(table.locator("tbody tr").first()).toBeVisible();
-
+    /* La fila visible anterior al filtro ya satisface `toBeVisible()`, así que
+       esa espera no demuestra nada y la lectura sincrónica podía medir la tabla
+       sin filtrar. La forma que sí espera es afirmar que no queda ninguna fila
+       distinta. */
     const rows = table.locator("tbody tr");
-    expect(await rows.count()).toBeGreaterThan(0);
-    for (const text of await rows.allTextContents()) {
-      expect(text).toContain("PC-260818-005004");
-    }
+    await expect(rows.filter({ hasNotText: "PC-260818-005004" })).toHaveCount(0);
+    await expect(rows).not.toHaveCount(0);
   });
 
   test("Limpiar filtros restores the full ledger", async ({ page }) => {

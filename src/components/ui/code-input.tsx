@@ -82,7 +82,11 @@ const CodeInput = React.forwardRef<HTMLInputElement, CodeInputProps>(function Co
   return (
     <div className={cn("relative w-fit", className)}>
       {/* Las casillas son la representación del valor, no controles. */}
-      <div aria-hidden="true" className="flex items-center gap-2.5">
+      {/* En un teléfono las seis casillas a 48px no caben en 360px de ancho:
+          por debajo de `sm` encogen a 40px y juntan la separación. Siguen por
+          encima del mínimo táctil porque el control real es el campo que las
+          cubre entero, no cada casilla. */}
+      <div aria-hidden="true" className="flex items-center gap-2 sm:gap-2.5">
         {Array.from({ length }, (_, index) => {
           const digit = value[index];
           const isActive = focused && !disabled && index === activeIndex && value.length < length;
@@ -92,11 +96,11 @@ const CodeInput = React.forwardRef<HTMLInputElement, CodeInputProps>(function Co
             <div
               key={index}
               className={cn(
-                "grid h-control-lg w-12 place-items-center rounded-control border bg-surface",
+                "grid h-control-lg w-10 place-items-center rounded-control border bg-surface sm:w-12",
                 "text-amount font-semibold text-text-primary pc-numeric",
                 "transition-[border-color,box-shadow] duration-(--duration-fast) ease-(--ease-standard)",
                 // Separación de lectura 3+3.
-                index === length / 2 && "ml-3",
+                index === length / 2 && "ml-2 sm:ml-3",
                 invalid
                   ? "border-error"
                   : isActive || isLast

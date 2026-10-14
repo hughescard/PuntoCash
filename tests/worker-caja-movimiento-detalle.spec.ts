@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { esperarFondeoVivo, rellenar } from "./worker-helpers";
+
 /**
  * Worker Caja — Cash Movement Detail (/worker/caja/movimientos/[id]).
  *
@@ -25,8 +27,9 @@ function onScreen(page: Page, text: string | RegExp) {
 
 async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "1200" }) {
   await page.goto("/worker/caja/fondeo-inicial");
+  await esperarFondeoVivo(page);
   for (const [currency, value] of Object.entries(fondos)) {
-    await page.getByLabel(`Fondo inicial en ${currency}`).fill(value);
+    await rellenar(page.getByLabel(`Fondo inicial en ${currency}`), value);
   }
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
@@ -155,76 +158,63 @@ test.describe("cash movement detail — Ajuste de efectivo (static fixture)", ()
     await openDetailFor(page, "Ajuste de efectivo");
   });
 
-  test("shows the movementId prominently under the title", async ({ page }) => {
+  /**
+   * Una sola prueba para toda la ficha, y no una por campo.
+   *
+   * Esto eran **catorce** pruebas que abrían la misma pantalla estática
+   * —cada una con su apertura de jornada y su navegación— para afirmar un
+   * campo. La pantalla es la misma en las catorce: lo que se comprueba es que
+   * la ficha de un ajuste muestra lo que debe mostrar, y eso es una
+   * afirmación, no catorce. Las aserciones están todas aquí, con el mismo
+   * alcance que tenían.
+   *
+   * Lo que se pierde es que el fallo diga en qué campo ocurrió, y no se
+   * pierde: Playwright señala la línea.
+   */
+  test("la ficha de un ajuste muestra todo lo que debe, y nada que no sepa", async ({ page }) => {
+    // Identificación: el movimiento, su concepto y su sentido como texto.
     await expect(onScreen(page, /^CM-\d{6}-\d{6}$/).first()).toBeVisible();
-  });
-
-  test("shows Concepto = Ajuste de efectivo", async ({ page }) => {
     await expect(onScreen(page, "Ajuste de efectivo").first()).toBeVisible();
-  });
-
-  test("shows the Salida badge as text, not colour alone", async ({ page }) => {
+    /* «Salida» como palabra, no solo como color: un estado no se comunica con
+       el color a secas (**FR-A11Y-2**, §20). */
     await expect(onScreen(page, "Salida").first()).toBeVisible();
-  });
 
-  test("shows the currency with its CurrencyFlag, aria-hidden and never emoji", async ({ page }) => {
+    // Moneda con su bandera SVG, decorativa y nunca un emoji (§15).
     await expect(onScreen(page, "EUR · Euro")).toBeVisible();
     const flag = page.locator("svg[data-currency-flag]").first();
     await expect(flag).toHaveAttribute("aria-hidden", "true");
     const hasRegionalIndicator = await page.evaluate(() =>
       /[\u{1F1E6}-\u{1F1FF}]/u.test(document.body.textContent ?? ""),
     );
-    expect(hasRegionalIndicator).toBe(false);
-  });
+    expect(hasRegionalIndicator, "hay un emoji de bandera en la pantalla").toBe(false);
 
-  test("shows the signed amount", async ({ page }) => {
+    // Importe con signo explícito y sello de tiempo en el formato del manual.
     await expect(onScreen(page, /−15,00 EUR|-15,00 EUR/).first()).toBeVisible();
-  });
-
-  test("shows the timestamp as dd/MM/yyyy · HH:mm", async ({ page }) => {
     await expect(onScreen(page, /\d{2}\/\d{2}\/\d{4} · \d{2}:\d{2}/).first()).toBeVisible();
-  });
 
-  test("shows Caja and Trabajador", async ({ page }) => {
+    // Contexto: la caja, quién lo registró y la jornada **histórica**, no la de hoy.
     await expect(onScreen(page, "Caja 03").first()).toBeVisible();
     await expect(onScreen(page, "Juan Pérez").first()).toBeVisible();
-  });
-
-  test("shows the historical jornada opening context, not today's live jornada", async ({ page }) => {
     await expect(onScreen(page, "Abierta").first()).toBeVisible();
     await expect(onScreen(page, /Abierta el: \d{2}\/\d{2}\/\d{4} · \d{2}:\d{2}/)).toBeVisible();
-  });
 
-  test("shows Saldo registrado antes del ajuste and Efectivo contado", async ({ page }) => {
+    // Lo propio de un ajuste: el conteo, la diferencia, el motivo y su nota.
     await expect(onScreen(page, "Saldo registrado antes del ajuste")).toBeVisible();
     await expect(onScreen(page, "Efectivo contado")).toBeVisible();
-  });
-
-  test("shows Diferencia with explicit negative sign and error semantics", async ({ page }) => {
     await expect(onScreen(page, "Diferencia")).toBeVisible();
-    await expect(onScreen(page, /−15,00 EUR|-15,00 EUR/).first()).toBeVisible();
-  });
-
-  test("shows Motivo", async ({ page }) => {
     await expect(onScreen(page, "Motivo")).toBeVisible();
     await expect(onScreen(page, "Faltante detectado")).toBeVisible();
-  });
-
-  test("shows Observaciones when present", async ({ page }) => {
     await expect(onScreen(page, "Observaciones")).toBeVisible();
     await expect(onScreen(page, "Conteo verificado nuevamente.")).toBeVisible();
-  });
 
-  test("Resultado del movimiento shows Saldo anterior, Movimiento and Saldo resultante", async ({
-    page,
-  }) => {
+    // Y el resultado, con sus tres cifras juntas.
     await expect(onScreen(page, "Resultado del movimiento")).toBeVisible();
     await expect(onScreen(page, "Saldo anterior")).toBeVisible();
     await expect(onScreen(page, "Movimiento").first()).toBeVisible();
     await expect(onScreen(page, "Saldo resultante")).toBeVisible();
-  });
 
-  test("does not render an Operación relacionada card", async ({ page }) => {
+    /* Un ajuste no nace de una operación, así que la tarjeta de operación
+       relacionada **no** se dibuja: dibujarla vacía afirmaría que hay una. */
     await expect(page.getByText("Operación relacionada")).toHaveCount(0);
   });
 

@@ -1,26 +1,25 @@
-# PuntoCash — Admin de sede
-## Documento de Requisitos Funcionales (FRD) · v3.0
+# PuntoCash — Administración de sede
+## Documento de Requisitos Funcionales (FRD) · v6.0
 
-**Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/admin` contiene un README de marcador de posición, y la demostración suple dos de sus secciones con el simulador `/kiosk/simulador-admin`.
+**Estado:** Línea base de **entrega parcial** — especifica el comportamiento funcional de la consola de administración de sede **tal como está implementada**. Toda pantalla que este documento describe se puede abrir y recorrer. Lo que está especificado y aún no construido no vive aquí: vive en `PuntoCash_Admin_Sede_Alcance_Pendiente_v1.md`.
 
-**Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y como referencia de aceptación.
+**Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y de referencia para aceptación.
 
-**Alcance:** Únicamente la consola del mercante, `/admin`. La consola de PuntoCash se especifica en `PuntoCash_Super_Admin_Functional_Requirements_v1.md`.
+**Alcance:** Únicamente `/admin`. **No cubre Super Admin** (`/super-admin`), que tiene su propio documento y no entra en esta entrega.
 
-**Control de cambios — v3.1 (2026-09-23).** **Separación de Monedas y Tasas.** La v3.0 mezclaba las dos cosas en una sola idea de "par activado". Ahora son dos pantallas con objetos distintos: **§12 Monedas** mantiene la **lista de monedas sueltas** que maneja la sucursal, que es exactamente lo que un Worker puede añadir a su caja (sustituye al catálogo constante de **FR-CAJA-13**); y **§13 Tasas** es donde se **definen los pares** y su tasa, a partir de esas monedas y solo cuando PuntoCash tiene un rango para el par. Desaparece el estado "par activado sin tasa": definir un par fija su tasa en el mismo acto. `FR-AD-MON-*` y `FR-AD-TASA-*` se reescriben; §5 y §16 se ajustan. Queda además matizado, y pendiente de confirmación del negocio, que la **lista de monedas no depende del servicio de Cambio de moneda** (FR-AD-MON-5), porque una sede necesita monedas en caja para remesas y giros igualmente.
+**Control de cambios — v6.0 (14/10/2026).** **Reestructuración para la entrega parcial.** El documento pasa a tener la forma del FRD de Worker, que es la que los desarrolladores de esta misma red ya saben leer, y a describir **solo lo construido**.
 
-**Control de cambios — v3.0 (2026-09-23).** **El mercante gobierna todo lo que vive dentro de sus sedes.** Tres capacidades que la v2.0 daba a PuntoCash pasan aquí: nueva **§4 Cajas** (`FR-AD-CAJA-*`), crear y retirar las cajas de una sede, que ahora nace vacía; nueva **§12 Monedas** (`FR-AD-MON-*`), decidir qué monedas cambia cada sede cuando PuntoCash le habilitó el servicio; y nueva **§8 Usuarios administradores** (`FR-AD-USR-*`), crear los demás usuarios de su empresa a partir del primero que PuntoCash le entregó. Además, el Admin de sede queda como **el único rol que desactiva a un trabajador** **[A14]**, y §7 lo refleja. §5, §6 y §13 se ajustan; el apéndice recoge **A14**.
+Cuatro cambios de estructura. **(1)** Las siete secciones especificadas y sin pantalla —Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Promociones y Reportes— salen a `PuntoCash_Admin_Sede_Alcance_Pendiente_v1.md`, **sin que ninguno de sus requisitos cambie ni se renumere**: `FR-AD-JOR-*`, `FR-AD-APR-*`, `FR-AD-OPS-*`, `FR-AD-MON-*`, `FR-AD-TASA-*`, `FR-AD-PROM-*` y `FR-AD-REP-*` siguen siendo los mismos códigos, y el modelo de datos los necesita hoy aunque sus pantallas lleguen después. Un FRD que promete pantallas inexistentes convierte cada lectura en una comprobación de si eso existe o no. **(2)** El inventario de rutas de **FR-AD-NAV-1** gana una columna de **estado**, como el de Worker: implementada o marcador de posición. **(3)** Se añaden las secciones de cierre que Worker tiene y este documento no tenía — **convenciones de formato** y **contrato de accesibilidad** (§1.4 y §1.5), **dependencias funcionales** (§11), **comportamiento relevante para aceptación** (§12), **condiciones conocidas de la implementación** (§13) y **no especificado por este documento** (§14)— y la §18 anterior, que mezclaba las tres últimas en una lista de viñetas, se reparte entre ellas. **(4)** Aparece un **Apéndice A de terminología**, que faltaba; el mapa de reglas a requisitos pasa a ser el Apéndice B y se limita a requisitos que existen en este documento.
 
-**Control de cambios — v2.0 (2026-09-23).** Incorpora lo que Worker y Kiosco delegaron en esta consola: **§3 Equipos**, **§14 Promociones**, acceso con verificación en dos pasos **[R13]**, el trabajador adscrito a una sede y no a una caja **[A13]**, y la tasa efectiva como origen del tablero público **[A12]**.
+Y un cambio de fondo: **lo que la demostración simula pasa a ser requisito numerado**, en la forma «En la demostración» que §7 ya usaba, en vez de quedar en una viñeta de condiciones conocidas o en un comentario del código. Se añaden así **FR-AD-ACC-9** y **FR-AD-ACC-10** (cuentas de demostración y la contraseña recuperada que el servidor recuerda), **FR-AD-EQ-27** a **FR-AD-EQ-29** (el terminal que todavía no pregunta a este servidor, el andamio de equipos esperando vinculación, y el QR que no se descodifica) y **FR-AD-HOME-9** y **FR-AD-HOME-10** (lo que Inicio no puede mostrar todavía, y por qué no se dibuja en cero). Cada uno dice qué rige en producción. Dos requisitos se corrigen contra lo construido: **FR-AD-SHELL-2** y **FR-AD-SHELL-9**, que contaban trece destinos cuando desde la v5.0 son trece para el administrador principal y doce para los demás.
 
-**Control de cambios — v1.0 (2026-09-22).** Primera versión.
+**Historia del documento.** Las versiones v1.0 a v5.2 (22/09/2026 – 13/10/2026) construyeron esta especificación sección a sección junto con las pantallas, y su registro de cambios detallado se conserva en el control de versiones del repositorio. Los cuatro giros que explican por qué el documento dice lo que dice: la **v2.0** incorporó lo que Worker y Kiosco delegaron en esta consola —vinculación de equipos, segundo factor, el trabajador adscrito a una sede y no a una caja—; la **v3.0** corrigió el reparto de potestades entre PuntoCash y el mercante, que las versiones anteriores tenían mal; la **v4.0** convirtió el teléfono de excepción en requisito de primera clase, al confirmar el negocio que esta consola se supervisa a diario desde un móvil; y la **v5.0** estableció el **administrador principal**, con la §8 entera reservada a él. Entre medias, la v4.13 retiró de la asistencia de acceso un «liberar el bloqueo del reto» que no correspondía a ningún estado real, y la v5.2 convirtió la recuperación de contraseña de un marcador en un flujo completo.
 
-**Documentos relacionados:** `PuntoCash_Administracion_PRD_v1.md` (v3.0) define el modelo de negocio, los conceptos y las reglas **A1–A14**. `PuntoCash_PRD_v2.md` (v2.5) define **R1–R13** y **RP-1 a RP-16**. `PuntoCash_Worker_Functional_Requirements_v1.md` (v1.5) especifica la aplicación supervisada; su **§2.1 (FR-DEV-1 a 9)** es la contraparte de §3.2 y su **§2.2–§2.12** el acceso que esta consola hereda. `PuntoCash_Kiosk_Autoservicio_Functional_Requirements_v1.md` (v1.3) **§1.1 (FR-AS-LINK-1 a 9)** es la contraparte de §3.3. `PuntoCash_Kiosk_Pantalla_Functional_Requirements_v1.md` (v1.4) **§7** define el origen único de datos que §12, §13 y §14 alimentan. `CLAUDE.md` y `PuntoCash_Manual_de_Marca_y_UI_v1.pdf` mandan sobre todo lo visual.
+**Documentos relacionados:** `PuntoCash_Admin_Sede_PRD_v1.md` define el producto, sus usuarios, los conceptos y las reglas **A1–A14**. Este FRD no las repite; las referencia como **[A#]** allí donde un comportamiento existe a causa de una de ellas. `PuntoCash_PRD_v2.md` define **R1–R13** y **RP-1 a RP-16**, y `PuntoCash_Admin_Sede_PRD_v1.md` §8 los requisitos de resultado **RP-17 a RP-26**. `PuntoCash_Admin_Sede_Alcance_Pendiente_v1.md` especifica las siete secciones sin construir. `PuntoCash_Worker_Functional_Requirements_v1.md` (v1.8) especifica la aplicación supervisada: su **§2.1 (FR-DEV-1 a 9)** es la contraparte de §3.2, su **§2.3–§2.11** el acceso que esta consola hereda (§2), y su **§2.13 (FR-REC-1 a 12)** la recuperación de contraseña que comparten. `PuntoCash_Kiosk_Autoservicio_Functional_Requirements_v1.md` **§1.1 (FR-AS-LINK-1 a 9)** es la contraparte de §3.3. `PuntoCash_Kiosk_Pantalla_Functional_Requirements_v1.md` **§7** define el origen único de datos de sede que las secciones pendientes alimentarán. `CLAUDE.md` y `PuntoCash_Manual_de_Marca_y_UI_v1.pdf` mandan sobre todo lo visual.
 
-**Cómo leer este documento.** Los requisitos se numeran `FR-AD-<área>-<n>`. "Debe" describe comportamiento obligatorio. Se referencian reglas de administración como **[A#]** y de producto como **[R#]**.
+**Cómo leer este documento.** Los requisitos se agrupan por área y se numeran `FR-AD-<área>-<n>`. "Debe" describe comportamiento obligatorio. Se referencian reglas de administración como **[A#]** y de producto como **[R#]**. Los requisitos marcados **«En la demostración»** describen el andamio de esta línea base, no el producto, y cada uno dice qué rige en su lugar cuando haya backend. La terminología sigue el glosario del Apéndice A. Solo se especifica comportamiento implementado; §14 indica lo que queda deliberadamente sin definir.
 
 ---
-
 ## 0. Qué es este módulo y qué no es
 
 `/admin` es la consola con la que un mercante gobierna las sedes que PuntoCash le ha dado en administración. Hace tres cosas de naturaleza distinta.
@@ -38,7 +37,9 @@ Cuatro cosas que esta consola **nunca** hace, por diseño:
 3. **No ve fuera de su alcance.** Solo las sedes asignadas al operador de la sesión, en este momento **[A1]**.
 4. **No es el producto del mercante.** La marca visible es PuntoCash **[A9]**.
 
-Y una que sí hace y conviene subrayar, porque en la v2.0 estaba repartida: **es el único lugar del producto desde el que se desactiva a una persona, se retira una caja o se desvincula un equipo.** PuntoCash lo ve todo y no toca nada de esto **[A14]**.
+Y una que sí hace y conviene subrayar, porque en el producto está repartida entre varias superficies y aquí se concentra: **es el único lugar del producto desde el que se desactiva a una persona, se retira una caja o se desvincula un equipo.** PuntoCash lo ve todo y no toca nada de esto **[A14]**.
+
+**De las tres cosas, esta entrega cubre entera la primera y la mitad de la segunda.** Está construido todo lo que pone una sucursal en marcha —cajas, equipos de caja, kioscos, trabajadores— y todo lo que tiene que ver con las personas: su alta, su credencial, su edición, su sede, su desactivación, la ayuda con su acceso, y los usuarios administradores de la empresa con su administrador principal. Está construido el acceso completo, con su recuperación de contraseña. De la tercera hay Inicio y las fichas de sede, con lo que de ellas no depende de secciones que faltan. Lo que **no** está es lo que declara la sede día a día —monedas, pares y tasa, promociones— y lo que mira la operación en detalle —jornadas, aprobaciones, operaciones y reportes—: las siete secciones que `PuntoCash_Admin_Sede_Alcance_Pendiente_v1.md` especifica y que §14 nombra una a una.
 
 ---
 
@@ -48,7 +49,7 @@ Y una que sí hace y conviene subrayar, porque en la v2.0 estaba repartida: **es
 
 **FR-AD-SHELL-1** Toda pantalla dentro del grupo `(app)` debe componer `AppShell` + `AppHeader` + `AppSidebar` + `AppMain` desde `@/components/shell`, sin reimplementar ninguna pieza. Se sigue la estructura de grupos de rutas de Worker: `(auth)` para las pantallas sin shell y `(app)` para las que lo llevan.
 
-**FR-AD-SHELL-2** La barra lateral debe agrupar sus destinos en tres bloques, porque trece entradas planas no se leen: **Operación** (Inicio, Jornadas, Aprobaciones, Operaciones), **Sucursal** (Sedes, Cajas, Equipos, Trabajadores, Usuarios) y **Configuración** (Monedas, Tasas, Promociones, Reportes).
+**FR-AD-SHELL-2** La barra lateral debe agrupar sus destinos en tres bloques, porque trece entradas planas no se leen: **Operación** (Inicio, Jornadas, Aprobaciones, Operaciones), **Sucursal** (Sedes, Cajas, Equipos, Trabajadores, Usuarios) y **Configuración** (Monedas, Tasas, Promociones, Reportes). **Son trece para el administrador principal y doce para los demás**, porque Usuarios solo existe para él (**FR-AD-USR-11**); la diferencia la decide el servidor al armar el menú, no el navegador ocultando una entrada ya pintada.
 
 **FR-AD-SHELL-3** La entrada de Aprobaciones debe mostrar un indicador numérico cuando haya solicitudes pendientes en el alcance vigente; la de Cajas, cuando haya cajas sin equipo vinculado o sedes sin ninguna caja.
 
@@ -56,50 +57,75 @@ Y una que sí hace y conviene subrayar, porque en la v2.0 estaba repartida: **es
 
 **FR-AD-SHELL-5** La cabecera **no** debe mostrar el logotipo, el color corporativo ni el nombre comercial del operador como marca de la aplicación **[A9]**.
 
-**FR-AD-SHELL-6** Referencia de pantalla: escritorio, 1440×900, mínimo 1280px, con mayor densidad de tabla que Worker (`src/app/ARCHITECTURE.md`).
+**FR-AD-SHELL-6** **Esta consola no es de escritorio.** A diferencia de Worker y Kiosco, que corren en máquinas de una sucursal, `/admin` se supervisa a diario desde un teléfono. **Toda** pantalla debe ser utilizable a partir de **360px** de ancho y hasta 1440×900, que sigue siendo la referencia de escritorio. No se impone ancho mínimo, no se limita el zoom, y ninguna pantalla puede producir desplazamiento horizontal.
 
-**FR-AD-SHELL-7** **Excepción de tamaño:** las pantallas de vinculación de §3 deben ser utilizables en un teléfono o tableta a partir de 360px de ancho. Es un requisito funcional, no una concesión responsive: la vía del QR (FR-DEV-2, FR-AS-LINK-2) exige que el administrador tenga la consola abierta en un dispositivo con cámara, delante del equipo que está vinculando.
+**FR-AD-SHELL-7** *(Absorbido en FR-AD-SHELL-6.)* Las pantallas de vinculación de §3 eran la excepción que obligaba a pensar en el teléfono, porque la vía del QR (FR-DEV-2, FR-AS-LINK-2) exige tener la consola delante del equipo que se vincula. Ahora lo que era su excepción es la regla de todas.
 
 **FR-AD-SHELL-8** Ninguna pantalla debe contener un flujo por pasos con stepper.
 
+### 1.1.1 Comportamiento en pantalla pequeña
+
+**FR-AD-SHELL-9** Por debajo de 1024px la barra lateral no se representa. La navegación se reparte en dos piezas que no compiten: una **barra inferior** fija con tres destinos frecuentes —Inicio, Jornadas y Aprobaciones— más una entrada «Más», y un **cajón** que «Más» abre con el resto de los destinos en sus tres bloques (**FR-AD-SHELL-2**), el acceso al perfil y el cierre de sesión. Cuando alguno de los destinos del cajón tiene aviso, «Más» lo señala con un punto, para que un indicador no quede escondido detrás de una entrada que no lo muestra.
+
+> **Por qué tres y no cuatro.** La v4.0 pedía cuatro destinos e incluía Cajas. Medido a 375px, con cinco entradas cada una dispone de unos 70px y la etiqueta «Aprobaciones» ocupa 69: no cabe sin recortar el texto o quitarle la etiqueta, y las dos cosas empeoran una barra que se aprende leyéndola. Cajas pasa al cajón —donde está completa, con su indicador— y «Más» hereda el punto de aviso. Se enmienda el requisito en vez de dejar el código discrepando de él.
+
+**FR-AD-SHELL-10** Las dos navegaciones deben leer **una sola definición** de destinos. La consola no puede ofrecer secciones distintas según el tamaño de la pantalla.
+
+**FR-AD-SHELL-11** El cajón debe comportarse como un diálogo: foco atrapado mientras está abierto, cierre con Escape y con un control visible, y el resto de la página anunciada como inerte. Debe cerrarse solo al llegar al destino elegido.
+
+**FR-AD-SHELL-12** El selector de alcance no cabe en la cabecera de un teléfono. Debe representarse en una franja propia inmediatamente bajo la cabecera, a todo lo ancho y fuera del área que se desplaza, para que el nombre de la sede se lea entero. Lo que se retire de la cabecera —nombre de la persona, operador, cierre de sesión— debe estar en el cajón.
+
+**FR-AD-SHELL-13** Las tablas se representan **como una tarjeta por fila** por debajo de 1024px, con cada dato acompañado de su etiqueta. No se recurre al desplazamiento horizontal: en un teléfono es un gesto que casi nadie descubre. La tarjeta muestra los mismos datos que la fila y conserva su enlace al detalle.
+
+**FR-AD-SHELL-14** Los controles interactivos mantienen sus 44–48px de altura. La única reducción admitida es la de las casillas del código de verificación, porque el control real es el campo que las cubre entero y no cada casilla.
+
+**FR-AD-SHELL-15** Los filtros de una pantalla se apilan en una columna, y los que no caben se agrupan tras un control que los abre. Ningún filtro puede quedar solo accesible en escritorio.
+
+**FR-AD-SHELL-16** Los diálogos de confirmación de **FR-AD-STATE-3** deben ser legibles y accionables a 360px, con sus acciones apiladas y la acción primaria alcanzable sin desplazar.
 ### 1.2 Rutas
 
-**FR-AD-NAV-1** Inventario de rutas:
+**FR-AD-NAV-1** Inventario de rutas y estado. «Marcador de posición» significa que la ruta existe y representa una pantalla de «en construcción» que nombra la sección y ofrece una vía de regreso: la navegación está completa para que nadie confunda *todavía no* con *no va a existir*, y ninguna de esas pantallas define ni simula un flujo **[§14]**.
 
-| Ruta | Función |
-| --- | --- |
-| `/admin/login` | Acceso, paso 1: credenciales (sin shell) |
-| `/admin/verificacion` | Acceso, paso 2: código de verificación (sin shell) |
-| `/admin/inicio` | Panel consolidado del alcance vigente |
-| `/admin/sedes` | Listado de las sedes administradas |
-| `/admin/sedes/[id]` | Ficha de una sede |
-| `/admin/cajas` | Cajas de las sedes administradas |
-| `/admin/cajas/nueva` | Alta de una caja |
-| `/admin/equipos` | Equipos vinculados: cajas y kioscos |
-| `/admin/equipos/vincular` | Vincular un equipo por QR o por código |
-| `/admin/trabajadores` | Listado de trabajadores |
-| `/admin/trabajadores/nuevo` | Alta de trabajador |
-| `/admin/trabajadores/[id]` | Ficha y edición de un trabajador |
-| `/admin/usuarios` | Usuarios administradores de la empresa |
-| `/admin/usuarios/nuevo` | Alta de un usuario administrador |
-| `/admin/usuarios/[id]` | Ficha y edición de un usuario administrador |
-| `/admin/jornadas` | Listado de jornadas abiertas y cerradas |
-| `/admin/jornadas/[id]` | Detalle de una jornada, con arqueo y movimientos |
-| `/admin/aprobaciones` | Bandeja de solicitudes pendientes y resueltas |
-| `/admin/aprobaciones/[id]` | Detalle y resolución de una solicitud |
-| `/admin/operaciones` | Historial consolidado de operaciones |
-| `/admin/operaciones/[codigo]` | Detalle de una operación, de solo lectura |
-| `/admin/monedas` | Lista de monedas que maneja cada sede |
-| `/admin/tasas` | Tasa efectiva por sede dentro del rango de PuntoCash |
-| `/admin/promociones` | Promociones de las sedes administradas |
-| `/admin/promociones/nueva`, `/admin/promociones/[id]` | Alta y edición de una promoción |
-| `/admin/reportes` | Volumen por sede, servicio, trabajador y día |
+| Ruta | Función | Estado |
+| --- | --- | --- |
+| `/admin` | No es una pantalla: redirige a Inicio | Implementada |
+| `/admin/login` | Acceso, paso 1: credenciales (sin shell) | Implementada |
+| `/admin/verificacion` | Acceso, paso 2: código de verificación (sin shell) | Implementada |
+| `/admin/recuperar-acceso` | Recuperación de contraseña (sin shell) | Implementada |
+| `/admin/inicio` | Panel consolidado del alcance vigente | Implementada |
+| `/admin/sedes` | Listado de las sedes administradas | Implementada |
+| `/admin/sedes/[id]` | Ficha de una sede | Implementada |
+| `/admin/cajas` | Cajas de las sedes administradas | Implementada |
+| `/admin/cajas/nueva` | Alta de una caja | Implementada |
+| `/admin/equipos` | Equipos vinculados: cajas y kioscos | Implementada |
+| `/admin/equipos/vincular` | Vincular un equipo por QR o por código | Implementada |
+| `/admin/trabajadores` | Listado de trabajadores | Implementada |
+| `/admin/trabajadores/nuevo` | Alta de trabajador | Implementada |
+| `/admin/trabajadores/[id]` | Ficha de un trabajador | Implementada |
+| `/admin/trabajadores/[id]/editar` | Edición de sus datos personales | Implementada |
+| `/admin/trabajadores/[id]/acceso` | Ayudar con el acceso | Implementada |
+| `/admin/usuarios` | Usuarios administradores de la empresa | Implementada — **solo para el administrador principal** |
+| `/admin/usuarios/nuevo` | Alta de un usuario administrador | Implementada — **solo para el administrador principal** |
+| `/admin/usuarios/[id]` | Ficha de un usuario administrador | Implementada — **solo para el administrador principal** |
+| `/admin/usuarios/[id]/editar` | Edición de sus datos personales | Implementada — **solo para el administrador principal** |
+| `/admin/perfil` | Datos de la persona con sesión iniciada | Marcador de posición **[§14]** |
+| `/admin/jornadas` | Jornadas abiertas y cerradas | Marcador de posición |
+| `/admin/aprobaciones` | Bandeja de solicitudes | Marcador de posición |
+| `/admin/operaciones` | Historial consolidado de operaciones | Marcador de posición |
+| `/admin/monedas` | Monedas que maneja cada sede | Marcador de posición |
+| `/admin/tasas` | Pares y tasa efectiva por sede | Marcador de posición |
+| `/admin/promociones` | Promociones de las sedes administradas | Marcador de posición |
+| `/admin/reportes` | Volumen por sede, servicio, trabajador y día | Marcador de posición |
+
+Las siete rutas de marcador de posición que corresponden a secciones especificadas, y las rutas de detalle que cada una añadirá —`/admin/jornadas/[id]`, `/admin/aprobaciones/[id]`, `/admin/operaciones/[codigo]`, `/admin/promociones/nueva` y `/admin/promociones/[id]`—, se especifican en `PuntoCash_Admin_Sede_Alcance_Pendiente_v1.md`. Esas rutas de detalle **todavía no existen** y responden 404.
 
 **FR-AD-NAV-2** Toda ruta con identificador debe validar que el recurso pertenece al alcance vigente **antes** de representar nada. Un recurso existente pero fuera de alcance se trata exactamente igual que uno inexistente: mismo mensaje, mismo estado **[A1]**, **[RP-19]**.
 
-**FR-AD-NAV-3** El mensaje para ese caso debe ser genérico: "No encontramos lo que buscabas." No debe revelar que el recurso existe pero pertenece a otro operador.
+**FR-AD-NAV-3** El mensaje para ese caso debe ser genérico: "No encontramos lo que buscabas." No debe revelar que el recurso existe pero pertenece a otro operador. Es el mismo trato que reciben las rutas de §8 para quien no es el administrador principal (**FR-AD-USR-11**).
 
 **FR-AD-NAV-4** Esta consola **no** se usa sobre un equipo vinculado: no le aplican FR-DEV-1 ni la pantalla de vinculación. Se abre desde cualquier navegador, incluido el de un teléfono.
+
+**FR-AD-NAV-5** Las pantallas de acceso —credenciales, verificación y recuperación— se representan **fuera del shell**, en el grupo de rutas `(auth)`. Antes de que exista sesión no puede aparecer en pantalla ni una persona, ni un operador, ni una sede.
 
 ### 1.3 Selector de alcance
 
@@ -115,6 +141,25 @@ Y una que sí hace y conviene subrayar, porque en la v2.0 estaba repartida: **es
 
 **FR-AD-SCOPE-6** Si una sede deja de estar asignada al operador mientras la sesión está abierta y era la seleccionada, la siguiente navegación vuelve a "Todas mis sedes" y avisa: "Ya no administras esa sede."
 
+### 1.4 Convenciones de formato
+
+Son las del producto, no las de esta consola: un importe se lee igual en el mostrador y en el teléfono del mercante. Rigen aquí **FR-FMT-1 a FR-FMT-5** de `PuntoCash_Worker_Functional_Requirements_v1.md` §1.3, **sin repetirlos**. Lo que sigue es lo propio de esta superficie.
+
+**FR-AD-FMT-1** El **volumen y cualquier agregado de dinero se expresan por moneda, nunca convertidos a una moneda única** **[FR-AD-HOME-1]**. El producto no tiene definida por el negocio una tasa de consolidación, e inventar una produciría cifras que nadie podría defender. Vale para Inicio, para las fichas y para los reportes cuando lleguen.
+
+**FR-AD-FMT-2** Los identificadores de equipo siguen `CAJ-NNNN-NNNN` para los de caja y `KIO-NNNN-NNNN` para los kioscos. El código del reto de vinculación son **seis cifras**, y se admite y se muestra agrupado de tres en tres ("482 913"), ignorando los espacios al leerlo.
+
+**FR-AD-FMT-3** El **correo de verificación** de un trabajador o de un usuario administrador se muestra **enmascarado** en todo listado y en toda ficha, igual que en la propia pantalla de verificación. La única excepción deliberada es la asistencia de acceso, que lo muestra entero porque allí se viene a encontrar la errata (**FR-AD-TRAB-10**).
+
+**FR-AD-FMT-4** Ninguna pantalla muestra una credencial de dispositivo, ni permite copiarla ni exportarla **[A10]**, **[FR-AD-EQ-25]**. Las credenciales de personas —la inicial de un trabajador o de un usuario administrador— se muestran **una sola vez**, en el resultado del alta o de la regeneración, y no vuelven a ser consultables.
+
+### 1.5 Contrato de accesibilidad
+
+Rigen **FR-A11Y-1 a FR-A11Y-3** de `PuntoCash_Worker_Functional_Requirements_v1.md` §1.5. Esta consola añade dos exigencias propias, que vienen de usarse en un teléfono.
+
+**FR-AD-A11Y-1** El destino activo de la navegación debe marcarse como actual para las tecnologías de asistencia, no solo mediante color — y en las dos navegaciones, la lateral y la del teléfono.
+
+**FR-AD-A11Y-2** Todo control interactivo mantiene **44–48px de altura** (**FR-AD-SHELL-14**), y el cajón de navegación se comporta como un diálogo: foco atrapado, cierre con Escape y con un control visible, resto de la página inerte (**FR-AD-SHELL-11**).
 ---
 
 ## 2. Acceso
@@ -133,7 +178,11 @@ Y una que sí hace y conviene subrayar, porque en la v2.0 estaba repartida: **es
 
 **FR-AD-ACC-7** Un usuario válido de un operador activo pero **sin ninguna sede asignada** sí inicia sesión, y aterriza en un Inicio en estado vacío explícito (**FR-AD-HOME-8**). No es un error: es un mercante que aún no tiene nada a su cargo.
 
-**FR-AD-ACC-8** `/admin/recuperar-acceso` es un marcador de posición sin comportamiento, igual que en Worker.
+**FR-AD-ACC-8** `/admin/recuperar-acceso` recupera la contraseña, **con el mismo flujo de tres pasos que Worker** —identificador, código y contraseña nueva— y las mismas reglas, que no deben poder separarse entre consolas: no se dice a dónde fue el código ni enmascarado, la respuesta es idéntica exista la cuenta o no, y **terminar no abre sesión** **[R13]** (Worker FRD **§2.13**, **FR-REC-1** a **FR-REC-12**). Lo único propio de esta consola es a quién se le pide ayuda cuando el correo registrado ya no sirve: **al administrador principal de la empresa**, que es el único que puede regenerar una credencial (**FR-AD-USR-11**) —y si quien se quedó fuera es el propio principal, a PuntoCash—.
+
+**FR-AD-ACC-9** **En la demostración**, el acceso de esta consola reconoce estas cuentas, todas con la contraseña `puntocash`: `marta@antillasf.cu` (Antilla, **administradora principal**, tres sedes), `dcastro@antillasf.cu` (Antilla, segundo usuario, **no principal**), `rortega@caribecambios.cu` (Caribe, tres sedes), `ibetancourt@centrodivisas.cu` (Centro Divisas, **una sola sede**, para ver **FR-AD-SCOPE-3** sin construir datos a mano), `lperez@cienfuegoscambio.cu` (operador activo **sin ninguna sede**, para ver **FR-AD-ACC-7**), `yperez@orientedivisas.cu` (operador **suspendido**: no entra, **[A14]**) y `error@puntocash.com` (error de red). El código de verificación es `123456`; `000000` fuerza un error de red. En la recuperación, `desconocido@puntocash.com` simula una cuenta inexistente —la pantalla es idéntica y ningún código funciona, que es justo lo que el flujo exige— y `error@puntocash.com` hace fallar la solicitud.
+
+**FR-AD-ACC-10** **En la demostración**, la contraseña que alguien fija recuperando su acceso **se recuerda en el proceso del servidor** hasta que este se reinicie, y a partir de ese momento esa cuenta deja de aceptar `puntocash` y acepta la nueva. Es lo que permite terminar el recorrido y comprobar la mitad que de verdad importa: que la anterior ya no sirve. Hay un detalle que conviene conocer porque costó encontrarlo: la pantalla de recuperación es de cliente y el acceso de `/admin` se comprueba **en el servidor** —a propósito, para que la identidad de quien acierta la contraseña no cruce al navegador—, así que la pantalla entrega lo fijado al servidor con una acción dedicada. *En producción rige **FR-REC-10** de Worker: guardar invalida la contraseña anterior y cierra las sesiones abiertas de esa cuenta, y quien la guarda es el backend.*
 
 ---
 
@@ -165,7 +214,7 @@ La sección que Worker y Kiosco dan por existente. Sin ella, ninguna de las dos 
 
 **FR-AD-EQ-10** **Desvincular no cierra la Jornada** **[A11]**, **[FR-DEV-7]**. Cuando la caja tiene una Jornada abierta, la confirmación debe advertirlo de forma destacada y explicar la consecuencia exacta: "La {caja} tiene una Jornada abierta. Desvincular el equipo no la cierra: seguirá abierta hasta su arqueo y cierre, y para hacerlo habrá que vincular un equipo a esa caja." La acción se permite —a veces se desvincula precisamente porque el equipo se averió—, pero nunca a ciegas. Es la respuesta a lo que FR-DEV-7 dejó explícitamente a este documento.
 
-**FR-AD-EQ-11** Si el Admin prefiere no dejar la caja sin equipo, la confirmación debe ofrecer, como alternativa y sin salir del diálogo, el enlace a **forzar cierre** de esa jornada (§9.1). No la ejecuta por él: se la pone a mano.
+**FR-AD-EQ-11** Si el Admin prefiere no dejar la caja sin equipo, la confirmación debe ofrecer, como alternativa y sin salir del diálogo, el enlace a **forzar cierre** de esa jornada (**FR-AD-JOR-7**, alcance pendiente §1.1). No la ejecuta por él: se la pone a mano. **En la demostración**, ese enlace lleva a la sección de Jornadas y no al cierre de esa jornada concreta, porque la sección no está construida y este servidor tampoco sabe si la caja tiene jornada abierta (**FR-AD-IMP-3**). El texto se redacta en consecuencia —«si prefieres no dejarla sin equipo, puedes forzar el cierre de su jornada desde Jornadas»— en lugar de prometer un destino que no existe.
 
 ### 3.3 Kioscos de autoservicio
 
@@ -200,6 +249,12 @@ La sección que Worker y Kiosco dan por existente. Sin ella, ninguna de las dos 
 **FR-AD-EQ-25** **La credencial la emite y la revoca el sistema, nunca el terminal** **[A10]**, **[FR-DEV-8]**, **[FR-AS-LINK-7]**. Esta consola no muestra, no copia y no permite exportar ninguna credencial de dispositivo.
 
 **FR-AD-EQ-26** **En la demostración**, esta sección sustituye al simulador `/kiosk/simulador-admin` (FR-DEV-9, FR-AS-LINK-9). Mientras el simulador siga en el repositorio, las dos vías deben producir el mismo efecto sobre la misma sesión de dispositivo, para no tener dos mecanismos divergentes.
+
+**FR-AD-EQ-27** **En la demostración**, **el terminal todavía no pregunta a este servidor**, y es la condición que más conviene entender antes de probar esta sección. La vinculación y los retos viven en `features/network/devices.ts`, que es la fuente única que **FR-AD-DOM-4** exige, y §3.4 ya canjea contra ella. Pero Worker y el kiosco siguen leyendo su vínculo de `features/devices/device-link.ts` —el `localStorage` de cada máquina—, así que **el código que muestra un terminal no llega aquí**: vincular desde la consola no cambia lo que muestra ese terminal, ni al revés. Lo que queda es recablear los dos terminales y el simulador contra la fuente única, tras lo cual `device-link.ts` y `/kiosk/simulador-admin` desaparecen (**FR-AD-EQ-26**, **FR-DEV-8**). *En producción el reto que el administrador teclea es el que el equipo muestra; eso es todo lo que FR-AD-EQ-17 a FR-AD-EQ-24 describen.*
+
+**FR-AD-EQ-28** **En la demostración**, y como consecuencia directa de **FR-AD-EQ-27**, el servidor mantiene **siempre un equipo de caja y un kiosco esperando vinculación**, y `/admin/equipos/vincular` muestra sus códigos en un aviso que dice con todas las letras que en el producto se leen de la pantalla del equipo. Sin ese andamio la pantalla no tendría ningún código que encontrar y no se podría recorrer. Cada vinculación deja sitio a la siguiente, para que no se agote tras la primera pasada. Desaparece con el recableado.
+
+**FR-AD-EQ-29** **En la demostración**, **el QR no se descodifica.** De **FR-AD-EQ-17** y **FR-AD-EQ-19** está construido todo lo que es producto: las dos vías a la vez, el encuadre, la explicación previa de para qué se usa la cámara, y el aviso de que no hay cámara o se denegó el permiso con la vía del código intacta al lado. Lo que falta es la lectura del código de barras, porque el terminal de la demostración tampoco genera un QR escaneable: leerlo exigiría una biblioteca de visión por un gesto que se implementará contra el equipo real. *En producción rige FR-AD-EQ-17: las dos vías, y las dos funcionando.*
 
 ---
 
@@ -243,19 +298,25 @@ El panel que responde "¿qué está pasando ahora?". Todo lo que muestra está a
 
 **FR-AD-HOME-1** Encabeza con una fila de métricas del día: **sedes con jornada abierta** (sobre el total del alcance), **operaciones del día**, **volumen del día** y **aprobaciones pendientes**. El volumen se expresa **por moneda**, nunca convertido a una moneda única: el producto no tiene una tasa de consolidación definida por el negocio, e inventarla produciría cifras que nadie podría defender.
 
-**FR-AD-HOME-2** Representa un **panel de atención** con las situaciones que piden acción, en este orden de prioridad: **sedes sin ninguna caja**; **cajas sin equipo vinculado**; **sedes sin ninguna moneda en su lista**; **sedes con el servicio de Cambio de moneda habilitado y ningún par definido**; aprobaciones pendientes; jornadas abiertas fuera del horario de su sede; arqueos cerrados con diferencia; tasas fijadas automáticamente al límite y aún no revisadas (**FR-AD-TASA-12**); **pares cuyo rango PuntoCash retiró** (**FR-AD-TASA-15**); promociones vencidas aún publicadas; y sedes sin jornada abierta dentro de su horario.
+**FR-AD-HOME-2** Representa un **panel de atención** con las situaciones que piden acción, en este orden de prioridad (las que dependen de secciones no construidas se nombran aquí porque el orden es el requisito; lo que hoy se representa lo acota **FR-AD-HOME-10**): **sedes sin ninguna caja**; **cajas sin equipo vinculado**; **sedes suspendidas por PuntoCash** —que no se resuelven desde aquí, pero explican por qué una sucursal no opera y evitan que se busque la causa en otra parte (**FR-AD-SEDE-13**)—; **sedes sin ninguna moneda en su lista**; **sedes con el servicio de Cambio de moneda habilitado y ningún par definido**; aprobaciones pendientes; jornadas abiertas fuera del horario de su sede; arqueos cerrados con diferencia; tasas fijadas automáticamente al límite y aún no revisadas (**FR-AD-TASA-12**); **pares cuyo rango PuntoCash retiró** (**FR-AD-TASA-15**); promociones vencidas aún publicadas; y sedes sin jornada abierta dentro de su horario.
 
-**FR-AD-HOME-3** Las cuatro primeras encabezan porque describen una sucursal a medio montar, no una incidencia del día: hasta que se resuelven, la sede no puede operar o exhibe un tablero incompleto.
+**FR-AD-HOME-3** Las primeras encabezan porque describen **una sucursal que no puede operar o que está a medio montar**, no una incidencia del día: hasta que se resuelven, la sede no atiende a nadie o exhibe un tablero incompleto. Las que vienen después son incidencias de la operación corriente, que piden atención pero no impiden abrir.
 
 **FR-AD-HOME-4** Cada entrada enlaza a la pantalla donde se resuelve.
 
 **FR-AD-HOME-5** Cuando no hay ninguna situación que atender, el panel muestra un estado tranquilo y explícito ("Todo en orden en tus sedes"), nunca desaparece: su ausencia y su vacío deben distinguirse a simple vista.
 
-**FR-AD-HOME-6** Representa una **tabla de estado por sede**: código y nombre, estado de la jornada (abierta / cerrada / sin abrir), cajas activas y cuántas sin equipo, kioscos vinculados, trabajador en turno, operaciones del día y hora de apertura. Cada fila enlaza a la ficha de la sede.
+**FR-AD-HOME-6** Representa una **tabla de estado por sede**: código y nombre, localidad, estado de la sede, cajas activas y cuántas de ellas sin equipo, kioscos vinculados, trabajadores activos, estado de la jornada (abierta / cerrada / sin abrir), trabajador en turno, operaciones del día y hora de apertura. Cada fila enlaza a la ficha de la sede. Las cuatro últimas son las que dependen de Jornadas y Operaciones (**FR-AD-HOME-9**).
 
 **FR-AD-HOME-7** Con "Todas mis sedes", la tabla muestra todas; con una sede concreta, se reduce a esa sede y se amplía con el detalle de sus cajas y sus equipos.
 
 **FR-AD-HOME-8** Estado vacío de alcance: un operador sin sedes asignadas debe ver un Inicio que lo explique — "Todavía no tienes sedes asignadas. Cuando PuntoCash te asigne una, aparecerá aquí." — sin métricas en cero ni tablas vacías, que se leerían como un fallo.
+
+**FR-AD-HOME-9** **En la demostración**, Inicio no cumple todavía **FR-AD-HOME-1** ni la parte final de **FR-AD-HOME-6**, y la razón es de dependencia y no de diseño. De las cuatro métricas que FR-AD-HOME-1 pide —sedes con jornada abierta, operaciones del día, volumen del día y aprobaciones pendientes— **no se representa ninguna**: las tres primeras son datos de Jornadas y Operaciones, y la cuarta necesita solicitudes de aprobación, que el dominio simulado todavía no trae (**FR-AD-IMP-6**). En su lugar se muestran las cuatro cifras de alcance que sí se pueden calcular con certeza: sedes, cajas activas, trabajadores activos y sedes sin caja. De la tabla por sede faltan las cuatro columnas que dependen de esas mismas secciones: **estado de la jornada, trabajador en turno, operaciones del día y hora de apertura**.
+
+**Lo que falta no se dibuja vacío ni en cero**, y esa es la parte del requisito que debe conservarse: una cifra en cero se lee como una sucursal parada, no como un dato que todavía no existe, y este demo es la referencia que van a seguir quienes implementen — una cifra inventada se copia igual que una verdadera. La sección lo anuncia en su descripción en lugar de pintar columnas en blanco. *En producción rigen FR-AD-HOME-1 y FR-AD-HOME-6 enteros.*
+
+**FR-AD-HOME-10** **En la demostración**, el panel de atención de **FR-AD-HOME-2** representa las tres situaciones cuyo dato existe para toda la red: **sedes sin ninguna caja**, **cajas activas sin equipo vinculado** y **sedes suspendidas por PuntoCash**. Las dos primeras son además las de mayor prioridad, así que el panel cumple su encabezamiento. Las que dependen de Monedas, Tasas, Promociones o Jornadas —sedes sin monedas, pares sin definir, tasas fijadas al límite, rangos retirados, promociones vencidas, jornadas fuera de horario y arqueos con diferencia— **no se listan ni se simulan**, y el orden de FR-AD-HOME-2 se conserva para que añadirlas no obligue a reordenarlo. El conteo de cajas sin equipo es **el mismo cálculo** con el que el menú pone su indicador en Cajas (**FR-AD-SHELL-3**), para que el aviso y el indicador no puedan contar cosas distintas. *En producción rige FR-AD-HOME-2 entero.*
 
 ---
 
@@ -271,7 +332,7 @@ El panel que responde "¿qué está pasando ahora?". Todo lo que muestra está a
 
 **FR-AD-SEDE-5** El bloque de datos maestros debe advertir además de su alcance real: esos datos son los que la sucursal exhibe en su kiosco y en su pantalla informativa **[A12]**, **[FR-PANT-DATA-4]**. Un teléfono equivocado ahí es un teléfono equivocado en la TV de la sala de espera, y el Admin no puede corregirlo por su cuenta: debe pedirlo a PuntoCash. La ficha debe indicar a quién.
 
-**FR-AD-SEDE-6** El bloque de **servicios habilitados** lista qué servicios puede ofrecer esa sede, en solo lectura, con la misma advertencia: los habilita PuntoCash **[A3]**. Es el bloque que explica por qué el Admin puede o no definir pares de cotización en esa sede (§13).
+**FR-AD-SEDE-6** El bloque de **servicios habilitados** lista qué servicios puede ofrecer esa sede, en solo lectura, con la misma advertencia: los habilita PuntoCash **[A3]**. Es el bloque que explica por qué el Admin puede o no definir pares de cotización en esa sede (**FR-AD-TASA-2**, alcance pendiente §5).
 
 **FR-AD-SEDE-7** El bloque de **cajas y sus equipos** lista las cajas con identificador, equipo vinculado o su ausencia, estado, trabajador con sesión iniciada y saldo por moneda si hay jornada abierta. Los saldos son de consulta **[A6]**. Enlaza a §4 y a §3.2.
 
@@ -281,7 +342,7 @@ El panel que responde "¿qué está pasando ahora?". Todo lo que muestra está a
 
 **FR-AD-SEDE-10** El bloque de **jornada en curso** muestra, si la hay, hora de apertura, caja, trabajador, fondeo declarado, movimientos hasta el momento y enlace al detalle. Si no la hay, indica desde cuándo la caja está cerrada y cuál fue la última jornada.
 
-**FR-AD-SEDE-11** El bloque de **contenido público** resume lo que esa sucursal está exhibiendo ahora mismo: las monedas que maneja, los pares que cotiza con su tasa vigente, y sus promociones activas, con enlaces a §12, §13 y §14. Es la vista que responde "¿qué está viendo un cliente en mi sala de espera?" **[A12]**.
+**FR-AD-SEDE-11** El bloque de **contenido público** resume lo que esa sucursal está exhibiendo ahora mismo: las monedas que maneja, los pares que cotiza con su tasa vigente, y sus promociones activas, con enlaces a Monedas, Tasas y Promociones. Es la vista que responde "¿qué está viendo un cliente en mi sala de espera?" **[A12]**.
 
 **FR-AD-SEDE-12** La ficha muestra la **asignación vigente** —desde qué fecha el operador administra esa sede— como dato informativo. No muestra el historial completo de asignaciones: ese historial incluye a otros operadores y pertenece al Super Admin **[A1]**.
 
@@ -299,21 +360,25 @@ El área donde el Admin crea personas — y, desde la v3.0, el **único lugar de
 
 **FR-AD-TRAB-3** `/admin/trabajadores/nuevo` da de alta un trabajador. Campos: nombre, primer apellido, segundo apellido (opcional), tipo y número de documento, teléfono, **correo**, identificador de acceso y **sede**.
 
-**FR-AD-TRAB-4** **El alta elige sede, nunca caja** **[A13]**, **[FR-DEV-5]**. El formulario debe explicarlo donde se decide, porque es contraintuitivo para quien viene de pensar en "el trabajador de la caja 3": "El trabajador podrá operar cualquier caja de esta sede. La caja la determina el equipo en el que inicie sesión."
+**FR-AD-TRAB-4** **El alta elige sede, nunca caja** **[A13]**, **[FR-DEV-5]**. El formulario no ofrece ninguna caja, y ninguna pantalla de esta sección presenta al trabajador como adscrito a una: la caja la determina el equipo en el que inicie sesión, no su ficha. **La ausencia del selector es la explicación**, y no se acompaña de ningún texto que la justifique.
 
 **FR-AD-TRAB-5** El selector de sede ofrece **únicamente** sedes del alcance vigente, y el dominio revalida esa pertenencia al guardar **[A4]**, **[A1]**.
 
-**FR-AD-TRAB-6** El **correo es obligatorio** y es el canal por el que llega el código de verificación en cada inicio de sesión **[R13]**, **[FR-2FA-16 y ss.]**. El formulario debe decirlo: "A este correo llegará el código de verificación cada vez que inicie sesión." Sin correo válido el trabajador no podría acceder nunca, así que el alta no debe permitirse.
+**FR-AD-TRAB-6** El **correo es obligatorio** y es el canal por el que llega el código de verificación en cada inicio de sesión **[R13]**, **[FR-2FA-16 y ss.]**. Sin correo válido el trabajador no podría acceder nunca, así que el alta no debe permitirse. **La etiqueta del campo basta**: ni el alta ni la ficha acompañan el correo de ningún texto que explique para qué sirve. Lo que sí debe decirse es el rechazo, cuando falta o no es válido (**FR-AD-TRAB-7**).
 
 **FR-AD-TRAB-7** Validaciones y mensajes: campo obligatorio vacío → "Este campo es obligatorio."; correo con formato inválido → "Introduce un correo válido."; identificador ya existente en la red → "Ese identificador ya está en uso."; documento ya registrado como trabajador → "Ya existe un trabajador con ese documento."
 
 **FR-AD-TRAB-8** El alta genera una credencial inicial que se muestra una sola vez al terminar, con instrucción explícita de entregarla al trabajador. No debe poder volver a consultarse; si se pierde, se regenera.
 
-**FR-AD-TRAB-9** `/admin/trabajadores/[id]` muestra la ficha con sus datos, su sede, su estado y su actividad reciente (últimas jornadas, cajas operadas y volumen), y permite editar los datos, **cambiar su correo**, reasignarlo a otra sede del alcance, regenerar credencial y desactivar.
+**La credencial es su contraseña**, no un pase de un solo uso: le sirve indefinidamente, y **el producto no le obliga a cambiarla al entrar**. La cambia él, cuando quiera, por la vía de «¿Olvidaste tu contraseña?» de Worker (**Worker FRD §2.13**, **FR-REC-1** y ss.), que es el único sitio donde elige una suya. De ahí se siguen dos cosas que conviene no descubrir tarde. **El administrador conoce una contraseña válida de su trabajador** mientras este no la cambie; lo único que le impide entrar como él es el segundo factor, cuyo código va al correo del trabajador **[R13]** —es decir, la promesa de **FR-AD-TRAB-11** se sostiene sobre R13 y no sobre el diseño de la credencial—. Y **regenerar pisa la contraseña que el trabajador hubiera elegido**: es un restablecimiento, no una reemisión, y por eso se confirma antes de hacerlo.
 
-**FR-AD-TRAB-10** **Asistencia de acceso.** La ficha ofrece **Ayudar con el acceso**, para el caso que el PRD de producto §5.1 llama "la asistencia del administrador de sede": cuando a un trabajador no le llega el código y ha agotado los tres reenvíos. Muestra el correo registrado, permite corregirlo si es el problema, y permite **liberar el bloqueo del reto vigente** para que pueda intentarlo de nuevo. Exige motivo escrito y genera evento de auditoría.
+**FR-AD-TRAB-9** `/admin/trabajadores/[id]` muestra la ficha con sus datos, su sede, su estado y su actividad reciente (últimas jornadas, cajas operadas y volumen), y permite editar los datos, **cambiar su correo**, reasignarlo a otra sede del alcance, regenerar credencial y desactivar. **Editar los datos es `/admin/trabajadores/[id]/editar`, una pantalla aparte** —son seis campos y **FR-AD-SHELL-15** no los quiere en un modal— **y alcanza a nombre, apellidos, tipo y número de documento, y teléfono; no al identificador de acceso, ni al correo, ni a la sede.** El identificador es con lo que inicia sesión y cambiarlo en caliente dejaría fuera a quien esté trabajando; el correo es el canal del segundo factor y se cambia dentro de **FR-AD-TRAB-10**, donde quien lo corrige está viendo el problema que causa; la sede decide dónde puede iniciar sesión y tiene su propia acción con su propia advertencia (**FR-AD-TRAB-14**). **Los tres se omiten de esa pantalla sin explicación alguna**: no estar es la explicación, como la caja ausente del alta en **FR-AD-TRAB-4**, y quien los busque los tiene en la ficha con su propia acción.
 
-**FR-AD-TRAB-11** **Ayudar con el acceso no entrega, muestra ni genera ningún código de verificación, y no abre sesión por el trabajador.** El segundo factor no se salta ni se delega **[R13]**. La interfaz debe decirlo: "Esto no te da acceso a su cuenta ni te muestra su código; solo le permite volver a intentarlo."
+**FR-AD-TRAB-10** **Asistencia de acceso.** Es `/admin/trabajadores/[id]/acceso`, y responde al caso que el PRD de producto §5.1 llama «la asistencia del administrador de sede»: el trabajador dice que **no le llega el código**. La pantalla muestra el correo registrado **sin enmascarar** —al contrario que el listado y la ficha, porque lo que se viene a hacer aquí es **detectar que está mal escrito** y una dirección enmascarada esconde justo la errata que se busca— y permite corregirlo, con **motivo escrito** y evento de auditoría. Corregirlo arregla también la recuperación de contraseña de Worker (**Worker FRD §2.13**), que manda su código a esa misma dirección.
+
+> **Por qué no hay nada más aquí.** Hasta la v4.12 este requisito pedía además **liberar el bloqueo del reto vigente**. No hay tal bloqueo: el reto es de un solo intento de acceso en una sola máquina (**Worker FRD FR-2FA-1**, **FR-2FA-15**), y a quien se le agotan los intentos o los envíos le basta con volver al inicio de sesión para que nazca otro entero. No queda nada atascado que un administrador tenga que soltar, de modo que era una acción sin estado detrás. **Tampoco debe inventarse un bloqueo de cuenta por contraseñas falladas**: acertar la contraseña no abre nada sin el segundo factor **[R13]**, así que lo único que se ganaría es dejar sin operar a una caja con cola delante. El único bloqueo que un trabajador puede encontrarse y que solo esta consola resuelve es **estar desactivado**, y tiene su propia acción en **FR-AD-TRAB-15**.
+
+**FR-AD-TRAB-11** **Ayudar con el acceso no entrega, muestra ni genera ningún código de verificación, y no abre sesión por el trabajador.** El segundo factor no se salta ni se delega **[R13]**. La interfaz debe decirlo, y **antes de cualquier control**, porque es la expectativa equivocada con la que se llega: "Esto no te da acceso a su cuenta. No te muestra su código ni lo genera, y no inicia sesión por él."
 
 **FR-AD-TRAB-12** **Desactivar** impide al trabajador iniciar sesión, pero no borra ni altera nada de lo que operó **[A7]**. Exige confirmación y motivo escrito, y genera evento de auditoría.
 
@@ -325,239 +390,56 @@ El área donde el Admin crea personas — y, desde la v3.0, el **único lugar de
 
 **FR-AD-TRAB-16** Si el **operador** o la **sede** están suspendidos por PuntoCash, los trabajadores afectados no pueden iniciar sesión aunque estén activos. La ficha debe distinguir ese estado del de un trabajador desactivado —"No puede acceder: {sede} está suspendida por PuntoCash"— y no ofrecer ninguna acción que sugiera poder resolverlo desde aquí **[A14]**.
 
+**FR-AD-TRAB-17** **En la demostración**, la guarda de jornada abierta de **FR-AD-TRAB-13** y **FR-AD-TRAB-14** **no puede comprobarse**: la jornada vive en `caja-data.ts`, en el navegador del trabajador, y este servidor no la ve —el mismo límite que **FR-AD-IMP-3** recoge para la columna de jornada de **FR-AD-EQ-5**—. Por eso los diálogos de desactivar y de reasignar **advierten siempre** de que no es posible con una jornada abierta, con enlace a Jornadas, en vez de avisar solo cuando lo saben y callar cuando no; y por eso la confirmación **no bloquea**. El dominio ya acepta la guarda (`WorkerGuards`) y rechaza con `jornada-abierta`: lo único que falta es quién se la pase. *Todo esto es mecanismo de la demostración; en producción rigen FR-AD-TRAB-13 y FR-AD-TRAB-14, que son prohibiciones y deben impedir la acción.*
+
 ---
 
 ## 8. Usuarios administradores
 
 Los demás usuarios de la empresa administradora, a partir del primero que PuntoCash entregó al asignarle su primera sede **[A4]**, **[A3]**.
 
-**FR-AD-USR-1** `/admin/usuarios` lista los usuarios administradores del operador de la sesión, con: nombre, identificador, correo enmascarado, estado, fecha de alta, último acceso y si es el usuario inicial entregado por PuntoCash.
+**FR-AD-USR-1** `/admin/usuarios` lista los usuarios administradores del operador de la sesión, con: nombre, identificador, correo enmascarado, estado, fecha de alta, último acceso y **papel**. El papel se dice con palabras completas —**«Administrador»** o **«Administrador principal»**— en su propia columna, no como etiqueta junto al nombre: dos etiquetas apiladas se amontonan en cuanto la columna se estrecha, y «Principal» a secas obliga a adivinar principal de qué. La fila de quien mira sí se marca, para no tener que buscar el propio nombre entre varios parecidos. **No se lista quién fue el usuario inicial**: es un dato de PuntoCash, no de esta consola, y lo que aquí decide algo es el papel.
 
 **FR-AD-USR-2** `/admin/usuarios/nuevo` da de alta un usuario administrador. Campos: nombre, primer apellido, segundo apellido (opcional), **correo**, identificador de acceso y teléfono.
 
 **FR-AD-USR-3** El correo es obligatorio, por la misma razón que en trabajadores: es el canal del segundo factor **[R13]**.
 
-**FR-AD-USR-4** **Todo usuario administrador de un operador tiene exactamente las mismas potestades sobre todas sus sedes.** No hay sub-roles ni usuarios limitados a una sucursal. El formulario debe decirlo, sin rodeos, porque es la consecuencia que más probablemente sorprenda: "Este usuario podrá hacer todo lo que tú puedes hacer, en todas tus sedes."
+**FR-AD-USR-4** **Sobre la operación, todos los usuarios administradores de un operador pueden exactamente lo mismo, en todas sus sedes.** No hay sub-roles ni usuarios limitados a una sucursal: sedes, cajas, equipos, trabajadores, monedas, tasas, promociones, aprobaciones y reportes son iguales para todos. **La única diferencia entre un usuario y otro es §8**, que pertenece al administrador principal (**FR-AD-USR-11**). El alta debe decirlo sin rodeos, porque es la consecuencia que más probablemente sorprenda: "Este usuario podrá hacer todo lo que tú puedes hacer en la operación, en todas tus sedes."
+
+> **No es un sistema de permisos, y el documento lo dice para que no se construya uno.** Hay exactamente **una** llave y **una** sección detrás. Modelarlo como roles, matrices o capacidades sería construir diez veces lo que hace falta y abrir la puerta a combinaciones que el negocio no ha pedido.
 
 **FR-AD-USR-5** El alta genera una credencial inicial que se muestra una sola vez, con el mismo tratamiento que **FR-AD-TRAB-8**.
 
-**FR-AD-USR-6** `/admin/usuarios/[id]` permite editar datos, cambiar correo, regenerar credencial y **desactivar**.
+**FR-AD-USR-6** `/admin/usuarios/[id]` muestra **sus datos y sus acciones, y nada más**: ni un bloque que explique qué puede hacer un administrador ni de dónde salió su cuenta. Un administrador aprende sus capacidades en el manual al empezar a usar el sistema, no en una ficha que abre para corregir un teléfono. Lo único que la pantalla explica es **por qué falta un control**, que es otra cosa. Permite editar datos, cambiar correo, regenerar credencial y **desactivar**. **Editar los datos es `/admin/usuarios/[id]/editar`, una pantalla aparte**, y alcanza a **nombre, apellidos y teléfono**; no al identificador de acceso ni al correo, que tiene su propia acción por ser el canal del segundo factor. Es la misma división que **FR-AD-TRAB-9**, y los tres campos excluidos se omiten **sin explicación en pantalla**. **Editarse a uno mismo sí se puede**: corregir el propio nombre o teléfono no deja a nadie fuera, y lo que **FR-AD-USR-7** protege es la desactivación.
 
-**FR-AD-USR-7** Un usuario **no puede desactivarse a sí mismo**. El control debe estar ausente en la propia ficha, con la razón visible, en lugar de fallar al pulsarlo.
+**FR-AD-USR-7** *(sustituido por **FR-AD-USR-13**.)* Su regla —nadie se desactiva a sí mismo— queda absorbida: el único que puede desactivar es el principal, y al principal no lo desactiva nadie.
 
-**FR-AD-USR-8** **No es posible desactivar al último usuario administrador activo de un operador.** El intento se rechaza con la consecuencia explicada: "Es el último administrador activo. Si lo desactivas, nadie de tu empresa podría entrar." Es lo que evita que un mercante se deje fuera de su propia consola, situación que no podría resolver por sí mismo.
+**FR-AD-USR-8** *(retirado.)* Existía para que una empresa no se quedara sin administradores activos. **FR-AD-USR-13** lo garantiza por construcción: siempre queda el principal.
 
 **FR-AD-USR-9** Un usuario desactivado puede reactivarse desde esta misma pantalla.
 
 **FR-AD-USR-10** Alta, edición, desactivación y reactivación generan eventos de auditoría **[RP-21]**.
 
----
+### 8.1 El administrador principal
 
-## 9. Jornadas
+**FR-AD-USR-11** **Toda la §8 pertenece a un único usuario: el administrador principal de la empresa.** Solo él da de alta, edita, cambia el correo, regenera credenciales, desactiva y reactiva usuarios administradores. Para los demás **la sección no existe**: no aparece en el menú y sus rutas responden como inexistentes (**FR-AD-NAV-3**), no como prohibidas. La diferencia importa: «no tienes permiso» invita a pedirlo y deja a alguien esperando; «no está ahí» no abre esa conversación. **Esta decisión se toma en el servidor**, al armar el menú y al resolver la ruta; ocultarla en el cliente dejaría el enlace en el HTML entregado.
 
-**FR-AD-JOR-1** `/admin/jornadas` lista las jornadas de las cajas del alcance con: sede, caja, trabajador, fecha, hora de apertura, hora de cierre, estado (abierta / cerrada / cerrada forzosamente), operaciones, movimientos y diferencia de arqueo si está cerrada.
+**FR-AD-USR-12** **El papel se traspasa, y lo traspasa su titular**, desde su propia ficha, eligiendo a **un usuario activo** de la empresa. Es inmediato y en un solo acto: al confirmar hay exactamente un principal, el nuevo, y quien lo traspasó **deja de ver §8** —conservando todo lo demás—. No existe un estado con dos principales ni con ninguno. Existe porque la alternativa —atar el papel para siempre a la cuenta que creó PuntoCash— convierte cualquier relevo de personal, incluso uno planificado, en un ticket de soporte.
 
-**FR-AD-JOR-2** Filtros: rango de fechas, sede, caja, trabajador, estado, y un conmutador "solo con diferencia". Orden por defecto: las abiertas primero, después las cerradas por fecha descendente.
+**FR-AD-USR-13** **Al administrador principal no lo desactiva nadie, ni él mismo.** El control no se ofrece, y la ficha dice por qué y qué hacer: traspasar primero. Es lo que garantiza que **nunca se llegue a cero administradores capaces de dar de alta a otro**, y por eso **FR-AD-USR-8** sobra.
 
-**FR-AD-JOR-3** La diferencia de arqueo se representa con el mismo tratamiento semántico que en Worker —signo, color y magnitud— y por moneda, nunca agregada.
+**FR-AD-USR-14** **«Principal» y «usuario inicial» no son lo mismo, y el dominio los guarda aparte.** El inicial es un hecho histórico que no cambia —quién entregó PuntoCash al crear la empresa (**FR-SA-OPE-5**)— y sigue importando porque es la cuenta cuyo acceso PuntoCash puede restablecer. El principal es la llave de §8, y se mueve. Al nacer una empresa coinciden.
 
-**FR-AD-JOR-4** `/admin/jornadas/[id]` muestra: cabecera con sede, caja, **equipo en el que se operó**, trabajador, apertura y cierre; fondeo inicial por moneda; saldos actuales o finales por moneda; el **libro de movimientos**; y, si está cerrada, el **arqueo** con conteo declarado, saldo esperado y diferencia por moneda.
-
-**FR-AD-JOR-5** El libro de movimientos reutiliza la tabla y los filtros de Worker (`caja-movements-table`, `caja-movements-filters`) en solo lectura, y cada movimiento enlaza a su detalle, también de solo lectura.
-
-**FR-AD-JOR-6** Toda cifra proviene de la instantánea almacenada y nunca se recalcula contra el estado vivo **[R9]**.
-
-### 9.1 Forzar cierre
-
-**FR-AD-JOR-7** El detalle de una jornada **abierta** ofrece **Forzar cierre**. No aparece en ninguna otra circunstancia.
-
-**FR-AD-JOR-8** Se presenta con una advertencia previa que explica, sin jerga, qué implica: la caja queda cerrada, el trabajador no podrá seguir operando en ella hasta que abra una jornada nueva, y el cierre quedará marcado como forzado con el nombre del Admin.
-
-**FR-AD-JOR-9** Exige **motivo escrito** de al menos 10 caracteres. Sin motivo, la acción no se habilita. El motivo no tiene valor predefinido ni lista de opciones **[A6]**.
-
-**FR-AD-JOR-10** Un cierre forzado **no realiza arqueo**. Cierra la jornada dejando constancia de que se cerró sin conteo físico, y el saldo final registrado es el saldo en libros. La interfaz debe decirlo: "Esta jornada se cerrará sin arqueo. La diferencia con el efectivo físico no quedará conciliada."
-
-**FR-AD-JOR-11** Al confirmar, el dominio revalida que la jornada sigue abierta. Si el Worker la cerró entretanto, se rechaza con "Esta jornada ya fue cerrada." y la pantalla se actualiza **[R3]**, **[R6]**.
-
-**FR-AD-JOR-12** El cierre forzado **añade** un hecho nuevo —tipo de cierre, admin responsable, sello de tiempo y motivo— y no modifica, recalcula ni elimina ningún movimiento ni operación previos **[A7]**, **[R9]**.
-
-**FR-AD-JOR-13** Forzar el cierre **no desvincula el equipo** de la caja ni al revés: son dos actos independientes sobre dos objetos distintos **[A11]**. Cuando se llega aquí desde **FR-AD-EQ-11**, la confirmación debe recordar que, tras cerrar, el equipo sigue vinculado.
-
-**FR-AD-JOR-14** Una jornada cerrada forzosamente se distingue visualmente de una cerrada por arqueo en todo listado y detalle, y su detalle muestra el motivo y quién lo declaró.
-
-**FR-AD-JOR-15** La acción genera un evento de auditoría **[RP-21]**.
+> **Condición conocida, y es la contrapartida de este diseño.** Si el principal traspasa el papel y después quien lo recibió pierde el acceso —se va sin traspasar, o no puede entrar en su correo—, **la empresa se queda sin §8**: nadie de dentro puede recuperarla, y lo que PuntoCash puede restablecer es el acceso del **inicial**, que ya no es el principal. La salida sería que PuntoCash pudiera **reasignar** el papel, y eso pertenece al FRD de la consola de PuntoCash, no a este. Queda nombrado aquí para que no se descubra en producción.
 
 ---
+## 9. Modelo de dominio y datos simulados
 
-## 10. Aprobaciones
-
-**FR-AD-APR-1** `/admin/aprobaciones` es la bandeja de solicitudes del alcance. Dos pestañas: **Pendientes** (por defecto) y **Resueltas**.
-
-**FR-AD-APR-2** Cada fila muestra: tipo (ajuste de efectivo / diferencia de arqueo), sede, caja, trabajador, fecha y hora, moneda e importe, signo de la diferencia, motivo declarado por el Worker y antigüedad.
-
-**FR-AD-APR-3** Las pendientes se ordenan de más antigua a más reciente, porque la antigüedad es lo que las vuelve urgentes. Las resueltas, por fecha de resolución descendente.
-
-**FR-AD-APR-4** Filtros: tipo, sede, rango de fechas y trabajador.
-
-**FR-AD-APR-5** `/admin/aprobaciones/[id]` muestra el detalle completo: todos los datos del hecho original tal como el Worker los registró —conteo declarado, saldo esperado, diferencia, motivo, movimiento o arqueo de origen— con enlace al movimiento o a la jornada, y el contexto de la jornada.
-
-**FR-AD-APR-6** El signo de la diferencia y el motivo declarado por el Worker se muestran juntos y sin reinterpretación **[R8]**.
-
-**FR-AD-APR-7** Ofrece **Aprobar** y **Rechazar**. Ambas exigen motivo escrito de al menos 10 caracteres.
-
-**FR-AD-APR-8** El motivo del Admin **se añade** al del Worker; no lo sustituye, no lo edita y no lo oculta. Ambos quedan visibles una vez resuelta **[A7]**, **[R8]**.
-
-**FR-AD-APR-9** **Aprobar** confirma que el hecho queda asumido. **Rechazar** deja constancia de que el Admin no lo asume y marca la solicitud para revisión fuera del sistema. Ninguna modifica el saldo de la caja, el movimiento ni el arqueo original **[A6]**, **[A7]**.
-
-**FR-AD-APR-10** La interfaz debe dejar claro ese límite en el punto de decisión: "Resolver esta solicitud deja constancia de tu decisión. No modifica el saldo de la caja ni el movimiento registrado."
-
-**FR-AD-APR-11** Al confirmar, el dominio revalida que la solicitud sigue pendiente. Si otro usuario del mismo operador la resolvió entretanto, se rechaza con "Esta solicitud ya fue resuelta." **[R3]**, **[R6]**.
-
-**FR-AD-APR-12** Toda resolución genera un evento de auditoría **[RP-21]**.
-
-**FR-AD-APR-13** Estado vacío de Pendientes: "No tienes solicitudes pendientes." — distinto de un filtro sin resultados, que dice "Ninguna solicitud coincide con los filtros."
-
----
-
-## 11. Operaciones
-
-**FR-AD-OPS-1** `/admin/operaciones` lista las operaciones completadas en las sedes del alcance, con: código, fecha y hora, sede, caja, trabajador, servicio, cliente, importe y moneda, y estado.
-
-**FR-AD-OPS-2** Filtros: rango de fechas, sede, caja, trabajador, servicio y estado, más búsqueda por código. Reutiliza el patrón de `operations-filters` de Worker, ampliado con sede, caja y trabajador — dimensiones que allí no existen porque siempre son una sola **[R12]**.
-
-**FR-AD-OPS-3** `/admin/operaciones/[codigo]` muestra el detalle **reutilizando las vistas de Worker** (`operation-detail-view` y las especializadas de cambio de moneda, remesas y las dos variantes de giro) en solo lectura.
-
-**FR-AD-OPS-4** El detalle añade el contexto que el Admin necesita y el Worker no: sede, caja, trabajador, jornada (con enlace) y, cuando la operación provino de una solicitud de kiosco, **el código `KS-` y el kiosco que la generó** **[FR-AS-DOM-11]**.
-
-**FR-AD-OPS-5** El detalle **no** ofrece ninguna acción: ni reimprimir, ni anular, ni corregir, ni reenviar al proveedor **[A6]**, **[A7]**.
-
-**FR-AD-OPS-6** Toda cifra y todo dato provienen de la instantánea histórica **[R9]**, **[R2]**.
-
-**FR-AD-OPS-7** Los estados se muestran siempre traducidos, nunca como enum en bruto **[R10]**.
-
----
-
-## 12. Monedas
-
-La **lista de monedas que maneja cada sucursal**. Es una lista de monedas sueltas, no de pares: los pares se definen en Tasas (§13) **[A4]**.
-
-**FR-AD-MON-1** `/admin/monedas` gestiona, por cada sede del alcance, qué monedas maneja esa sede. Muestra las monedas de la lista con su código, su nombre y en cuántas cajas de la sede está habilitada hoy cada una.
-
-**FR-AD-MON-2** **Esta lista es lo que un Worker puede añadir a su caja.** El "catálogo" del que habla **FR-CAJA-13** del FRD de Worker —"ofrece únicamente monedas del catálogo"— deja de ser una constante del código y pasa a ser esta lista, resuelta por la sede de la caja. Lo mismo rige para el fondeo inicial, que recoge un importe por cada moneda habilitada (**FR-CAJA-8**).
-
-**FR-AD-MON-3** Las monedas se eligen del **catálogo de monedas que la plataforma soporta**, mantenido por PuntoCash (**FR-SA-MON-1**). El Admin no inventa monedas: elige de las que existen.
-
-**FR-AD-MON-4** Añadir una moneda a la lista de una sede **no la habilita en ninguna caja ni crea ningún saldo**: solo la pone a disposición de sus Workers. Quien la habilita en una caja concreta, y la fondea, es el Worker desde su propia pantalla de Caja **[A6]**. La pantalla debe decirlo, porque es la confusión más probable: "Añadir una moneda aquí no la activa en ninguna caja. Cada trabajador la habilita en la suya cuando la necesite."
-
-**FR-AD-MON-5** **Esta lista no depende del servicio de Cambio de moneda.** Una sede necesita monedas para cualquier servicio que mueva efectivo —una remesa se paga en una moneda, un giro también—, así que la lista está disponible en toda sede activa. Lo que sí depende de ese servicio son los **pares** de §13. (*Esto matiza lo acordado en la v3.0, donde las monedas quedaban condicionadas al servicio de Cambio de moneda; con la lista redefinida como "lo que un Worker puede tener en su caja", esa condición dejaría a una sede de solo remesas sin poder manejar efectivo. Pendiente de confirmación del negocio.*)
-
-**FR-AD-MON-6** **Retirar** una moneda de la lista exige confirmación y tiene efecto solo hacia adelante: impide que un Worker la añada a una caja en lo sucesivo. **No toca ningún saldo existente, ninguna caja que ya la tenga habilitada, ni un solo registro histórico** **[R9]**, **[A7]**.
-
-**FR-AD-MON-7** No es posible retirar una moneda que alguna caja de la sede tenga **habilitada con saldo distinto de cero**. El intento se rechaza nombrando las cajas: "La {moneda} tiene saldo en {cajas}. Debe quedar en cero antes de retirarla de la lista." **[R6]**.
-
-**FR-AD-MON-8** Retirar una moneda **retira también los pares de §13 que la usan**, porque un par sin una de sus monedas no puede cotizarse. La confirmación debe nombrarlos uno a uno antes de aceptar: "Se retirarán también estos pares: USD/CUP, USD/EUR."
-
-**FR-AD-MON-9** No es posible retirar la **última moneda** de una sede activa: dejaría una casa de cambio sin poder manejar efectivo de ningún tipo. El intento se rechaza con una explicación.
-
-**FR-AD-MON-10** Todo cambio genera un evento de auditoría **[RP-21]**.
-
----
-
-## 13. Tasas
-
-Donde el Admin **define los pares que su sede cotiza y la tasa de cada uno**. Gobierna dos cosas a la vez que hasta ahora estaban separadas: lo que la sede **cotiza** y lo que su tablero **exhibe**. Son el mismo dato **[A12]**, **[RP-25]**.
-
-**FR-AD-TASA-1** `/admin/tasas` lista, por cada sede del alcance, los pares que esa sede tiene definidos, con: monedas del par, tasa de compra, tasa de venta, el rango permitido por PuntoCash, fecha y autor del último cambio, e indicador de si fue fijada automáticamente. Ofrece **Definir par**.
-
-**FR-AD-TASA-2** Un par solo puede definirse si se cumplen **las tres condiciones**, y la pantalla debe decir cuál falta en cada caso, nunca limitarse a no ofrecer la opción **[FR-AD-STATE-6]**:
-
-1. **Ambas monedas están en la lista de la sede** (§12). Si falta una, el mensaje debe enlazar a `/admin/monedas`: "La {moneda} no está en la lista de esta sede. Añádela antes de definir el par."
-2. **PuntoCash tiene un rango definido para ese par** **[A5]**, **[RP-22]**. Sin rango no hay límite dentro del cual fijar la tasa, así que el par no puede existir. El mensaje debe identificar a quién pedírselo: "PuntoCash todavía no ha definido un rango para {par}. Solicítaselo para poder cotizarlo."
-3. **PuntoCash ha habilitado el servicio de Cambio de moneda en esa sede** **[A5]**, **[A3]**.
-
-**FR-AD-TASA-3** La pantalla debe mostrar, junto a los pares definidos, **los pares posibles que no puede definir todavía y por qué** — combinaciones de sus propias monedas para las que PuntoCash no tiene rango. Es lo que convierte una ausencia inexplicable en una petición concreta que el mercante puede hacer.
-
-**FR-AD-TASA-4** Una sede sin el servicio de Cambio de moneda habilitado debe aparecer igualmente en la lista, con la razón visible —"PuntoCash no ha habilitado el Cambio de moneda en esta sede"— y sin controles, en lugar de desaparecer sin explicación **[A3]**.
-
-**FR-AD-TASA-5** **Definir un par fija su tasa en el mismo acto**: compra y venta, ambas dentro del rango. **No existe un par sin tasa.** Un par a medio definir exhibiría una moneda en el tablero sin cifra al lado, que es peor que no exhibirla.
-
-**FR-AD-TASA-6** La pantalla debe declarar, de forma visible y permanente, el alcance real de lo que se edita: "Esta es la tasa con la que cotiza la sede y la que muestra su tablero de tasas en el kiosco y en la pantalla informativa." **[A12]**, **[FR-PANT-DATA-3]**.
-
-**FR-AD-TASA-7** El rango de PuntoCash es de solo lectura y se representa como el límite que es, visualmente presente junto a cada campo editable, no escondido en un texto de ayuda **[A5]**.
-
-**FR-AD-TASA-8** La validación es inmediata y el mensaje dice el límite concreto: "La tasa de venta debe estar entre 118,00 y 124,00." Una tasa fuera de rango no debe poder guardarse ni por la interfaz ni por el dominio **[A5]**, **[RP-22]**.
-
-**FR-AD-TASA-9** Con una sede seleccionada en el alcance, la pantalla la muestra en detalle y permite editar. Con "Todas mis sedes", muestra la comparativa entre sedes y la edición exige entrar en una sede concreta — definir o cambiar la tasa de varias sedes a la vez no debe ser posible, porque cada sede responde de la suya.
-
-**FR-AD-TASA-10** Guardar exige confirmación con un resumen: par, tasa anterior, tasa nueva y sede afectada. La confirmación debe advertir de las dos consecuencias: el cambio afecta a las operaciones que se coticen a partir de ese momento, **y el tablero de la sucursal pasa a mostrar la tasa nueva**; y **no altera ninguna operación ya registrada** **[R9]**.
-
-**FR-AD-TASA-11** Al confirmar, el dominio revalida las tres condiciones de **FR-AD-TASA-2** y el rango vigente. Si PuntoCash movió el rango mientras la pantalla estaba abierta: "PuntoCash cambió el rango permitido. Revisa el valor." **[R3]**.
-
-**FR-AD-TASA-12** Cuando una tasa ha sido **fijada automáticamente al límite** por un cambio de rango de PuntoCash **[A5]**, la pantalla lo marca de forma destacada, indica la fecha y la tasa anterior, y ofrece fijar un valor nuevo dentro del rango actual. Mientras no se revise, aparece en el panel de atención del Inicio (**FR-AD-HOME-2**).
-
-**FR-AD-TASA-13** **Retirar un par** exige confirmación y advierte de su efecto hacia adelante: la sede deja de poder cotizarlo y desaparece de su tablero. No afecta a las operaciones ya registradas de ese par **[R9]**. Retirar un par **no** retira sus monedas de la lista de §12: la sede sigue pudiendo manejarlas en caja.
-
-**FR-AD-TASA-14** Si PuntoCash **deshabilita el servicio** de Cambio de moneda en una sede, sus pares dejan de exhibirse y de poder cotizarse de inmediato, sin que el Admin los retire uno a uno. La pantalla debe reflejar ese estado y **conservar los pares definidos** para cuando el servicio vuelva a habilitarse.
-
-**FR-AD-TASA-15** Si PuntoCash **retira el rango** de un par que alguna sede tiene definido, ese par deja de cotizarse en esas sedes y sus Admins deben verlo marcado con la razón. No se borra: si el rango vuelve, el par vuelve con su última tasa, revalidada contra el rango nuevo.
-
-**FR-AD-TASA-16** Todo cambio genera un evento de auditoría **[RP-21]**.
-
-**FR-AD-TASA-17** Esta pantalla gobierna la tasa; **no** gobierna comisiones ni cargos por servicio, que son competencia de PuntoCash **[A8]**.
-
----
-
-## 14. Promociones
-
-Lo que la sucursal anuncia en su pantalla informativa. Sustituye al mock fijo de `signage-data.ts` **[FR-PANT-DATA-5]**.
-
-**FR-AD-PROM-1** `/admin/promociones` lista las promociones que afectan a las sedes del alcance, con: título, sedes en las que se muestra, vigencia (desde–hasta), estado (programada / vigente / vencida) y **origen** (propia del operador o de red, publicada por PuntoCash).
-
-**FR-AD-PROM-2** Tres pestañas por estado: **Vigentes** (por defecto), **Programadas** y **Vencidas**.
-
-**FR-AD-PROM-3** El Admin crea, edita y retira **sus propias** promociones. Las de **red** se muestran en solo lectura y **no puede retirarlas ni editarlas**; la interfaz debe explicarlo —"Esta promoción la publica PuntoCash"— en lugar de ofrecer controles que fallan.
-
-**FR-AD-PROM-4** `/admin/promociones/nueva` pide: título, texto, sedes del alcance en las que se muestra (una, varias o todas), fecha de inicio y fecha de fin. Todos obligatorios.
-
-**FR-AD-PROM-5** La fecha de fin debe ser posterior a la de inicio → "La fecha de fin debe ser posterior a la de inicio." Una promoción puede programarse con inicio futuro; nace en estado programada y no se exhibe hasta su fecha.
-
-**FR-AD-PROM-6** **Solo se exhiben las promociones vigentes en la fecha actual** **[FR-PANT-DATA-5]**. Una vencida deja de mostrarse sola, sin que nadie la retire a mano.
-
-**FR-AD-PROM-7** El formulario debe mostrar una **previsualización** de cómo se verá el panel en la pantalla informativa, porque se lee desde el otro extremo de una sala. Debe advertir cuando el texto exceda lo legible a esa distancia.
-
-**FR-AD-PROM-8** El formulario debe indicar **cuántas promociones quedarían en rotación** en cada sede elegida, sumando las propias y las de red, y advertir cuando el número supere lo que el carrusel puede rotar de forma legible. Una sucursal con nueve promociones no anuncia ninguna.
-
-**FR-AD-PROM-9** **Retirar** una promoción vigente exige confirmación y tiene efecto inmediato en las pantallas de sus sedes. Retirar no borra: pasa a vencida y queda en el histórico.
-
-**FR-AD-PROM-10** Alta, edición y retirada generan eventos de auditoría **[RP-21]**.
-
-**FR-AD-PROM-11** Nada de lo publicado aquí puede alimentar ni modificar una operación: es contenido de exhibición **[R10]**, **[FR-PANT-DATA-2]**. Ninguna promoción define una tasa, un descuento aplicable ni una condición comercial que un flujo de Worker lea.
-
----
-
-## 15. Reportes
-
-**FR-AD-REP-1** `/admin/reportes` presenta el volumen del alcance en cuatro cortes: **por sede**, **por servicio**, **por trabajador** y **por día**. El corte se elige; no se muestran los cuatro a la vez.
-
-**FR-AD-REP-2** Todo reporte se acota a un rango de fechas, con accesos rápidos a hoy, últimos 7 días, últimos 30 días y mes en curso.
-
-**FR-AD-REP-3** Las cifras se expresan **por moneda**, sin convertir a una moneda única **[FR-AD-HOME-1]**.
-
-**FR-AD-REP-4** Cada corte muestra número de operaciones e importe por moneda. El corte por día añade una representación temporal; los cortes por sede y por trabajador admiten ordenación por cualquier columna.
-
-**FR-AD-REP-5** Toda representación gráfica sigue el sistema visual del manual de marca, sin paleta propia ni elementos decorativos que compitan con las cifras.
-
-**FR-AD-REP-6** Los reportes **no** muestran comisiones, rentas, liquidaciones ni margen **[A8]**.
-
-**FR-AD-REP-7** Esta versión **no incluye exportación a archivo** **[R11]**, y la interfaz no ofrece ningún control de descarga. Pendiente de decisión de negocio (PRD de Administración §9).
-
----
-
-## 16. Modelo de dominio y datos simulados
+**Esta sección describe el modelo entero, incluidas las entidades de las secciones que todavía no tienen pantalla.** Es deliberado: quien diseñe el esquema de datos lo necesita completo hoy, o construirá tablas que habrá que migrar en cuanto llegue Tasas o Aprobaciones. Lo que no existe son las pantallas, no los conceptos.
 
 **FR-AD-DOM-1** La capa se apoya en un módulo de dominio nuevo, `src/features/network`, con datos simulados en memoria, sin backend ni persistencia real.
 
-**FR-AD-DOM-2** Debe exponer, como mínimo: `Operador`, `UsuarioAdmin`, `Sede`, `Caja`, `Asignacion`, `ServiciosSede`, `CatalogoMonedas` (plataforma), `PoliticaTasas` (rangos de red por par), `MonedasSede` (la lista de §12), `ParSede` (par + tasa de compra y venta, §13), `Promocion`, `SolicitudAprobacion` y `EventoAuditoria`, con las consultas acotadas por alcance y las escrituras que esta consola necesita.
+**FR-AD-DOM-2** Debe exponer, como mínimo: `Operador`, `UsuarioAdmin`, `Sede`, `Caja`, `Asignacion`, `ServiciosSede`, `CatalogoMonedas` (plataforma), `PoliticaTasas` (rangos de red por par), `MonedasSede` (la lista de monedas de una sede), `ParSede` (par + tasa de compra y venta), `Promocion`, `SolicitudAprobacion` y `EventoAuditoria`, con las consultas acotadas por alcance y las escrituras que esta consola necesita.
 
 **FR-AD-DOM-3** El dominio de Caja existente (`src/features/caja`) debe ampliarse con el enlace **Caja → Sede**, que hoy no existe, y el de trabajadores con **Trabajador → Sede** **[A13]**. Toda consulta de jornadas, movimientos y operaciones debe poder acotarse por sede a través de él. Esto es además lo que cierra el hueco que el kiosco dejó anotado en **FR-AS-DOM-11**: con Caja→Sede, Buscar solicitud ya puede filtrar por sede como exige **[RP-14]**.
 
@@ -574,8 +456,7 @@ Lo que la sucursal anuncia en su pantalla informativa. Sustituye al mock fijo de
 **FR-AD-DOM-9** Al menos un operador debe tener **una sola sede**, para que **FR-AD-SCOPE-3** sea verificable sin construir datos a mano.
 
 ---
-
-## 17. Comportamiento transversal
+## 10. Comportamiento transversal
 
 **FR-AD-STATE-1** Toda tabla implementa cuatro estados distinguibles: con datos, cargando, vacía por ausencia de datos, y vacía por filtros sin resultados. Los dos vacíos nunca comparten mensaje.
 
@@ -587,48 +468,169 @@ Lo que la sucursal anuncia en su pantalla informativa. Sustituye al mock fijo de
 
 **FR-AD-STATE-5** Toda pantalla mantiene la usabilidad por teclado y la jerarquía de datos financieros que el manual de marca exige.
 
+**FR-AD-STATE-7** Toda pantalla nueva se comprueba a **360px, 390px y 1440px** antes de darse por terminada. Una pantalla que solo se revisó en escritorio no está terminada: esta consola se usa más en un teléfono que delante de un monitor (**FR-AD-SHELL-6**).
+
+**FR-AD-STATE-8** Ninguna pantalla produce desplazamiento horizontal a 360px. Es la comprobación que delata que algo se diseñó para 1440 y nadie volvió a mirarlo.
+
 **FR-AD-STATE-6** Cuando una acción está impedida por algo que PuntoCash controla —servicio no habilitado, par sin rango, sede u operador suspendidos—, la interfaz debe decir **quién** lo controla y **qué pedir**, nunca limitarse a deshabilitar el control **[A3]**, **[A14]**.
 
 ---
+## 11. Dependencias funcionales
 
-## 18. Condiciones conocidas y fuera de alcance
-
-- **Nada de esto está implementado.** `/admin` contiene hoy un README de marcador de posición, y la demostración suple §3 con `/kiosk/simulador-admin`.
-- **Sin backend.** Dominio simulado en memoria; una recarga completa restaura los datos precargados.
-- **Sin sub-roles.** Todos los usuarios administradores de un operador tienen las mismas potestades sobre todas sus sedes **[FR-AD-USR-4]**.
-- **Sin administración de Pantallas informativas.** Se asignan a su sede en el propio equipo (FR-PANT-SEDE-1 a 7).
-- **Sin edición de datos maestros de sede, servicios ni rangos de tasa**, que son de PuntoCash **[A3]**.
-- **Sin exportación de reportes** **[R11]**.
-- **Sin notificaciones** fuera de la consola.
-- **Sin recuperación de acceso** funcional. La asistencia de **FR-AD-TRAB-10** cubre la pantalla, no el mecanismo de fondo.
-- **Sin nada económico** **[A8]**.
-- **Revisión visual obligatoria** antes de dar por terminada cualquier pantalla, a 1440×900 —y a 360px para las de §3, por **FR-AD-SHELL-7**—, conforme al procedimiento de `CLAUDE.md`.
+| Capacidad | Depende de |
+| --- | --- |
+| Cualquier pantalla del shell | Un segundo factor verificado — unas credenciales correctas no alcanzan ninguna **[R13]** |
+| Cualquier pantalla del shell | Un usuario activo, de un operador activo **[A14]** |
+| Que una pantalla muestre algo | Al menos una sede en el alcance; sin ninguna, Inicio lo explica y el resto queda vacío por ausencia, no por filtro (**FR-AD-ACC-7**, **FR-AD-HOME-8**) |
+| Ver la sección de Usuarios (§8) | Ser el **administrador principal** del operador de la sesión (**FR-AD-USR-11**) |
+| Vincular un equipo de caja | Una sede del alcance **con al menos una caja activa y sin equipo vinculado**, y un reto vigente y no usado |
+| Vincular un kiosco | Una sede del alcance y un reto vigente y no usado |
+| Desvincular un equipo | Nada más que el vínculo. **No** exige que la jornada esté cerrada **[A11]**, **[FR-DEV-7]** |
+| Crear una caja | Una sede del alcance, y un identificador libre dentro de esa sede |
+| Retirar una caja | Sin jornada abierta, sin equipo vinculado, y que no sea la última activa de una sede activa |
+| Reactivar una caja | Nada. **No** restaura ningún vínculo de equipo: hay que vincular uno de nuevo |
+| Dar de alta un trabajador | Una sede del alcance; un identificador libre en toda la red; un documento no registrado; un correo válido |
+| Desactivar o reasignar un trabajador | Sin jornada abierta **[R6]** — con la condición de demostración de **FR-AD-TRAB-17** |
+| Reactivar un trabajador | Confirmar su sede. **Siempre es posible**: PuntoCash no desactiva personas **[A14]** |
+| Que un trabajador pueda iniciar sesión | Estar activo; su sede y su operador no suspendidos; y un equipo vinculado a una caja **de su sede** (**FR-DEV-1**, **FR-AUTH-8**) |
+| Dar de alta, editar o desactivar un usuario administrador | Ser el administrador principal (**FR-AD-USR-11**) |
+| Desactivar un usuario administrador | Que no sea el principal (**FR-AD-USR-13**) |
+| Traspasar el papel de principal | Ser su titular, y un destinatario **activo** distinto de uno mismo (**FR-AD-USR-12**) |
+| Recuperar la contraseña | Nada: se llega sin sesión y la respuesta es idéntica exista la cuenta o no (**FR-REC-4**) |
+| Que la ficha de un trabajador muestre su actividad reciente | **Jornadas** (alcance pendiente §1). Hoy se anuncia en lugar de dibujarse en blanco |
+| Que Inicio muestre las métricas y columnas de FR-AD-HOME-1 y 6 | **Jornadas** y **Operaciones** (**FR-AD-HOME-9**) |
+| Que el tablero público de una sede muestre lo que esa sede cotiza | **Tasas** (alcance pendiente §5) y **FR-AD-DOM-7** |
 
 ---
 
-## Apéndice A · Mapa de reglas a requisitos
+## 12. Comportamiento relevante para aceptación
 
-| Regla | Requisitos que la implementan |
+**FR-AD-QA-1** Lo especificado en este documento está cubierto por una batería automatizada de Playwright —**123 pruebas** al momento de redactarlo, entre las que recorren la consola (`admin-acceso`, `admin-shell`, `admin-movil`, `admin-responsive`, `admin-sedes`, `admin-cajas`, `admin-equipos`, `admin-trabajadores`, `admin-usuarios`) y las que ejercitan el dominio sin navegador (`network-domain`, `equipos-domain`)—. La división es deliberada: las reglas del dominio —alcance, guardas, traspaso, unicidad— se prueban sin navegador, porque son aritmética y no interfaz; y cada sección de pantalla tiene **una** prueba de navegación y congruencia, que vigila que el documento y lo que se ve no se contradigan en lo que de verdad distingue a esa sección.
+
+**FR-AD-QA-2** Comportamientos críticos para la aceptación — una regresión aquí es un defecto, no una preferencia:
+
+1. **Ningún dato fuera del alcance**, por ninguna vía: ni por listado, ni por filtro, ni pegando una URL con el identificador de un recurso ajeno, que debe responder como inexistente y no como prohibido (**FR-AD-NAV-2**, **FR-AD-NAV-3**, **FR-AD-DOM-5**).
+2. **Ninguna sesión sin segundo factor verificado**: unas credenciales correctas no alcanzan ninguna pantalla del shell, y el código nunca llega al cliente (**FR-AD-ACC-1**, **FR-AD-ACC-2**).
+3. **Un único mensaje de rechazo en el acceso** para cuenta inexistente, contraseña incorrecta, usuario desactivado y operador suspendido (**FR-AD-ACC-5**, **FR-AD-ACC-6**).
+4. **§8 no existe para quien no es el principal**, en sus dos mitades: la entrada ausente del menú **en el HTML entregado**, y la ruta respondiendo 404 (**FR-AD-USR-11**).
+5. **Al administrador principal no lo desactiva nadie**, y nunca hay dos ni ninguno (**FR-AD-USR-12**, **FR-AD-USR-13**).
+6. **Una caja, un equipo**: vincular sobre una caja que ya tiene equipo se rechaza, y el reto es de un solo uso (**FR-AD-EQ-8**, **FR-AD-EQ-23**).
+7. **Desvincular no cierra la Jornada**, y la confirmación lo advierte antes (**FR-AD-EQ-10**).
+8. **Retirar una caja no borra nada** y la deja visible en los listados históricos (**FR-AD-CAJA-11**).
+9. **Desactivar a un trabajador no altera nada de lo que operó** (**FR-AD-TRAB-12**).
+10. **La asistencia de acceso no muestra, no genera y no usa ningún código**, y lo dice antes de cualquier control (**FR-AD-TRAB-11**).
+11. **Ninguna credencial de dispositivo es visible, copiable ni exportable** (**FR-AD-EQ-25**).
+12. **La marca visible es PuntoCash**: el nombre del operador aparece como dato de contexto y nunca con tratamiento de marca (**FR-AD-SHELL-4**, **FR-AD-SHELL-5**, **[RP-23]**).
+13. **Sin desplazamiento horizontal a 360px** en ninguna pantalla, y las tablas como tarjeta por fila por debajo de 1024px (**FR-AD-STATE-8**, **FR-AD-SHELL-13**).
+14. **Las dos navegaciones ofrecen los mismos destinos** — no hay secciones que aparezcan o desaparezcan según el tamaño de la pantalla (**FR-AD-SHELL-10**).
+15. **Una credencial de persona se muestra una sola vez** y no vuelve a ser consultable (**FR-AD-TRAB-8**, **FR-AD-USR-5**, **FR-AD-FMT-4**).
+
+---
+
+## 13. Condiciones conocidas de la implementación
+
+Lo que esta línea base tiene de andamio. Cada condición dice qué la causa y qué la retira; ninguna es una decisión de producto, y los requisitos marcados «En la demostración» de cada sección son su cara visible.
+
+**FR-AD-IMP-1** **Sin backend ni persistencia.** La consola funciona contra módulos de dominio simulados en memoria (`src/features/network`, y el de Caja y trabajadores de la Fase 1). Una recarga completa de página restaura los datos precargados, de modo que todo recorrido que dependa de algo creado antes en la misma sesión debe navegar mediante enlaces. Lo que se da de alta —un trabajador, una caja, un usuario— desaparece al reiniciar el servidor de desarrollo.
+
+**FR-AD-IMP-2** **El dominio en memoria es del servidor, y eso tiene una consecuencia en las pruebas.** A diferencia de Worker, cuyos mocks viven en el navegador, el de esta consola vive en el proceso del servidor y lo comparten todas las trabajadoras de Playwright a la vez. Una prueba que escriba deja su efecto hecho **para el resto de la corrida**. Por eso las pruebas de navegación de §7 y §8 recorren y leen, y abren y cancelan los diálogos de las acciones que mutarían la red; lo que se ejercita escribiendo se ejercita en `network-domain.spec.ts`, sin navegador.
+
+**FR-AD-IMP-3** **Dos datos que el dominio no sabe para toda la red, y ninguno se inventa.** El **estado de la jornada** de cada caja (**FR-AD-EQ-5**, **FR-AD-HOME-6**) vive en `caja-data.ts` y lo mutan los flujos de Worker **en el navegador del trabajador**, que este servidor no ve; de ahí **FR-AD-TRAB-17** y el aviso incondicional de **FR-AD-EQ-10**. Y las **solicitudes generadas en el periodo** por cada kiosco (**FR-AD-EQ-12**) las produce el propio kiosco y viven en su navegador. La primera llega con Jornadas; la segunda, con Aprobaciones y Operaciones.
+
+**FR-AD-IMP-4** **El vínculo de los terminales está en dos sitios.** Es lo que describen **FR-AD-EQ-27** y **FR-AD-EQ-28**: la fuente única que **FR-AD-DOM-4** exige ya existe y §3.4 canjea contra ella, pero Worker y el kiosco siguen leyendo su vínculo del `localStorage` de cada máquina. Hasta que los dos terminales y el simulador se recableen, vincular desde la consola no cambia lo que muestra un terminal. Es la condición de esta entrega con más consecuencias para quien pruebe el producto de punta a punta.
+
+**FR-AD-IMP-5** **El contenido público de sede todavía no sale de este dominio.** **FR-AD-DOM-7** exige que el tablero de tasas, los datos de sede y las promociones se sirvan desde aquí como único origen, y `signage-data.ts` sigue teniendo sus constantes fijas. No puede ser de otra manera todavía: los pares y sus tasas se declaran en una sección que no está construida. Mientras siga así, el tablero de una sucursal muestra cifras distintas de las que esa sede cotiza —el defecto que **FR-PANT-IMP-4** ya documenta— y **[A12]** sigue incumplida en la demostración.
+
+**FR-AD-IMP-6** **Los datos precargados no cubren todavía todo lo que FR-AD-DOM-8 pide.** Están los tres operadores con reparto desigual de sedes, la sede recién asignada y sin ninguna caja, las cajas con y sin equipo, los kioscos, los trabajadores y los usuarios administradores con su principal — es decir, todo lo que las secciones construidas necesitan para verse como se verán. Lo que falta son los datos de las secciones que no existen: pares sin rango, promociones en sus tres estados, solicitudes pendientes y el historial de varios días. Se añaden con cada sección, no antes.
+
+**FR-AD-IMP-7** **Revisión visual obligatoria** antes de dar por terminada cualquier pantalla, a **360px, 390px y 1440px** (**FR-AD-STATE-7**), comprobando que ninguna produce desplazamiento horizontal a 360px (**FR-AD-STATE-8**), conforme al procedimiento de `CLAUDE.md`. La parte automatizable está en `tests/admin-responsive.spec.ts`: recorre a los tres anchos todas las pantallas construidas y mide a 360px el alto táctil de la barra inferior y de la franja de alcance (**FR-AD-SHELL-14**) y la forma del diálogo de confirmación (**FR-AD-SHELL-16**). Lo que la suite no juzga —jerarquía, respiro, legibilidad— sigue siendo revisión humana.
+
+---
+
+## 14. No especificado por este documento
+
+Para todo lo siguiente **no existe requisito funcional alguno en este documento y ninguno puede inferirse** — ni de una ruta existente, ni de una pantalla de «en construcción», ni de una entidad del dominio, ni de un campo sin uso.
+
+**Especificado aparte, no aquí.** Las siete secciones de `PuntoCash_Admin_Sede_Alcance_Pendiente_v1.md` —Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Promociones y Reportes— sí tienen requisito funcional, en ese documento. Sus pantallas de marcador de posición no definen ni simulan nada de él.
+
+**La pantalla de Perfil.** `/admin/perfil` existe en la cabecera desde la v2.0 y en el inventario de rutas desde la v4.0, y sigue siendo un marcador de posición sin un solo requisito propio. **Y desde la v5.0 es un hueco, no solo una pendiente:** mientras §8 fue de todos, un administrador corregía su propio nombre o teléfono entrando en ella; con el modelo del administrador principal, quien no lo es **no tiene ningún sitio** donde ver ni cambiar sus propios datos, ni su contraseña salvo pasando por la recuperación como si la hubiera olvidado. Queda nombrado así para que se decida, no para que se descubra.
+
+**El cierre de sesión, la vigencia de la sesión y la sesión concurrente en dos navegadores.** El **acceso** sí está especificado por completo, en §2. Lo que pasa después de abrir sesión —cuánto dura, si caduca, qué ocurre con dos pestañas— no.
+
+**Las notificaciones** fuera de la consola: correo, SMS o push. Las alertas viven dentro, en el panel de atención de Inicio.
+
+**La exportación a archivo** de cualquier cosa **[R11]**. Ni reportes, ni listados, ni auditoría. Es una decisión de producto que el PRD deja abierta, no algo que pueda colarse por un botón de descarga.
+
+**Los sub-roles.** Sobre la operación, todos los usuarios administradores de un operador pueden exactamente lo mismo en todas sus sedes (**FR-AD-USR-4**). La única diferencia es §8, y es **una llave**, no un sistema de permisos: nada en este documento autoriza a construir roles, matrices ni capacidades.
+
+**La edición de los datos maestros de una sede, de sus servicios habilitados y de sus rangos de tasa**, que son de PuntoCash **[A3]**. Esta consola los muestra y dice a quién pedir el cambio.
+
+**Lo económico entre PuntoCash y el mercante** —comisiones, rentas, liquidaciones, deuda— **[A8]**.
+
+**La administración de las Pantallas informativas.** Se asignan a su sede en el propio equipo (**FR-PANT-SEDE-1 a 7**); esta capa solo les provee el registro de sedes. Saber cuántas hay y dónde sería una capacidad nueva por definir.
+
+**La consola de PuntoCash** (`/super-admin`), que tiene su propio documento y no entra en esta entrega. Lo que de ella se nombra aquí —que ve estos mismos equipos y no toca ninguno, que entrega el primer usuario administrador, que puede restablecer el acceso del usuario inicial— se nombra como límite de esta consola, no como especificación de aquella.
+
+**La reasignación del papel de administrador principal por parte de PuntoCash.** Es la salida a la condición conocida de §8.1 —una empresa que se queda sin §8 porque el principal traspasó y quien lo recibió perdió el acceso— y pertenece al FRD de esa otra consola.
+
+La ausencia de implementación significa que la capacidad aún no ha sido definida funcionalmente: debe diseñarse y aprobarse antes de poder especificarse o construirse.
+
+---
+
+## Apéndice A · Terminología
+
+Amplía el Apéndice A de `PuntoCash_Worker_Functional_Requirements_v1.md`, vigente sin cambios. Se usa de forma consistente en este FRD, en el PRD y en el código; los términos de dominio en español son el lenguaje del producto y no se traducen.
+
+| Término | Significado |
 | --- | --- |
-| **A1** Aislamiento por alcance | FR-AD-NAV-2, FR-AD-NAV-3, FR-AD-SCOPE-1, FR-AD-EQ-1, FR-AD-EQ-7, FR-AD-CAJA-5, FR-AD-TRAB-5, FR-AD-SEDE-12, FR-AD-DOM-5 |
-| **A2** Una asignación vigente | FR-AD-SEDE-12 (lectura); la gestión es del Super Admin |
-| **A3** Solo PuntoCash decide qué sedes existen y sus límites | FR-AD-SEDE-2, FR-AD-SEDE-4, FR-AD-SEDE-5, FR-AD-SEDE-6, FR-AD-MON-3, FR-AD-TASA-2, FR-AD-TASA-4, FR-AD-STATE-6 |
-| **A4** El mercante gobierna lo de dentro | FR-AD-CAJA-1 a 14, FR-AD-EQ-3, FR-AD-TRAB-3 a 15, FR-AD-USR-1 a 10, FR-AD-MON-1 a 10, FR-AD-TASA-1 a 17 |
-| **A5** Tasa dentro del rango, sobre monedas propias y servicio habilitado | FR-AD-TASA-2, FR-AD-TASA-5, FR-AD-TASA-7, FR-AD-TASA-8, FR-AD-TASA-11, FR-AD-TASA-12, FR-AD-TASA-15 |
-| **A6** Supervisa y desbloquea, no opera | FR-AD-SEDE-7, FR-AD-JOR-7 a 9, FR-AD-APR-9, FR-AD-APR-10, FR-AD-OPS-5, FR-AD-TRAB-11 |
-| **A7** No altera lo del Worker | FR-AD-CAJA-11, FR-AD-JOR-12, FR-AD-APR-8, FR-AD-APR-9, FR-AD-TRAB-12, FR-AD-OPS-5 |
-| **A8** Sin economía PuntoCash↔mercante | FR-AD-TASA-11, FR-AD-REP-6 |
-| **A9** PuntoCash es la marca visible | FR-AD-SHELL-4, FR-AD-SHELL-5 |
-| **A10** Los equipos los vincula el Admin | FR-AD-EQ-3, FR-AD-EQ-7, FR-AD-EQ-13, FR-AD-EQ-17, FR-AD-EQ-25 |
-| **A11** Un equipo, un puesto | FR-AD-EQ-8, FR-AD-EQ-10, FR-AD-EQ-14, FR-AD-JOR-13 |
-| **A12** Fuente única del contenido de sede | FR-AD-SEDE-5, FR-AD-SEDE-11, FR-AD-MON-2, FR-AD-TASA-6, FR-AD-PROM-6, FR-AD-DOM-7 |
-| **A13** El trabajador es de una sede | FR-AD-TRAB-1, FR-AD-TRAB-4, FR-AD-TRAB-14, FR-AD-SEDE-9, FR-AD-DOM-3 |
-| **A14** PuntoCash observa y actúa solo sobre la sede entera | FR-AD-EQ-3, FR-AD-TRAB-15, FR-AD-TRAB-16, FR-AD-SEDE-13, FR-AD-ACC-6, FR-AD-DOM-6, FR-AD-STATE-6 |
-| **R3** Revalidación al confirmar | FR-AD-EQ-22, FR-AD-JOR-11, FR-AD-APR-11, FR-AD-TASA-8 |
-| **R6** Nada resuelto se reprocesa | FR-AD-EQ-22, FR-AD-EQ-23, FR-AD-CAJA-9, FR-AD-TRAB-13, FR-AD-JOR-11, FR-AD-APR-11 |
-| **R8** Signo y motivo coherentes | FR-AD-APR-6, FR-AD-APR-8 |
-| **R9** Histórico inmutable | FR-AD-CAJA-11, FR-AD-JOR-6, FR-AD-JOR-12, FR-AD-MON-6, FR-AD-OPS-6, FR-AD-TASA-10, FR-AD-TASA-13 |
-| **R10** Sin enums en bruto | FR-AD-OPS-7, FR-AD-PROM-11, FR-AD-STATE-4 |
-| **R11** Sin descarga | FR-AD-REP-7 |
-| **R12** Worker acotado a la caja de su equipo | Intacta; FR-AD-OPS-2 explica por qué esta consola amplía filtros que allí no existen |
-| **R13** Sin segundo factor no hay sesión | FR-AD-ACC-1, FR-AD-ACC-2, FR-AD-TRAB-6, FR-AD-TRAB-11, FR-AD-USR-3 |
+| **Sede** | Una casa de cambio física de la red, siempre propiedad de PuntoCash. Nace sin cajas. |
+| **Operador** / **mercante** | La persona o empresa a la que PuntoCash entrega una o más sedes en administración. Nunca es propietaria. |
+| **Admin de sede** | El rol autenticado con el que un Operador usa `/admin`. |
+| **Usuario administrador** | La cuenta de una persona del mercante en esta consola. |
+| **Administrador principal** | El único usuario de un operador que gobierna §8. El papel se traspasa; a su titular no lo desactiva nadie. |
+| **Usuario inicial** | El primer usuario administrador de un operador, entregado por PuntoCash. Hecho histórico que no cambia, y **distinto** del principal, que se mueve. Al nacer una empresa coinciden. |
+| **Alcance** | El conjunto de sedes que una sesión puede ver. Se deriva de la sesión y nunca lo elige el usuario; el selector solo filtra dentro de él. |
+| **Asignación** | El vínculo histórico Sede↔Operador durante un periodo, con inicio, fin y motivo. |
+| **Caja** | Un puesto de mostrador de una sede, creado y retirado por su mercante, y objeto al que se vincula un equipo. |
+| **Equipo** | Un dispositivo declarado por un administrador: el equipo de una caja (`CAJ-…`) o un kiosco de autoservicio (`KIO-…`). Sin vincular no es nada. |
+| **Reto de vinculación** | El QR y el código de seis cifras que un equipo sin vincular muestra; válidos diez minutos, renovados solos, de un solo uso. |
+| **Vincular** / **desvincular** | Atar un equipo a su objeto —una caja, o una sede— y deshacerlo. Desvincular corta la sesión del dispositivo al instante y **nunca cierra una Jornada**. |
+| **Trabajador** | El empleado del mostrador. Pertenece a una **sede**, no a una caja. |
+| **Credencial inicial** | La contraseña que el Admin entrega al dar de alta a un trabajador o a un usuario administrador. Se muestra una sola vez y sirve indefinidamente hasta que su dueño la cambia. **Regenerarla es un restablecimiento**, no una reemisión. |
+| **Asistencia de acceso** | La pantalla con la que un Admin corrige el correo de verificación de un trabajador que no recibe su código. No entrega, no muestra y no genera ningún código. |
+| **Jornada** | La sesión de trabajo de una Caja, abierta con fondos declarados y cerrada por conciliación. La abre y la cierra el Worker; esta consola solo la mira — y, cuando Jornadas exista, podrá forzar su cierre. |
+| **Solicitud de aprobación** | Un ajuste o descuadre que espera el visto bueno del Admin de la sede. |
+| **Contenido público de sede** | Tasas exhibidas, monedas operadas, datos de contacto y promociones de una sucursal; origen único para el kiosco y la Pantalla. |
+| **Evento de auditoría** | Registro inmutable de un acto de gobierno: quién, qué, cuándo, sobre qué y por qué. |
+| **Suspender** | Acción de PuntoCash sobre un operador o una sede que corta el acceso de todos sus usuarios y trabajadores a la vez. Es su único recurso ante un problema dentro de una sede **[A14]**. |
+
+---
+
+## Apéndice B · Mapa de reglas a requisitos
+
+Solo requisitos que existen en este documento. Las reglas que además se implementan en secciones no construidas lo indican, y sus requisitos están en `PuntoCash_Admin_Sede_Alcance_Pendiente_v1.md`.
+
+| Regla | Requisitos de este documento que la implementan | También en el alcance pendiente |
+| --- | --- | --- |
+| **A1** Aislamiento por alcance | FR-AD-NAV-2, FR-AD-NAV-3, FR-AD-SCOPE-1 a 6, FR-AD-EQ-1, FR-AD-EQ-7, FR-AD-CAJA-5, FR-AD-TRAB-5, FR-AD-SEDE-12, FR-AD-DOM-5 | Todas sus secciones |
+| **A2** Una asignación vigente | FR-AD-SEDE-12 (lectura); la gestión es del Super Admin | — |
+| **A3** Solo PuntoCash decide qué sedes existen y sus límites | FR-AD-SEDE-2, FR-AD-SEDE-4, FR-AD-SEDE-5, FR-AD-SEDE-6, FR-AD-STATE-6 | FR-AD-MON-3, FR-AD-TASA-2, FR-AD-TASA-4 |
+| **A4** El mercante gobierna lo de dentro | FR-AD-CAJA-1 a 14, FR-AD-EQ-3, FR-AD-TRAB-3 a 17, FR-AD-USR-1 a 14 | FR-AD-MON-1 a 10, FR-AD-TASA-1 a 17 |
+| **A5** Tasa dentro del rango, sobre monedas propias y servicio habilitado | — (su pantalla no está construida) | FR-AD-TASA-2, 5, 7, 8, 11, 12, 15 |
+| **A6** Supervisa y desbloquea, no opera | FR-AD-SEDE-7, FR-AD-TRAB-11 | FR-AD-JOR-7 a 9, FR-AD-APR-9, FR-AD-APR-10, FR-AD-OPS-5 |
+| **A7** No altera lo del Worker | FR-AD-CAJA-11, FR-AD-TRAB-12 | FR-AD-JOR-12, FR-AD-APR-8, FR-AD-APR-9, FR-AD-OPS-5 |
+| **A8** Sin economía PuntoCash↔mercante | §14 (no especificado) | FR-AD-TASA-17, FR-AD-REP-6 |
+| **A9** PuntoCash es la marca visible | FR-AD-SHELL-4, FR-AD-SHELL-5 | — |
+| **A10** Los equipos los vincula el Admin | FR-AD-EQ-3, FR-AD-EQ-7, FR-AD-EQ-13, FR-AD-EQ-17, FR-AD-EQ-25, FR-AD-FMT-4 | — |
+| **A11** Un equipo, un puesto | FR-AD-EQ-8, FR-AD-EQ-10, FR-AD-EQ-14 | FR-AD-JOR-13 |
+| **A12** Fuente única del contenido de sede | FR-AD-SEDE-5, FR-AD-SEDE-11, FR-AD-DOM-7, FR-AD-IMP-5 | FR-AD-MON-2, FR-AD-TASA-6, FR-AD-PROM-6 |
+| **A13** El trabajador es de una sede | FR-AD-TRAB-1, FR-AD-TRAB-4, FR-AD-TRAB-14, FR-AD-SEDE-9, FR-AD-DOM-3 | — |
+| **A14** PuntoCash observa y actúa solo sobre la sede entera | FR-AD-EQ-3, FR-AD-TRAB-15, FR-AD-TRAB-16, FR-AD-SEDE-13, FR-AD-ACC-6, FR-AD-DOM-6, FR-AD-STATE-6 | — |
+| **R3** Revalidación al confirmar | FR-AD-EQ-22 | FR-AD-JOR-11, FR-AD-APR-11, FR-AD-TASA-11 |
+| **R6** Nada resuelto se reprocesa | FR-AD-EQ-22, FR-AD-EQ-23, FR-AD-CAJA-9, FR-AD-TRAB-13 | FR-AD-JOR-11, FR-AD-APR-11 |
+| **R8** Signo y motivo coherentes | — | FR-AD-APR-6, FR-AD-APR-8 |
+| **R9** Histórico inmutable | FR-AD-CAJA-11 | FR-AD-JOR-6, FR-AD-JOR-12, FR-AD-MON-6, FR-AD-OPS-6, FR-AD-TASA-10, FR-AD-TASA-13 |
+| **R10** Sin enums en bruto | FR-AD-STATE-4 | FR-AD-OPS-7, FR-AD-PROM-11 |
+| **R11** Sin descarga | §14 (no especificado) | FR-AD-REP-7 |
+| **R12** Worker acotado a la caja de su equipo | Intacta; esta consola es su continuación un nivel arriba **[A1]** | FR-AD-OPS-2 explica por qué amplía filtros que allí no existen |
+| **R13** Sin segundo factor no hay sesión | FR-AD-ACC-1, FR-AD-ACC-2, FR-AD-ACC-8, FR-AD-TRAB-6, FR-AD-TRAB-8, FR-AD-TRAB-11, FR-AD-USR-3 | — |

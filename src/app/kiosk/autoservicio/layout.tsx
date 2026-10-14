@@ -1,7 +1,10 @@
 import * as React from "react";
+import { cookies } from "next/headers";
 
 import { AppHeader, AppMain, AppShell } from "@/components/shell/app-shell";
 import { Logo } from "@/components/brand/logo";
+import { findBranchById } from "@/features/branches/branches";
+import { DEVICE_COOKIE_NAMES, parseDeviceCookie } from "@/features/devices/device-cookie";
 import { KioskDeviceGate, KioskHeaderActions } from "./kiosk-device-gate";
 
 /**
@@ -15,16 +18,28 @@ import { KioskDeviceGate, KioskHeaderActions } from "./kiosk-device-gate";
  * affordance, matching how the Worker flows keep exactly one escape hatch per
  * screen. Until the device is linked, `KioskDeviceGate` replaces every screen
  * with the pairing screen and the header shows only the brand.
+ *
+ * El servidor lee la cookie espejo del vínculo y le dice al gate qué debe
+ * pintar **antes de hidratar**, igual que hace `worker/layout.tsx`. Eso es lo
+ * que evita el fotograma en blanco en un terminal de sala que ya está
+ * vinculado.
  */
-export default function KioskAutoservicioLayout({ children }: { children: React.ReactNode }) {
+export default async function KioskAutoservicioLayout({ children }: { children: React.ReactNode }) {
+  const store = await cookies();
+  const device = parseDeviceCookie(store.get(DEVICE_COOKIE_NAMES.kiosco)?.value);
+  const branch = findBranchById(device?.branchId);
+
   return (
     <AppShell
       header={
-        <AppHeader brand={<Logo variant="onDark" size="md" showDescriptor />} actions={<KioskHeaderActions />} />
+        <AppHeader
+          brand={<Logo variant="onDark" size="md" showDescriptor />}
+          actions={<KioskHeaderActions serverBranchName={branch?.name} />}
+        />
       }
     >
       <AppMain>
-        <KioskDeviceGate>{children}</KioskDeviceGate>
+        <KioskDeviceGate serverLinked={device !== null}>{children}</KioskDeviceGate>
       </AppMain>
     </AppShell>
   );

@@ -19,10 +19,14 @@
  *   otrasede@puntocash.com    → other-branch (a Worker of another sede)
  *   anything else             → challenge when the password is "puntocash",
  *                               invalid-credentials otherwise
+ *
+ * An account that has gone through `password-recovery.ts` accepts the password
+ * its owner set there instead of the demo one.
  */
 
 import { currentLinkedRegister } from "@/features/worker/register-device";
 import { openChallenge, type TwoFactorChallengeView } from "./two-factor";
+import { contrasenaFijadaDe } from "./password-recovery";
 
 export interface Credentials {
   identifier: string;
@@ -59,7 +63,14 @@ export async function authenticate({ identifier, password }: Credentials): Promi
   if (account === "bloqueado@puntocash.com") return { status: "account-blocked" };
   if (account === "error@puntocash.com") return { status: "network-error" };
 
-  if (password === DEMO_PASSWORD) {
+  /* Una cuenta que pasó por la recuperación acepta **la contraseña que su
+     dueño fijó y ya no la de demostración**, que es lo que hará el producto.
+     Sin esto, cambiarla sería un trámite sin efecto y el recorrido se
+     quedaría a medias (`password-recovery.ts`). */
+  const fijada = contrasenaFijadaDe(account);
+  const aceptada = fijada ?? DEMO_PASSWORD;
+
+  if (password === aceptada) {
     // The Worker's sede is checked against the caja's, which the device
     // session knows (`register-device.ts`). In the demo every account belongs
     // to whatever sede this caja is linked to, except the one below.

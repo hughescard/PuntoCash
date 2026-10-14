@@ -15,6 +15,7 @@ import {
 
 import { Alert, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/components/ui";
 import { CAJA_BALANCES, hasOpenJornada, isCurrencyEnabled } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 import { getCurrentWorker } from "@/features/worker/session";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import { clearPendingWorkerHandoff, readPendingWorkerHandoff } from "@/features/kiosk/self-service-request";
@@ -46,9 +47,9 @@ export function CobrarGiroFlow(): React.JSX.Element {
   const router = useRouter();
   const worker = getCurrentWorker();
 
-  // Captured once, on entry — a jornada closed elsewhere later must not
-  // retroactively lock a result screen this flow already produced.
-  const [blocked] = React.useState(() => !hasOpenJornada());
+  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
+  // cambia (`features/caja/use-caja.ts`).
+  useCaja();
 
   // Code handed over by "Buscar solicitud" (kiosk request), if any.
   const [handoffCode] = React.useState(() => readPendingWorkerHandoff("giros-cobrar")?.data.code ?? null);
@@ -61,6 +62,17 @@ export function CobrarGiroFlow(): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmError, setConfirmError] = React.useState<string | undefined>();
   const [completed, setCompleted] = React.useState<GiroPayoutCompleted | null>(null);
+
+  /*
+   * Sin jornada abierta esta pantalla no opera — salvo que el flujo ya haya
+   * terminado: que la jornada se cierre desde otra pestaña no puede tapar
+   * retroactivamente el resultado que el trabajador está mirando.
+   *
+   * Se lee en cada render, no se captura al entrar: el estado guardado en el
+   * equipo se repone justo después de hidratar, y una captura hecha antes de
+   * eso diría que no hay jornada para siempre.
+   */
+  const blocked = !hasOpenJornada() && completed === null;
 
   const availableCash = transfer
     ? CAJA_BALANCES.find((balance) => balance.currency === transfer.payoutCurrency)?.amount

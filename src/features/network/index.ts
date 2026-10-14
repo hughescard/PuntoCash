@@ -12,7 +12,22 @@
  *   · **El alcance se deriva de la sesión, no se elige** (regla A1). Toda
  *     consulta recibe un `Scope`, y el alcance global es un valor de ese
  *     parámetro y no su ausencia, de modo que una llamada sin alcance es un
- *     error de compilación (FR-AD-DOM-5, FR-SA-DOM-2).
+ *     error de compilación (FR-AD-DOM-5, FR-SA-DOM-2). Lo cumplen la
+ *     resolución del alcance (`sedesEnAlcance`), **todas las escrituras** y
+ *     —desde `scoped-reads.ts`— también las **lecturas por sede**: una consola
+ *     no pide `registersOf`, pide `redEnAlcance(scope)` y lee de ahí, y fuera
+ *     de su alcance toda respuesta es la de algo que no existe
+ *     (FR-AD-NAV-2, FR-AD-NAV-3).
+ *
+ *     Las lecturas en bruto siguen exportadas, y no es un olvido: Worker y
+ *     Kiosco leen sedes y cajas con toda legitimidad y **no tienen alcance de
+ *     administración**, tienen una sesión de dispositivo. Lo que impide que
+ *     una pantalla de `/admin` las use es una regla de `eslint.config.mjs`,
+ *     no la buena memoria de quien la escriba.
+ *
+ *     Quedan dos lecturas sin vista porque todavía no las lee ninguna
+ *     pantalla: `historialDeSede` y `listarEventos`. Llegan con la sección que
+ *     las muestre, y entran por `redEnAlcance` cuando lleguen.
  *   · **PuntoCash observa dentro de la sede y actúa solo sobre la sede
  *     entera** (regla A14). Las escrituras sobre cajas, trabajadores y
  *     usuarios exigen alcance de operador y rechazan el global, así que la
@@ -29,8 +44,10 @@
  */
 
 export * from "./scope";
+export * from "./scoped-reads";
 export * from "./sedes";
 export * from "./registers";
+export * from "./devices";
 export * from "./operators";
 export * from "./assignments";
 export * from "./workers";

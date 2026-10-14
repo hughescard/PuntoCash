@@ -1,8 +1,20 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { esperarFondeoVivo, rellenar } from "./worker-helpers";
+import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
+
+/*
+ * La jornada se siembra con los mismos fondos que abría el fondeo que había
+ * aquí. Los dos grupos que tratan de abrir o de la caja cerrada se salen de la
+ * siembra; el cierre perfecto necesita otros fondos y tiene su propia.
+ */
+test.use({ storageState: cajaConJornadaAbierta({ CUP: 200_000, USD: 4_250, EUR: 1_185 }) });
+
 async function openJornada(page: Page, funds: Record<string, string> = { CUP: "200000", USD: "4250", EUR: "1185" }) {
   await page.goto("/worker/caja/fondeo-inicial");
-  for (const [currency, value] of Object.entries(funds)) await page.getByLabel(`Fondo inicial en ${currency}`).fill(value);
+  await esperarFondeoVivo(page);
+  for (const [currency, value] of Object.entries(funds))
+    await rellenar(page.getByLabel(`Fondo inicial en ${currency}`), value);
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
   await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({ timeout: 5000 });
@@ -10,6 +22,7 @@ async function openJornada(page: Page, funds: Record<string, string> = { CUP: "2
 }
 
 async function goToCierre(page: Page) {
+  await page.goto("/worker/caja");
   await page.getByRole("link", { name: /Arqueo y cierre/ }).click();
   await expect(page.getByRole("heading", { name: "Arqueo y cierre de caja" })).toBeVisible();
 }
@@ -25,6 +38,14 @@ async function chooseReason(page: Page, currency: string, reason: string, observ
 }
 
 test.describe("arqueo y cierre — availability", () => {
+  /*
+   * Necesita la caja CERRADA, así que se sale de la siembra del archivo. Y no
+   * solo por afirmar lo contrario de lo que habría: el estado sembrado se
+   * repone al hidratar, de modo que la pantalla bloqueada que pintó el
+   * servidor se sustituye por la de trabajo a media prueba.
+   */
+  test.use({ storageState: EQUIPO_SIN_JORNADA });
+
   test("is unavailable without an open jornada and direct access is blocked", async ({ page }) => {
     await page.goto("/worker/caja");
     const tile = page.getByRole("button", { name: /Arqueo y cierre/ });
@@ -43,7 +64,6 @@ test.describe("arqueo y cierre — availability", () => {
 
 test.describe("arqueo y cierre — form and review", () => {
   test("renders every enabled currency, including zero-balance GBP, with SVG flags and read-only expected balances", async ({ page }) => {
-    await openJornada(page);
     await goToCierre(page);
     for (const currency of ["CUP", "USD", "EUR", "GBP"]) await expect(page.getByLabel(`Efectivo contado en ${currency}`)).toBeVisible();
     await expect(page.locator("svg[data-currency-flag]")).toHaveCount(4);
@@ -53,7 +73,6 @@ test.describe("arqueo y cierre — form and review", () => {
   });
 
   test("calculates states, offers only compatible reasons, and requires observations for Otro", async ({ page }) => {
-    await openJornada(page);
     await goToCierre(page);
     await fillCount(page, "USD", "4240");
     await expect(page.getByText("Faltante", { exact: true })).toBeVisible();
@@ -73,7 +92,6 @@ test.describe("arqueo y cierre — form and review", () => {
   });
 
   test("review preserves every audit row and warns that confirmation closes the jornada", async ({ page }) => {
-    await openJornada(page);
     await goToCierre(page);
     await fillCount(page, "CUP", "200000");
     await fillCount(page, "USD", "4240");
@@ -92,7 +110,6 @@ test.describe("arqueo y cierre — form and review", () => {
 
 test.describe("arqueo y cierre — confirmation", () => {
   test("creates only required Ajuste de cierre movements, closes the jornada, and exposes the internal detail", async ({ page }) => {
-    await openJornada(page);
     await goToCierre(page);
     await fillCount(page, "CUP", "200000");
     await fillCount(page, "USD", "4240");
@@ -102,8 +119,16 @@ test.describe("arqueo y cierre — confirmation", () => {
     await page.getByRole("button", { name: "Revisar cierre de caja" }).click();
     await page.getByRole("button", { name: "Confirmar cierre" }).click();
     await expect(page.getByRole("heading", { name: "Caja cerrada correctamente" })).toBeVisible({ timeout: 4000 });
-    await expect(page.getByText("4", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("1", { exact: true }).last()).toBeVisible();
+    /* Antes eran `getByText("4").first()` y `getByText("1").last()`, que no
+       afirmaban nada comprobable: cualquier elemento con ese texto los
+       satisfacía, y `.last()` ataba la prueba al orden del documento. Cada
+       cifra se lee ahora de su propia métrica. */
+    await expect(
+      page.getByText("Monedas arqueadas", { exact: true }).locator("xpath=following-sibling::p[1]"),
+    ).toHaveText("4");
+    await expect(
+      page.getByText("Con diferencias", { exact: true }).locator("xpath=following-sibling::p[1]"),
+    ).toHaveText("1");
     await page.getByRole("link", { name: "Ir a Caja" }).click();
     const movements = page.getByRole("table").nth(1);
     const row = movements.locator("tbody tr").filter({ hasText: "Ajuste de cierre" }).filter({ hasText: "USD" });
@@ -114,8 +139,14 @@ test.describe("arqueo y cierre — confirmation", () => {
     await expect(page.getByText("Conteo repetido.").filter({ visible: true }).first()).toBeVisible();
   });
 
+});
+
+test.describe("arqueo y cierre — cierre perfecto", () => {
+  /* Diez CUP y el resto en cero: un arqueo sin diferencia en ninguna moneda
+     se cuenta más corto que con los fondos del resto del archivo. */
+  test.use({ storageState: cajaConJornadaAbierta({ CUP: 10 }) });
+
   test("a perfectly balanced closing creates no movement and re-enables initial funding", async ({ page }) => {
-    await openJornada(page, { CUP: "10" });
     await goToCierre(page);
     await fillCount(page, "CUP", "10");
     await fillCount(page, "USD", "0");

@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
+
 /**
  * Worker Nueva operación — Giros — Cobrar giro
  * (/worker/nueva-operacion/giros/cobrar), plus the /giros operation selector
@@ -8,27 +10,20 @@ import { test, expect, type Page } from "@playwright/test";
  * Código → Revisar giro → Confirmar entrega → Resultado. "Giro no encontrado"
  * is an error state of the código screen, not a screen of its own.
  *
- * `abrirJornada` and the payout mutate a client-side, in-memory module — a
- * hard navigation (`page.goto`) re-fetches a fresh server render and loses
- * that state, so every test that needs an open jornada or a just-created
- * operation reaches it by clicking links, never by `page.goto` afterwards.
+ * La jornada **se siembra**, no se abre por la interfaz: estas cuarenta
+ * pruebas necesitan la caja abierta y ninguna trata de abrirla. Cincuenta mil
+ * CUP y el resto de monedas en cero, que es lo que dejaba el fondeo que había
+ * aquí. Quien prueba la apertura es `worker-caja-fondeo-inicial`.
+ *
+ * La operación de pago sí muta un módulo en memoria del cliente que esta
+ * sesión no persiste, así que lo que dependa de un pago recién hecho se navega
+ * **por enlace**, nunca con un `page.goto` posterior.
  */
+
+test.use({ storageState: cajaConJornadaAbierta({ CUP: 50_000 }) });
 
 function onScreen(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true });
-}
-
-async function openJornada(page: Page, fondos: Record<string, string> = { CUP: "50000" }) {
-  await page.goto("/worker/caja/fondeo-inicial");
-  for (const [currency, value] of Object.entries(fondos)) {
-    await page.getByLabel(`Fondo inicial en ${currency}`).fill(value);
-  }
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-  await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
-    timeout: 5000,
-  });
-  await page.getByRole("link", { name: "Ir a Caja" }).click();
 }
 
 async function goToSelector(page: Page) {
@@ -37,8 +32,8 @@ async function goToSelector(page: Page) {
   await expect(page.getByRole("heading", { name: "Giros" })).toBeVisible();
 }
 
-async function goToCobrar(page: Page, fondos?: Record<string, string>) {
-  await openJornada(page, fondos);
+async function goToCobrar(page: Page) {
+  await page.goto("/worker/caja");
   await goToSelector(page);
   await page.getByRole("link", { name: /Cobrar giro/ }).click();
   await expect(page.getByRole("heading", { name: "Cobrar giro" })).toBeVisible();
@@ -138,6 +133,15 @@ test.describe("Giros — operation selector", () => {
  * ---------------------------------------------------------------------- */
 
 test.describe("Cobrar giro — jornada gate", () => {
+  /*
+   * La única del archivo que necesita la caja CERRADA, así que se sale de la
+   * siembra. Sin esto no solo afirmaría lo contrario de lo que hay: el estado
+   * sembrado se repone al hidratar, de modo que la pantalla bloqueada que el
+   * servidor pintó se sustituye por el formulario a media prueba y lo que falla
+   * es un `click` sobre un elemento que se acaba de desprender del DOM.
+   */
+  test.use({ storageState: EQUIPO_SIN_JORNADA });
+
   test("a closed Caja blocks the flow before any lookup is possible", async ({ page }) => {
     await page.goto("/worker/nueva-operacion/giros/cobrar");
     await expect(onScreen(page, "Caja cerrada")).toBeVisible();
@@ -613,7 +617,7 @@ test.describe("Cobrar giro — payout completed", () => {
 
 test.describe("Enviar giro then Cobrar giro", () => {
   test("a giro registered in this session is payable by its own code", async ({ page }) => {
-    await openJornada(page, { CUP: "50000" });
+    await page.goto("/worker/caja");
     await goToSelector(page);
     await page.getByRole("link", { name: /Enviar giro/ }).click();
 

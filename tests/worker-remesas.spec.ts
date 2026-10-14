@@ -1,30 +1,39 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function openJornada(page: Page) {
-  await page.goto("/worker/caja/fondeo-inicial");
-  await page.getByLabel("Fondo inicial en CUP").fill("1000");
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-  await page.getByRole("link", { name: "Ir a Caja" }).click();
+import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
+
+/*
+ * La jornada se siembra con 1.000 CUP, que es lo que abría el fondeo que había
+ * aquí. La prueba de la caja cerrada vive ahora en su propio grupo, con la
+ * línea de salida sin jornada.
+ */
+test.use({ storageState: cajaConJornadaAbierta({ CUP: 1_000 }) });
+
+async function entrarARemesas(page: Page) {
+  await page.goto("/worker/caja");
+  await page.getByRole("link", { name: "Nueva operación" }).click();
+  await page.getByRole("link", { name: /Remesas/ }).click();
 }
 
 async function searchReadyRemittance(page: Page) {
-  await page.getByRole("link", { name: "Nueva operación" }).click();
-  await page.getByRole("link", { name: /Remesas/ }).click();
+  await entrarARemesas(page);
   await page.getByLabel("Código de remesa").fill("RM-7X82-9KLM");
   await page.getByRole("button", { name: "Buscar remesa" }).click();
   await expect(page.getByRole("heading", { name: "Revisar remesa" })).toBeVisible();
 }
 
-test.describe("Remesas", () => {
+test.describe("Remesas — caja cerrada", () => {
+  test.use({ storageState: EQUIPO_SIN_JORNADA });
+
   test("is code-only and blocks a closed Caja", async ({ page }) => {
     await page.goto("/worker/nueva-operacion/remesas");
     await expect(page.getByRole("heading", { name: "Caja cerrada" })).toBeVisible();
     await expect(page.getByLabel("Código de remesa")).toHaveCount(0);
   });
+});
 
+test.describe("Remesas", () => {
   test("finds only the exact READY code and preserves beneficiary review data", async ({ page }) => {
-    await openJornada(page);
     await searchReadyRemittance(page);
     await expect(page.getByText("María Pérez García").first()).toBeVisible();
     await expect(page.getByText("85010112345")).toBeVisible();
@@ -34,9 +43,7 @@ test.describe("Remesas", () => {
   });
 
   test("rejects a reference-only match without leaking its data", async ({ page }) => {
-    await openJornada(page);
-    await page.getByRole("link", { name: "Nueva operación" }).click();
-    await page.getByRole("link", { name: /Remesas/ }).click();
+    await entrarARemesas(page);
     await page.getByLabel("Código de remesa").fill("REF-REM-500");
     await page.getByRole("button", { name: "Buscar remesa" }).click();
     await expect(page.getByText("Remesa no encontrada")).toBeVisible();
@@ -44,7 +51,6 @@ test.describe("Remesas", () => {
   });
 
   test("completes once, creates a Remesa operation and cash-out", async ({ page }) => {
-    await openJornada(page);
     await searchReadyRemittance(page);
     await page.getByRole("button", { name: "Continuar a confirmar" }).click();
     await page.getByRole("button", { name: "Confirmar entrega" }).click();

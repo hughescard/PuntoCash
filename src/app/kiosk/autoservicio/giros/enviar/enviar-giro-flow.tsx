@@ -11,6 +11,7 @@ import { KioskClientForm } from "@/components/patterns/kiosk-client-form";
 import { KioskRequestTicket, TicketRow } from "@/components/patterns/kiosk-request-ticket";
 import { formatMoney, parseAmountInput } from "@/lib/format";
 import { kioskClientFullName, registerSelfServiceRequest } from "@/features/kiosk/self-service-request";
+import { useHydrated } from "@/lib/use-hydrated";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 import { FLOW_STEPS, INITIAL_STATE, flowReducer, hasMeaningfulData, stepIndex } from "./flow-state";
 import { StepBeneficiario } from "./step-beneficiario";
@@ -24,6 +25,7 @@ const SUBMIT_MS = 700;
 const GIROS_HOME = "/kiosk/autoservicio/giros";
 
 export function EnviarGiroAutoservicioFlow(): React.JSX.Element {
+  const hydrated = useHydrated();
   const router = useRouter();
   const [state, dispatch] = React.useReducer(flowReducer, INITIAL_STATE);
   const [cancelOpen, setCancelOpen] = React.useState(false);
@@ -175,8 +177,13 @@ export function EnviarGiroAutoservicioFlow(): React.JSX.Element {
             <span aria-hidden="true" />
           )}
 
+          {/* «Remitente» es el primer paso, así que este submit sí está en el
+              primer pintado: queda cerrado hasta hidratar para que un toque
+              temprano no haga un GET nativo que borre lo escrito. Los de los
+              pasos siguientes no existen hasta después de hidratar, así que no
+              necesitan la guarda. */}
           {state.step === "remitente" ? (
-            <Button type="submit" form="giro-remitente-form">
+            <Button type="submit" form="giro-remitente-form" disabled={!hydrated}>
               Continuar
               <ArrowRight aria-hidden="true" />
             </Button>

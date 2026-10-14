@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import {
+  Alert,
   Card,
   CardContent,
   CardHeader,
@@ -52,7 +53,33 @@ function CurrencyOptions() {
   );
 }
 
+function tituloSinTasa(monedas: readonly string[]): string {
+  return monedas.length === 1
+    ? `${monedas[0]} no se puede cambiar en este servicio`
+    : "Hay monedas de tu caja que no se pueden cambiar";
+}
+
+/** "CAD", "CAD y JPY", "CAD, JPY y CHF" — en español, no con comas sueltas. */
+function listar(monedas: readonly string[]): string {
+  if (monedas.length <= 1) return monedas[0] ?? "";
+  return `${monedas.slice(0, -1).join(", ")} y ${monedas[monedas.length - 1]}`;
+}
+
 export interface StepCambioProps {
+  /**
+   * Monedas habilitadas en la caja que este servicio **no** puede cambiar,
+   * porque PuntoCash no tiene definida una tasa para ellas.
+   *
+   * No es un estado raro: la lista de monedas de una sede es «lo que un
+   * trabajador puede tener en su caja» y **no depende** del servicio de Cambio
+   * de moneda (Admin FRD **FR-AD-MON-2**, **FR-AD-MON-5**), porque una remesa y
+   * un giro también se pagan en una moneda. Los **pares** con tasa son otro
+   * objeto, de §13, y solo existen donde PuntoCash tiene un rango.
+   *
+   * Lo que no vale es omitirlas del selector sin decir nada: quien tiene saldo
+   * en CAD y no lo encuentra aquí no puede saber si es un fallo o una regla.
+   */
+  monedasSinTasa: readonly string[];
   sourceCurrency: string;
   destinationCurrency: string;
   amountInput: string;
@@ -72,6 +99,7 @@ export function StepCambio({
   quote,
   cash,
   amountError,
+  monedasSinTasa,
   onSourceCurrencyChange,
   onDestinationCurrencyChange,
   onAmountChange,
@@ -85,6 +113,16 @@ export function StepCambio({
 
   return (
     <div className="flex flex-col gap-6">
+      {monedasSinTasa.length > 0 ? (
+        <Alert variant="info" title={tituloSinTasa(monedasSinTasa)}>
+          PuntoCash no tiene una tasa definida para {listar(monedasSinTasa)}, así que no{" "}
+          {monedasSinTasa.length === 1 ? "aparece" : "aparecen"} en estos selectores. Puedes seguir
+          usándol{monedasSinTasa.length === 1 ? "a" : "as"} en remesas y giros; para cambiarl
+          {monedasSinTasa.length === 1 ? "a" : "as"}, el administrador de tu sede tiene que definir
+          el par en su panel.
+        </Alert>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card>
           <CardContent className="pt-6">
