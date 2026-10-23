@@ -72,7 +72,11 @@ test("no se ve ni un equipo de otra empresa", async ({ page }) => {
 test("el diálogo de desvincular dice lo que pasa, lo que no pasa, y la alternativa", async ({
   page,
 }) => {
-  const fila = page.getByRole("row").filter({ hasText: "CAJ-0001-0003" });
+  /* Una caja con equipo y con su jornada abierta: el aviso de FR-AD-EQ-10 solo
+     aparece entonces. Antes de que abra ninguna caja del día no hay ninguna. */
+  const fila = page.getByRole("row").filter({ hasText: "Abierta ·" }).filter({ has: page.getByRole("button", { name: "Desvincular" }) }).first();
+  test.skip((await fila.count()) === 0, "ninguna caja con equipo tiene jornada abierta a esta hora");
+  const equipo = (await fila.locator(".pc-numeric").first().textContent())!.trim();
   await fila.getByRole("button", { name: "Desvincular" }).click();
 
   const dialogo = page.getByRole("dialog");
@@ -82,22 +86,25 @@ test("el diálogo de desvincular dice lo que pasa, lo que no pasa, y la alternat
   await expect(dialogo).toContainText("Volverá a su pantalla de vinculación");
   await expect(dialogo).toContainText("su sesión termina");
 
-  /* **FR-AD-EQ-10**, que es la razón de que esta acción se permita: no cierra
-     la jornada, y se dice destacado. */
+  /* **FR-AD-EQ-10**: esta caja tiene hoy una jornada abierta, así que se dice
+     destacado que desvincular no la cierra. */
   await expect(
-    dialogo.getByText("Desvincular no cierra la jornada"),
+    dialogo.getByText(/tiene una jornada abierta$/),
     "el aviso de FR-AD-EQ-10 no está",
   ).toBeVisible();
-  await expect(dialogo).toContainText("hasta su arqueo y cierre");
+  await expect(dialogo).toContainText("hasta que se haga su cierre");
 
-  // **FR-AD-EQ-11**: la alternativa a mano, sin ejecutarla por él.
-  await expect(dialogo.getByRole("link", { name: "Jornadas" })).toBeVisible();
+  // **FR-AD-EQ-11**: la alternativa a mano, a esa jornada, sin ejecutarla por él.
+  await expect(dialogo.getByRole("link", { name: "forzar el cierre de esa jornada" })).toHaveAttribute(
+    "href",
+    /^\/admin\/jornadas\/J-/,
+  );
 
   await dialogo.getByRole("button", { name: "Cancelar" }).click();
   await expect(dialogo).toBeHidden();
 
   // Nada cambió: el equipo sigue siendo el de esa caja.
-  await expect(page.getByRole("row").filter({ hasText: "CAJ-0001-0003" })).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: equipo })).toBeVisible();
 });
 
 test("una caja sin equipo no ofrece desvincular: ofrece vincular", async ({ page }) => {
@@ -174,7 +181,7 @@ test("vincular ofrece las dos vías y no pide el objeto hasta saber qué equipo 
 
   /* El código se lee de la nota de demostración, que es de donde lo leería
      quien recorre la demostración; en el producto sale de la pantalla del
-     propio equipo (**FR-AD-EQ-26**). Leerlo de ahí, y no de `devices.ts`,
+     propio equipo (nota de entrega, §8.3). Leerlo de ahí, y no de `devices.ts`,
      mantiene esta prueba en lo que ve el administrador. */
   const equipoCaja = page.getByRole("listitem").filter({ hasText: "Equipo de caja" });
   const codigo = (await equipoCaja.innerText()).match(/(\d{3})\s(\d{3})/);

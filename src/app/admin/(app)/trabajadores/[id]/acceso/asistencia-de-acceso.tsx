@@ -97,7 +97,7 @@ function CambiarCorreo({
   return (
     <Card>
       <CardContent className="pt-6">
-        <form action={accion} className="flex flex-col gap-5">
+        <form action={accion} className="flex flex-col gap-5" noValidate>
           <input type="hidden" name="trabajador" value={trabajador.id} />
 
           {estado?.ok ? (

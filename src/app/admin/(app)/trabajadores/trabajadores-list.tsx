@@ -9,6 +9,8 @@ import { Badge, Field, fieldAria, Input, type FieldSpec } from "@/components/ui"
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import type { WorkerStatus } from "@/features/network/workers";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
+import { cn } from "@/lib/utils";
 
 /**
  * El listado de trabajadores con su búsqueda y sus filtros —
@@ -41,6 +43,8 @@ export interface TrabajadorRow {
   status: WorkerStatus;
   /** Ya formateada por el servidor: formatearla aquí desajusta la hidratación. */
   alta: string;
+  /** Su última jornada, ya formateada: «Abierta ahora» si la tiene abierta. `null` si nunca abrió. */
+  ultimaJornada: { id: string; texto: string; abierta: boolean } | null;
 }
 
 const BUSQUEDA: FieldSpec = {
@@ -70,14 +74,18 @@ const SELECT_CLASS =
 export function TrabajadoresList({
   rows,
   sedes,
+  inicial = {},
 }: {
+  /** Los filtros que llegan en la dirección: desde la ficha de una sede llega su sede. */
+  inicial?: Record<string, string | undefined>;
   rows: readonly TrabajadorRow[];
   sedes: readonly { id: string; name: string }[];
 }): React.JSX.Element {
-  const [texto, setTexto] = React.useState("");
-  const [sede, setSede] = React.useState<string>("todas");
+  const [texto, setTexto] = React.useState(inicial.texto ?? "");
+  const [sede, setSede] = React.useState<string>(inicial.sede ?? "todas");
   /* **FR-AD-TRAB-2**: activos por defecto. */
-  const [estado, setEstado] = React.useState<WorkerStatus | "todos">("activo");
+  const [estado, setEstado] = React.useState<WorkerStatus | "todos">((inicial.estado as WorkerStatus | "todos" | undefined) ?? "activo");
+  useFiltrosEnUrl({ texto, sede, estado }, { sede: "todas", estado: "activo" });
 
   /* Los tres controles filtran en el cliente, así que antes de hidratar no
      filtran nada: escribir en ellos entonces no tendría efecto y el listado
@@ -133,12 +141,23 @@ export function TrabajadoresList({
     },
     { key: "alta", header: "Alta", cell: (row) => row.alta },
     {
-      /* **FR-AD-TRAB-1** la pide, y el dominio todavía no la sabe: las jornadas
-         son §9. Se dice que falta en vez de dejar la columna fuera, que haría
-         creer que el requisito no existe, o de inventar una fecha. */
+      /* **FR-AD-TRAB-1**: la última jornada que operó, con enlace a ella. */
       key: "ultima-jornada",
       header: "Última jornada",
-      cell: () => <span className="text-text-secondary">Llega con Jornadas</span>,
+      cell: (row) =>
+        row.ultimaJornada ? (
+          <Link
+            href={`/admin/jornadas/${row.ultimaJornada.id}` as Route}
+            className={cn(
+              "underline underline-offset-4 hover:text-primary",
+              row.ultimaJornada.abierta ? "font-semibold text-text-primary" : "text-text-secondary",
+            )}
+          >
+            {row.ultimaJornada.texto}
+          </Link>
+        ) : (
+          <span className="text-text-secondary">Ninguna</span>
+        ),
     },
   ];
 

@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 
 import { MARTA, signInAsAdmin } from "./admin-helpers";
 
-/** El segundo usuario de Antilla: administrador, **no** el principal. */
-const DANIEL = "dcastro@antillasf.cu";
+/** El segundo usuario de Malecón: administrador, **no** el principal. */
+const DANIEL = "dcastro@malecon-sf.cu";
 
 /**
  * `/admin/usuarios` — **§8 del FRD**, la prueba de navegación y congruencia.
@@ -54,7 +54,8 @@ test.describe("§8 Usuarios — el administrador principal", () => {
        secciones que explicaban capacidades y origen se retiraron en la v5.1;
        esto impide que vuelvan sin tocar el requisito. */
     await page.goto("/admin/usuarios");
-    await page.locator('main a[href^="/admin/usuarios/adm-"]').first().click();
+    /* `:visible`: la tarjeta del teléfono, oculta a este ancho, va antes en el DOM. */
+    await page.locator('main a[href^="/admin/usuarios/adm-"]:visible').first().click();
     await page.waitForURL(/\/admin\/usuarios\/adm-[^/]+$/);
 
     const secciones = page.getByRole("main").getByRole("heading", { level: 2 });
@@ -63,7 +64,7 @@ test.describe("§8 Usuarios — el administrador principal", () => {
 
   test("al principal no se le ofrece desactivar, y sí traspasar", async ({ page }) => {
     await signInAsAdmin(page, MARTA);
-    await page.goto("/admin/usuarios/adm-antilla-1");
+    await page.goto("/admin/usuarios/adm-malecon-1");
 
     /* **FR-AD-USR-13**: el control **no está**, y la razón sí. */
     await expect(page.getByRole("button", { name: "Desactivar" })).toHaveCount(0);
@@ -100,7 +101,7 @@ test.describe("§8 Usuarios — el administrador principal", () => {
     const respuesta = await page.goto("/admin/usuarios");
     expect(respuesta?.status(), "la sección no debe existir para quien no la gobierna").toBe(404);
 
-    const ficha = await page.goto("/admin/usuarios/adm-antilla-1");
+    const ficha = await page.goto("/admin/usuarios/adm-malecon-1");
     expect(ficha?.status(), "tampoco sus fichas").toBe(404);
   });
 });

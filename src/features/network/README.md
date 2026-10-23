@@ -2,8 +2,10 @@
 
 El nivel que faltaba por encima de la Caja. Hasta ahora el producto solo sabía
 de **una caja** (Worker) o de **una sede** (Kiosco) a la vez. Aquí viven la
-Sede, el Operador, la Asignación histórica, las Cajas, los Trabajadores y el
-registro de Auditoría — y el **alcance**, que decide qué ve cada sesión.
+Sede, el Operador, la Asignación histórica, las Cajas, los Equipos, los
+Trabajadores, las Monedas y Tasas, las Jornadas y Operaciones, las Promociones,
+las Solicitudes de aprobación y el registro de Auditoría — y el **alcance**,
+que decide qué ve cada sesión.
 
 Especificado en `documentacion/admin/`: el PRD de Administración define el
 modelo y las reglas **A1–A14**; los dos FRD, el comportamiento pantalla por
@@ -36,7 +38,7 @@ error de compilación, no una fuga silenciosa de datos de una sede a otra.
 
 ```ts
 sedesEnAlcance(GLOBAL_SCOPE);              // la red entera
-sedesEnAlcance(operatorScope("op-antilla")); // solo sus sedes vigentes
+sedesEnAlcance(operatorScope("op-malecon")); // solo sus sedes vigentes
 ```
 
 Las **lecturas por sede** cumplen lo mismo, y por una vía que conviene leer
@@ -92,8 +94,12 @@ Ahora el reparto es el del producto real (FR-AD-EQ-25, FR-DEV-8): el terminal
 se nombra con un identificador opaco que guarda en una cookie —el «quién
 pregunta», no una credencial—, el **reto lo emite el servidor**
 (`emitirReto`), **vincular y desvincular** son actos del administrador que
-reciben alcance, y el terminal pregunta quién es (`resolverTerminal`) y pinta
-lo que le contesten.
+reciben alcance, y `resolverTerminal` contesta al terminal quién es.
+
+En la demostración, Worker y Kiosco **todavía leen su propio almacenamiento**
+para saber si están vinculados (nota de entrega, §8.3): la parte del servidor está hecha,
+la del terminal no se ha recableado. En el producto real el terminal pregunta
+aquí y pinta lo que le contesten.
 
 ```ts
 emitirReto("kiosco", deviceId);              // el terminal pide su código
@@ -122,8 +128,42 @@ declaración.
 | `registers.ts` | Las cajas de cada sede. Las crea y retira el mercante. |
 | `operators.ts` | Mercantes y sus usuarios administradores. |
 | `assignments.ts` | Sede ↔ Operador por tramos, y `sedesEnAlcance`. |
+| `datos-de-sede.ts` | Dirección, teléfono y horario: lo único de la sede que edita el mercante. |
+| `horario.ts` | El horario semanal por días y su validación. |
 | `workers.ts` | Trabajadores, adscritos a una sede. |
+| `currencies.ts` | Catálogo de la plataforma y lista de monedas de cada sede. |
+| `rates.ts` | Rangos de red por moneda y tasas de compra/venta de cada sede. |
+| `jornadas.ts` | Jornadas de caja, su libro de movimientos, el cierre y el cierre forzado. |
+| `operaciones.ts` | Las operaciones de la red, para consultar desde la administración. |
+| `volumen.ts` | Qué cuenta como volumen (FR-AD-REP-8): lo usan Inicio y Reportes. |
+| `promotions.ts` | Promociones del operador y de la red, y lo que cada pantalla muestra. |
+| `aprobaciones.ts` | Solicitudes de ajuste, cierre y apertura, y su resolución. |
 | `audit.ts` | Eventos de gobierno. Solo añadir y consultar: no hay editar ni borrar. |
+
+## Nombres del FRD y nombres del código
+
+FR-AD-DOM-2 nombra las entidades en español; el código conserva algunos nombres
+anteriores. Son la misma cosa:
+
+| FRD (§16) | Código |
+| --- | --- |
+| `Operador` | `Operator` (`operators.ts`) |
+| `UsuarioAdmin` | `AdminUser` (`operators.ts`) |
+| `Sede` | `Sede`, que extiende `Branch` (`sedes.ts`) |
+| `Caja` | `Register` (`registers.ts`) |
+| `Asignacion` | `Assignment` (`assignments.ts`) |
+| `ServiciosSede` | el campo `Sede.services` |
+| `CatalogoMonedas` | `MonedaCatalogo` (`currencies.ts`) |
+| `PoliticaTasas` | `RangoDeTasa` (`rates.ts`) |
+| `MonedasSede` | `MonedaDeSede` (`currencies.ts`) |
+| `ParSede` | `TasaDeSede` (`rates.ts`) |
+| `Promocion` | `Promocion` (`promotions.ts`) |
+| `SolicitudAprobacion` | `Solicitud` (`aprobaciones.ts`) |
+| `EventoAuditoria` | `AuditEvent` (`audit.ts`) |
+
+Las jornadas guardan su cierre en un campo `arqueo` (`ArqueoMoneda`): es el
+nombre que usa Worker en su ruta `caja/arqueo-cierre`. En pantalla siempre se
+dice «cierre».
 
 ## Decisiones que conviene conocer antes de tocar esto
 
@@ -157,22 +197,19 @@ Lo único que cambia por debajo es que las cajas ya no se generan al vuelo, así
 que su número varía por sede y una sede recién entregada puede no tener
 ninguna.
 
-## Todavía no está aquí
+## Lo que la demostración no conecta
 
-La lista de monedas por sede y el catálogo de la plataforma, los pares de
-cotización y sus rangos, las promociones y las solicitudes de aprobación.
-Llegan con la pantalla que las escriba: añadirlas ahora habría sido código
-muerto que nadie lee ni escribe.
-
-`mock-auth.ts` tampoco consulta todavía el registro de trabajadores — el acceso
-de Worker sigue aceptando cualquier identificador con la contraseña de
-demostración, tal como documenta su §2.12. Conectarlos es trabajo del tramo en
-que se construya `/admin/trabajadores`.
+El acceso de Worker (`mock-auth.ts`) **no consulta el registro de
+trabajadores**: acepta cualquier identificador con la contraseña de
+demostración. En el producto real el acceso valida identificador, credencial,
+estado y sede del trabajador. Está anotado en la nota de entrega (§8.3).
 
 ## Pruebas
 
 `tests/network-domain.spec.ts` comprueba las reglas sin navegador: alcance,
 historial de asignaciones por fecha, ciclo de vida de las cajas, guardas de
-jornada y de equipo, y qué distingue suspender de revocar. Van en serie porque
+jornada y de equipo, qué distingue suspender de revocar, usuarios
+administradores, auditoría, monedas y tasas. Promociones, jornadas,
+aprobaciones y volumen se prueban a través de sus pantallas (`tests/admin-*`). Van en serie porque
 el estado es un mock compartido, y toda prueba que muta deja el estado como lo
 encontró.

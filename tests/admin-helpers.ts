@@ -12,8 +12,8 @@ export const ADMIN_PASSWORD = "puntocash";
 /** Código que acepta el mock del segundo factor. */
 export const DEMO_CODE = "123456";
 
-/** Administradora de Antilla: tres sedes en su alcance. */
-export const MARTA = "marta@antillasf.cu";
+/** Administradora de Malecón: tres sedes en su alcance. */
+export const MARTA = "marta@malecon-sf.cu";
 
 /** Administrador de Caribe: tres sedes. */
 export const REINALDO = "rortega@caribecambios.cu";
@@ -23,6 +23,9 @@ export const IDALMIS = "ibetancourt@centrodivisas.cu";
 
 /** Operador activo al que PuntoCash todavía no le asignó ninguna sede. */
 export const LIUDMILA = "lperez@cienfuegoscambio.cu";
+
+/** Bahía: una sede suspendida (Trinidad) y otra solo con cajas retiradas (Pinar del Río). */
+export const ANA = "abarrios@bahiacambios.cu";
 
 /** Su empresa está suspendida por PuntoCash: no debe entrar (A14). */
 export const YULIET = "yperez@orientedivisas.cu";

@@ -11,15 +11,15 @@
  * problema con una persona es suspender la sede o al operador, que corta el
  * acceso de todos a la vez (FR-SA-TRAB-6).
  *
- * `mock-auth.ts` todavía no consulta este registro: el acceso de Worker sigue
- * aceptando cualquier identificador con la contraseña de demostración, tal
- * como documenta su §2.12. Conectar ambos es trabajo del tramo en que se
- * construya `/admin/trabajadores`, y hacerlo aquí habría cambiado el
- * comportamiento de pantallas ya aprobadas sin que ninguna lo pidiera.
+ * El acceso de Worker (`mock-auth.ts`) **todavía no consulta este registro**:
+ * acepta cualquier identificador con la contraseña de demostración. En el
+ * producto real, el acceso valida identificador y credencial contra el
+ * trabajador, su estado y la sede asignada. La limitación de la demostración
+ * está en la nota de entrega (§8.3).
  */
 
 import { type DocumentType } from "@/features/customers/customers";
-import { findSedeById, isMotivoValido } from "./sedes";
+import { findSedeById } from "./sedes";
 import { findOperatorById } from "./operators";
 import { operadorVigente } from "./assignments";
 import { requireOperatorScope, type Scope } from "./scope";
@@ -101,11 +101,13 @@ const mutableWorkers: NetworkWorker[] = [
   worker("trb-11", "gsuarez", "Gabriel Suárez", "87070988271", "sede-holguin"),
   /* Desactivado por su Admin: el único que puede volver a activarlo (FR-AD-TRAB-15). */
   worker("trb-12", "nalonso", "Noelia Alonso", "95041255382", "sede-holguin", "desactivado"),
-  /* La sede única de Centro Divisas (FR-AD-DOM-9): con cajas y con personal,
+  /* La sede única de Centro Divisas (nota de entrega, §8.3): con cajas y con personal,
      para que su Inicio y su ficha se lean como una sede en marcha y no como un
      caso a medio sembrar. */
   worker("trb-13", "dmoreno", "Dayana Moreno", "89061744593", "sede-centro-habana"),
   worker("trb-14", "ifuentes", "Ismael Fuentes", "81092066404", "sede-centro-habana"),
+  /* En la sede suspendida de Bahía: activo, pero sin poder entrar (FR-AD-TRAB-16). */
+  worker("trb-15", "rleon", "Raúl León", "86090455215", "sede-trinidad"),
 ];
 
 const deactivated = mutableWorkers.find((w) => w.id === "trb-12");
@@ -113,7 +115,7 @@ if (deactivated) {
   deactivated.deactivation = {
     reason: "Fin de contrato temporal acordado con la trabajadora",
     at: "2026-08-30T16:00:00.000Z",
-    by: "adm-oriente-1",
+    by: "Yuliet Pérez",
   };
 }
 
@@ -185,7 +187,7 @@ export type WorkerWriteDenial =
   | "sede-cerrada"
   | "identificador-duplicado"
   | "documento-duplicado"
-  | "correo-requerido"
+  | "correo-invalido"
   | "trabajador-no-encontrado"
   | "jornada-abierta"
   | "motivo-requerido";
@@ -237,7 +239,7 @@ export function crearTrabajador(
 
   /* Sin correo válido no podría verificar nunca su segundo factor, así que el
      alta no debe permitirse (FR-AD-TRAB-6) [R13]. */
-  if (!isCorreoValido(input.email)) return { ok: false, reason: "correo-requerido" };
+  if (!isCorreoValido(input.email)) return { ok: false, reason: "correo-invalido" };
   if (findWorkerByIdentifier(input.identifier)) return { ok: false, reason: "identificador-duplicado" };
   if (mutableWorkers.some((w) => w.documentId === input.documentId)) {
     return { ok: false, reason: "documento-duplicado" };
@@ -277,7 +279,10 @@ export function desactivarTrabajador(
 
   const denial = guardScope(scope, target.branchId, ctx);
   if (denial) return { ok: false, reason: denial };
-  if (!isMotivoValido(reason)) return { ok: false, reason: "motivo-requerido" };
+  /* Basta con que haya motivo: aquí no se exige un largo mínimo (decisión
+     de producto, FR-AD-TRAB-12), a diferencia de los motivos de Cajas,
+     Jornadas y Aprobaciones. */
+  if (!reason.trim()) return { ok: false, reason: "motivo-requerido" };
   if (guards.hasOpenJornada(workerId)) return { ok: false, reason: "jornada-abierta" };
 
   target.status = "desactivado";
@@ -420,8 +425,9 @@ export function cambiarCorreoTrabajador(
 
   const denial = guardScope(scope, target.branchId, ctx);
   if (denial) return { ok: false, reason: denial };
-  if (!isMotivoValido(motivo)) return { ok: false, reason: "motivo-requerido" };
-  if (!isCorreoValido(email)) return { ok: false, reason: "correo-requerido" };
+  /* Sin largo mínimo, como al desactivar (FR-AD-TRAB-10). */
+  if (!motivo.trim()) return { ok: false, reason: "motivo-requerido" };
+  if (!isCorreoValido(email)) return { ok: false, reason: "correo-invalido" };
 
   const anterior = target.email;
   target.email = email.trim();

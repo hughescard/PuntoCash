@@ -285,7 +285,7 @@ function PasoIdentificador({
           autoFocus
           disabled={enVuelo}
           invalid={Boolean(error)}
-          prefix={<User aria-hidden="true" />}
+          prefix={<User className="size-[18px]" aria-hidden="true" />}
         />
       </Field>
 

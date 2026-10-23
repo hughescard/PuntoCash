@@ -28,9 +28,15 @@ import type { NavGroup } from "@/components/shell/sidebar-nav";
 
 /** Indicadores numéricos que dependen del alcance de la sesión (**FR-AD-SHELL-3**). */
 export interface AdminNavBadges {
-  /** Situaciones de Cajas que impiden operar: sedes sin ninguna caja, y cajas activas sin equipo vinculado. */
+  /**
+   * Cada número va en la sección donde se resuelve, para que el número que se
+   * ve en el menú sea el que se encuentra al entrar (**FR-AD-SHELL-3**).
+   * Cajas: sedes sin ninguna caja, que se resuelve creando una.
+   */
   cajas?: number | undefined;
-  /** Solicitudes pendientes. Llega con la bandeja de Aprobaciones. */
+  /** Equipos: cajas activas sin equipo vinculado, que se resuelve vinculándolo. */
+  equipos?: number | undefined;
+  /** Solicitudes pendientes en el alcance del selector (FR-AD-APR-16). */
   aprobaciones?: number | undefined;
 }
 
@@ -72,7 +78,7 @@ export function adminNavGroups(
       items: [
         { href: "/admin/sedes", label: "Sedes", icon: Store },
         { href: "/admin/cajas", label: "Cajas", icon: Wallet, badge: badges.cajas },
-        { href: "/admin/equipos", label: "Equipos", icon: MonitorSmartphone },
+        { href: "/admin/equipos", label: "Equipos", icon: MonitorSmartphone, badge: badges.equipos },
         { href: "/admin/trabajadores", label: "Trabajadores", icon: Users },
         ...(visibles.usuarios
           ? [{ href: "/admin/usuarios" as const, label: "Usuarios", icon: ShieldCheck }]
@@ -103,9 +109,9 @@ export function adminNavGroups(
  * uno pasa de 88px y las etiquetas caben enteras.
  *
  * Los tres que quedan son los de supervisar: qué está pasando, qué jornadas
- * hay abiertas y qué espera respuesta. **Cajas** se va al cajón —sigue con su
- * indicador— porque montar la sucursal es cosa de días concretos, no del día a
- * día. Para que eso no esconda un aviso, "Más" avisa por su cuenta
+ * hay abiertas y qué espera respuesta. **Cajas** y **Equipos** se van al cajón
+ * —siguen con su indicador— porque montar la sucursal es cosa de días
+ * concretos, no del día a día. Para que eso no esconda un aviso, "Más" avisa por su cuenta
  * (`hayAvisosEnElCajon`).
  */
 export function accesosRapidos(badges: AdminNavBadges = {}): readonly NavItem[] {
@@ -126,5 +132,5 @@ export function accesosRapidos(badges: AdminNavBadges = {}): readonly NavItem[] 
  * con un punto: un indicador escondido detrás de un menú no es un indicador.
  */
 export function hayAvisosEnElCajon(badges: AdminNavBadges = {}): boolean {
-  return (badges.cajas ?? 0) > 0;
+  return (badges.cajas ?? 0) > 0 || (badges.equipos ?? 0) > 0;
 }

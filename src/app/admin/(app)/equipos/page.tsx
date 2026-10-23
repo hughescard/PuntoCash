@@ -9,6 +9,8 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { getAdminSession } from "@/features/admin/session-server";
 import { sedesVisibles } from "@/features/admin/session";
 import { redEnAlcance } from "@/features/network/scoped-reads";
+import { diaEnCuba } from "@/features/network/jornadas";
+import { jornadaDeCaja } from "../jornadas/formato";
 import { EquiposTabs, type PestanaEquipos } from "./equipos-tabs";
 import { CajasYEquipos, type CajaEquipoRow } from "./cajas-y-equipos";
 import { KioscosDeSede, type KioscoRow } from "./kioscos-de-sede";
@@ -22,23 +24,18 @@ export const metadata: Metadata = {
  * Equipos — **§3 del FRD**. La sección que Worker y Kiosco dan por existente:
  * sin ella, ninguna de las dos superficies arranca.
  *
- * ── Qué hay y qué falta ──────────────────────────────────────────────────
  * Las dos pestañas, **Cajas** y **Kioscos**, con sus listados y su
- * desvinculación. Falta el acto de vincular —con sus dos vías, QR y código— en
- * `/admin/equipos/vincular`, que hoy es un marcador.
+ * desvinculación. El acto de vincular, con sus dos vías —QR y código—, está en
+ * `/admin/equipos/vincular`.
  *
  * ── Lo que esta pantalla no afirma, a propósito ───────────────────────────
- * Dos columnas que los requisitos piden y que el dominio **no sabe** para toda
- * la red, cada una por su razón, y ninguna de las dos se inventa:
+ * Una columna que los requisitos piden y que el dominio **no sabe** todavía,
+ * y que no se inventa:
  *
- *   · El **estado de la jornada** de cada caja (**FR-AD-EQ-5**). Vive en
- *     `caja-data.ts` y los flujos de Worker que la abren corren en el navegador
- *     del trabajador, así que desde el servidor solo se vería la de una caja
- *     simulada (ver `features/admin/register-guards.ts`). Llega con §9.
  *   · Las **solicitudes generadas en el periodo** por cada kiosco
  *     (**FR-AD-EQ-12**). Las produce el propio kiosco y viven en su navegador
  *     (`features/kiosk/self-service-request.ts`), no en la red. Llega cuando
- *     las solicitudes se modelen para toda la red, con §10 y §11.
+ *     las solicitudes de kiosco se registren para toda la red (FRD §18).
  *
  * Una columna que siempre dijera «cerrada» o «0» se leería como un dato y no
  * como una ausencia, y este demo es la referencia que van a copiar quienes
@@ -59,6 +56,7 @@ export default async function AdminEquiposPage({
 
   const sedes = sedesVisibles(session);
   const red = redEnAlcance(session.scope);
+  const hoy = diaEnCuba(new Date());
 
   /* Solo las cajas **activas**: una retirada no puede tener equipo —el dominio
      no deja retirarla si lo tiene (**FR-AD-CAJA-10**)— así que listarla aquí
@@ -82,6 +80,7 @@ export default async function AdminEquiposPage({
                 : null,
             }
           : null,
+        jornada: jornadaDeCaja(red.jornadaAbiertaDeCaja(caja.id), hoy),
       };
     }),
   );

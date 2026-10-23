@@ -11,6 +11,8 @@ import { getAdminSession } from "@/features/admin/session-server";
 import { sedesVisibles } from "@/features/admin/session";
 import { redEnAlcance, type RedEnAlcance } from "@/features/network/scoped-reads";
 import type { Sede } from "@/features/network/sedes";
+import { diaEnCuba } from "@/features/network/jornadas";
+import { jornadaDeCaja } from "../jornadas/formato";
 import { CajasDeSede, type CajaRow } from "./cajas-de-sede";
 
 export const metadata: Metadata = {
@@ -33,12 +35,9 @@ export const metadata: Metadata = {
  * vacía sin entender qué le falta. Agrupando por sede, cada una tiene su
  * bloque y el que está vacío lo dice con todas las letras.
  *
- * ── Lo que esta pantalla no afirma ────────────────────────────────────────
- * **FR-AD-CAJA-1** pide también el trabajador con sesión iniciada y el estado
- * de la jornada. Ninguna de las dos cosas se conoce todavía fuera de la caja
- * simulada (ver `features/admin/register-guards.ts`), así que no se muestran
- * en lugar de mostrarlas en blanco o, peor, en falso: una columna que siempre
- * dice «cerrada» se lee como un dato, no como una ausencia. Llegan con §9.
+ * ── La jornada ────────────────────────────────────────────────────────────
+ * **FR-AD-CAJA-1**: el estado de la jornada de cada caja y quién la tiene
+ * abierta, con «en sesión» si la está operando ahora mismo.
  */
 export default async function AdminCajasPage({
   searchParams,
@@ -82,11 +81,10 @@ export default async function AdminCajasPage({
       {cajaCreada ? (
         <Alert variant="success" title={`${cajaCreada.name} creada`} className="mb-8">
           Ya forma parte de la sede, pero todavía no puede operar: el paso siguiente es vincularle
-          un equipo desde{" "}
-          <Link href="/admin/equipos" className="font-semibold underline underline-offset-4">
-            Equipos
+          un equipo.{" "}
+          <Link href="/admin/equipos/vincular" className="font-semibold underline underline-offset-4">
+            Vincular un equipo
           </Link>
-          .
         </Alert>
       ) : null}
 
@@ -102,6 +100,8 @@ export default async function AdminCajasPage({
 }
 
 function BloqueDeSede({ red, sede }: { red: RedEnAlcance; sede: Sede }): React.JSX.Element {
+  const hoy = diaEnCuba(new Date());
+  const activas = red.cajasActivas(sede.id).length;
   const cajas: CajaRow[] = red.cajasConHistorico(sede.id).map((caja) => {
     const equipo = red.equipoDeCaja(caja.id);
     return {
@@ -109,12 +109,13 @@ function BloqueDeSede({ red, sede }: { red: RedEnAlcance; sede: Sede }): React.J
       name: caja.name,
       status: caja.status,
       equipo: equipo ? { id: equipo.id, label: equipo.label } : null,
-      alta: formatDate(new Date(caja.createdAt)),
+      alta: caja.createdBy ? `${formatDate(new Date(caja.createdAt))} · ${caja.createdBy}` : formatDate(new Date(caja.createdAt)),
       ...(caja.retiredReason ? { motivoRetirada: caja.retiredReason } : {}),
+      jornada: jornadaDeCaja(red.jornadaAbiertaDeCaja(caja.id), hoy),
+      ultimaActiva: caja.status === "activa" && activas <= 1 && sede.status === "activa",
+      sedeId: sede.id,
     };
   });
-
-  const activas = red.cajasActivas(sede.id).length;
 
   return (
     <Section
@@ -147,8 +148,22 @@ function BloqueDeSede({ red, sede }: { red: RedEnAlcance; sede: Sede }): React.J
           </Button>
         </div>
       ) : (
-        <CajasDeSede cajas={cajas} />
+        <>
+          {/* Solo cajas retiradas: la sede no puede operar, y el indicador de
+              Cajas del menú la cuenta (**FR-AD-SHELL-3**). Se dice aquí, arriba
+              de su histórico. */}
+          {activas === 0 ? (
+            <Alert variant="warning" title="Esta sede no tiene ninguna caja activa" className="mb-4">
+              Crea una caja o reactiva una retirada para poder vincular un equipo y volver a operar.{" "}
+              <Link href={`/admin/cajas/nueva?sede=${sede.id}` as Route} className="font-semibold underline underline-offset-4">
+                Crear una caja
+              </Link>
+            </Alert>
+          ) : null}
+          <CajasDeSede cajas={cajas} />
+        </>
       )}
     </Section>
   );
 }
+

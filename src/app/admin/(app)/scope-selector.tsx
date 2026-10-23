@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChevronDown, Store } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { direccionParaOtraSede } from "@/lib/filtros-en-url";
 import {
   ADMIN_SCOPE_COOKIE,
   ADMIN_SESSION_MAX_AGE_SECONDS,
@@ -103,7 +104,8 @@ export function ScopeSelector({
     setValue(next);
     recordarAlcance(next);
     // Carga completa, no navegación del enrutador — ver la nota de arriba.
-    window.location.assign(pathname);
+    // FR-AD-SCOPE-5: con los filtros de la pantalla, salvo los de una sede.
+    window.location.assign(direccionParaOtraSede(pathname, window.location.search));
   }
 
   return (
@@ -185,4 +187,16 @@ function recordarAlcance(value: string): void {
     value === ALCANCE_TODAS
       ? `${ADMIN_SCOPE_COOKIE}=; ${comun}; max-age=0`
       : `${ADMIN_SCOPE_COOKIE}=${encodeURIComponent(value)}; ${comun}; max-age=${ADMIN_SESSION_MAX_AGE_SECONDS}`;
+}
+
+/**
+ * FR-AD-SCOPE-6: la sede elegida ya no es de la empresa. Se olvida la elección
+ * en cuanto se avisa, para que el aviso salga una sola vez y para que, si esa
+ * sede vuelve a asignarse más adelante, la consola no se filtre sola a ella.
+ */
+export function OlvidarAlcance(): null {
+  React.useEffect(() => {
+    recordarAlcance(ALCANCE_TODAS);
+  }, []);
+  return null;
 }

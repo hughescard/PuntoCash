@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import type { Route } from "next";
 import { MonitorSmartphone, RotateCcw, TriangleAlert } from "lucide-react";
 
 import {
@@ -22,6 +24,7 @@ import {
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { useHydrated } from "@/lib/use-hydrated";
 import { MOTIVO_MIN_LENGTH } from "@/features/network/sedes";
+import type { JornadaDeCaja } from "../jornadas/formato";
 import { reactivarCajaAction, retirarCajaAction, type ResultadoAccion } from "./_actions";
 
 /**
@@ -46,7 +49,13 @@ export interface CajaRow {
   /** Ya formateada por el servidor. */
   alta: string;
   motivoRetirada?: string;
+  /** Su jornada abierta, ya formateada; `null` si no tiene. */
+  jornada: JornadaDeCaja | null;
+  /** Es la única caja activa de una sede en funcionamiento (**FR-AD-CAJA-13**). */
+  ultimaActiva: boolean;
+  sedeId: string;
 }
+
 
 type Accion = { tipo: "retirar" | "reactivar"; caja: CajaRow };
 
@@ -90,6 +99,12 @@ export function CajasDeSede({ cajas }: { cajas: readonly CajaRow[] }): React.JSX
       ),
       hiddenOnCard: true,
     },
+    {
+      /* **FR-AD-CAJA-1**: el estado de su jornada y quién la tiene. */
+      key: "jornada",
+      header: "Jornada",
+      cell: (caja) => <JornadaCelda caja={caja} />,
+    },
     { key: "alta", header: "Alta", cell: (caja) => caja.alta },
     {
       key: "acciones",
@@ -120,6 +135,25 @@ export function CajasDeSede({ cajas }: { cajas: readonly CajaRow[] }): React.JSX
         <DialogoReactivar caja={accion.caja} onCerrar={() => setAccion(null)} />
       ) : null}
     </>
+  );
+}
+
+export function JornadaCelda({ caja }: { caja: { status?: string; jornada: JornadaDeCaja | null } }): React.JSX.Element {
+  if (caja.status === "retirada") return <span className="text-text-secondary">—</span>;
+  if (!caja.jornada) return <span className="text-text-secondary">Cerrada</span>;
+  return (
+    <span className="flex flex-col">
+      <Link
+        href={`/admin/jornadas/${caja.jornada.id}` as Route}
+        className="font-semibold text-text-primary underline underline-offset-4 hover:text-primary"
+      >
+        Abierta · {caja.jornada.trabajador}
+      </Link>
+      <span className="text-caption text-text-secondary">
+        {caja.jornada.desde}
+        {caja.jornada.enSesion ? " · en sesión" : ""}
+      </span>
+    </span>
   );
 }
 
@@ -183,13 +217,62 @@ function DialogoRetirar({
         <DialogHeader>
           <DialogTitle>Retirar {caja.name}</DialogTitle>
           <DialogDescription>
-            Deja de estar disponible para operar. <strong>No se borra nada</strong>: sus jornadas,
-            movimientos y operaciones siguen accesibles, y la caja seguirá apareciendo en los
-            listados históricos marcada como retirada.
+            {!hecho && (caja.jornada || caja.equipo || caja.ultimaActiva) ? (
+              "Todavía no se puede retirar."
+            ) : (
+              <>
+                Deja de estar disponible para operar. <strong>No se borra nada</strong>: sus jornadas,
+                movimientos y operaciones siguen accesibles, y la caja seguirá apareciendo en los
+                listados históricos marcada como retirada.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
-        {hecho ? (
+        {/* FR-AD-CAJA-9, FR-AD-CAJA-10 y FR-AD-CAJA-13: si hay algo que impide
+            retirarla, el diálogo lo dice y lleva a donde se resuelve, en vez de
+            pedir un motivo para una retirada que el dominio rechazaría. */}
+        {!hecho && (caja.jornada || caja.equipo || caja.ultimaActiva) ? (
+          <>
+            <DialogBody className="flex flex-col gap-4">
+              {caja.jornada ? (
+                <Alert variant="warning" title="Tiene una jornada abierta">
+                  La tiene abierta {caja.jornada.trabajador}. Hasta que se haga su cierre no se puede
+                  retirar; si nadie va a hacerlo, puedes forzar el cierre desde la jornada.
+                </Alert>
+              ) : null}
+              {caja.equipo ? (
+                <Alert variant="warning" title="Tiene un equipo vinculado">
+                  Desvincula {caja.equipo.label} antes de retirarla.
+                </Alert>
+              ) : null}
+              {caja.ultimaActiva ? (
+                <Alert variant="warning" title="Es la única caja activa de la sede">
+                  Retirarla dejaría la sucursal sin ningún mostrador donde atender. Crea otra caja antes de
+                  retirar esta.
+                </Alert>
+              ) : null}
+            </DialogBody>
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={onCerrar}>
+                Cancelar
+              </Button>
+              {caja.jornada ? (
+                <Button asChild>
+                  <Link href={`/admin/jornadas/${caja.jornada.id}` as Route}>Ir a la jornada</Link>
+                </Button>
+              ) : caja.equipo ? (
+                <Button asChild>
+                  <Link href="/admin/equipos">Ir a Equipos</Link>
+                </Button>
+              ) : (
+                <Button asChild>
+                  <Link href={`/admin/cajas/nueva?sede=${caja.sedeId}` as Route}>Crear una caja</Link>
+                </Button>
+              )}
+            </DialogFooter>
+          </>
+        ) : hecho ? (
           <>
             <DialogBody>
               <Alert variant="success" title="Caja retirada">
@@ -208,12 +291,6 @@ function DialogoRetirar({
               {estado && !estado.ok ? (
                 <Alert variant="error" title="No se pudo retirar">
                   {estado.error}
-                </Alert>
-              ) : null}
-
-              {caja.equipo ? (
-                <Alert variant="warning" title="Esta caja tiene un equipo vinculado">
-                  Desvincula {caja.equipo.label} antes de retirarla.
                 </Alert>
               ) : null}
 

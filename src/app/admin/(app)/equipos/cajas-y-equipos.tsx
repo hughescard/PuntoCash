@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { MonitorSmartphone, Unlink } from "lucide-react";
 
 import {
@@ -18,6 +19,8 @@ import {
 } from "@/components/ui";
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { useHydrated } from "@/lib/use-hydrated";
+import { JornadaCelda } from "../cajas/cajas-de-sede";
+import type { JornadaDeCaja } from "../jornadas/formato";
 import { desvincularEquipoAction, type ResultadoAccion } from "./_actions";
 
 /**
@@ -48,6 +51,8 @@ export interface CajaEquipoRow {
     por: string;
     ultimaActividad: string | null;
   } | null;
+  /** Su jornada abierta, ya formateada; `null` si no tiene (**FR-AD-EQ-5**). */
+  jornada: JornadaDeCaja | null;
 }
 
 export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): React.JSX.Element {
@@ -58,7 +63,7 @@ export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): R
     {
       key: "caja",
       header: "Caja",
-      cell: (fila) => <span className="font-medium text-text-primary">{fila.caja}</span>,
+      cell: (fila) => <span className="whitespace-nowrap font-medium text-text-primary">{fila.caja}</span>,
       hiddenOnCard: true,
     },
     {
@@ -98,6 +103,7 @@ export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): R
       header: "Última actividad",
       cell: (fila) => fila.equipo?.ultimaActividad ?? "—",
     },
+    { key: "jornada", header: "Jornada", cell: (fila) => <JornadaCelda caja={fila} /> },
     {
       key: "acciones",
       header: <span className="sr-only">Acciones</span>,
@@ -127,6 +133,7 @@ export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): R
         <DialogoDesvincular
           caja={desvinculando.caja}
           equipo={desvinculando.equipo}
+          jornada={desvinculando.jornada}
           onCerrar={() => setDesvinculando(null)}
         />
       ) : null}
@@ -184,19 +191,18 @@ function Acciones({
  *   · Si prefiere no dejar la caja sin equipo, el cierre forzado de la jornada
  *     está a un enlace — pero no se ejecuta por él (**FR-AD-EQ-11**).
  *
- * Lo que esta pantalla **no** afirma es si esa caja tiene ahora mismo una
- * jornada abierta: no se conoce para toda la red (ver
- * `features/admin/register-guards.ts`). Así que el aviso se da siempre, en vez
- * de darse solo cuando toca y callarse cuando no se sabe — que es lo que
- * convertiría un desconocimiento en una afirmación.
+ * El aviso de la jornada y la alternativa solo aparecen si la caja tiene una
+ * abierta, y la alternativa lleva **a esa jornada**, no al listado.
  */
 function DialogoDesvincular({
   caja,
   equipo,
+  jornada,
   onCerrar,
 }: {
   caja: string;
   equipo: NonNullable<CajaEquipoRow["equipo"]>;
+  jornada: JornadaDeCaja | null;
   onCerrar: () => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoAccion, FormData>(
@@ -240,18 +246,26 @@ function DialogoDesvincular({
                 </Alert>
               ) : null}
 
-              <Alert variant="warning" title="Desvincular no cierra la jornada">
-                Si {caja} tiene una jornada abierta, seguirá abierta hasta su arqueo y cierre, y para
-                hacerlo habrá que vincular un equipo a esa caja.
-              </Alert>
+              {jornada ? (
+                <>
+                  <Alert variant="warning" title={`${caja} tiene una jornada abierta`}>
+                    La tiene abierta {jornada.trabajador} {jornada.desde}. Desvincular el equipo no la
+                    cierra: seguirá abierta hasta que se haga su cierre, y para hacerlo habrá que vincular
+                    un equipo a esa caja.
+                  </Alert>
 
-              <p className="text-body-sm text-text-secondary">
-                Si prefieres no dejarla sin equipo, puedes forzar el cierre de su jornada desde{" "}
-                <Link href="/admin/jornadas" className="font-semibold text-primary underline underline-offset-4">
-                  Jornadas
-                </Link>{" "}
-                antes de desvincular.
-              </p>
+                  <p className="text-body-sm text-text-secondary">
+                    Si prefieres no dejarla así, puedes{" "}
+                    <Link
+                      href={`/admin/jornadas/${jornada.id}` as Route}
+                      className="font-semibold text-primary underline underline-offset-4"
+                    >
+                      forzar el cierre de esa jornada
+                    </Link>{" "}
+                    antes de desvincular.
+                  </p>
+                </>
+              ) : null}
             </DialogBody>
 
             <DialogFooter>

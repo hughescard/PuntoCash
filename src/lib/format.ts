@@ -32,6 +32,16 @@ export function formatAmount(amount: number, fractionDigits = 2): string {
   }).format(amount);
 }
 
+/**
+ * Una tasa tal como la exhibe el tablero de una sucursal: sin decimales
+ * cuando no los tiene —«318», que es como se lee desde el otro lado de una
+ * sala— y con los dos cuando sí, porque redondear «318,50» a «319» haría que
+ * el tablero mostrara una cifra distinta de la que la sede cotiza (**A12**).
+ */
+export function cifraDeTablero(rate: number): string {
+  return formatAmount(rate, Number.isInteger(rate) ? 0 : 2);
+}
+
 /** Formats an amount together with its currency code: "1.250,00 USD". */
 export function formatMoney({ amount, currency }: Money, fractionDigits = 2): string {
   return `${formatAmount(amount, fractionDigits)} ${currency}`;

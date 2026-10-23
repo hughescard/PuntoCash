@@ -31,7 +31,7 @@ const ADMIN_2FA: TwoFactorScreenCopy = {
   afterVerification: "/admin/inicio",
   successTitle: "Verificación completada",
   successMessage: "Bienvenido a PuntoCash. Ya puedes administrar tus sedes.",
-  assistance: "a PuntoCash",
+  assistance: "al administrador principal de tu empresa o, si lo eres tú, a PuntoCash",
   onVerified: async (code) => {
     await abrirSesionAdmin(code);
   },

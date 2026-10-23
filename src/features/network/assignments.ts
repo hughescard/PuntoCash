@@ -30,14 +30,14 @@ const mutableAssignments: Assignment[] = [
   {
     id: "asg-1",
     branchId: "sede-vedado",
-    operatorId: "op-antilla",
+    operatorId: "op-malecon",
     startedAt: "2026-01-15T09:00:00.000Z",
     startedReason: "Entrega inicial de la sede al operador seleccionado",
   },
   {
     id: "asg-2",
     branchId: "sede-habana-vieja",
-    operatorId: "op-antilla",
+    operatorId: "op-malecon",
     startedAt: "2026-01-15T09:00:00.000Z",
     startedReason: "Entrega inicial de la sede al operador seleccionado",
   },
@@ -91,7 +91,7 @@ const mutableAssignments: Assignment[] = [
     /* La sede recién entregada, todavía sin montar. */
     id: "asg-9",
     branchId: "sede-cerro",
-    operatorId: "op-antilla",
+    operatorId: "op-malecon",
     startedAt: "2026-09-25T09:00:00.000Z",
     startedReason: "Entrega de una sede nueva al operador que ya administra la zona",
   },
@@ -102,6 +102,20 @@ const mutableAssignments: Assignment[] = [
     operatorId: "op-centro",
     startedAt: "2026-03-12T09:00:00.000Z",
     startedReason: "Apertura de la sucursal con su mercante inicial",
+  },
+  {
+    id: "asg-11",
+    branchId: "sede-trinidad",
+    operatorId: "op-bahia",
+    startedAt: "2026-06-01T09:00:00.000Z",
+    startedReason: "Entrega inicial de la sede al operador seleccionado",
+  },
+  {
+    id: "asg-12",
+    branchId: "sede-pinar",
+    operatorId: "op-bahia",
+    startedAt: "2026-06-01T09:00:00.000Z",
+    startedReason: "Entrega inicial de la sede al operador seleccionado",
   },
   /* sede-santiago no aparece: está sin operador asignado a propósito. */
 ];

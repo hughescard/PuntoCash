@@ -87,8 +87,8 @@ export function KioskLinkSimulator(): React.JSX.Element {
       />
 
       <Alert variant="info" title="Esto es un simulador de demostración" className="mb-8">
-        Hace lo que harán las secciones «Kioscos de autoservicio» y «Cajas» del panel web del administrador
-        de sede, que todavía no existe. Ábrelo en una pestaña y el equipo (/kiosk/autoservicio o /worker) en
+        Reproduce lo que hace la sección Equipos de la consola de administración. Sirve para probar
+        Worker y Kiosco sin iniciar sesión como administrador. Ábrelo en una pestaña y el equipo (/kiosk/autoservicio o /worker) en
         otra, en el mismo navegador.
       </Alert>
 

@@ -10,7 +10,7 @@ import { ScopeSelector } from "./scope-selector";
 /**
  * Cluster derecho de la cabecera — **FR-AD-SHELL-4** y **FR-AD-SHELL-5**.
  *
- *   PuntoCash | [selector de sede] | Marta Sánchez · Antilla… | Perfil / Cerrar sesión
+ *   PuntoCash | [selector de sede] | Marta Sánchez · Malecón… | Perfil / Cerrar sesión
  *
  * El nombre del operador aparece **como texto secundario bajo el de la
  * persona**: es contexto —de qué empresa es esta sesión—, no la identidad del
@@ -62,7 +62,7 @@ export function AdminIdentity({ session }: { session: AdminSession }): React.JSX
         href="/admin/perfil"
         aria-label="Perfil"
         className={cn(
-          "grid size-10 shrink-0 place-items-center rounded-pill bg-gold",
+          "grid size-11 shrink-0 place-items-center rounded-pill bg-gold",
           "text-label font-bold text-navy",
           "transition-opacity duration-(--duration-fast) ease-(--ease-standard) hover:opacity-90",
           "outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-gold",

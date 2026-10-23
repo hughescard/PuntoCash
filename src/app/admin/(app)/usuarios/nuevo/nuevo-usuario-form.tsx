@@ -65,7 +65,7 @@ export function NuevoUsuarioForm(): React.JSX.Element {
     estado && !estado.ok && estado.campo === nombre ? estado.error : undefined;
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form action={accion} className="max-w-form-max" noValidate>
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {estado && !estado.ok && !estado.campo ? (

@@ -43,14 +43,24 @@ bastaría para averiguar qué sedes administra otra empresa.
 
 ## Qué hay construido
 
-El esqueleto —acceso en dos pasos, shell con la barra lateral de tres bloques y
-el selector de alcance— y cinco secciones del FRD: **§3 Equipos** completa —sus
-dos pestañas, su desvinculación y el acto de vincular—, **§4 Cajas**,
-**§5 Inicio**, **§6 Sedes** y su ficha con la guarda de alcance.
+**Toda la consola.** El acceso en dos pasos con su recuperación, el shell con
+el selector de alcance, y todas las secciones del FRD: Inicio, Sedes, Cajas,
+Equipos (con el acto de vincular), Trabajadores, Usuarios administradores,
+Perfil, Monedas, Tasas, Promociones, Jornadas, Operaciones, Aprobaciones y
+Reportes (con exportación a Excel y PDF en `reportes/exportar/[formato]`).
 
-El resto de los destinos existen como marcador de posición para que la
-navegación se pueda recorrer entera — un enlace de la barra lateral que
-devuelve un 404 se lee como un producto roto.
+Transversal a todas:
+
+- **Los filtros viven en la dirección** (`lib/filtros-en-url.ts`): sobreviven
+  a recargar y a compartir el enlace. Al cambiar de sede en la cabecera se
+  conservan el periodo, la pestaña y los filtros generales; la caja y el
+  trabajador no, porque son de la sede que se deja (FR-AD-SCOPE-5).
+- `(app)/[...resto]` hace que cualquier dirección inexistente responda el 404
+  de la consola, dentro del shell. **No hay `loading.tsx`** a propósito: un
+  límite de carga hace que la respuesta empiece a enviarse con 200 antes de que
+  la página decida `notFound()`, y una sede ajena dejaría de responder 404.
+- `(app)/error.tsx` es el estado de error de cualquier pantalla, con
+  «Volver a intentarlo» y «Volver a Inicio».
 
 En Equipos, las dos pestañas son **enlaces** con `aria-current` y la elegida
 viaja en la URL (`?pestana=kioscos`), no un `tablist` de ARIA: un `tablist` de
@@ -59,11 +69,10 @@ de hidratar sería un adorno. Y todo control de cliente que abra un diálogo
 queda deshabilitado hasta que hidrata, por la regla de `lib/use-hydrated.ts`:
 no se ofrece un control antes de que funcione.
 
-Inicio representa **solo lo que el dominio sabe de verdad** (sedes, cajas,
-trabajadores). Jornada, operaciones y volumen del día llegan con sus tramos,
-cuando exista de dónde leerlos para toda la red: este demo es la referencia que
-van a seguir quienes implementen, y una cifra inventada se copia igual que una
-verdadera.
+Inicio lee jornadas, operaciones, volumen y aprobaciones del mismo dominio que
+sus secciones: ninguna cifra de Inicio sale de un sitio distinto del que se ve
+al entrar en la sección. Con una sede elegida, añade sus cajas con equipo y
+jornada, y sus kioscos (FR-AD-HOME-7).
 
 ## Cuentas de demostración
 
@@ -72,14 +81,15 @@ Contraseña `puntocash` y código `123456` en todas (ver
 
 | Cuenta | Qué demuestra |
 | --- | --- |
-| `marta@antillasf.cu` | Antilla, dos sedes: el caso normal |
-| `dcastro@antillasf.cu` | segundo usuario, creado por el mercante y no por PuntoCash |
+| `marta@malecon-sf.cu` | Malecón, tres sedes, **administradora principal**: el caso normal |
+| `dcastro@malecon-sf.cu` | segundo usuario, **no principal**: Usuarios no existe para él, y su perfil remite a Marta para cambiar el correo |
 | `rortega@caribecambios.cu` | Caribe, tres sedes |
 | `ibetancourt@centrodivisas.cu` | operador con **una sola sede**: la cabecera muestra código y nombre fijos, sin selector (FR-AD-SCOPE-3) |
+| `abarrios@bahiacambios.cu` | Bahía: una sede **suspendida** (Trinidad, con una tasa sin rango y un trabajador que no puede entrar) y otra con **solo cajas retiradas y sin monedas** (Pinar del Río) |
 | `lperez@cienfuegoscambio.cu` | operador activo sin sedes: Inicio vacío explicado (FR-AD-ACC-7) |
 | `yperez@orientedivisas.cu` | operador suspendido: no entra, con el mensaje común (**A14**) |
 | `error@puntocash.com` | error de red, para ver el estado |
 
-Las seis recorren entre ellas los desenlaces del acceso y las tres formas que
+Recorren entre ellas los desenlaces del acceso y las tres formas que
 toma la cabecera: selector con varias sedes, código y nombre fijos con una
 sola, y sin control cuando no hay ninguna.

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { WORKER_GUARDS } from "@/features/admin/register-guards";
 import { getAdminSession } from "@/features/admin/session-server";
 import { SCOPE_CONTEXT } from "@/features/network/assignments";
 import { registrarEvento } from "@/features/network/audit";
@@ -18,6 +19,7 @@ import {
   type WorkerWriteDenial,
 } from "@/features/network/workers";
 import { redEnAlcance } from "@/features/network/scoped-reads";
+import { mensaje } from "../mensajes";
 
 /**
  * Las escrituras de §7 (Trabajadores): el **alta** (**FR-AD-TRAB-3** a
@@ -85,30 +87,21 @@ export type ResultadoAlta =
   | {
       ok: false;
       error: string;
-      campo?: "identificador" | "documento" | "correo";
+      campo?: CampoDelAlta;
       valores: ValoresDelAlta;
     }
   | null;
 
 /** Los rechazos del dominio, con los textos que **FR-AD-TRAB-7** fija. */
-const MOTIVOS: Record<WorkerWriteDenial, string> = {
-  "alcance-global-prohibido": "Esta acción pertenece al administrador de la sede.",
-  "fuera-de-alcance": "No encontramos lo que buscabas.",
-  "sede-no-encontrada": "No encontramos lo que buscabas.",
-  "sede-cerrada": "Esa sede está cerrada y no admite trabajadores nuevos.",
-  "identificador-duplicado": "Ese identificador ya está en uso.",
-  "documento-duplicado": "Ya existe un trabajador con ese documento.",
-  "correo-requerido": "Introduce un correo válido.",
-  "trabajador-no-encontrado": "No encontramos lo que buscabas.",
-  "jornada-abierta": "Ese trabajador tiene una jornada abierta.",
-  "motivo-requerido": "Escribe el motivo.",
-};
 
-/** Qué campo señalar cuando el rechazo pertenece a uno concreto (§20). */
-const CAMPO: Partial<Record<WorkerWriteDenial, "identificador" | "documento" | "correo">> = {
+/** Los campos del alta que pueden llevar su propio rechazo. */
+export type CampoDelAlta = "nombre" | "primer-apellido" | "documento" | "telefono" | "correo" | "identificador" | "sede";
+
+/** Qué campo señalar cuando el rechazo pertenece a uno concreto. */
+const CAMPO: Partial<Record<WorkerWriteDenial, CampoDelAlta>> = {
   "identificador-duplicado": "identificador",
   "documento-duplicado": "documento",
-  "correo-requerido": "correo",
+  "correo-invalido": "correo",
 };
 
 const VACIO: ValoresDelAlta = {
@@ -133,7 +126,7 @@ export async function crearTrabajadorAction(
 ): Promise<ResultadoAlta> {
   const session = await getAdminSession();
   if (!session) {
-    return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión.", valores: VACIO };
+    return { ok: false, error: mensaje("trabajadores", "sesion-terminada"), valores: VACIO };
   }
 
   const leer = (campo: string) => String(formData.get(campo) ?? "").trim();
@@ -159,10 +152,22 @@ export async function crearTrabajadorAction(
     sede: branchId,
   };
 
-  if (!nombre || !primerApellido || !documento || !telefono || !correo || !identificador) {
-    return { ok: false, error: "Este campo es obligatorio.", valores };
+  /* FR-AD-TRAB-7: el rechazo va pegado al campo que falta, no arriba sin decir cuál. */
+  const vacio = (
+    [
+      ["nombre", nombre],
+      ["primer-apellido", primerApellido],
+      ["documento", documento],
+      ["telefono", telefono],
+      ["correo", correo],
+      ["identificador", identificador],
+      ["sede", branchId],
+    ] as const
+  ).find(([, v]) => !v);
+  if (vacio) return { ok: false, error: mensaje("trabajadores", "campo-obligatorio"), campo: vacio[0], valores };
+  if (!esTipoDeDocumento(valores.tipoDocumento)) {
+    return { ok: false, error: mensaje("trabajadores", "tipo-documento-requerido"), valores };
   }
-  if (!branchId) return { ok: false, error: "Elige la sede a la que se adscribe.", valores };
 
   const resultado = crearTrabajador(session.scope, SCOPE_CONTEXT, {
     /* El dominio pide el identificador de fila; en el producto lo pone la base
@@ -171,11 +176,8 @@ export async function crearTrabajadorAction(
     identifier: identificador,
     fullName: `${nombre} ${primerApellido} ${segundoApellido}`.trim(),
     firstName: nombre,
-    /* Tipo y número, que **FR-AD-TRAB-3** pide como dos datos. Un valor que
-       no esté en el catálogo se trata como «CI» en vez de rechazarse: viene de
-       un desplegable cerrado, así que solo llega torcido si alguien manipula
-       el envío, y eso no merece un mensaje propio. */
-    documentType: esTipoDeDocumento(valores.tipoDocumento) ? valores.tipoDocumento : "CI",
+    /* Tipo y número, que **FR-AD-TRAB-3** pide como dos datos. */
+    documentType: valores.tipoDocumento as DocumentType,
     documentId: documento,
     phone: telefono,
     email: correo,
@@ -185,8 +187,8 @@ export async function crearTrabajadorAction(
   if (!resultado.ok) {
     const campo = CAMPO[resultado.reason];
     return campo
-      ? { ok: false, error: MOTIVOS[resultado.reason], campo, valores }
-      : { ok: false, error: MOTIVOS[resultado.reason], valores };
+      ? { ok: false, error: mensaje("trabajadores", resultado.reason), campo, valores }
+      : { ok: false, error: mensaje("trabajadores", resultado.reason), valores };
   }
 
   const red = redEnAlcance(session.scope);
@@ -222,20 +224,11 @@ export async function crearTrabajadorAction(
  * ---------------------------------------------------------------------- */
 
 /**
- * **La guarda de jornada abierta no puede comprobarse desde aquí**, y por eso
- * no se pasa ninguna.
- *
  * **FR-AD-TRAB-13** y **FR-AD-TRAB-14** prohíben desactivar o reasignar a un
- * trabajador con jornada abierta. Pero la jornada vive en `caja-data.ts`, en
- * **el navegador del trabajador**, y este servidor no la ve — el mismo límite
- * que ya documenta §18 para la columna de jornada de §3. Dejar pasar la
- * comprobación en silencio sería peor que no tenerla: por eso las dos
- * pantallas **advierten siempre**, igual que hace la desvinculación de un
- * equipo con **FR-AD-EQ-10**, en vez de avisar solo cuando lo saben y callar
- * cuando no.
- *
- * El dominio ya acepta la guarda (`WorkerGuards`); el día que la jornada viva
- * en el servidor, se le pasa aquí y las advertencias pasan a ser condiciones.
+ * trabajador con jornada abierta. La jornada vive en el servidor
+ * (`features/network/jornadas.ts`), así que la guarda se pasa a cada escritura
+ * (`WORKER_GUARDS`, `features/admin/register-guards.ts`) y el dominio la
+ * revalida al confirmar; las pantallas, además, bloquean antes de pedir nada.
  */
 
 export type ResultadoAccionTrabajador =
@@ -243,19 +236,18 @@ export type ResultadoAccionTrabajador =
   | { ok: false; error: string }
   | null;
 
-const GENERICO = "No se pudo completar la acción. Vuelve a intentarlo.";
 
 export async function desactivarTrabajadorAction(
   _previo: ResultadoAccionTrabajador,
   formData: FormData,
 ): Promise<ResultadoAccionTrabajador> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("trabajadores", "sesion-terminada") };
 
   const workerId = String(formData.get("trabajador") ?? "");
   const motivo = String(formData.get("motivo") ?? "").trim();
 
-  if (!motivo) return { ok: false, error: "Escribe el motivo de la desactivación." };
+  if (!motivo) return { ok: false, error: mensaje("trabajadores", "motivo-requerido") };
 
   const resultado = desactivarTrabajador(
     session.scope,
@@ -263,8 +255,9 @@ export async function desactivarTrabajadorAction(
     workerId,
     motivo,
     session.user.fullName,
+    WORKER_GUARDS,
   );
-  if (!resultado.ok) return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO };
+  if (!resultado.ok) return { ok: false, error: mensaje("trabajadores", resultado.reason) };
 
   registrarEvento({
     actorId: session.user.id,
@@ -274,6 +267,7 @@ export async function desactivarTrabajadorAction(
     subject: resultado.value.fullName,
     branchId: resultado.value.branchId,
     operatorId: session.operator.id,
+    reason: motivo,
   });
 
   revalidatePath("/admin", "layout");
@@ -289,12 +283,12 @@ export async function reactivarTrabajadorAction(
   formData: FormData,
 ): Promise<ResultadoAccionTrabajador> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("trabajadores", "sesion-terminada") };
 
   const workerId = String(formData.get("trabajador") ?? "");
 
   const resultado = reactivarTrabajador(session.scope, SCOPE_CONTEXT, workerId);
-  if (!resultado.ok) return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO };
+  if (!resultado.ok) return { ok: false, error: mensaje("trabajadores", resultado.reason) };
 
   const sede = redEnAlcance(session.scope).sede(resultado.value.branchId);
 
@@ -321,15 +315,15 @@ export async function reasignarTrabajadorAction(
   formData: FormData,
 ): Promise<ResultadoAccionTrabajador> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("trabajadores", "sesion-terminada") };
 
   const workerId = String(formData.get("trabajador") ?? "");
   const branchId = String(formData.get("sede") ?? "");
 
-  if (!branchId) return { ok: false, error: "Elige la sede a la que lo reasignas." };
+  if (!branchId) return { ok: false, error: mensaje("trabajadores", "sede-requerida") };
 
-  const resultado = reasignarTrabajador(session.scope, SCOPE_CONTEXT, workerId, branchId);
-  if (!resultado.ok) return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO };
+  const resultado = reasignarTrabajador(session.scope, SCOPE_CONTEXT, workerId, branchId, WORKER_GUARDS);
+  if (!resultado.ok) return { ok: false, error: mensaje("trabajadores", resultado.reason) };
 
   const sede = redEnAlcance(session.scope).sede(resultado.value.branchId);
 
@@ -371,7 +365,7 @@ export interface ValoresDeEdicion {
 }
 
 /**
- * Qué campo señalar (§20). **Un formulario de seis campos no puede decir
+ * Qué campo señalar. **Un formulario de seis campos no puede decir
  * «este campo es obligatorio» y dejar que lo busquen**: el rechazo nombra
  * siempre al suyo, y la pantalla lo marca.
  */
@@ -414,17 +408,17 @@ export async function editarTrabajadorAction(
   };
 
   if (!session) {
-    return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión.", valores };
+    return { ok: false, error: mensaje("trabajadores", "sesion-terminada"), valores };
   }
 
   /* Se señala **el primero** que falte, no todos a la vez: corregido ese, el
      envío siguiente señala el que quede. Es lo que hace el alta. */
   const vacio = OBLIGATORIOS.find((c) => !c.lee(valores));
   if (vacio) {
-    return { ok: false, error: "Este campo es obligatorio.", campo: vacio.campo, valores };
+    return { ok: false, error: mensaje("trabajadores", "campo-obligatorio"), campo: vacio.campo, valores };
   }
   if (!esTipoDeDocumento(valores.tipoDocumento)) {
-    return { ok: false, error: "Elige un tipo de documento.", valores };
+    return { ok: false, error: mensaje("trabajadores", "tipo-documento-requerido"), valores };
   }
 
   const resultado = editarTrabajador(session.scope, SCOPE_CONTEXT, workerId, {
@@ -437,8 +431,8 @@ export async function editarTrabajadorAction(
 
   if (!resultado.ok) {
     return CAMPO[resultado.reason] === "documento"
-      ? { ok: false, error: MOTIVOS[resultado.reason], campo: "documento", valores }
-      : { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO, valores };
+      ? { ok: false, error: mensaje("trabajadores", resultado.reason), campo: "documento", valores }
+      : { ok: false, error: mensaje("trabajadores", resultado.reason), valores };
   }
 
   registrarEvento({
@@ -483,7 +477,7 @@ export async function regenerarCredencialAction(
   formData: FormData,
 ): Promise<ResultadoCredencial> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("trabajadores", "sesion-terminada") };
 
   const workerId = String(formData.get("trabajador") ?? "");
 
@@ -498,7 +492,7 @@ export async function regenerarCredencialAction(
       break;
     }
   }
-  if (!trabajador) return { ok: false, error: "No encontramos lo que buscabas." };
+  if (!trabajador) return { ok: false, error: mensaje("trabajadores", "no-encontrada") };
 
   registrarEvento({
     actorId: session.user.id,
@@ -553,17 +547,17 @@ export async function cambiarCorreoAction(
   formData: FormData,
 ): Promise<ResultadoAsistencia> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("trabajadores", "sesion-terminada") };
 
   const workerId = String(formData.get("trabajador") ?? "");
   const correo = String(formData.get("correo") ?? "").trim();
   const motivo = String(formData.get("motivo") ?? "").trim();
 
-  if (!correo) return { ok: false, error: "Introduce un correo válido." };
-  if (!motivo) return { ok: false, error: "Escribe por qué lo cambias." };
+  if (!correo) return { ok: false, error: mensaje("trabajadores", "correo-invalido") };
+  if (!motivo) return { ok: false, error: mensaje("trabajadores", "motivo-requerido") };
 
   const resultado = cambiarCorreoTrabajador(session.scope, SCOPE_CONTEXT, workerId, correo, motivo);
-  if (!resultado.ok) return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO };
+  if (!resultado.ok) return { ok: false, error: mensaje("trabajadores", resultado.reason) };
 
   /* El evento guarda **las dos direcciones**: el motivo por el que se consulta
      esta auditoría es casi siempre «¿a dónde iban los códigos antes?». */

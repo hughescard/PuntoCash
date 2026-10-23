@@ -25,8 +25,10 @@
  *     (`emitirReto`). El terminal lo muestra; no se lo inventa.
  *   · **Vincular y desvincular** son actos del administrador de la sede
  *     (**A10**, **FR-AD-EQ-3**), reciben alcance y lo comprueban.
- *   · El terminal pregunta quién es (`resolverTerminal`) y pinta lo que le
- *     contesten. Dejó de ser quien lo decide.
+ *   · `resolverTerminal` es la respuesta del servidor a «quién soy». En la
+ *     demostración, Worker y Kiosco todavía leen su propio almacenamiento
+ *     (nota de entrega, §8.3); en el producto real preguntan aquí y pintan lo que les
+ *     contesten.
  *
  * ── Lo que esto todavía no es ─────────────────────────────────────────────
  * El identificador del equipo lo escribe el propio navegador, así que es
@@ -585,7 +587,7 @@ export function identificarReto(
  * §3.4 —elegir caja, o solo sede— se puedan ver.
  *
  * Esto desaparece cuando el terminal pregunte al servidor quién es
- * (**FR-DEV-8**, **FR-AD-EQ-26**): entonces los retos de verdad estarán aquí
+ * (**FR-DEV-8**, nota de entrega §8.3): entonces los retos de verdad estarán aquí
  * y no habrá nada que simular.
  */
 const PREFIJO_DEMO: Record<TerminalKind, string> = {

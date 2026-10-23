@@ -61,6 +61,7 @@ export type AuditEventType =
   | "usuario-admin.editado"
   | "usuario-admin.desactivado"
   | "usuario-admin.reactivado"
+  | "usuario-admin.contrasena-cambiada"
   | "moneda-sede.alta"
   | "moneda-sede.retirada"
   | "par.definido"
@@ -71,7 +72,8 @@ export type AuditEventType =
   | "promocion-sede.retirada"
   | "solicitud.aprobada"
   | "solicitud.rechazada"
-  | "jornada.cierre-forzado";
+  | "jornada.cierre-forzado"
+  | "reporte.exportado";
 
 export interface AuditEvent {
   id: string;
@@ -152,7 +154,7 @@ const mutableEvents: AuditEvent[] = [
     type: "operador.suspendido",
     subject: "Oriente Divisas",
     operatorId: "op-oriente",
-    reason: "Revisión de arqueos con diferencia reiterada en dos de sus sedes",
+    reason: "Revisión de cierres con diferencia reiterada en dos de sus sedes",
     before: "Activo",
     after: "Suspendido",
   },

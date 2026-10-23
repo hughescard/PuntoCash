@@ -1,16 +1,17 @@
 import { test, expect } from "@playwright/test";
 
 import { MARTA, signInAsAdmin } from "./admin-helpers";
+import { BASE_URL } from "./storage-state";
 
 /**
  * Sedes — **§6 del FRD**.
  *
  * Dos cosas se vigilan aquí por encima del resto:
  *
- *   · Que la ficha **no ofrezca editar nada**. Los datos maestros los gestiona
- *     PuntoCash (**A3**, **FR-AD-SEDE-4**), y el requisito es tajante: ni un
- *     control de edición, «ni siquiera deshabilitado». Un campo apagado invita
- *     a buscar cómo encenderlo.
+ *   · Que lo que se edita sea **solo lo de contacto** (**FR-AD-SEDE-14**):
+ *     dirección, teléfono y horario. El código y el nombre son de PuntoCash
+ *     y no aparecen en el formulario. Y que lo guardado **llegue a la
+ *     pantalla de la sala**, que es la razón de poder editarlo.
  *   · Que los **dos vacíos no se confundan** (**FR-AD-STATE-1**): «no tienes
  *     sedes» y «tus filtros no devuelven nada» son estados distintos del
  *     negocio y no pueden compartir mensaje.
@@ -38,7 +39,7 @@ const enlaceASede = (page: import("@playwright/test").Page, nombre: string) =>
 test("lista las sedes del alcance y solo esas", async ({ page }) => {
   await expect(enlaceASede(page, "PuntoCash Vedado")).toBeVisible();
   await expect(enlaceASede(page, "PuntoCash Obispo")).toBeVisible();
-  // De Caribe, no de Antilla.
+  // De Caribe, no de Malecón.
   await expect(enlaceASede(page, "PuntoCash Matanzas")).toHaveCount(0);
 });
 
@@ -69,28 +70,34 @@ test("el filtro de estado deja ver las suspendidas y las cerradas", async ({ pag
 });
 
 test.describe("ficha", () => {
-  test("declara que los datos los gestiona PuntoCash y no ofrece editarlos", async ({ page }) => {
+  test("la ficha no edita en sitio: lleva al formulario, que no toca código ni nombre", async ({ page }) => {
     await page.goto("/admin/sedes/sede-vedado");
     await expect(page.getByRole("heading", { name: "PuntoCash Vedado" })).toBeVisible();
 
-    await expect(page.getByText("Estos datos los gestiona PuntoCash.")).toBeVisible();
-    await expect(page.getByText(/Si alguno no es correcto, pídeselo a PuntoCash/)).toBeVisible();
-
-    /* Ni un control de edición, ni siquiera deshabilitado (**FR-AD-SEDE-4**).
-       Se comprueba que no haya NINGÚN campo de formulario en la ficha: es la
-       única forma de que la aserción siga mordiendo cuando alguien añada uno
-       «solo para ver». */
+    /* La ficha sigue sin ningún campo: se edita en su propia pantalla. */
     const main = page.getByRole("main");
     await expect(main.locator("input, textarea, select")).toHaveCount(0);
-    await expect(main.getByRole("button", { name: /Editar|Guardar/ })).toHaveCount(0);
+    await expect(page.getByText(/El código y el nombre, PuntoCash/)).toBeVisible();
+
+    await main.getByRole("link", { name: "Editar datos" }).click();
+    await page.waitForURL(/\/admin\/sedes\/sede-vedado\/editar$/);
+    await expect(page.getByLabel(/^Dirección/)).toHaveValue("Calle 23 esq. a L, Vedado");
+    await expect(page.getByLabel(/^Nombre/)).toHaveCount(0);
+    await expect(page.getByLabel(/^Código/)).toHaveCount(0);
   });
 
-  test("muestra los datos que la sucursal exhibe en su kiosco", async ({ page }) => {
+  test("muestra los datos que la sucursal exhibe en su pantalla", async ({ page }) => {
     await page.goto("/admin/sedes/sede-vedado");
 
     await expect(page.getByText("Calle 23 esq. a L, Vedado")).toBeVisible();
     await expect(page.getByText("+53 7 838 1234")).toBeVisible();
     await expect(page.getByText("Lunes a sábado · 8:30 a.m. – 6:00 p.m.")).toBeVisible();
+
+    /* **FR-AD-SEDE-11**: lo que la pantalla de la sala muestra hoy. */
+    const sala = page.getByRole("main");
+    await expect(sala.getByRole("heading", { name: "Tasas", exact: true })).toBeVisible();
+    await expect(sala.getByRole("heading", { name: "Promociones", exact: true })).toBeVisible();
+    await expect(sala.getByRole("link", { name: "Cobra tu remesa sin filas" })).toBeVisible();
   });
 
   test("dice desde cuándo se administra, sin el historial de otros operadores", async ({ page }) => {
@@ -117,4 +124,53 @@ test.describe("ficha", () => {
     await expect(page.getByText(/Esta sede todavía no tiene cajas/)).toBeVisible();
     await expect(page.getByText(/no tiene ningún kiosco vinculado/)).toBeVisible();
   });
+});
+
+test("lo que se guarda llega a la pantalla de la sala", async ({ page, browser }) => {
+  /* Cerro: ninguna otra prueba lee su teléfono ni su horario, y al no tener
+     tasas su pantalla empieza por la información de la sucursal. */
+  await page.goto("/admin/sedes/sede-cerro/editar");
+  const telefono = page.getByLabel(/^Teléfono/);
+  const original = await telefono.inputValue();
+  const nuevo = `+53 7 877 ${String(1000 + (Date.now() % 9000))}`;
+
+  /* Un horario imposible se rechaza diciendo qué día. */
+  await page.getByLabel("Sábado, cierra").fill("08:00");
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(
+    page.getByText("El sábado, la hora de cierre tiene que ser posterior a la de apertura."),
+  ).toBeVisible();
+
+  await telefono.fill(nuevo);
+  await page.getByLabel("Sábado, cierra").fill("13:00");
+  /* La vista previa agrupa los días seguidos con la misma franja. */
+  await expect(page.getByText("Sábado · 9:00 a.m. – 1:00 p.m.")).toBeVisible();
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
+
+  await page.waitForURL(/\/admin\/sedes\/sede-cerro\?guardado=1$/);
+  await expect(page.getByText("Datos guardados")).toBeVisible();
+  await expect(page.getByText(nuevo)).toBeVisible();
+  await expect(page.getByText("Lunes a viernes · 9:00 a.m. – 5:30 p.m.")).toBeVisible();
+
+  const pantalla = await browser.newContext({
+    baseURL: BASE_URL,
+    storageState: {
+      cookies: [],
+      origins: [
+        { origin: BASE_URL, localStorage: [{ name: "puntocash.kiosk.pantalla.sede", value: "sede-cerro" }] },
+      ],
+    },
+  });
+  const tv = await pantalla.newPage();
+  await tv.goto("/kiosk/pantalla");
+  await expect(tv.getByText(nuevo)).toBeVisible({ timeout: 30_000 });
+  await expect(tv.getByText("Sábado · 9:00 a.m. – 1:00 p.m.")).toBeVisible();
+  await pantalla.close();
+
+  /* Se deja como estaba. */
+  await page.goto("/admin/sedes/sede-cerro/editar");
+  await page.getByLabel(/^Teléfono/).fill(original);
+  await page.getByLabel("Sábado, cierra").fill("17:30");
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await page.waitForURL(/\/admin\/sedes\/sede-cerro\?guardado=1$/);
 });

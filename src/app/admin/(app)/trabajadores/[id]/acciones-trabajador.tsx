@@ -32,12 +32,11 @@ import {
 /**
  * Lo que la ficha permite hacer — **FR-AD-TRAB-12** a **FR-AD-TRAB-15**.
  *
- * Las tres acciones comparten una advertencia que **se da siempre**: ni
- * desactivar ni reasignar es posible con una jornada abierta, y esta consola
- * **no puede saber si la hay** — la jornada vive en `caja-data.ts`, en el
- * navegador del trabajador. Avisar solo cuando se sabe y callar cuando no
- * sería peor que avisar siempre, que es el criterio que ya sigue la
- * desvinculación de un equipo (**FR-AD-EQ-10**).
+ * Ni desactivar ni reasignar es posible con una jornada abierta
+ * (**FR-AD-TRAB-13**, **FR-AD-TRAB-14**). La ficha lo sabe antes de abrir el
+ * diálogo, así que el diálogo lo dice en lugar de ofrecer un botón que el
+ * dominio rechazaría, y lleva a esa jornada. El dominio lo revalida igual al
+ * confirmar: la jornada pudo abrirse mientras el diálogo estaba abierto.
  *
  * Los botones están cerrados hasta que React se engancha, como el resto de
  * los controles del producto: lo que abren es un diálogo, y un diálogo que no
@@ -67,7 +66,15 @@ export function AccionesTrabajador({
   trabajador,
   sedes,
 }: {
-  trabajador: { id: string; nombre: string; sedeId: string; sedeName: string; activo: boolean };
+  trabajador: {
+    id: string;
+    nombre: string;
+    sedeId: string;
+    sedeName: string;
+    activo: boolean;
+    /** Su jornada abierta, si la tiene: bloquea desactivar y reasignar. */
+    jornadaAbierta: JornadaAbiertaDeTrabajador | null;
+  };
   sedes: readonly { id: string; name: string; suspendida: boolean }[];
 }): React.JSX.Element {
   const hydrated = useHydrated();
@@ -145,20 +152,45 @@ export function AccionesTrabajador({
   );
 }
 
-/** El aviso de la jornada, idéntico en los dos diálogos que lo necesitan. */
-function AvisoJornada({ accion }: { accion: string }): React.JSX.Element {
+export interface JornadaAbiertaDeTrabajador {
+  id: string;
+  caja: string;
+  sede: string;
+}
+
+/**
+ * **FR-AD-TRAB-13** y **FR-AD-TRAB-14**: con una jornada abierta, el diálogo no
+ * ofrece la acción. Dice dónde está esa jornada y lleva a ella, donde se puede
+ * forzar su cierre si nadie va a hacerlo.
+ */
+function Bloqueado({
+  nombre,
+  jornada,
+  accion,
+  onCerrar,
+}: {
+  nombre: string;
+  jornada: JornadaAbiertaDeTrabajador;
+  accion: string;
+  onCerrar: () => void;
+}): React.JSX.Element {
   return (
-    <Alert variant="warning" title="No es posible con una jornada abierta">
-      Si tiene una jornada abierta en alguna caja, hay que cerrarla antes de {accion}. Puedes
-      comprobarlo y forzar su cierre desde{" "}
-      <Link
-        href="/admin/jornadas"
-        className="font-semibold text-primary underline underline-offset-4"
-      >
-        Jornadas
-      </Link>
-      .
-    </Alert>
+    <>
+      <DialogBody>
+        <Alert variant="warning" title="Tiene una jornada abierta">
+          {nombre} tiene una jornada abierta en {jornada.caja} de {jornada.sede}. Hasta que se haga su
+          cierre no se puede {accion}. Si nadie va a hacerlo, puedes forzar el cierre desde la jornada.
+        </Alert>
+      </DialogBody>
+      <DialogFooter>
+        <Button type="button" variant="secondary" onClick={onCerrar}>
+          Cancelar
+        </Button>
+        <Button asChild>
+          <Link href={`/admin/jornadas/${jornada.id}` as Route}>Ir a la jornada</Link>
+        </Button>
+      </DialogFooter>
+    </>
   );
 }
 
@@ -172,7 +204,7 @@ function Desactivar({
   trabajador,
   onCerrar,
 }: {
-  trabajador: { id: string; nombre: string };
+  trabajador: { id: string; nombre: string; jornadaAbierta: JornadaAbiertaDeTrabajador | null };
   onCerrar: () => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoAccionTrabajador, FormData>(
@@ -192,7 +224,9 @@ function Desactivar({
           </DialogDescription>
         </DialogHeader>
 
-        {hecho ? (
+        {trabajador.jornadaAbierta && !hecho ? (
+          <Bloqueado nombre={trabajador.nombre} jornada={trabajador.jornadaAbierta} accion="desactivarlo" onCerrar={onCerrar} />
+        ) : hecho ? (
           <>
             <DialogBody>
               <Alert variant="success" title="Trabajador desactivado">
@@ -213,8 +247,6 @@ function Desactivar({
                   {estado.error}
                 </Alert>
               ) : null}
-
-              <AvisoJornada accion="desactivarlo" />
 
               <Field {...MOTIVO}>
                 <textarea
@@ -327,7 +359,7 @@ function Reasignar({
   sedes,
   onCerrar,
 }: {
-  trabajador: { id: string; nombre: string; sedeName: string };
+  trabajador: { id: string; nombre: string; sedeName: string; jornadaAbierta: JornadaAbiertaDeTrabajador | null };
   sedes: readonly { id: string; name: string; suspendida: boolean }[];
   onCerrar: () => void;
 }): React.JSX.Element {
@@ -342,7 +374,7 @@ function Reasignar({
      el diálogo terminaba diciendo «ahora está adscrito a Vedado» justo encima
      del mensaje que anuncia que **acaba de pasar** a Vedado. Quien lo lea tiene
      que poder comparar de dónde salió y adónde fue. */
-  const sedeAlAbrir = React.useRef(trabajador.sedeName).current;
+  const [sedeAlAbrir] = React.useState(trabajador.sedeName);
 
   return (
     <Dialog open onOpenChange={(valor) => (valor ? undefined : onCerrar())}>
@@ -354,7 +386,9 @@ function Reasignar({
           </DialogDescription>
         </DialogHeader>
 
-        {hecho ? (
+        {trabajador.jornadaAbierta && !hecho ? (
+          <Bloqueado nombre={trabajador.nombre} jornada={trabajador.jornadaAbierta} accion="reasignarlo" onCerrar={onCerrar} />
+        ) : hecho ? (
           <>
             <DialogBody>
               <Alert variant="success" title="Trabajador reasignado">
@@ -381,8 +415,6 @@ function Reasignar({
                 ahora mismo está operando en una caja de {sedeAlAbrir}, su siguiente inicio de
                 sesión allí será rechazado.
               </Alert>
-
-              <AvisoJornada accion="reasignarlo" />
 
               <Field {...SEDE_DESTINO}>
                 <select
@@ -494,9 +526,10 @@ function Credencial({
               ) : null}
 
               <Alert variant="warning" title="Quien use la anterior dejará de poder entrar">
-                Hazlo cuando vayas a entregarle la nueva, no antes. Si {trabajador.nombre} está
-                operando ahora mismo, su sesión abierta sigue, pero el siguiente inicio de sesión
-                le pedirá la credencial nueva.
+                Sustituye a la credencial anterior y a cualquier contraseña que {trabajador.nombre}
+                haya elegido después. Hazlo cuando vayas a entregarle la nueva, no antes. Si está
+                operando ahora mismo, su sesión abierta sigue, pero el siguiente inicio de sesión le
+                pedirá la credencial nueva.
               </Alert>
             </DialogBody>
 

@@ -20,19 +20,22 @@ export const metadata: Metadata = {
  * esta pantalla responde «qué sedes administro», y filtrarla por una sede la
  * convertiría en una lista de un elemento que no contesta esa pregunta.
  *
- * No hay alta, edición ni baja: las sedes las crea, edita y cierra PuntoCash
- * (**A3**, **FR-AD-SEDE-2**). Aquí solo se consultan.
+ * No hay alta ni baja: las sedes las crea y las cierra PuntoCash (**A3**,
+ * **FR-AD-SEDE-2**). Desde aquí solo se editan sus datos de contacto —dirección,
+ * teléfono y horario— en su ficha (**FR-AD-SEDE-14**).
  *
- * ── Lo que falta de FR-AD-SEDE-1, y por qué ──────────────────────────────
- * El requisito pide **código**, que ya existe en el dominio y encabeza el
- * listado, y **estado de la jornada de hoy**, que todavía no se conoce para
- * toda la red: los datos de caja son los de una sola caja simulada. No se
- * inventa. Una columna con un dato falso se copia igual que una con un dato
- * cierto, y este demo es la referencia que van a seguir quienes implementen.
+ * ── La jornada ────────────────────────────────────────────────────────────
+ * **FR-AD-SEDE-1** pide el estado de la jornada de hoy. Una sede tiene varias
+ * cajas y cada una su jornada, así que se cuentan: «2 de 3 abiertas».
  */
-export default async function AdminSedesPage() {
+export default async function AdminSedesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const session = await getAdminSession();
   if (!session) redirect("/admin/login");
+  const inicial = await searchParams;
 
   /* Todo lo que esta pantalla cuenta sale de la vista con alcance, no del
      dominio por identificador (`features/network/scoped-reads.ts`). */
@@ -51,6 +54,7 @@ export default async function AdminSedesPage() {
       cajasSinEquipo: cajas.filter((caja) => !red.cajaTieneEquipo(caja.id)).length,
       kioscos: red.kioscos(sede.id).length,
       trabajadores: red.trabajadores(sede.id).filter((w) => w.status === "activo").length,
+      cajasAbiertas: red.diaDeSede(sede.id)?.abiertas ?? 0,
     };
   });
 
@@ -58,7 +62,7 @@ export default async function AdminSedesPage() {
     <>
       <PageHeader
         title="Sedes"
-        description="Las sucursales que administras. Los datos de cada una los gestiona PuntoCash."
+        description="Las sucursales que administras. Su código, su nombre y sus servicios los decide PuntoCash; la dirección, el municipio, el teléfono y el horario los mantienes tú."
       />
 
       {rows.length === 0 ? (
@@ -66,7 +70,7 @@ export default async function AdminSedesPage() {
           Cuando PuntoCash te asigne una, aparecerá aquí con sus cajas, sus equipos y su personal.
         </Alert>
       ) : (
-        <SedesList rows={rows} />
+        <SedesList rows={rows} inicial={inicial} />
       )}
     </>
   );

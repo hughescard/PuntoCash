@@ -34,16 +34,50 @@ const DENTRO_DEL_SHELL = [
   { nombre: "Inicio", href: "/admin/inicio" },
   { nombre: "Sedes", href: "/admin/sedes" },
   { nombre: "Ficha de sede", href: "/admin/sedes/sede-vedado" },
+  { nombre: "Editar datos de sede", href: "/admin/sedes/sede-vedado/editar" },
   { nombre: "Cajas", href: "/admin/cajas" },
   { nombre: "Nueva caja", href: "/admin/cajas/nueva" },
   { nombre: "Equipos · Cajas", href: "/admin/equipos" },
   /* La otra pestaña es la misma pantalla con otro contenido, y a 360px lo que
      hay que medir es precisamente que la fila de pestañas no desborde. */
   { nombre: "Equipos · Kioscos", href: "/admin/equipos?pestana=kioscos" },
-  /* Una pantalla de «en construcción» como representante de las que quedan:
-     todas son el mismo componente, así que medirlas una por una no añadiría
-     nada. */
-  { nombre: "En construcción (Trabajadores)", href: "/admin/trabajadores" },
+  { nombre: "Trabajadores", href: "/admin/trabajadores" },
+  { nombre: "Perfil", href: "/admin/perfil" },
+  { nombre: "Monedas", href: "/admin/monedas" },
+  { nombre: "Promociones", href: "/admin/promociones" },
+  { nombre: "Nueva promoción", href: "/admin/promociones/nueva" },
+  { nombre: "Reportes · Por sede", href: "/admin/reportes" },
+  { nombre: "Reportes · Por servicio", href: "/admin/reportes?corte=servicio" },
+  { nombre: "Reportes · Por trabajador", href: "/admin/reportes?corte=trabajador" },
+  { nombre: "Reportes · Por día", href: "/admin/reportes?corte=dia" },
+  { nombre: "Aprobaciones", href: "/admin/aprobaciones" },
+  { nombre: "Aprobaciones · Resueltas", href: "/admin/aprobaciones?pestana=resueltas" },
+  { nombre: "Jornadas", href: "/admin/jornadas" },
+  { nombre: "Operaciones", href: "/admin/operaciones" },
+  { nombre: "Tasas", href: "/admin/tasas" },
+  { nombre: "Tasas de una sede", href: "/admin/tasas/sede-vedado" },
+  { nombre: "Usuarios", href: "/admin/usuarios" },
+  { nombre: "Ficha de usuario", href: "/admin/usuarios/adm-malecon-2" },
+  { nombre: "Nuevo usuario", href: "/admin/usuarios/nuevo" },
+  { nombre: "Editar usuario", href: "/admin/usuarios/adm-malecon-2/editar" },
+  { nombre: "Nuevo trabajador", href: "/admin/trabajadores/nuevo" },
+  { nombre: "Vincular un equipo", href: "/admin/equipos/vincular" },
+  { nombre: "Editar perfil", href: "/admin/perfil/editar" },
+  { nombre: "Cambiar contraseña", href: "/admin/perfil/contrasena" },
+] as const;
+
+/**
+ * Las fichas cuyo identificador depende de los datos sembrados: se llega
+ * desde su listado, como llega una persona, en vez de fijar un id que la
+ * semilla puede cambiar. `sufijo` añade la subpantalla de la ficha.
+ */
+const DESDE_SU_LISTADO = [
+  { nombre: "Ficha de trabajador", listado: "/admin/trabajadores", prefijo: "/admin/trabajadores/trb-", sufijo: "" },
+  { nombre: "Editar trabajador", listado: "/admin/trabajadores", prefijo: "/admin/trabajadores/trb-", sufijo: "/editar" },
+  { nombre: "Acceso del trabajador", listado: "/admin/trabajadores", prefijo: "/admin/trabajadores/trb-", sufijo: "/acceso" },
+  { nombre: "Ficha de jornada", listado: "/admin/jornadas", prefijo: "/admin/jornadas/", sufijo: "" },
+  { nombre: "Ficha de operación", listado: "/admin/operaciones", prefijo: "/admin/operaciones/", sufijo: "" },
+  { nombre: "Ficha de solicitud", listado: "/admin/aprobaciones", prefijo: "/admin/aprobaciones/", sufijo: "" },
 ] as const;
 
 for (const ancho of ANCHOS) {
@@ -51,12 +85,30 @@ for (const ancho of ANCHOS) {
     test.use({ viewport: { width: ancho.width, height: ancho.height } });
 
     test("ninguna pantalla del shell se desborda de lado", async ({ page }) => {
+      /* Más de treinta pantallas en un recorrido: en desarrollo, la primera
+         visita a cada una la compila. */
+      test.setTimeout(300_000);
       await signInAsAdmin(page, MARTA);
 
       for (const pantalla of DENTRO_DEL_SHELL) {
         await page.goto(pantalla.href);
         await expect(page.getByRole("main"), `${pantalla.nombre} no representó main`).toBeVisible();
         await sinDesbordamientoHorizontal(page, `${pantalla.nombre} a ${ancho.nombre}`);
+      }
+    });
+
+    test("ni las fichas a las que se llega desde un listado", async ({ page }) => {
+      test.setTimeout(180_000);
+      await signInAsAdmin(page, MARTA);
+
+      for (const ficha of DESDE_SU_LISTADO) {
+        await page.goto(ficha.listado);
+        const enlace = page.locator(`main a[href^="${ficha.prefijo}"]`).first();
+        await expect(enlace, `${ficha.listado} no enlaza a ninguna ficha`).toBeAttached();
+        const href = await enlace.getAttribute("href");
+        await page.goto(`${href!.split("?")[0]}${ficha.sufijo}`);
+        await expect(page.getByRole("main"), `${ficha.nombre} no representó main`).toBeVisible();
+        await sinDesbordamientoHorizontal(page, `${ficha.nombre} a ${ancho.nombre}`);
       }
     });
 
@@ -126,11 +178,11 @@ test.describe("a 360px, los controles se pueden pulsar", () => {
        a un elemento que no llega a ser visible nunca — es exactamente el error
        que esta prueba cometió la primera vez, y la razón de este comentario.
 
-       Se busca una caja **con equipo vinculado**: su diálogo lleva el aviso
-       además del motivo, que es el caso más alto que **FR-AD-SHELL-16**
-       contempla y por tanto el que hay que medir. Se filtra por el dato en vez
-       de confiar en el orden de las sedes, que depende del alcance de quien
-       entra. El dominio rechaza esa retirada, de modo que abrir y cancelar no
+       Se busca una caja **con equipo vinculado** —y, si es de hoy, con su
+       jornada abierta—: su diálogo lleva los dos avisos que impiden retirarla,
+       que es el caso más alto que **FR-AD-SHELL-16** contempla y por tanto el
+       que hay que medir. Se filtra por el dato en vez de confiar en el orden de
+       las sedes, que depende del alcance de quien entra. Abrir y cancelar no
        cambia nada para nadie. */
     const tarjeta = page
       .getByRole("article")
@@ -163,7 +215,7 @@ test.describe("a 360px, los controles se pueden pulsar", () => {
        el orden del marcado. Si estuvieran en fila, las dos compartirían la
        misma línea y sus `y` coincidirían. */
     const cancelar = await dialogo.getByRole("button", { name: "Cancelar" }).boundingBox();
-    const retirar = await dialogo.getByRole("button", { name: "Retirar caja" }).boundingBox();
+    const retirar = await dialogo.getByRole("link", { name: /^Ir a (la jornada|Equipos)$/ }).boundingBox();
     expect(cancelar).not.toBeNull();
     expect(retirar).not.toBeNull();
     expect(retirar!.y, "la acción primaria debe quedar debajo de la secundaria").toBeGreaterThan(

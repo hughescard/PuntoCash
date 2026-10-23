@@ -15,13 +15,22 @@
  *   · `Sede` — la cara ADMINISTRATIVA: estado, servicios habilitados, fecha de
  *     alta, suspensión vigente. Solo la ve la capa de administración.
  *
- * Quién puede escribir aquí: **solo PuntoCash** (regla A3). Crear una sede,
- * editar sus datos maestros, habilitar sus servicios, suspenderla y cerrarla
- * son los términos de la relación y los límites de la red, no decisiones de
- * dentro de la sucursal. Las cajas, en cambio, las crea su mercante y viven en
+ * Quién puede escribir aquí: **PuntoCash** (regla A3). Crear una sede, fijar
+ * su código y su nombre, habilitar sus servicios, suspenderla y cerrarla son
+ * los términos de la relación y los límites de la red, no decisiones de dentro
+ * de la sucursal. La excepción son los **datos de contacto** —dirección,
+ * teléfono y horario—, que conoce quien atiende la sucursal y que su
+ * administrador corrige desde `datos-de-sede.ts` (**FR-AD-SEDE-14**). Las cajas, en cambio, las crea su mercante y viven en
  * `registers.ts`: una sede NACE VACÍA (FR-SA-SEDE-4).
  */
 
+import {
+  horarioDe,
+  LUNES_A_SABADO,
+  LUNES_A_VIERNES,
+  textoDeHorario,
+  type HorarioSemanal,
+} from "./horario";
 import { isGlobal, type Scope } from "./scope";
 
 /** La cara pública de una sede. Idéntica a la que Kiosco y Pantalla ya leían. */
@@ -45,6 +54,11 @@ export interface Branch {
   address: string;
   /** Municipio y provincia; el selector de sede de la Pantalla filtra por aquí. */
   locality: string;
+  /**
+   * El horario en texto, **derivado** de `Sede.horario` y nunca escrito a
+   * mano: «Lunes a sábado · 9:00 a.m. – 6:00 p.m.», con «; » entre grupos de
+   * días. Se conserva para quien solo lee la cara pública.
+   */
   hours: string;
   phone: string;
 }
@@ -68,6 +82,8 @@ export interface Sede extends Branch {
   status: SedeStatus;
   /** Ids de `WORKER_SERVICES` que PuntoCash habilitó en esta sede (regla A3). */
   services: readonly string[];
+  /** El horario por días (`horario.ts`). `hours` se deriva de aquí. */
+  horario: HorarioSemanal;
   createdAt: string;
   /** Vigente solo mientras `status` es `suspendida`. */
   suspension?: SedeSuspension;
@@ -78,14 +94,14 @@ export interface Sede extends Branch {
  * `CAJA_MOVEMENTS` en `caja-data.ts`: crear o editar una sede actualiza lo
  * que ya leyeron los consumidores, sin romper la referencia exportada.
  */
-const mutableSedes: Sede[] = [
+const SEMILLA: Omit<Sede, "hours">[] = [
   {
     id: "sede-vedado",
     code: "VED",
     name: "PuntoCash Vedado",
     address: "Calle 23 esq. a L, Vedado",
     locality: "Plaza de la Revolución, La Habana",
-    hours: "Lunes a sábado · 8:30 a.m. – 6:00 p.m.",
+    horario: horarioDe(LUNES_A_SABADO, "08:30", "18:00"),
     phone: "+53 7 838 1234",
     status: "activa",
     services: ["cambio-moneda", "remesas", "giros"],
@@ -97,7 +113,7 @@ const mutableSedes: Sede[] = [
     name: "PuntoCash Obispo",
     address: "Obispo No. 257 e/ Aguiar y Cuba",
     locality: "La Habana Vieja, La Habana",
-    hours: "Lunes a sábado · 9:00 a.m. – 6:00 p.m.",
+    horario: horarioDe(LUNES_A_SABADO, "09:00", "18:00"),
     phone: "+53 7 861 5520",
     status: "activa",
     services: ["cambio-moneda", "remesas", "giros"],
@@ -109,7 +125,7 @@ const mutableSedes: Sede[] = [
     name: "PuntoCash Miramar",
     address: "5ta Avenida esq. a 42, Miramar",
     locality: "Playa, La Habana",
-    hours: "Lunes a viernes · 8:30 a.m. – 5:30 p.m.",
+    horario: horarioDe(LUNES_A_VIERNES, "08:30", "17:30"),
     phone: "+53 7 204 7788",
     status: "activa",
     services: ["cambio-moneda", "remesas", "giros"],
@@ -121,7 +137,7 @@ const mutableSedes: Sede[] = [
     name: "PuntoCash Matanzas",
     address: "Calle Medio No. 28004 e/ Jovellanos y Matanzas",
     locality: "Matanzas, Matanzas",
-    hours: "Lunes a sábado · 8:30 a.m. – 5:00 p.m.",
+    horario: horarioDe(LUNES_A_SABADO, "08:30", "17:00"),
     phone: "+53 45 24 3310",
     status: "activa",
     /* Sin Cambio de moneda: sirve para comprobar que su Admin no puede definir
@@ -136,7 +152,7 @@ const mutableSedes: Sede[] = [
     name: "PuntoCash Santa Clara",
     address: "Boulevard No. 12 e/ Villuendas y Plácido",
     locality: "Santa Clara, Villa Clara",
-    hours: "Lunes a sábado · 8:30 a.m. – 5:30 p.m.",
+    horario: horarioDe(LUNES_A_SABADO, "08:30", "17:30"),
     phone: "+53 42 20 6641",
     status: "activa",
     services: ["cambio-moneda", "remesas", "giros"],
@@ -148,7 +164,7 @@ const mutableSedes: Sede[] = [
     name: "PuntoCash Camagüey",
     address: "República No. 356 e/ San Martín y Correa",
     locality: "Camagüey, Camagüey",
-    hours: "Lunes a sábado · 8:30 a.m. – 5:00 p.m.",
+    horario: horarioDe(LUNES_A_SABADO, "08:30", "17:00"),
     phone: "+53 32 29 8120",
     status: "activa",
     services: ["cambio-moneda", "remesas", "giros"],
@@ -158,13 +174,13 @@ const mutableSedes: Sede[] = [
     /* La única sede de su mercante. Existe para que **FR-AD-SCOPE-3** —con una
        sola sede en el alcance, la cabecera muestra su código y nombre como
        texto fijo en vez de un selector— se pueda recorrer y probar sin
-       construir datos a mano, que es lo que pide **FR-AD-DOM-9**. */
+       construir datos a mano (nota de entrega, §8.3). */
     id: "sede-centro-habana",
     code: "CHB",
     name: "PuntoCash Centro Habana",
     address: "Avenida Salvador Allende No. 412 e/ Infanta y Belascoaín",
     locality: "Centro Habana, La Habana",
-    hours: "Lunes a sábado · 9:00 a.m. – 6:00 p.m.",
+    horario: horarioDe(LUNES_A_SABADO, "09:00", "18:00"),
     phone: "+53 7 878 4410",
     status: "activa",
     services: ["cambio-moneda", "remesas", "giros"],
@@ -176,7 +192,7 @@ const mutableSedes: Sede[] = [
     name: "PuntoCash Holguín",
     address: "Calle Libertad No. 187 e/ Frexes y Aguilera",
     locality: "Holguín, Holguín",
-    hours: "Lunes a sábado · 8:30 a.m. – 5:00 p.m.",
+    horario: horarioDe(LUNES_A_SABADO, "08:30", "17:00"),
     phone: "+53 24 42 5096",
     status: "activa",
     services: ["cambio-moneda", "remesas", "giros"],
@@ -192,7 +208,7 @@ const mutableSedes: Sede[] = [
     name: "PuntoCash Cerro",
     address: "Calzada del Cerro No. 1204 esq. a Patria",
     locality: "Cerro, La Habana",
-    hours: "Lunes a sábado · 9:00 a.m. – 5:30 p.m.",
+    horario: horarioDe(LUNES_A_SABADO, "09:00", "17:30"),
     phone: "+53 7 877 4410",
     status: "activa",
     services: ["cambio-moneda", "remesas", "giros"],
@@ -208,13 +224,49 @@ const mutableSedes: Sede[] = [
     name: "PuntoCash Santiago",
     address: "Enramadas No. 402 e/ San Félix y Carnicería",
     locality: "Santiago de Cuba, Santiago de Cuba",
-    hours: "Lunes a sábado · 8:30 a.m. – 5:30 p.m.",
+    horario: horarioDe(LUNES_A_SABADO, "08:30", "17:30"),
     phone: "+53 22 65 3471",
     status: "suspendida",
     services: ["cambio-moneda", "remesas", "giros"],
     createdAt: "2026-09-18T09:00:00.000Z",
   },
+  {
+    /* Bahía Cambios: los casos de atención que el resto de la semilla no tiene.
+       Trinidad está suspendida por PuntoCash con su operador dentro, y cotiza
+       una moneda sin rango; Pinar del Río solo tiene cajas retiradas y ninguna
+       moneda en su lista (nota de entrega, §8.3). */
+    id: "sede-trinidad",
+    code: "TRI",
+    name: "PuntoCash Trinidad",
+    address: "Calle Simón Bolívar No. 352 e/ Gutiérrez y Martí",
+    locality: "Trinidad, Sancti Spíritus",
+    horario: horarioDe(LUNES_A_SABADO, "09:00", "17:30"),
+    phone: "+53 41 99 6620",
+    status: "suspendida",
+    services: ["cambio-moneda", "remesas", "giros"],
+    createdAt: "2026-06-01T09:00:00.000Z",
+    suspension: {
+      reason: "Revisión de la documentación de la licencia de la sucursal",
+      at: "2026-10-17T14:00:00.000Z",
+      by: "PuntoCash",
+    },
+  },
+  {
+    id: "sede-pinar",
+    code: "PRI",
+    name: "PuntoCash Pinar del Río",
+    address: "Calle Martí No. 115 e/ Isabel Rubio y Colón",
+    locality: "Pinar del Río, Pinar del Río",
+    horario: horarioDe(LUNES_A_VIERNES, "08:30", "17:00"),
+    phone: "+53 48 75 2214",
+    status: "activa",
+    services: ["cambio-moneda", "remesas", "giros"],
+    createdAt: "2026-06-01T09:00:00.000Z",
+  },
 ];
+
+/* El texto del horario sale siempre de los datos (`horario.ts`). */
+const mutableSedes: Sede[] = SEMILLA.map((s) => ({ ...s, hours: textoDeHorario(s.horario) }));
 
 /** Vista administrativa completa. */
 export const SEDES: readonly Sede[] = mutableSedes;
@@ -305,7 +357,7 @@ export interface CrearSedeInput {
   name: string;
   address: string;
   locality: string;
-  hours: string;
+  horario: HorarioSemanal;
   phone: string;
   services: readonly string[];
 }
@@ -331,7 +383,8 @@ export function crearSede(scope: Scope, input: CrearSedeInput, now = new Date())
     name: input.name,
     address: input.address,
     locality: input.locality,
-    hours: input.hours,
+    horario: input.horario,
+    hours: textoDeHorario(input.horario),
     phone: input.phone,
     status: "suspendida",
     services: [...input.services],
@@ -342,7 +395,7 @@ export function crearSede(scope: Scope, input: CrearSedeInput, now = new Date())
 }
 
 export type EditarSedeInput = Partial<
-  Pick<Sede, "code" | "name" | "address" | "locality" | "hours" | "phone">
+  Pick<Sede, "code" | "name" | "address" | "locality" | "horario" | "phone">
 >;
 
 export function editarSede(scope: Scope, sedeId: string, input: EditarSedeInput): SedeWriteResult<Sede> {
@@ -360,6 +413,7 @@ export function editarSede(scope: Scope, sedeId: string, input: EditarSedeInput)
   }
 
   Object.assign(sede, input);
+  if (input.horario) sede.hours = textoDeHorario(input.horario);
   return { ok: true, value: sede };
 }
 

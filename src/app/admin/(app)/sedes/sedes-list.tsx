@@ -9,6 +9,7 @@ import { Badge, Field, fieldAria, Input, type FieldSpec } from "@/components/ui"
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import type { SedeStatus } from "@/features/network/sedes";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 
 /**
  * El listado con su búsqueda y su filtro de estado (**FR-AD-SEDE-2**).
@@ -35,6 +36,8 @@ export interface SedeRow {
   cajasSinEquipo: number;
   kioscos: number;
   trabajadores: number;
+  /** Cajas con jornada abierta ahora (**FR-AD-SEDE-1**). */
+  cajasAbiertas: number;
 }
 
 const BUSQUEDA: FieldSpec = {
@@ -54,9 +57,16 @@ const ESTADOS: readonly { value: SedeStatus | "todos"; label: string }[] = [
   { value: "cerrada", label: "Cerradas" },
 ];
 
-export function SedesList({ rows }: { rows: readonly SedeRow[] }): React.JSX.Element {
-  const [texto, setTexto] = React.useState("");
-  const [estado, setEstado] = React.useState<SedeStatus | "todos">("todos");
+export function SedesList({
+  rows,
+  inicial = {},
+}: {
+  rows: readonly SedeRow[];
+  inicial?: Record<string, string | undefined>;
+}): React.JSX.Element {
+  const [texto, setTexto] = React.useState(inicial.texto ?? "");
+  const [estado, setEstado] = React.useState<SedeStatus | "todos">((inicial.estado as SedeStatus | "todos" | undefined) ?? "todos");
+  useFiltrosEnUrl({ texto, estado }, { estado: "todos" });
 
   /* Los dos controles filtran en el cliente, así que antes de la hidratación
      no filtran nada: escribir en ellos entonces no tendría efecto y el
@@ -114,6 +124,21 @@ export function SedesList({ rows }: { rows: readonly SedeRow[] }): React.JSX.Ele
     },
     { key: "kioscos", header: "Kioscos", cell: (row) => row.kioscos, numeric: true },
     { key: "personal", header: "Trabajadores", cell: (row) => row.trabajadores, numeric: true },
+    {
+      /* FR-AD-SEDE-1: una sede tiene varias cajas, así que su jornada se cuenta. */
+      key: "jornada",
+      header: "Jornada",
+      cell: (row) =>
+        row.cajasActivas === 0 ? (
+          <span className="text-text-secondary">—</span>
+        ) : row.cajasAbiertas === 0 ? (
+          <span className="text-text-secondary">Ninguna caja abierta</span>
+        ) : (
+          <span className="font-semibold text-text-primary">
+            {row.cajasAbiertas} de {row.cajasActivas} abiertas
+          </span>
+        ),
+    },
   ];
 
   return (

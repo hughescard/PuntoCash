@@ -25,9 +25,9 @@
  *     una pantalla de `/admin` las use es una regla de `eslint.config.mjs`,
  *     no la buena memoria de quien la escriba.
  *
- *     Quedan dos lecturas sin vista porque todavía no las lee ninguna
- *     pantalla: `historialDeSede` y `listarEventos`. Llegan con la sección que
- *     las muestre, y entran por `redEnAlcance` cuando lleguen.
+ *     Quedan dos lecturas sin vista porque ninguna pantalla de `/admin` las
+ *     lee: `historialDeSede` y `listarEventos` (el registro de auditoría es de
+ *     Super Admin). Si una pantalla las necesita, entran por `redEnAlcance`.
  *   · **PuntoCash observa dentro de la sede y actúa solo sobre la sede
  *     entera** (regla A14). Las escrituras sobre cajas, trabajadores y
  *     usuarios exigen alcance de operador y rechazan el global, así que la
@@ -37,10 +37,10 @@
  * Todo es un mock en memoria, como el resto del producto: una recarga completa
  * restaura los datos precargados.
  *
- * **Todavía no está aquí**, y llega con la pantalla que lo escriba: la lista de
- * monedas por sede y el catálogo de la plataforma, los pares de cotización y
- * los rangos, las promociones y las solicitudes de aprobación. Añadirlos ahora
- * habría sido código muerto que nadie lee ni escribe.
+ * Contenido: sedes y sus datos, cajas, equipos, operadores y usuarios,
+ * asignaciones, trabajadores, monedas, tasas y rangos, jornadas, operaciones,
+ * promociones, solicitudes de aprobación, volumen y auditoría. La tabla de
+ * módulos y la correspondencia con las entidades del FRD están en el README.
  */
 
 export * from "./scope";
@@ -51,4 +51,13 @@ export * from "./devices";
 export * from "./operators";
 export * from "./assignments";
 export * from "./workers";
+export * from "./currencies";
+export * from "./rates";
+export * from "./horario";
+export * from "./datos-de-sede";
+export * from "./promotions";
+export * from "./jornadas";
+export * from "./operaciones";
+export * from "./aprobaciones";
 export * from "./audit";
+export * from "./volumen";

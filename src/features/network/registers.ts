@@ -32,6 +32,8 @@ export interface Register {
   name: string;
   status: RegisterStatus;
   createdAt: string;
+  /** Quién la dio de alta (**FR-AD-CAJA-1**). Las cajas con que arranca la red no lo tienen. */
+  createdBy?: string;
   retiredAt?: string;
   retiredReason?: string;
 }
@@ -39,10 +41,7 @@ export interface Register {
 /**
  * Cajas con las que arranca cada sede en la demo.
  *
- * Todas las sedes ya entregadas tienen al menos tres, porque el simulador de
- * vinculación solo habilita la **Caja 03** —la única con datos operativos
- * simulados (FR-DEV-9)— y dejar una sede sin ella la volvería imposible de
- * vincular mientras `/admin/equipos` no exista. El número varía entre sedes
+ * Todas las sedes en marcha tienen al menos tres. El número varía entre sedes
  * para que los listados de administración no se vean uniformes.
  *
  * Hay **dos** sedes sin cajas, y cada una sirve a una consola distinta:
@@ -50,7 +49,7 @@ export interface Register {
  *   · `sede-santiago` — recién entrada en la red, sin operador asignado. Al no
  *     tener operador queda fuera del alcance de todo administrador, así que es
  *     el caso del Inicio de **Super Admin** (FR-SA-HOME-3).
- *   · `sede-cerro` — asignada a Antilla y sin poner en marcha. Es la que
+ *   · `sede-cerro` — asignada a Malecón y sin poner en marcha. Es la que
  *     recorre **FR-AD-CAJA-3** y el indicador de Cajas del shell de `/admin`.
  *
  * Las dos se declaran en cero a propósito, en vez de quedarse fuera del mapa:
@@ -68,6 +67,15 @@ const SEED_REGISTERS_PER_BRANCH: Readonly<Record<string, number>> = {
   "sede-holguin": 3,
   "sede-cerro": 0,
   "sede-santiago": 0,
+  "sede-trinidad": 3,
+  /* Solo cajas retiradas: el aviso de sede sin cajas activas (FR-AD-CAJA-2). */
+  "sede-pinar": 2,
+};
+
+/** Las cajas de la semilla que arrancan retiradas, con su motivo. */
+const SEED_RETIRADAS: Readonly<Record<string, string>> = {
+  "sede-pinar:caja-01": "Local cerrado por obras de reparación del techo",
+  "sede-pinar:caja-02": "Local cerrado por obras de reparación del techo",
 };
 
 function seed(): Register[] {
@@ -82,6 +90,13 @@ function seed(): Register[] {
         status: "activa",
         createdAt: "2026-01-15T09:00:00.000Z",
       });
+      const motivo = SEED_RETIRADAS[out[out.length - 1]!.id];
+      if (motivo) {
+        const caja = out[out.length - 1]!;
+        caja.status = "retirada";
+        caja.retiredAt = "2026-10-10T15:00:00.000Z";
+        caja.retiredReason = motivo;
+      }
     }
   }
   return out;
@@ -120,10 +135,10 @@ export function findRegisterById(id: string | null | undefined): Register | null
  * Comprobaciones que este módulo NO puede hacer por sí mismo y recibe de quien
  * llama.
  *
- * El estado de la jornada vive en `caja-data.ts` y el vínculo del equipo en
- * `devices/device-link.ts`, que lee `localStorage` y por tanto solo existe en
- * el navegador. Inyectarlas mantiene este dominio comprobable fuera de un
- * navegador y evita que `network` dependa de la caja o del DOM.
+ * El estado de la jornada vive en `jornadas.ts` y el vínculo del equipo en
+ * `devices.ts`; quien llama las pasa (`features/admin/register-guards.ts`).
+ * Inyectarlas evita que este módulo dependa de esos dos, que a su vez
+ * dependen de él.
  */
 export interface RegisterGuards {
   hasOpenJornada(registerId: string): boolean;
@@ -175,7 +190,7 @@ function guardScope(
 export function crearCaja(
   scope: Scope,
   ctx: RegisterScopeContext,
-  input: { branchId: string; name: string },
+  input: { branchId: string; name: string; createdBy?: string },
   now = new Date(),
 ): RegisterWriteResult<Register> {
   const denial = guardScope(scope, input.branchId, ctx);
@@ -191,13 +206,26 @@ export function crearCaja(
     return { ok: false, reason: "nombre-duplicado" };
   }
 
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  /* El identificador interno sale del nombre, pero dos nombres distintos
+     pueden dar el mismo («Caja 05» y «Caja-05», o uno sin letras latinas):
+     si ya existe, se numera. Que dos cajas compartan identificador haría que
+     retirar o vincular una actuara sobre la otra. */
+  const slug =
+    name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "caja";
+  let id = `${input.branchId}:${slug}`;
+  for (let n = 2; findRegisterById(id); n += 1) id = `${input.branchId}:${slug}-${n}`;
   const register: Register = {
-    id: `${input.branchId}:${slug || `caja-${allRegistersOf(input.branchId).length + 1}`}`,
+    id,
     branchId: input.branchId,
     name,
     status: "activa",
     createdAt: now.toISOString(),
+    ...(input.createdBy ? { createdBy: input.createdBy } : {}),
   };
   mutableRegisters.push(register);
   return { ok: true, value: register };

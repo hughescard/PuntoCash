@@ -26,7 +26,7 @@ import {
 } from "./admin-nav";
 
 /**
- * La navegación de la consola en un teléfono — **FR-AD-SHELL-6**.
+ * La navegación de la consola en un teléfono — **FR-AD-SHELL-9** a **FR-AD-SHELL-12**.
  *
  * Esta consola se usa a diario desde el móvil, y allí no hay columna de 240px
  * donde poner trece destinos. Se reparten en dos piezas que **no compiten**:
@@ -77,6 +77,13 @@ export function AdminMobileNav({
   }
 
   const rapidos = accesosRapidos(badges);
+
+  /* FR-AD-SHELL-11: tocar la sección en la que ya se está no cambia la ruta,
+     así que lo de arriba no lo cerraría; se cierra aquí. */
+  const cerrarSiEsAqui = (e: React.MouseEvent) => {
+    const enlace = (e.target as HTMLElement).closest("a");
+    if (enlace && new URL(enlace.href).pathname === pathname) setOpen(false);
+  };
 
   return (
     <>
@@ -148,6 +155,7 @@ export function AdminMobileNav({
           <nav
             aria-label="Navegación principal"
             className="pc-scroll-y pc-scroll-dark min-h-0 flex-1 px-3 py-6"
+            onClickCapture={cerrarSiEsAqui}
           >
             <SidebarNavGroups groups={adminNavGroups(badges, { usuarios: verUsuarios })} />
           </nav>
@@ -157,7 +165,7 @@ export function AdminMobileNav({
             <p className="px-3 text-label font-semibold text-white">{fullName}</p>
             <p className="px-3 text-caption text-text-on-primary-muted">{operatorName}</p>
 
-            <div className="mt-3 flex flex-col gap-1">
+            <div className="mt-3 flex flex-col gap-1" onClickCapture={cerrarSiEsAqui}>
               <Link href="/admin/perfil" className={drawerAction}>
                 <UserRound className="size-[18px]" aria-hidden="true" />
                 Perfil
@@ -184,8 +192,8 @@ const bottomItem = cn(
 );
 
 /**
- * 10px y sin recortar. A 375px cada uno de los cinco destinos dispone de unos
- * 70px: con el tamaño de texto normal, "Aprobaciones" se cortaba a mitad de
+ * 10px y sin recortar. Con cinco destinos, a 375px cada uno disponía de unos
+ * 70px y, con el tamaño de texto normal, "Aprobaciones" se cortaba a mitad de
  * palabra, y una etiqueta recortada es peor que una pequeña — deja de decir a
  * dónde lleva. Es el mismo tamaño que usan las barras de pestañas del sistema.
  */

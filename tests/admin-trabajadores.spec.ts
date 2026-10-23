@@ -33,8 +33,13 @@ import { IDALMIS, MARTA, signInAsAdmin } from "./admin-helpers";
  * selector de alcance del shell se pinta por duplicado.
  */
 
-/** Un trabajador cualquiera del listado. No se nombra: los datos cambian. */
-const FILA = 'main a[href^="/admin/trabajadores/trb-"]';
+/**
+ * Un trabajador cualquiera del listado. No se nombra: los datos cambian.
+ * `:visible` porque la tabla adaptativa pinta también la tarjeta del teléfono,
+ * oculta a este ancho, y va antes en el DOM: sin él, `.first()` elige un
+ * enlace que no se puede pulsar y la prueba espera hasta agotar el tiempo.
+ */
+const FILA = 'main a[href^="/admin/trabajadores/trb-"]:visible';
 
 test.describe("§7 Trabajadores — navegación y congruencia", () => {
   test.beforeEach(async ({ page }) => {
@@ -53,7 +58,9 @@ test.describe("§7 Trabajadores — navegación y congruencia", () => {
 
     /* **FR-AD-TRAB-4** / **[A13]**: el alta elige sede y **no ofrece ninguna
        caja**. La ausencia del selector es el requisito, así que se afirma. */
-    await expect(page.getByRole("main").getByLabel("Sede", { exact: true })).toHaveCount(1);
+    /* El nombre accesible de un campo obligatorio lleva el asterisco —«Sede*»—,
+       así que `{ exact: true }` no lo encuentra nunca: por eso la expresión. */
+    await expect(page.getByRole("main").getByLabel(/^Sede\*?$/)).toHaveCount(1);
     await expect(page.getByRole("main").getByLabel(/caja/i)).toHaveCount(0);
 
     await page.goto("/admin/trabajadores");
@@ -70,8 +77,8 @@ test.describe("§7 Trabajadores — navegación y congruencia", () => {
     await expect(page.getByRole("heading", { name: /^Editar a / })).toBeVisible();
 
     const main = page.getByRole("main");
-    await expect(main.getByLabel("Nombre", { exact: true })).toBeVisible();
-    for (const ausente of [/identificador/i, /correo/i, /^sede$/i]) {
+    await expect(main.getByLabel(/^Nombre\*?$/)).toBeVisible();
+    for (const ausente of [/identificador/i, /correo/i, /^sede\*?$/i]) {
       await expect(main.getByLabel(ausente)).toHaveCount(0);
     }
 
@@ -90,22 +97,37 @@ test.describe("§7 Trabajadores — navegación y congruencia", () => {
     await expect(main.getByLabel("Correo de verificación")).not.toHaveValue(/•/);
   });
 
-  test("desactivar va el último, y su diálogo advierte siempre de la jornada", async ({ page }) => {
-    await page.locator(FILA).first().click();
+  test("con una jornada abierta no se desactiva: el diálogo lo dice y lleva a ella", async ({ page }) => {
+    /* **FR-AD-TRAB-13**: la ficha sabe antes de abrir el diálogo si tiene una
+       jornada abierta, y en vez del botón ofrece ir a esa jornada. */
+    const conJornada = page.locator("tr:visible", { hasText: "Abierta ahora" }).first();
+    await conJornada.locator('a[href^="/admin/trabajadores/trb-"]').click();
     await page.waitForURL(/\/admin\/trabajadores\/trb-[^/]+$/);
 
     const desactivar = page.getByRole("button", { name: "Desactivar" });
-    // Deshabilitado hasta hidratar: esperarlo habilitado **es** esperar React.
     await expect(desactivar).toBeEnabled();
     await desactivar.click();
-
-    /* **FR-AD-TRAB-13** con **FR-AD-TRAB-17**: el aviso de jornada abierta se
-       da **siempre**, porque este servidor no ve la jornada. El día que pase a
-       darse solo cuando la hay, el requisito tiene que cambiar antes. */
     const dialogo = page.getByRole("dialog");
-    await expect(dialogo.getByText("No es posible con una jornada abierta")).toBeVisible();
-    await expect(dialogo.getByLabel("Motivo de la desactivación")).toBeVisible();
+    await expect(dialogo.getByText("Tiene una jornada abierta", { exact: true })).toBeVisible();
+    await expect(dialogo.getByLabel("Motivo de la desactivación")).toHaveCount(0);
+    await dialogo.getByRole("link", { name: "Ir a la jornada" }).click();
+    await page.waitForURL(/\/admin\/jornadas\/J-[\w-]+$/);
+  });
 
+  test("sin jornada abierta, desactivar pide el motivo", async ({ page }) => {
+    const sinJornada = page
+      .locator("tr:visible", { hasText: "Activo" })
+      .filter({ hasNotText: "Abierta ahora" })
+      .first();
+    await sinJornada.locator('a[href^="/admin/trabajadores/trb-"]').first().click();
+    await page.waitForURL(/\/admin\/trabajadores\/trb-[^/]+$/);
+
+    const desactivar = page.getByRole("button", { name: "Desactivar" });
+    await expect(desactivar).toBeEnabled();
+    await desactivar.click();
+    const dialogo = page.getByRole("dialog");
+    await expect(dialogo.getByLabel("Motivo de la desactivación")).toBeVisible();
+    await expect(dialogo.getByText("Tiene una jornada abierta", { exact: true })).toHaveCount(0);
     await dialogo.getByRole("button", { name: "Cancelar" }).click();
     await expect(dialogo).toBeHidden();
   });

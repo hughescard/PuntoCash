@@ -1,4 +1,7 @@
 import * as React from "react";
+import Link from "next/link";
+import type { Route } from "next";
+import { ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -10,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui";
+import { ClickableRow } from "./clickable-row";
 
 /**
  * Una tabla que en un teléfono deja de ser una tabla — **FR-AD-SHELL-13**.
@@ -39,6 +43,13 @@ export interface ResponsiveColumn<T> {
   numeric?: boolean;
   /** Se representa en la tabla pero no en la tarjeta: ya está en el título o en la marca. */
   hiddenOnCard?: boolean;
+  /**
+   * La etiqueta en la tarjeta, si la cabecera de la tabla no sirve para eso
+   * —una cabecera que es un botón de ordenar, por ejemplo—.
+   */
+  cardHeader?: React.ReactNode;
+  /** Si la tabla está ordenada por esta columna, y en qué sentido (`aria-sort`). */
+  sort?: "ascending" | "descending" | "none";
 }
 
 export interface ResponsiveTableProps<T> {
@@ -57,6 +68,15 @@ export interface ResponsiveTableProps<T> {
    * columna que los lleva en la tabla se marca `hiddenOnCard`.
    */
   cardFooter?: (row: T) => React.ReactNode;
+  /**
+   * Si la fila se abre entera: la tarjeta se toca en cualquier parte y la fila
+   * de la tabla se pulsa en cualquier parte, con un `›` al final que es el
+   * enlace real (teclado, abrir en otra pestaña). Para cosas sin nombre propio
+   * —una jornada—, donde ningún dato de la fila debe hacer de enlace. Un
+   * enlace dentro de una celda sigue llevando a lo suyo si lleva la clase
+   * `relative z-10`, que lo pone por encima del enlace de la tarjeta.
+   */
+  rowLink?: (row: T) => { href: string; label: string } | null;
   /** Qué decir cuando no hay ni una fila. Los dos vacíos —sin datos y sin resultados— nunca comparten mensaje (**FR-AD-STATE-1**). */
   empty: React.ReactNode;
   className?: string;
@@ -70,6 +90,7 @@ export function ResponsiveTable<T>({
   cardBadge,
   cardSubtitle,
   cardFooter,
+  rowLink,
   empty,
   className,
 }: ResponsiveTableProps<T>): React.JSX.Element {
@@ -96,10 +117,16 @@ export function ResponsiveTable<T>({
           // Un subtítulo vacío no debe dejar un párrafo en blanco: hay filas
           // que lo tienen (una caja retirada) y filas que no.
           const subtitle = cardSubtitle?.(row);
+          const link = rowLink?.(row);
 
           return (
           <li key={rowKey(row)}>
-            <article className="rounded-card border border-border bg-surface p-5 shadow-card">
+            <article
+              className={cn(
+                "rounded-card border border-border bg-surface p-5 shadow-card",
+                link && "relative transition-colors hover:border-border-strong active:bg-surface-subtle",
+              )}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-body font-semibold text-text-primary">{cardTitle(row)}</div>
@@ -107,7 +134,12 @@ export function ResponsiveTable<T>({
                     <p className="mt-1 text-body-sm text-text-secondary">{subtitle}</p>
                   ) : null}
                 </div>
-                {cardBadge ? <div className="shrink-0">{cardBadge(row)}</div> : null}
+                {cardBadge || link ? (
+                  <div className="flex shrink-0 items-center gap-2">
+                    {cardBadge?.(row)}
+                    {link ? <ChevronRight aria-hidden="true" className="size-5 text-text-secondary" /> : null}
+                  </div>
+                ) : null}
               </div>
 
               {cardColumns.length > 0 ? (
@@ -115,7 +147,7 @@ export function ResponsiveTable<T>({
                   {cardColumns.map((column) => (
                     <div key={column.key} className="min-w-0">
                       <dt className="text-caption uppercase tracking-wide text-text-secondary">
-                        {column.header}
+                        {column.cardHeader ?? column.header}
                       </dt>
                       <dd
                         className={cn(
@@ -135,6 +167,15 @@ export function ResponsiveTable<T>({
                   {cardFooter(row)}
                 </div>
               ) : null}
+
+              {/* Encima de todo, salvo los enlaces de dentro que lo piden: la tarjeta entera abre. */}
+              {link ? (
+                <Link
+                  href={link.href as Route}
+                  aria-label={link.label}
+                  className="absolute inset-0 rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                />
+              ) : null}
             </article>
           </li>
           );
@@ -147,22 +188,48 @@ export function ResponsiveTable<T>({
           <TableHeader>
             <TableRow>
               {columns.map((column) => (
-                <TableHead key={column.key} numeric={column.numeric}>
+                <TableHead key={column.key} numeric={column.numeric} aria-sort={column.sort}>
                   {column.header}
                 </TableHead>
               ))}
+              {rowLink ? (
+                <TableHead>
+                  <span className="sr-only">Abrir</span>
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow key={rowKey(row)}>
-                {columns.map((column) => (
-                  <TableCell key={column.key} numeric={column.numeric}>
-                    {column.cell(row)}
+            {rows.map((row) => {
+              const celdas = columns.map((column) => (
+                <TableCell key={column.key} numeric={column.numeric}>
+                  {column.cell(row)}
+                </TableCell>
+              ));
+              const link = rowLink?.(row);
+              return link ? (
+                <ClickableRow key={rowKey(row)} href={link.href}>
+                  {celdas}
+                  <TableCell className="w-10 pr-4 text-right">
+                    <Link
+                      href={link.href as Route}
+                      aria-label={link.label}
+                      className="inline-flex size-8 items-center justify-center rounded-control text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      <ChevronRight aria-hidden="true" className="size-5" />
+                    </Link>
                   </TableCell>
-                ))}
-              </TableRow>
-            ))}
+                </ClickableRow>
+              ) : rowLink ? (
+                /* En una tabla donde las filas se abren, la que no tiene adónde ir conserva la celda. */
+                <TableRow key={rowKey(row)}>
+                  {celdas}
+                  <TableCell className="w-10" />
+                </TableRow>
+              ) : (
+                <TableRow key={rowKey(row)}>{celdas}</TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

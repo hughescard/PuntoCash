@@ -60,7 +60,7 @@ export default async function AdminVincularEquipoPage() {
   /* Andamio de la demostración, no del producto: mientras Worker y Kiosco
      resuelvan su vínculo en el `localStorage` del terminal, su código no llega
      a este servidor y esta pantalla no tendría ninguno que encontrar
-     (**FR-AD-EQ-26**). Desaparece con **FR-DEV-8**. */
+     (nota de entrega, §8.3). Desaparece con **FR-DEV-8**. */
   const retosDemo = retosDeDemostracion().map((reto) => ({
     deviceId: reto.deviceId,
     kind: reto.kind,

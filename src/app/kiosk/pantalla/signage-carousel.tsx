@@ -4,22 +4,20 @@ import * as React from "react";
 
 import type { Branch } from "@/features/branches/branches";
 
+import { usePromociones, useTablero } from "./tableros";
+
 import { SlideTasas } from "./slides/slide-tasas";
 import { SlideSucursal } from "./slides/slide-sucursal";
-import { SlidePromociones } from "./slides/slide-promociones";
+import { SlidePromocion } from "./slides/slide-promociones";
 
 /** How long each slide stays on screen before the carousel advances. */
 const ROTATE_MS = 12_000;
 
-const SLIDES: readonly {
+interface Slide {
   id: string;
   label: string;
-  Component: React.ComponentType<{ branch: Branch }>;
-}[] = [
-  { id: "tasas", label: "Tasas del día", Component: SlideTasas },
-  { id: "sucursal", label: "Info de la sucursal", Component: SlideSucursal },
-  { id: "promociones", label: "Promociones y avisos", Component: SlidePromociones },
-];
+  render: () => React.ReactNode;
+}
 
 /**
  * Auto-rotating carousel for `/kiosk/pantalla`.
@@ -37,13 +35,29 @@ const SLIDES: readonly {
 export function SignageCarousel({ branch }: { branch: Branch }): React.JSX.Element {
   const [index, setIndex] = React.useState(0);
 
+  /* Una sede sin tasas publicadas —sin Cambio de moneda, o sin ninguna tasa
+     fijada— no enseña un tablero vacío: la diapositiva no entra en la
+     rotación. Y **cada promoción vigente es su propia diapositiva**, grande,
+     porque se lee desde el otro lado de la sala (decisión del 16/10/2026); sin
+     ninguna, no hay diapositiva de promociones. */
+  const conTasas = useTablero(branch.id).length > 0;
+  const promociones = usePromociones(branch.id);
+  const slides: Slide[] = [
+    ...(conTasas ? [{ id: "tasas", label: "Tasas del día", render: () => <SlideTasas branch={branch} /> }] : []),
+    { id: "sucursal", label: "Info de la sucursal", render: () => <SlideSucursal branch={branch} /> },
+    ...promociones.map((promo) => ({
+      id: `promo-${promo.id}`,
+      label: promo.titulo,
+      render: () => <SlidePromocion promo={promo} />,
+    })),
+  ];
+
   React.useEffect(() => {
-    const id = setInterval(() => setIndex((current) => (current + 1) % SLIDES.length), ROTATE_MS);
+    const id = setInterval(() => setIndex((current) => current + 1), ROTATE_MS);
     return () => clearInterval(id);
   }, []);
 
-  const current = SLIDES[index]!;
-  const { Component } = current;
+  const current = slides[index % slides.length]!;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -54,15 +68,15 @@ export function SignageCarousel({ branch }: { branch: Branch }): React.JSX.Eleme
       </p>
 
       <div key={current.id} className="flex min-h-0 flex-1 flex-col animate-in fade-in duration-700">
-        <Component branch={branch} />
+        {current.render()}
       </div>
 
       <div aria-hidden="true" className="mt-[1.25em] flex shrink-0 items-center justify-center gap-[0.6em]">
-        {SLIDES.map((slide, i) => (
+        {slides.map((slide) => (
           <span
             key={slide.id}
             className={
-              i === index
+              slide.id === current.id
                 ? "h-[0.5em] w-[1.6em] rounded-pill bg-gold transition-colors duration-300"
                 : "h-[0.5em] w-[0.5em] rounded-pill bg-white/20 transition-colors duration-300"
             }

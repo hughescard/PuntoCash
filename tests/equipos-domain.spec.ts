@@ -39,12 +39,12 @@ import {
  * En serie y sobre el dominio en memoria compartido, igual que
  * `network-domain`. Toda prueba que vincula **desvincula al final**, y se
  * trabaja sobre **Caribe y sede-matanzas**: las pruebas de navegador de
- * `/admin` entran como Marta, de Antilla, y dependen de que Vedado conserve su
+ * `/admin` entran como Marta, de Malecón, y dependen de que Vedado conserve su
  * caja sin equipo (`admin-cajas`) y sus dos kioscos (`network-domain`).
  */
 test.describe.configure({ mode: "serial" });
 
-const ANTILLA = operatorScope("op-antilla");
+const MALECON = operatorScope("op-malecon");
 const CARIBE = operatorScope("op-caribe");
 
 /** Sede de Caribe sin ningún equipo sembrado, y sus cajas. */
@@ -285,7 +285,7 @@ test("una caja de otra sede no se puede nombrar", () => {
   const resultado = vincularEquipo(CARIBE, SCOPE_CONTEXT, {
     reto: { method: "codigo", code: reto.code },
     branchId: MATANZAS,
-    /* Existe, pero es de Antilla. Pasarla junto a una sede propia es el
+    /* Existe, pero es de Malecón. Pasarla junto a una sede propia es el
        intento que **FR-AD-EQ-7** manda revalidar en el dominio. */
     registerId: "sede-vedado:caja-04",
     by: "Reinaldo Ortega",
@@ -304,7 +304,7 @@ test("nadie vincula en una sede ajena, y no llega a saber si el código servía"
 
   /* El alcance se comprueba **antes** que el reto, a propósito: así quien
      prueba identificadores de sede no averigua además si acertó el código. */
-  const resultado = vincularEquipo(ANTILLA, SCOPE_CONTEXT, {
+  const resultado = vincularEquipo(MALECON, SCOPE_CONTEXT, {
     reto: { method: "codigo", code: reto.code },
     branchId: MATANZAS,
     registerId: CAJA_LIBRE,
@@ -362,7 +362,7 @@ test("desvincular devuelve el terminal a su pantalla de vinculación", () => {
 });
 
 test("no se desvincula un equipo de otra empresa, ni uno que no existe", () => {
-  const ajeno = desvincularEquipo(ANTILLA, SCOPE_CONTEXT, "CAJ-0003-0001");
+  const ajeno = desvincularEquipo(MALECON, SCOPE_CONTEXT, "CAJ-0003-0001");
   expect(ajeno.ok).toBe(false);
   if (!ajeno.ok) expect(ajeno.reason).toBe("fuera-de-alcance");
 
@@ -383,13 +383,13 @@ test("no se desvincula un equipo de otra empresa, ni uno que no existe", () => {
  * ---------------------------------------------------------------------- */
 
 test("la vista con alcance solo entrega equipos de sedes propias", () => {
-  const antilla = redEnAlcance(ANTILLA);
-  expect(antilla.equipos("sede-vedado").length).toBeGreaterThan(0);
-  expect(antilla.equipo("CAJ-0001-0003")?.registerId).toBe("sede-vedado:caja-03");
+  const malecon = redEnAlcance(MALECON);
+  expect(malecon.equipos("sede-vedado").length).toBeGreaterThan(0);
+  expect(malecon.equipo("CAJ-0001-0003")?.registerId).toBe("sede-vedado:caja-03");
 
-  /* Miramar es de Caribe: sus equipos existen y para Antilla no. */
-  expect(antilla.equipos("sede-miramar")).toEqual([]);
-  expect(antilla.equipo("CAJ-0003-0001")).toBeNull();
+  /* Miramar es de Caribe: sus equipos existen y para Malecón no. */
+  expect(malecon.equipos("sede-miramar")).toEqual([]);
+  expect(malecon.equipo("CAJ-0003-0001")).toBeNull();
   expect(redEnAlcance(CARIBE).equipo("CAJ-0003-0001")).not.toBeNull();
 });
 

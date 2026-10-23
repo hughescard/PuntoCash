@@ -16,7 +16,7 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { DOCUMENT_TYPES } from "@/features/customers/customers";
-import { crearTrabajadorAction, type ResultadoAlta, type ValoresDelAlta } from "../_actions";
+import { crearTrabajadorAction, type CampoDelAlta, type ResultadoAlta, type ValoresDelAlta } from "../_actions";
 
 /**
  * Alta de un trabajador — **FR-AD-TRAB-3** a **FR-AD-TRAB-8**.
@@ -80,7 +80,7 @@ export function NuevoTrabajadorForm({
   if (estado?.ok) return <CredencialInicial resultado={estado} />;
 
   const unica = sedes.length === 1 ? sedes[0] : undefined;
-  const errorDe = (nombre: "identificador" | "documento" | "correo") =>
+  const errorDe = (nombre: CampoDelAlta) =>
     estado && !estado.ok && estado.campo === nombre ? estado.error : undefined;
 
   /* React reinicia los campos no controlados cuando la acción del formulario
@@ -89,11 +89,11 @@ export function NuevoTrabajadorForm({
   const previo: ValoresDelAlta | undefined = estado && !estado.ok ? estado.valores : undefined;
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form action={accion} className="max-w-form-max" noValidate>
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {/* Un rechazo que no pertenece a ningún campo concreto se dice
-              arriba; los que sí, van pegados al suyo (§20). */}
+              arriba; los que sí, van pegados al suyo. */}
           {estado && !estado.ok && !estado.campo ? (
             <Alert variant="error" title="No se pudo dar de alta">
               {estado.error}
@@ -101,18 +101,18 @@ export function NuevoTrabajadorForm({
           ) : null}
 
           <div className="grid gap-6 sm:grid-cols-2">
-            <Field {...NOMBRE}>
+            <Field {...NOMBRE} error={errorDe("nombre")}>
               <Input
-                {...fieldAria(NOMBRE)}
+                {...fieldAria({ ...NOMBRE, error: errorDe("nombre") })}
                 name="nombre"
                 autoFocus
                 disabled={enviando}
                 defaultValue={previo?.nombre}
               />
             </Field>
-            <Field {...PRIMER}>
+            <Field {...PRIMER} error={errorDe("primer-apellido")}>
               <Input
-                {...fieldAria(PRIMER)}
+                {...fieldAria({ ...PRIMER, error: errorDe("primer-apellido") })}
                 name="primer-apellido"
                 disabled={enviando}
                 defaultValue={previo?.primerApellido}
@@ -152,9 +152,9 @@ export function NuevoTrabajadorForm({
                 className="pc-numeric"
               />
             </Field>
-            <Field {...TELEFONO}>
+            <Field {...TELEFONO} error={errorDe("telefono")}>
               <Input
-                {...fieldAria(TELEFONO)}
+                {...fieldAria({ ...TELEFONO, error: errorDe("telefono") })}
                 name="telefono"
                 type="tel"
                 defaultValue={previo?.telefono}
@@ -198,9 +198,9 @@ export function NuevoTrabajadorForm({
               </div>
             </>
           ) : (
-            <Field {...SEDE}>
+            <Field {...SEDE} error={errorDe("sede")}>
               <select
-                {...fieldAria(SEDE)}
+                {...fieldAria({ ...SEDE, error: errorDe("sede") })}
                 name="sede"
                 defaultValue={previo?.sede ?? ""}
                 disabled={enviando}

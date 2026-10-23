@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shell/app-shell";
 import { Button } from "@/components/ui";
 import { getAdminSession } from "@/features/admin/session-server";
-import { findAdminUserById } from "@/features/network/operators";
+import { redEnAlcance } from "@/features/network/scoped-reads";
 import { EditarUsuarioForm } from "./editar-usuario-form";
 
 export const metadata: Metadata = {
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
  * también evita que el producto se sienta inconsistente consigo mismo.
  *
  * **Se puede editar a uno mismo.** Corregir tu nombre o tu teléfono no te deja
- * fuera de nada; la guarda de **FR-AD-USR-7** protege la desactivación, que sí
+ * fuera de nada; la guarda de **FR-AD-USR-13** protege la desactivación, que sí
  * es irreversible desde el lado de quien la sufre.
  */
 export default async function AdminEditarUsuarioPage({
@@ -42,8 +42,8 @@ export default async function AdminEditarUsuarioPage({
   if (!session.user.isPrincipal) notFound();
 
   const { id } = await params;
-  const usuario = findAdminUserById(id);
-  if (!usuario || usuario.operatorId !== session.operator.id) notFound();
+  const usuario = redEnAlcance(session.scope).usuario(id);
+  if (!usuario) notFound();
 
   /* El nombre completo se guarda en una sola cadena y el formulario lo pide en
      tres campos: hay que repartirlo por posición, y lo que haya a partir del

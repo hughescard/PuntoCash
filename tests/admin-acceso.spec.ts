@@ -34,7 +34,7 @@ test.describe("pantalla de credenciales", () => {
     await expect(page.getByText("Administración de sede").first()).toBeVisible();
 
     // Antes de autenticarse no puede aparecer ninguna empresa operadora (A9).
-    await expect(page.getByText(/Antilla|Caribe|Oriente|Cienfuegos/)).toHaveCount(0);
+    await expect(page.getByText(/Malecón|Caribe|Oriente|Cienfuegos/)).toHaveCount(0);
 
     // Una sola acción primaria en el contexto (§9).
     await expect(page.getByRole("button", { name: "Iniciar sesión" })).toHaveCount(1);

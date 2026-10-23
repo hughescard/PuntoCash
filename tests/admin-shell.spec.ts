@@ -50,6 +50,26 @@ test.describe("shell", () => {
     }
   });
 
+  test("cada indicador cuenta lo que se resuelve en su sección, y coincide con lo que se ve al entrar", async ({ page }) => {
+    /* **FR-AD-SHELL-3**: Cajas cuenta las sedes sin ninguna caja; Equipos, las
+       cajas sin equipo vinculado. El número del menú es el del aviso de dentro. */
+    const nav = page.getByRole("navigation", { name: "Navegación principal" });
+    const numero = async (destino: string) => {
+      const texto = (await nav.getByRole("link", { name: new RegExp(`^${destino}`) }).textContent()) ?? "";
+      return Number(texto.replace(/\D/g, "") || "0");
+    };
+
+    const equipos = await numero("Equipos");
+    expect(equipos, "con los datos sembrados hay cajas sin equipo").toBeGreaterThan(0);
+    await page.goto("/admin/equipos");
+    await expect(
+      page.getByRole("main").getByText(equipos === 1 ? "Una de tus cajas no tiene equipo vinculado" : `${equipos} de tus cajas no tienen equipo vinculado`),
+    ).toBeVisible();
+
+    /* Cerro no tiene ninguna caja: es la única sede de Marta sin ellas. */
+    expect(await numero("Cajas")).toBe(1);
+  });
+
   test("el destino actual se marca con aria-current, no solo con color", async ({ page }) => {
     const nav = page.getByRole("navigation", { name: "Navegación principal" });
 
@@ -88,7 +108,7 @@ test.describe("shell", () => {
 
     await expect(header.getByText("Marta Sánchez")).toBeVisible();
     // El operador aparece, pero como texto secundario junto al nombre (A9).
-    await expect(header.getByText("Antilla Servicios Financieros S.R.L.")).toBeVisible();
+    await expect(header.getByText("Malecón Servicios Financieros S.R.L.")).toBeVisible();
     await expect(header.getByRole("button", { name: "Cerrar sesión" })).toHaveCount(1);
   });
 
@@ -109,7 +129,7 @@ test.describe("alcance", () => {
     const selector = page.locator("#admin-scope");
     await expect(selector).toBeVisible();
 
-    // Antilla administra tres sedes: esas, y ninguna más, más la opción de todas.
+    // Malecón administra tres sedes: esas, y ninguna más, más la opción de todas.
     await expect(selector.locator("option")).toHaveCount(4);
     await expect(selector.locator("option", { hasText: "Todas mis sedes" })).toHaveCount(1);
     await expect(selector.locator("option", { hasText: "PuntoCash Matanzas" })).toHaveCount(0);
@@ -176,7 +196,7 @@ test.describe("una sede ajena es indistinguible de una inexistente", () => {
   test("la sede de otro operador responde 404", async ({ page }) => {
     await signInAsAdmin(page, MARTA);
 
-    // sede-matanzas la administra Caribe, no Antilla.
+    // sede-matanzas la administra Caribe, no Malecón.
     const response = await page.goto("/admin/sedes/sede-matanzas");
 
     expect(response?.status()).toBe(404);

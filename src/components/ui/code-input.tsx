@@ -128,7 +128,9 @@ const CodeInput = React.forwardRef<HTMLInputElement, CodeInputProps>(function Co
         // Un gestor de contraseñas no debe guardar un código de un solo uso.
         data-1p-ignore
         spellCheck={false}
-        maxLength={length}
+        /* Sin `maxLength`: el navegador recortaría un pegado como «482 913»
+           antes de quitarle el espacio, y llegarían cinco dígitos. El largo
+           lo limita `handleChange`, después de quedarse con los dígitos. */
         value={value}
         autoFocus={autoFocus}
         disabled={disabled}

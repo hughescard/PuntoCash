@@ -218,7 +218,7 @@ function CambiarCorreo({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form action={accion} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -230,8 +230,8 @@ function CambiarCorreo({
 
               {esYo ? (
                 <Alert variant="warning" title="Asegúrate de poder entrar en ese correo">
-                  El próximo código irá ahí. Si te equivocas al escribirlo, tendrá que arreglarlo
-                  otra persona de tu empresa.
+                  El próximo código irá ahí. Si te equivocas al escribirlo no podrás entrar, y solo
+                  PuntoCash podrá ayudarte: nadie más en tu empresa puede cambiar tu correo.
                 </Alert>
               ) : null}
 
@@ -288,7 +288,9 @@ function Credencial({
           </DialogTitle>
           <DialogDescription>
             {hecho
-              ? "Cópiala ahora. La anterior ya no sirve."
+              ? esYo
+                ? "Cópiala ahora. La anterior ya no sirve."
+                : `Cópiala ahora y entrégasela a ${usuario.nombre}. La anterior ya no sirve.`
               : "Se emite una credencial nueva y la anterior deja de servir en ese mismo momento."}
           </DialogDescription>
         </DialogHeader>
@@ -481,8 +483,8 @@ function Reactivar({
               ) : null}
 
               <Alert variant="warning" title="Recupera todas sus potestades">
-                No hay reactivación parcial: desde que entre podrá hacer todo lo que tú puedes
-                hacer, en todas tus sedes.
+                No hay reactivación parcial: desde que entre podrá operar todas tus sedes, igual que
+                cualquier otro administrador de la empresa.
               </Alert>
             </DialogBody>
 
@@ -532,6 +534,7 @@ function Traspasar({
   /* Cerrar el diálogo después de un traspaso tampoco puede dejar la pantalla
      como estaba: quien lo cerró ya no gobierna esta sección. Se recarga, por
      el mismo motivo que el botón de abajo. */
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- recarga completa a propósito.
   const cerrar = hecho ? () => window.location.assign("/admin/inicio") : onCerrar;
 
   return (
@@ -562,8 +565,8 @@ function Traspasar({
                   página —que ya no se puede ver— y borraría la confirmación
                   antes de leerla. Una recarga de verdad resuelve las dos
                   cosas, y ocurre **una vez en la vida** de una empresa. */}
-              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <Button asChild>
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- recarga completa a propósito, ver arriba. */}
                 <a href="/admin/inicio">Ir a Inicio</a>
               </Button>
             </DialogFooter>

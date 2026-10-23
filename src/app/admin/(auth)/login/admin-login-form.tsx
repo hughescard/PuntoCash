@@ -48,7 +48,7 @@ const FAILURES = {
   "invalid-credentials": {
     title: "Credenciales incorrectas",
     message:
-      "Revisa el usuario y la contraseña e intenta nuevamente. Si el problema continúa, solicita asistencia a PuntoCash.",
+      "Revisa el usuario y la contraseña e intenta nuevamente. Si el problema continúa, pide ayuda al administrador principal de tu empresa o, si lo eres tú, a PuntoCash.",
   },
   "network-error": {
     title: "No se pudo conectar con PuntoCash",

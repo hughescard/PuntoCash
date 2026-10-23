@@ -8,6 +8,8 @@ import { Alert, Button } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { maskEmail } from "@/features/auth/two-factor";
 import { getAdminSession } from "@/features/admin/session-server";
+import type { Jornada } from "@/features/network/jornadas";
+import { fechaCorta } from "../jornadas/formato";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { TrabajadoresList, type TrabajadorRow } from "./trabajadores-list";
 
@@ -36,13 +38,15 @@ export const metadata: Metadata = {
  * aporta ni una fila, y no hay forma de que esta pantalla vea a alguien de
  * otra empresa (**[A1]**, **FR-AD-TRAB-5**).
  *
- * **Lo que esta entrega todavía no trae:** las acciones de la ficha
- * —desactivar, reactivar, reasignar y ayudar con el acceso—. Llegan en el
- * tramo siguiente; §18 lo recoge.
  */
-export default async function AdminTrabajadoresPage() {
+export default async function AdminTrabajadoresPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const session = await getAdminSession();
   if (!session) redirect("/admin/login");
+  const inicial = await searchParams;
 
   const red = redEnAlcance(session.scope);
 
@@ -62,6 +66,7 @@ export default async function AdminTrabajadoresPage() {
          ISO completo el día sale «01T09:00:00.000Z» y la fecha es inválida.
          `createdAt` es un instante. */
       alta: formatDate(new Date(trabajador.createdAt)),
+      ultimaJornada: ultimaJornada(red.jornadasDeTrabajador(trabajador.id)[0]),
     })),
   );
 
@@ -93,8 +98,15 @@ export default async function AdminTrabajadoresPage() {
           Cuando des de alta a alguien aparecerá aquí, con la sede en la que puede operar.
         </Alert>
       ) : (
-        <TrabajadoresList rows={filas} sedes={sedes} />
+        <TrabajadoresList rows={filas} sedes={sedes} inicial={inicial} />
       )}
     </>
   );
+}
+
+function ultimaJornada(j: Jornada | undefined): TrabajadorRow["ultimaJornada"] {
+  if (!j) return null;
+  return j.estado === "abierta"
+    ? { id: j.id, texto: `Abierta ahora · ${j.cajaNombre}`, abierta: true }
+    : { id: j.id, texto: `${fechaCorta(j.openedAt)} · ${j.cajaNombre}`, abierta: false };
 }

@@ -9,7 +9,7 @@ import { Alert, Button, Card, CardContent } from "@/components/ui";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { maskEmail } from "@/features/auth/two-factor";
 import { getAdminSession } from "@/features/admin/session-server";
-import { adminUsersOf, findAdminUserById } from "@/features/network/operators";
+import { redEnAlcance } from "@/features/network/scoped-reads";
 import { EstadoUsuario } from "../usuarios-list";
 import { AccionesUsuario } from "./acciones-usuario";
 
@@ -56,15 +56,17 @@ export default async function AdminUsuarioPage({
 
   const { id } = await params;
 
-  const usuario = findAdminUserById(id);
-  if (!usuario || usuario.operatorId !== session.operator.id) notFound();
+  const red = redEnAlcance(session.scope);
+  const usuario = red.usuario(id);
+  if (!usuario) notFound();
 
   const esYo = usuario.id === session.user.id;
 
   /* **FR-AD-USR-12**: a quién se le puede traspasar el papel. Solo activos, y
      nunca uno mismo. Se calcula aquí porque el diálogo necesita la lista para
      ofrecer una elección, no un campo libre. */
-  const candidatos = adminUsersOf(session.operator.id)
+  const candidatos = red
+    .usuarios()
     .filter((u) => u.status === "activo" && u.id !== session.user.id)
     .map((u) => ({ id: u.id, nombre: u.fullName }));
 

@@ -61,7 +61,14 @@ const nextConfig: NextConfig = {
    * Cloudflare, el reenvío de puertos de un IDE) dejan de coincidir y hay que
    * declarar ese anfitrión aquí — la misma variable sirve:
    */
-  ...(extra.length > 0 ? { experimental: { serverActions: { allowedOrigins: extra } } } : {}),
+  /* La imagen de una promoción viaja en la acción de guardar (FR-AD-PROM-12):
+     hasta 2 MB, y el tope por defecto de Next para una acción es 1 MB. */
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "3mb",
+      ...(extra.length > 0 ? { allowedOrigins: extra } : {}),
+    },
+  },
 };
 
 export default nextConfig;

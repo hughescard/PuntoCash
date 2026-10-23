@@ -1,15 +1,21 @@
 import * as React from "react";
 import Link from "next/link";
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import { notFound, redirect } from "next/navigation";
-import { ArrowRight, Info, Lock, MonitorSmartphone, TriangleAlert } from "lucide-react";
+import { ArrowRight, Info, Lock, MonitorSmartphone, Pencil } from "lucide-react";
 
 import { PageHeader, Section } from "@/components/shell/app-shell";
-import { Alert, Badge, Card, CardContent } from "@/components/ui";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { Alert, Badge, Button, Card, CardContent } from "@/components/ui";
+import { cifraDeTablero, formatDate, formatDateTime } from "@/lib/format";
+import { CurrencyFlag } from "@/components/patterns/currency-flag";
+import { ResponsiveTable } from "@/components/patterns/responsive-table";
 import { getAdminSession } from "@/features/admin/session-server";
+import { lineasDeHorario } from "@/features/network/horario";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { WORKER_SERVICES } from "@/features/operations/services";
+import { diaEnCuba, saldosDe } from "@/features/network/jornadas";
+import { formatAmount } from "@/lib/format";
+import { desde, EstadoBadge, fechaYHora } from "../../jornadas/formato";
 import { EstadoSede } from "../sedes-list";
 
 export const metadata: Metadata = {
@@ -21,8 +27,7 @@ export const metadata: Metadata = {
  * Los servicios que PuntoCash habilita **sede a sede** (**A3**). El catálogo
  * de Worker es más amplio —incluye trámites que no dependen de la sucursal—,
  * así que listarlo entero aquí presentaría como «no habilitado» cosas que
- * nadie habilita a este nivel. Vivirá en el dominio cuando §12 y §13 lo
- * necesiten; hasta entonces está aquí, a la vista.
+ * nadie habilita a este nivel.
  */
 const SERVICIOS_DE_SEDE = ["cambio-moneda", "remesas", "giros"] as const;
 
@@ -36,19 +41,23 @@ const SERVICIOS_DE_SEDE = ["cambio-moneda", "remesas", "giros"] as const;
  * distinguieran, probar identificadores bastaría para saber qué administra
  * otra empresa.
  *
- * ── Qué bloques hay y cuáles faltan ──────────────────────────────────────
- * Están los cinco que el dominio puede contestar hoy: datos maestros,
- * servicios, cajas y equipos, kioscos y trabajadores, más la asignación
- * vigente y la suspensión. Faltan **jornada en curso** (**FR-AD-SEDE-10**) y
- * **contenido público** (**FR-AD-SEDE-11**), que dependen de §9, §12, §13 y
- * §14; se anuncian como pendientes en lugar de dibujarse vacíos, porque un
- * bloque vacío se lee como «esta sede no tiene nada», que es otra cosa.
+ * ── Sus bloques ──────────────────────────────────────────────────────────
+ * Datos maestros, servicios, jornadas de hoy caja por caja (**FR-AD-SEDE-10**),
+ * cajas y equipos, kioscos, trabajadores, asignación vigente, la suspensión si
+ * la hay y **lo que ve el cliente en la sala** (**FR-AD-SEDE-11**).
  */
-export default async function AdminSedePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminSedePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ guardado?: string }>;
+}) {
   const session = await getAdminSession();
   if (!session) redirect("/admin/login");
 
   const { id } = await params;
+  const { guardado } = await searchParams;
   /* Dos guardas que dicen lo mismo y conviene que lo digan las dos: la sede
      sale de la lista de la sesión, y todo lo que se lee de ella sale de la
      vista con alcance. Si mañana esta pantalla recibiera la sede por otra vía,
@@ -61,6 +70,10 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
   const cajas = red.cajasConHistorico(sede.id);
   const kioscos = red.kioscos(sede.id);
   const trabajadores = red.trabajadores(sede.id);
+  const tablero = red.tablero(sede.id);
+  const enPantalla = red.promocionesEnPantalla(sede.id);
+  const dia = red.diaDeSede(sede.id);
+  const hoy = diaEnCuba(new Date());
 
   return (
     <>
@@ -86,12 +99,28 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
         </Alert>
       ) : null}
 
+      {/* Tras guardar, se dice dónde se va a ver: es la razón de editarlo. */}
+      {guardado === "1" ? (
+        <Alert variant="success" title="Datos guardados" className="mb-8">
+          La pantalla informativa de la sucursal pasa a mostrarlos.
+        </Alert>
+      ) : null}
+
       <Section
         title="Datos de la sede"
-        description="Estos datos los gestiona PuntoCash."
+        description="La dirección, el municipio, el teléfono y el horario los mantienes tú. El código y el nombre, PuntoCash."
+        actions={
+          /* **FR-AD-SEDE-14**. Una sede cerrada ya no exhibe nada. */
+          sede.status !== "cerrada" ? (
+            <Button variant="secondary" size="sm" asChild>
+              <Link href={`/admin/sedes/${sede.id}/editar`}>
+                <Pencil aria-hidden="true" />
+                Editar datos
+              </Link>
+            </Button>
+          ) : null
+        }
       >
-        {/* **FR-AD-SEDE-4**: ni un control de edición, ni siquiera
-            deshabilitado. Un campo apagado invita a buscar cómo encenderlo. */}
         <Card>
           <CardContent className="pt-6">
             <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
@@ -102,7 +131,7 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
               <Dato etiqueta="Dirección" valor={sede.address} />
               <Dato etiqueta="Municipio y provincia" valor={sede.locality} />
               <Dato etiqueta="Teléfono" valor={sede.phone} />
-              <Dato etiqueta="Horario" valor={sede.hours} />
+              <Dato etiqueta="Horario" valor={lineasDeHorario(sede.horario)} />
               <Dato etiqueta="Alta en la red" valor={formatDate(new Date(sede.createdAt))} />
               {asignacion ? (
                 /* **FR-AD-SEDE-12**: la asignación vigente, como dato. El
@@ -117,13 +146,12 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
 
             {/* **FR-AD-SEDE-5**: el alcance real de estos datos. Un teléfono
                 equivocado aquí es un teléfono equivocado en la TV de la sala
-                de espera, y no se puede corregir desde esta consola. */}
+                de espera. */}
             <div className="mt-6 flex gap-3 rounded-card border border-border bg-surface-subtle p-4">
               <Info className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
               <p className="text-body-sm text-text-secondary">
-                Estos son los datos que tu sucursal exhibe en su kiosco y en su pantalla
-                informativa. Si alguno no es correcto, pídeselo a PuntoCash: desde aquí no se
-                pueden cambiar.
+                Estos son los datos que tu sucursal exhibe en su pantalla informativa. Si el código
+                o el nombre no son correctos, pídeselo a PuntoCash.
               </p>
             </div>
           </CardContent>
@@ -158,10 +186,123 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
         </Card>
       </Section>
 
+      {/* FR-AD-SEDE-10: cómo va el día, caja por caja. Una fila se abre en su
+          jornada abierta o, si no la tiene, en la última que se cerró. */}
+      {dia ? (
+        <Section
+          title="Jornadas de hoy"
+          description={
+            dia.cajas.length === 0
+              ? "Sin cajas no hay jornadas: la sede todavía no puede abrir ninguna."
+              : dia.abiertas === 0
+                ? "Ninguna caja tiene una jornada abierta."
+                : `${dia.abiertas} de ${dia.cajas.length} ${dia.cajas.length === 1 ? "caja tiene" : "cajas tienen"} una jornada abierta.`
+          }
+        >
+          {/* Sin cajas, la descripción ya lo dice todo: no hay tabla que dibujar. */}
+          {dia.cajas.length === 0 ? null : (
+            <ResponsiveTable
+              rows={dia.cajas}
+              rowKey={(c) => c.registerId}
+              rowLink={(c) => {
+                const j = c.abierta ?? c.ultimaCerrada;
+                return j
+                  ? {
+                      href: `/admin/jornadas/${j.id}`,
+                      label: `Ver jornada de ${c.nombre}`,
+                    }
+                  : null;
+              }}
+              columns={[
+                {
+                  key: "caja",
+                  header: "Caja",
+                  cell: (c) => <span className="font-semibold text-text-primary">{c.nombre}</span>,
+                  hiddenOnCard: true,
+                },
+                {
+                  key: "estado",
+                  header: "Jornada",
+                  cell: (c) =>
+                    c.abierta ? (
+                      <EstadoBadge estado="abierta" />
+                    ) : (
+                      <span className="text-text-secondary">
+                        {c.ultimaCerrada ? "Cerrada" : "—"}
+                      </span>
+                    ),
+                  hiddenOnCard: true,
+                },
+                {
+                  key: "trabajador",
+                  header: "Trabajador",
+                  cell: (c) =>
+                    c.abierta ? (
+                      <span>
+                        {c.abierta.workerName}
+                        {c.abierta.sesionActiva ? (
+                          <span className="text-text-secondary"> · en sesión</span>
+                        ) : null}
+                      </span>
+                    ) : c.ultimaCerrada ? (
+                      <span className="text-text-secondary">
+                        Última: {c.ultimaCerrada.workerName}
+                      </span>
+                    ) : (
+                      <span className="text-text-secondary">—</span>
+                    ),
+                },
+                {
+                  key: "desde",
+                  header: "Desde",
+                  cell: (c) =>
+                    c.abierta ? (
+                      `Abierta ${desde(c.abierta.openedAt, hoy)}`
+                    ) : c.ultimaCerrada ? (
+                      <span className="text-text-secondary">
+                        Cerrada desde el {fechaYHora(c.ultimaCerrada.closedAt!)}
+                      </span>
+                    ) : (
+                      <span className="text-text-secondary">
+                        Todavía no ha abierto ninguna jornada
+                      </span>
+                    ),
+                },
+                {
+                  key: "movimientos",
+                  header: "Movimientos",
+                  numeric: true,
+                  cell: (c) =>
+                    c.abierta ? (
+                      c.abierta.movimientos.length
+                    ) : (
+                      <span className="text-text-secondary">—</span>
+                    ),
+                },
+              ]}
+              cardTitle={(c) => c.nombre}
+              cardBadge={(c) =>
+                c.abierta ? (
+                  <EstadoBadge estado="abierta" />
+                ) : c.ultimaCerrada ? (
+                  <Badge variant="neutral">Cerrada</Badge>
+                ) : null
+              }
+              empty={null}
+            />
+          )}
+        </Section>
+      ) : null}
+
       <Section
         title="Cajas y sus equipos"
         description="Los mostradores de esta sede y la máquina vinculada a cada uno."
-        actions={<EnlaceSeccion href="/admin/cajas">Gestionar cajas</EnlaceSeccion>}
+        actions={
+          <span className="flex flex-wrap gap-x-4 gap-y-1">
+            <EnlaceSeccion href="/admin/cajas">Gestionar cajas</EnlaceSeccion>
+            <EnlaceSeccion href="/admin/equipos">Gestionar equipos</EnlaceSeccion>
+          </span>
+        }
       >
         {cajas.length === 0 ? (
           <Vacio>
@@ -174,6 +315,8 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
               <ul className="flex flex-col divide-y divide-border">
                 {cajas.map((caja) => {
                   const equipo = red.equipoDeCaja(caja.id);
+                  /* FR-AD-SEDE-7: quién tiene la sesión iniciada y, con jornada abierta, su saldo por moneda. */
+                  const abierta = red.jornadaAbiertaDeCaja(caja.id);
                   return (
                     <li
                       key={caja.id}
@@ -191,6 +334,19 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
                             <span className="text-warning-foreground">Sin equipo vinculado</span>
                           )}
                         </p>
+                        {abierta ? (
+                          <p className="mt-0.5 text-body-sm text-text-secondary">
+                            {abierta.sesionActiva
+                              ? `${abierta.workerName} con la sesión iniciada`
+                              : `Jornada abierta de ${abierta.workerName}, sin sesión iniciada`}
+                            {" · "}
+                            <span className="pc-numeric">
+                              {saldosDe(abierta)
+                                .map((m) => `${formatAmount(m.amount)} ${m.currency}`)
+                                .join(" · ")}
+                            </span>
+                          </p>
+                        ) : null}
                       </div>
                       {caja.status === "activa" ? (
                         <Badge variant="success">Activa</Badge>
@@ -230,7 +386,9 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
                       {/* **FR-AD-SEDE-8** pide el identificador, no solo el
                           rótulo: es el dato por el que se reconoce un equipo
                           cuando hay dos iguales en la misma sala. */}
-                      <p className="pc-numeric mt-0.5 text-caption text-text-secondary">{kiosco.id}</p>
+                      <p className="pc-numeric mt-0.5 text-caption text-text-secondary">
+                        {kiosco.id}
+                      </p>
                     </div>
                     <p className="text-body-sm text-text-secondary">
                       {kiosco.lastSeenAt
@@ -248,7 +406,11 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
       <Section
         title="Trabajadores"
         description="Adscritos a esta sede. Un trabajador pertenece a la sede, nunca a una caja."
-        actions={<EnlaceSeccion href="/admin/trabajadores">Gestionar trabajadores</EnlaceSeccion>}
+        actions={
+          <EnlaceSeccion href={`/admin/trabajadores?sede=${sede.id}`}>
+            Gestionar trabajadores
+          </EnlaceSeccion>
+        }
       >
         {trabajadores.length === 0 ? (
           <Vacio>Esta sede todavía no tiene personal dado de alta.</Vacio>
@@ -282,21 +444,84 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
         )}
       </Section>
 
-      <Section title="Lo que llega con sus propias secciones">
+      {/* **FR-AD-SEDE-11**: lo que muestra hoy la pantalla de la sala, leído del
+          mismo sitio que la pantalla. Las monedas no se exhiben, así que no están. */}
+      <Section
+        title="Tasas"
+        description="Las que muestra hoy el tablero de esta sucursal."
+        actions={<EnlaceSeccion href={`/admin/tasas/${sede.id}`}>Gestionar tasas</EnlaceSeccion>}
+      >
         <Card>
-          <CardContent className="flex gap-3 pt-6">
-            <TriangleAlert className="mt-0.5 size-5 shrink-0 text-text-secondary" aria-hidden="true" />
-            <div>
-              <p className="text-body text-text-primary">
-                La <strong>jornada en curso</strong> y el <strong>contenido público</strong> de esta
-                sucursal —sus monedas, sus pares con la tasa vigente y sus promociones activas— se
-                incorporan a esta ficha cuando existan sus secciones.
+          <CardContent className="pt-6">
+            {tablero.length === 0 ? (
+              <p className="text-body text-text-secondary">
+                No publica ninguna tasa: la pantalla no muestra el tablero.
               </p>
-              <p className="mt-2 text-body-sm text-text-secondary">
-                Se anuncian aquí en vez de dibujarse vacíos: un bloque en blanco se leería como
-                «esta sede no tiene nada», que es una afirmación distinta.
-              </p>
-            </div>
+            ) : (
+              <table className="w-full text-body">
+                <thead>
+                  <tr className="text-left text-caption uppercase tracking-wide text-text-secondary">
+                    <th className="pb-2 font-medium">Moneda</th>
+                    <th className="pb-2 text-right font-medium">Compra</th>
+                    <th className="pb-2 text-right font-medium">Venta</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {tablero.map((t) => (
+                    <tr key={t.currency}>
+                      <td className="py-2">
+                        <span className="inline-flex items-center gap-2">
+                          <CurrencyFlag currency={t.currency} />
+                          <span className="pc-numeric font-semibold text-text-primary">
+                            {t.currency}
+                          </span>
+                        </span>
+                      </td>
+                      <td className="pc-numeric py-2 text-right">{cifraDeTablero(t.buy)}</td>
+                      <td className="pc-numeric py-2 text-right">{cifraDeTablero(t.sell)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </CardContent>
+        </Card>
+      </Section>
+
+      <Section
+        title="Promociones"
+        description="Las que están hoy en la pantalla informativa de esta sucursal."
+        actions={<EnlaceSeccion href="/admin/promociones">Gestionar promociones</EnlaceSeccion>}
+      >
+        <Card>
+          <CardContent className="pt-6">
+            {enPantalla.length === 0 ? (
+              <p className="text-body text-text-secondary">Ninguna promoción en pantalla hoy.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-border">
+                {enPantalla.map((p) => (
+                  <li key={p.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                    {p.imagen ? (
+                      /* eslint-disable-next-line @next/next/no-img-element -- imagen de la promoción */
+                      <img
+                        src={p.imagen}
+                        alt=""
+                        className="h-14 w-20 shrink-0 rounded-control bg-surface-subtle object-contain"
+                      />
+                    ) : null}
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/promociones/${p.id}` as Route}
+                        className="font-semibold text-text-primary underline-offset-4 hover:underline"
+                      >
+                        {p.titulo}
+                      </Link>
+                      <p className="mt-0.5 text-body-sm text-text-secondary">{p.texto}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </Section>
@@ -304,11 +529,26 @@ export default async function AdminSedePage({ params }: { params: Promise<{ id: 
   );
 }
 
-function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }): React.JSX.Element {
+function Dato({
+  etiqueta,
+  valor,
+}: {
+  etiqueta: string;
+  /** Varias líneas, como el horario, van una debajo de otra. */
+  valor: string | readonly string[];
+}): React.JSX.Element {
   return (
     <div>
       <dt className="text-caption uppercase tracking-wide text-text-secondary">{etiqueta}</dt>
-      <dd className="mt-1 text-body text-text-primary">{valor}</dd>
+      {typeof valor === "string" ? (
+        <dd className="mt-1 text-body text-text-primary">{valor}</dd>
+      ) : (
+        valor.map((linea) => (
+          <dd key={linea} className="mt-1 text-body text-text-primary">
+            {linea}
+          </dd>
+        ))
+      )}
     </div>
   );
 }
@@ -325,12 +565,17 @@ function EnlaceSeccion({
   href,
   children,
 }: {
-  href: "/admin/cajas" | "/admin/equipos" | "/admin/trabajadores";
+  href:
+    | "/admin/cajas"
+    | "/admin/equipos"
+    | `/admin/trabajadores?sede=${string}`
+    | "/admin/promociones"
+    | `/admin/tasas/${string}`;
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
     <Link
-      href={href}
+      href={href as Route}
       className="inline-flex items-center gap-1.5 text-label font-medium text-primary underline-offset-4 hover:underline"
     >
       {children}

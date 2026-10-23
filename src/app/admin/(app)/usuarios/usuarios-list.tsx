@@ -9,6 +9,7 @@ import { Badge, Field, fieldAria, Input, type FieldSpec } from "@/components/ui"
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import type { AdminUserStatus } from "@/features/network/operators";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 
 /**
  * El listado de usuarios administradores — **FR-AD-USR-1**.
@@ -38,7 +39,6 @@ export interface UsuarioRow {
   correo: string;
   status: AdminUserStatus;
   isPrincipal: boolean;
-  isInitial: boolean;
   /** Ya formateadas por el servidor: formatearlas aquí desajusta la hidratación. */
   alta: string;
   ultimoAcceso: string | null;
@@ -50,8 +50,15 @@ const BUSQUEDA: FieldSpec = {
   label: "Buscar usuario",
 };
 
-export function UsuariosList({ rows }: { rows: readonly UsuarioRow[] }): React.JSX.Element {
-  const [texto, setTexto] = React.useState("");
+export function UsuariosList({
+  rows,
+  inicial = {},
+}: {
+  rows: readonly UsuarioRow[];
+  inicial?: Record<string, string | undefined>;
+}): React.JSX.Element {
+  const [texto, setTexto] = React.useState(inicial.texto ?? "");
+  useFiltrosEnUrl({ texto }, {});
 
   /* Filtra en el cliente, así que antes de hidratar no filtra nada: queda
      cerrado hasta que React se engancha, en vez de aceptar texto sin efecto. */

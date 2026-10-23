@@ -70,22 +70,19 @@ test("la ausencia de equipo se dice, no se deja en blanco", async ({ page }) => 
   await expect(page.getByRole("row").filter({ hasText: "Mostrador 3 · Vedado" })).toBeVisible();
 });
 
-test("retirar una caja con equipo vinculado se rechaza y dice qué hacer antes", async ({ page }) => {
+test("retirar una caja con equipo vinculado no se ofrece: dice qué hacer antes y lleva allí", async ({ page }) => {
   const fila = page.getByRole("row").filter({ hasText: "Mostrador 1 · Vedado" });
   await fila.getByRole("button", { name: "Retirar" }).click();
 
   const dialogo = page.getByRole("dialog");
   await expect(dialogo).toBeVisible();
-  // El aviso aparece antes de intentarlo siquiera.
+  /* **FR-AD-CAJA-9** y **FR-AD-CAJA-10**: lo que la impide se dice antes de
+     intentarlo, y en lugar del motivo hay un enlace a donde se resuelve. El
+     dominio lo sigue rechazando por su cuenta (pruebas de dominio). */
   await expect(dialogo.getByText(/Desvincula Mostrador 1 · Vedado antes de retirarla/)).toBeVisible();
-
-  await dialogo.getByLabel("Motivo de la retirada").fill("Sustitución del mostrador por obras");
-  await dialogo.getByRole("button", { name: "Retirar caja" }).click();
-
-  // **FR-AD-CAJA-10**: el dominio lo rechaza, y el motivo se lee donde se provocó.
-  await expect(
-    dialogo.getByText("Esta caja tiene un equipo vinculado. Desvincúlalo antes de retirarla."),
-  ).toBeVisible();
+  await expect(dialogo.getByLabel("Motivo de la retirada")).toHaveCount(0);
+  await expect(dialogo.getByRole("button", { name: "Retirar caja" })).toHaveCount(0);
+  await expect(dialogo.getByRole("link", { name: /^Ir a (la jornada|Equipos)$/ })).toBeVisible();
 });
 
 test("un identificador repetido en la misma sede se rechaza con su mensaje", async ({ page }) => {
@@ -112,8 +109,7 @@ test("crear una caja encamina a vincularle un equipo, y retirarla pide motivo", 
   await page.waitForURL(/\/admin\/cajas\?creada=/);
   const aviso = page.getByRole("status").filter({ hasText: `${nombre} creada` });
   await expect(aviso).toBeVisible();
-  // Acotado al aviso: "Equipos" también es un destino de la navegación.
-  await expect(aviso.getByRole("link", { name: "Equipos" })).toBeVisible();
+  await expect(aviso.getByRole("link", { name: "Vincular un equipo" })).toHaveAttribute("href", "/admin/equipos/vincular");
 
   const fila = page.getByRole("row").filter({ hasText: nombre });
   await expect(fila.getByText("Sin equipo vinculado")).toBeVisible();

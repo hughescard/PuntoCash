@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { Camera, CameraOff, CheckCircle2, KeyRound, MonitorSmartphone, QrCode, RotateCcw } from "lucide-react";
 
 import {
@@ -412,7 +413,7 @@ function Escanear({ disabled }: { disabled: boolean }): React.JSX.Element {
 
 /**
  * De dónde salen los códigos mientras el terminal no pregunte al servidor
- * quién es (**FR-AD-EQ-26**). Es andamio de la demostración y lo dice: sin
+ * quién es (nota de entrega, §8.3). Es andamio de la demostración y lo dice: sin
  * esto no habría ningún código que teclear y la pantalla no se podría
  * recorrer.
  */
@@ -552,6 +553,19 @@ function ElegirObjeto({
                   </option>
                 ))}
               </select>
+              {/* §18: vincular un equipo de caja exige una caja activa y sin equipo. Si la sede no la tiene,
+                  se dice por qué y dónde se resuelve, en vez de dejar un desplegable vacío. */}
+              {sede && !sede.cajas.some((caja) => caja.equipoId === null) ? (
+                <p className="mt-2 text-body-sm text-text-secondary">
+                  {sede.cajas.length === 0
+                    ? `${sede.name} no tiene ninguna caja activa. `
+                    : `Todas las cajas de ${sede.name} ya tienen un equipo vinculado. `}
+                  <Link href={`/admin/cajas/nueva?sede=${sede.id}` as Route} className="font-semibold text-primary underline underline-offset-4">
+                    Crear una caja
+                  </Link>
+                  {sede.cajas.length > 0 ? " o desvincula el equipo de una desde Equipos." : "."}
+                </p>
+              ) : null}
             </Field>
           ) : (
             <p className="text-body-sm text-text-secondary">

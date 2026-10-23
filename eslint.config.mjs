@@ -26,9 +26,9 @@ import nextTs from "eslint-config-next/typescript";
  *
  * Una lectura nueva que aparezca en este dominio se añade a las dos listas: a
  * la vista y a esta. Las que todavía no tienen vista —`historialDeSede`,
- * `listarEventos`, las de operadores y usuarios— están aquí igualmente, para
- * que la sección que las necesite tenga que extender la vista en vez de
- * saltársela.
+ * `listarEventos`, las tablas enteras como `SEDES` o `WORKERS`— están aquí
+ * igualmente, para que la sección que las necesite tenga que extender la
+ * vista en vez de saltársela.
  */
 const LECTURAS_SIN_ALCANCE = {
   "@/features/network/sedes": [
@@ -36,8 +36,12 @@ const LECTURAS_SIN_ALCANCE = {
     "findSedeByCode",
     "findBranchById",
     "searchBranches",
+    "sedeOfreceServicio",
+    "sedeCotiza",
+    "SEDES",
+    "BRANCHES",
   ],
-  "@/features/network/registers": ["registersOf", "allRegistersOf", "findRegisterById"],
+  "@/features/network/registers": ["registersOf", "allRegistersOf", "findRegisterById", "REGISTERS"],
   "@/features/network/devices": [
     "equipoDeCaja",
     "cajaTieneEquipo",
@@ -50,27 +54,53 @@ const LECTURAS_SIN_ALCANCE = {
     "retoVigente",
     "emitirReto",
     "marcarActividad",
+    "TERMINALS",
   ],
   "@/features/network/workers": [
     "workersOf",
     "workersOfOperator",
     "findWorkerById",
     "findWorkerByIdentifier",
+    "WORKERS",
   ],
   "@/features/network/assignments": [
     "asignacionVigente",
     "operadorVigente",
     "operadorVigenteEn",
     "historialDeSede",
+    "historialDeOperador",
     "sedesDeOperador",
+    "ASSIGNMENTS",
   ],
   "@/features/network/operators": [
     "findOperatorById",
     "findAdminUserById",
     "adminUsersOf",
     "activeAdminUsersOf",
+    "administradorPrincipalDe",
+    "OPERATORS",
+    "ADMIN_USERS",
   ],
-  "@/features/network/audit": ["listarEventos"],
+  "@/features/network/audit": ["listarEventos", "AUDIT_EVENTS"],
+  "@/features/network/currencies": [
+    "monedasDeSede",
+    "sedeManejaMoneda",
+    "cajasConMoneda",
+    "monedasDeCaja",
+  ],
+  "@/features/network/rates": ["tasasDeSede", "tasaDe", "motivoFueraDeVigor", "tableroPublico"],
+  "@/features/network/promotions": ["todasLasPromociones", "promocionPorId", "promocionesPublicas", "imagenDePromocion"],
+  "@/features/network/jornadas": [
+    "jornadasDeSede",
+    "jornadaPorId",
+    "jornadaAbiertaDeCaja",
+    "jornadaAbiertaDeTrabajador",
+    "jornadasDeTrabajador",
+    "diaDeSede",
+    "diferenciasDelDia",
+  ],
+  "@/features/network/operaciones": ["operacionesDeSede", "operacionPorCodigo", "operacionesDeJornada"],
+  "@/features/network/aprobaciones": ["solicitudesDeSede", "solicitudPorId", "solicitudesDeJornada"],
 };
 
 const MENSAJE_SIN_ALCANCE =

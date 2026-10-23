@@ -11,6 +11,12 @@ import { getAdminSession } from "@/features/admin/session-server";
 import { sedesVisibles, type AdminSession } from "@/features/admin/session";
 import { redEnAlcance, type RedEnAlcance } from "@/features/network/scoped-reads";
 import type { Sede } from "@/features/network/sedes";
+import { enHorario } from "@/features/network/horario";
+import type { DiaDeSede, DiferenciaDelDia } from "@/features/network/jornadas";
+import { TIPO_DE_SOLICITUD } from "@/features/network/aprobaciones";
+import { antiguedad } from "../aprobaciones/formato";
+import { diaEnCuba, fechaYHora, hora, jornadaDeCaja } from "../jornadas/formato";
+import { JornadaCelda } from "../cajas/cajas-de-sede";
 
 export const metadata: Metadata = {
   title: "Administración de sede · Inicio",
@@ -23,18 +29,15 @@ export const metadata: Metadata = {
  * Todo lo que muestra está acotado al alcance vigente (**A1**) y, dentro de
  * él, a la sede elegida en la cabecera (**FR-AD-SCOPE-4**).
  *
- * ── Qué hay y qué falta, a propósito ─────────────────────────────────────
- * Esta versión representa **solo lo que el dominio sabe de verdad**: sedes,
- * cajas, equipos, kioscos y trabajadores. Las métricas de jornada, operaciones
- * y volumen del día (**FR-AD-HOME-1**) y las entradas del panel de atención
- * que dependen de Monedas, Tasas, Promociones o Jornadas (**FR-AD-HOME-2**)
- * llegan con sus propios tramos, cuando exista de dónde leerlas para toda la
- * red — hoy los datos de caja son los de una sola caja simulada. Lo que la
- * pantalla no muestra está acotado en **FR-AD-HOME-9** y **FR-AD-HOME-10**.
+ * ── Lo que muestra ───────────────────────────────────────────────────────
+ * Las métricas del día (**FR-AD-HOME-1**) son las que salen de las jornadas:
+ * sedes operando —las que tienen al menos una caja con jornada abierta—, cajas
+ * abiertas, trabajadores en turno, operaciones y aprobaciones pendientes. El
+ * **volumen** no está aquí: por moneda son varias cifras, que en una tarjeta
+ * de métrica se vuelven una lista; se consulta en Reportes.
  *
- * Se ha preferido una pantalla corta y cierta a una completa y inventada:
- * este demo es la referencia visual y de flujos que van a seguir quienes
- * implementen, y una cifra inventada se copia igual que una verdadera.
+ * Una sede tiene varias cajas y cada una su jornada, así que la tabla por
+ * sede **cuenta cajas** en vez de dar un único estado (**FR-AD-HOME-6**).
  */
 export default async function AdminInicioPage() {
   const session = await getAdminSession();
@@ -46,18 +49,83 @@ export default async function AdminInicioPage() {
   /* La vista con alcance: las cifras de esta pantalla no pueden salir de una
      sede que no administra (`features/network/scoped-reads.ts`). */
   const red = redEnAlcance(session.scope);
+  const ahora = new Date();
+  const hoy = diaEnCuba(ahora);
   const filas = sedes.map((sede) => resumenDeSede(red, sede));
 
   const cajasActivas = filas.reduce((total, fila) => total + fila.cajas, 0);
-  const trabajadoresActivos = filas.reduce((total, fila) => total + fila.trabajadores, 0);
+  const cajasAbiertas = filas.reduce((total, fila) => total + fila.dia.abiertas, 0);
+  /* Una sede con al menos una caja con jornada abierta está operando. */
+  const sedesOperando = filas.filter((fila) => fila.dia.abiertas > 0).length;
+  const enTurno = filas.reduce((total, fila) => total + fila.dia.enTurno.length, 0);
+  const operacionesHoy = filas.reduce((total, fila) => total + fila.dia.operacionesHoy, 0);
   const sinCaja = filas.filter((fila) => fila.cajas === 0);
   /* Segunda prioridad de **FR-AD-HOME-2**, y por la misma razón que la
      primera: una caja sin equipo es una caja en la que nadie puede iniciar
      sesión (**FR-DEV-1**). Es el mismo cálculo con el que el menú pone su
-     indicador en Cajas (**FR-AD-SHELL-3**), para que el aviso y el indicador
-     no puedan contar cosas distintas. */
+     indicador en Equipos (**FR-AD-SHELL-3**), para que el aviso y el
+     indicador no puedan contar cosas distintas. */
   const conCajasSinEquipo = filas.filter((fila) => fila.cajas > 0 && fila.sinEquipo > 0);
   const suspendidas = filas.filter((fila) => fila.sede.status === "suspendida");
+  /* Una sucursal a medio montar: sin ninguna moneda no hay nada que operar, y
+     con Cambio de moneda habilitado pero sin ninguna tasa, el tablero no
+     cotiza nada (**FR-AD-HOME-2**). */
+  const sinMoneda = filas.filter((fila) => fila.sede.status !== "cerrada" && red.monedas(fila.sede.id).length === 0);
+  const cambioSinTasa = filas.filter(
+    (fila) =>
+      fila.sede.status !== "cerrada" &&
+      fila.sede.services.includes("cambio-moneda") &&
+      red.monedas(fila.sede.id).length > 0 &&
+      red.tasas(fila.sede.id).length === 0,
+  );
+  /* **FR-AD-TASA-12**: PuntoCash movió un rango y el sistema llevó una tasa al
+     límite. Opera, pero con una cifra que el mercante no eligió. */
+  const fijadas = sedes.flatMap((sede) =>
+    red
+      .tasas(sede.id)
+      .filter((t) => t.fijadaAlLimite)
+      .map((t) => ({ sede, code: t.code })),
+  );
+  /* **FR-AD-TASA-15**: PuntoCash retiró el rango de una moneda y su tasa dejó
+     de estar en vigor. No se borra —vuelve si el rango vuelve—, pero hoy el
+     tablero no la muestra. */
+  const sinRango = sedes.flatMap((sede) =>
+    red
+      .tasas(sede.id)
+      .filter((t) => red.motivoSinCotizacion(sede.id, t.code) === "sin-rango")
+      .map((t) => ({ sede, code: t.code })),
+  );
+  /* FR-AD-HOME-2, las de la operación del día. Una caja abierta fuera del
+     horario de su sede es una caja que nadie cerró —incluye la que sigue
+     abierta de un día anterior—; una sede en horario sin ninguna caja abierta
+     es una sucursal que debería estar atendiendo y no lo está. */
+  const fueraDeHorario = filas.flatMap((fila) =>
+    fila.dia.cajas.flatMap((c) =>
+      c.abierta && (!enHorario(fila.sede.horario, ahora) || diaEnCuba(c.abierta.openedAt) < hoy)
+        ? [{ sede: fila.sede, jornada: c.abierta }]
+        : [],
+    ),
+  );
+  /* Las diferencias de cierre y de apertura esperan en Aprobaciones, así que
+     aquí se cuentan allí; lo que queda son los cierres forzados que nadie ha
+     vuelto a contar, que no son una solicitud de nadie. */
+  const diferencias = filas.flatMap((fila) =>
+    red
+      .diferenciasDelDia(fila.sede.id)
+      .filter((d) => d.momento === "sin-conciliar")
+      .map((d) => ({ sede: fila.sede, d })),
+  );
+  /* FR-AD-HOME-1 y 2: las solicitudes que esperan visto bueno, la más antigua primero. */
+  const pendientes = sedes
+    .flatMap((sede) => red.solicitudes(sede.id).filter((x) => x.estado === "pendiente").map((x) => ({ sede, x })))
+    .sort((a, b) => a.x.fechaHora.localeCompare(b.x.fechaHora));
+  const sinAbrirEnHorario = filas.filter(
+    (fila) =>
+      fila.sede.status === "activa" &&
+      fila.cajas - fila.sinEquipo > 0 &&
+      fila.dia.abiertas === 0 &&
+      enHorario(fila.sede.horario, ahora),
+  );
 
   return (
     <>
@@ -70,16 +138,14 @@ export default async function AdminInicioPage() {
         }
       />
 
-      <Section title="Tu alcance de hoy">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <Metric label={sedes.length === 1 ? "Sede" : "Sedes"} value={sedes.length} />
-          <Metric label="Cajas activas" value={cajasActivas} />
-          <Metric label="Trabajadores activos" value={trabajadoresActivos} />
-          <Metric
-            label="Sedes sin caja"
-            value={sinCaja.length}
-            tone={sinCaja.length > 0 ? "warning" : "neutral"}
-          />
+      {/* FR-AD-HOME-1: las métricas del día que salen de las jornadas. */}
+      <Section title="Hoy en tus sedes">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+          <Metric label="Sedes operando" value={`${sedesOperando} de ${sedes.length}`} />
+          <Metric label="Cajas abiertas" value={`${cajasAbiertas} de ${cajasActivas}`} />
+          <Metric label="Trabajadores en turno" value={enTurno} />
+          <Metric label="Operaciones del día" value={operacionesHoy} />
+          <Metric label="Aprobaciones pendientes" value={pendientes.length} tone={pendientes.length > 0 ? "warning" : "neutral"} />
         </div>
       </Section>
 
@@ -89,7 +155,17 @@ export default async function AdminInicioPage() {
         title="Requiere tu atención"
         description="Lo que impide que una sede opere encabeza siempre la lista."
       >
-        {sinCaja.length === 0 && conCajasSinEquipo.length === 0 && suspendidas.length === 0 ? (
+        {sinCaja.length === 0 &&
+        conCajasSinEquipo.length === 0 &&
+        suspendidas.length === 0 &&
+        sinMoneda.length === 0 &&
+        cambioSinTasa.length === 0 &&
+        sinRango.length === 0 &&
+        pendientes.length === 0 &&
+        fueraDeHorario.length === 0 &&
+        diferencias.length === 0 &&
+        fijadas.length === 0 &&
+        sinAbrirEnHorario.length === 0 ? (
           <Card>
             <CardContent className="flex items-center gap-3 pt-6">
               <CircleCheck className="size-5 shrink-0 text-success-foreground" aria-hidden="true" />
@@ -101,7 +177,7 @@ export default async function AdminInicioPage() {
             {sinCaja.map((fila) => (
               <AtencionItem
                 key={`sin-caja-${fila.sede.id}`}
-                title={`${fila.sede.name} no tiene ninguna caja`}
+                title={`${fila.sede.name} no tiene ninguna caja activa`}
                 detail="Sin al menos una caja, la sede no puede abrir jornada ni atender a nadie."
                 href="/admin/cajas"
                 action="Crear una caja"
@@ -125,7 +201,86 @@ export default async function AdminInicioPage() {
                 key={`suspendida-${fila.sede.id}`}
                 title={`${fila.sede.name} está suspendida`}
                 detail="PuntoCash la suspendió: sus trabajadores no pueden iniciar sesión hasta que la reactive."
-                href="/admin/sedes"
+                href={`/admin/sedes/${fila.sede.id}`}
+                action="Ver la sede"
+              />
+            ))}
+            {sinMoneda.map((fila) => (
+              <AtencionItem
+                key={`sin-moneda-${fila.sede.id}`}
+                title={`${fila.sede.name} no tiene ninguna moneda en su lista`}
+                detail="Sin monedas, sus cajas no pueden operar ni su tablero mostrar nada."
+                href="/admin/monedas"
+                action="Añadir monedas"
+              />
+            ))}
+            {cambioSinTasa.map((fila) => (
+              <AtencionItem
+                key={`sin-tasa-${fila.sede.id}`}
+                title={`${fila.sede.name} ofrece Cambio de moneda y no tiene ninguna tasa`}
+                detail="Hasta que fijes al menos una, no puede comprar ni vender divisa y su tablero no cotiza nada."
+                href={`/admin/tasas/${fila.sede.id}`}
+                action="Fijar las tasas"
+              />
+            ))}
+            {pendientes.length > 0 ? (
+              <AtencionItem
+                key="aprobaciones"
+                title={
+                  pendientes.length === 1
+                    ? "Una solicitud espera tu aprobación"
+                    : `${pendientes.length} solicitudes esperan tu aprobación`
+                }
+                detail={`La más antigua es de ${antiguedad(pendientes[0]!.x.fechaHora, ahora)}: ${TIPO_DE_SOLICITUD[pendientes[0]!.x.tipo].toLowerCase()} en ${pendientes[0]!.x.cajaNombre} de ${pendientes[0]!.sede.name}.`}
+                href="/admin/aprobaciones"
+                action="Revisarlas"
+              />
+            ) : null}
+            {fueraDeHorario.map(({ sede, jornada }) => (
+              <AtencionItem
+                key={`fuera-${jornada.id}`}
+                title={
+                  diaEnCuba(jornada.openedAt) < hoy
+                    ? `${jornada.cajaNombre} de ${sede.name} sigue abierta de un día anterior`
+                    : `${jornada.cajaNombre} de ${sede.name} sigue abierta fuera de horario`
+                }
+                detail={`La abrió ${jornada.workerName} ${diaEnCuba(jornada.openedAt) === hoy ? `a las ${hora(jornada.openedAt)}` : `el ${fechaYHora(jornada.openedAt)}`}. Si nadie va a hacer su cierre, puedes forzarlo desde la jornada.`}
+                href={`/admin/jornadas/${jornada.id}`}
+                action="Ver la jornada"
+              />
+            ))}
+            {diferencias.map(({ sede, d }) => (
+              <AtencionItem
+                key={`dif-${d.momento}-${d.jornada.id}`}
+                {...textoDeDiferencia(d, sede)}
+                href={`/admin/jornadas/${d.jornada.id}`}
+                action="Ver la jornada"
+              />
+            ))}
+            {fijadas.map((f) => (
+              <AtencionItem
+                key={`fijada-${f.sede.id}-${f.code}`}
+                title={`PuntoCash ajustó la tasa del ${f.code} en ${f.sede.name}`}
+                detail="Cambió el rango y la tasa se movió al nuevo límite sin que nadie de tu empresa la eligiera. Confírmala o elige otra."
+                href={`/admin/tasas/${f.sede.id}`}
+                action="Revisarla"
+              />
+            ))}
+            {sinRango.map((f) => (
+              <AtencionItem
+                key={`sin-rango-${f.sede.id}-${f.code}`}
+                title={`PuntoCash retiró el rango del ${f.code}: su tasa en ${f.sede.name} no está en vigor`}
+                detail="La tasa se conserva y vuelve si el rango vuelve, pero mientras tanto esa moneda no se cotiza ni aparece en el tablero."
+                href={`/admin/tasas/${f.sede.id}`}
+                action="Ver las tasas"
+              />
+            ))}
+            {sinAbrirEnHorario.map((fila) => (
+              <AtencionItem
+                key={`sin-abrir-${fila.sede.id}`}
+                title={`${fila.sede.name} está en horario y no tiene ninguna caja abierta`}
+                detail="Debería estar atendiendo, y ninguna de sus cajas ha abierto jornada."
+                href={`/admin/sedes/${fila.sede.id}`}
                 action="Ver la sede"
               />
             ))}
@@ -135,7 +290,7 @@ export default async function AdminInicioPage() {
 
       <Section
         title="Estado por sede"
-        description="La jornada, el turno y las operaciones del día se incorporan con Jornadas y Operaciones."
+        description="Cada fila lleva a la ficha de su sede."
       >
         {/* Una sola definición de columnas para las dos formas: tabla en
             escritorio y tarjeta por fila en el teléfono
@@ -147,37 +302,68 @@ export default async function AdminInicioPage() {
           rowKey={(fila) => fila.sede.id}
           columns={[
             {
-              key: "codigo",
-              header: "Código",
-              // **FR-AD-HOME-6** pide código y nombre, no solo el nombre.
+              key: "sede",
+              header: "Sede",
+              // Código y nombre, y la localidad debajo (**FR-AD-HOME-6**). Lleva a la ficha.
               cell: (fila) => (
-                <span className="pc-numeric text-text-secondary">{fila.sede.code}</span>
+                <span className="flex flex-col">
+                  <EnlaceSede fila={fila} />
+                  <span className="pc-numeric text-caption text-text-secondary">
+                    {fila.sede.code} · {fila.sede.locality}
+                  </span>
+                </span>
               ),
               hiddenOnCard: true,
             },
-            {
-              key: "sede",
-              header: "Sede",
-              // Cada fila lleva a la ficha de su sede (**FR-AD-HOME-6**).
-              cell: (fila) => <EnlaceSede fila={fila} />,
-              hiddenOnCard: true,
-            },
-            { key: "localidad", header: "Localidad", cell: (fila) => fila.sede.locality, hiddenOnCard: true },
             { key: "estado", header: "Estado", cell: (fila) => <EstadoSede sede={fila.sede} />, hiddenOnCard: true },
-            { key: "cajas", header: "Cajas activas", cell: (fila) => fila.cajas, numeric: true },
             {
-              key: "sinEquipo",
-              header: "Sin equipo",
-              cell: (fila) => fila.sinEquipo,
-              numeric: true,
+              key: "cajas",
+              header: "Cajas",
+              cell: (fila) => (
+                <span className="flex flex-col">
+                  <span className="pc-numeric">{fila.cajas}</span>
+                  {fila.sinEquipo > 0 ? (
+                    <span className="whitespace-nowrap text-caption text-warning-foreground">{fila.sinEquipo} sin equipo</span>
+                  ) : null}
+                </span>
+              ),
             },
             { key: "kioscos", header: "Kioscos", cell: (fila) => fila.kioscos, numeric: true },
+            { key: "personal", header: "Trabajadores", cell: (fila) => fila.trabajadores, numeric: true },
             {
-              key: "personal",
-              header: "Trabajadores activos",
-              cell: (fila) => fila.trabajadores,
-              numeric: true,
+              key: "jornada",
+              header: "Jornada",
+              cell: (fila) =>
+                fila.cajas === 0 ? (
+                  <span className="text-text-secondary">—</span>
+                ) : fila.dia.abiertas === 0 ? (
+                  <span className="text-text-secondary">Ninguna caja abierta</span>
+                ) : (
+                  <span className="flex flex-col">
+                    <span className="font-semibold text-text-primary">
+                      {fila.dia.abiertas} de {fila.cajas} abiertas
+                    </span>
+                    {fila.dia.primeraApertura ? (
+                      <span className="text-caption text-text-secondary">primera a las {hora(fila.dia.primeraApertura)}</span>
+                    ) : null}
+                  </span>
+                ),
             },
+            {
+              key: "turno",
+              header: "En turno",
+              cell: (fila) =>
+                fila.dia.enTurno.length === 0 ? (
+                  <span className="text-text-secondary">—</span>
+                ) : (
+                  <span className="flex flex-col">
+                    {fila.dia.enTurno.map((t) => (
+                      <span key={t.workerId} className="whitespace-nowrap">{t.nombre}</span>
+                    ))}
+                  </span>
+                ),
+            },
+            { key: "ops", header: "Operaciones hoy", cell: (fila) => fila.dia.operacionesHoy, numeric: true },
           ]}
           cardTitle={(fila) => <EnlaceSede fila={fila} />}
           cardSubtitle={(fila) => `${fila.sede.code} · ${fila.sede.locality}`}
@@ -185,7 +371,63 @@ export default async function AdminInicioPage() {
           empty={<p className="text-body text-text-secondary">No hay sedes que mostrar.</p>}
         />
       </Section>
+
+      {/* **FR-AD-HOME-7**: con una sede elegida, la tabla se amplía con el
+          detalle de sus cajas y sus equipos. */}
+      {session.selected ? <DetalleDeSede red={red} sede={session.selected} hoy={hoy} /> : null}
     </>
+  );
+}
+
+function DetalleDeSede({ red, sede, hoy }: { red: RedEnAlcance; sede: Sede; hoy: string }): React.JSX.Element {
+  const cajas = red.cajasActivas(sede.id).map((caja) => {
+    const equipo = red.equipoDeCaja(caja.id);
+    return {
+      id: caja.id,
+      nombre: caja.name,
+      equipo: equipo ? { id: equipo.id, label: equipo.label } : null,
+      jornada: jornadaDeCaja(red.jornadaAbiertaDeCaja(caja.id), hoy),
+    };
+  });
+  const kioscos = red.kioscos(sede.id);
+  return (
+    <Section title={`Cajas y equipos de ${sede.name}`} description="Cada caja con su equipo y su jornada de hoy.">
+      <ResponsiveTable
+        rows={cajas}
+        rowKey={(c) => c.id}
+        columns={[
+          { key: "caja", header: "Caja", cell: (c) => <span className="font-medium text-text-primary">{c.nombre}</span>, hiddenOnCard: true },
+          {
+            key: "equipo",
+            header: "Equipo",
+            cell: (c) =>
+              c.equipo ? (
+                <span className="flex flex-col">
+                  <span>{c.equipo.label}</span>
+                  <span className="pc-numeric text-caption text-text-secondary">{c.equipo.id}</span>
+                </span>
+              ) : (
+                <span className="text-warning-foreground">Sin equipo vinculado</span>
+              ),
+          },
+          { key: "jornada", header: "Jornada", cell: (c) => <JornadaCelda caja={c} /> },
+        ]}
+        cardTitle={(c) => c.nombre}
+        empty={
+          <p className="text-body text-text-secondary">
+            Esta sede no tiene ninguna caja activa.{" "}
+            <Link href="/admin/cajas" className="font-semibold text-primary underline underline-offset-4">
+              Ir a Cajas
+            </Link>
+          </p>
+        }
+      />
+      <p className="mt-4 text-body-sm text-text-secondary">
+        {kioscos.length === 0
+          ? "Sin kioscos de autoservicio vinculados."
+          : `Kioscos vinculados: ${kioscos.map((k) => `${k.label} (${k.id})`).join(", ")}.`}
+      </p>
+    </Section>
   );
 }
 
@@ -196,6 +438,7 @@ interface ResumenDeSede {
   sinEquipo: number;
   kioscos: number;
   trabajadores: number;
+  dia: DiaDeSede;
 }
 
 function resumenDeSede(red: RedEnAlcance, sede: Sede): ResumenDeSede {
@@ -203,13 +446,11 @@ function resumenDeSede(red: RedEnAlcance, sede: Sede): ResumenDeSede {
   return {
     sede,
     cajas: activas.length,
-    /* **FR-AD-HOME-6** pide «cajas activas y cuántas sin equipo», y las dos
-       salen del dominio: el equipo de una caja lo sabe este servidor desde el
-       Paso 2. Lo que no sabe —jornada, turno, operaciones del día— es lo único
-       que esta tabla sigue sin dar (**FR-AD-HOME-9**). */
+    /* **FR-AD-HOME-6** pide «cajas activas y cuántas sin equipo». */
     sinEquipo: activas.filter((caja) => !red.cajaTieneEquipo(caja.id)).length,
     kioscos: red.kioscos(sede.id).length,
     trabajadores: red.trabajadores(sede.id).filter((w) => w.status === "activo").length,
+    dia: red.diaDeSede(sede.id) ?? { cajas: [], abiertas: 0, enTurno: [], primeraApertura: null, operacionesHoy: 0 },
   };
 }
 
@@ -232,7 +473,7 @@ function Metric({
   tone = "neutral",
 }: {
   label: string;
-  value: number;
+  value: number | string;
   tone?: "neutral" | "warning";
 }): React.JSX.Element {
   return (
@@ -241,7 +482,7 @@ function Metric({
         <p className="text-caption uppercase tracking-wide text-text-secondary">{label}</p>
         <p
           className={
-            tone === "warning" && value > 0
+            tone === "warning" && typeof value === "number" && value > 0
               ? "pc-numeric mt-2 text-screen-title text-warning-foreground"
               : "pc-numeric mt-2 text-screen-title text-text-primary"
           }
@@ -264,7 +505,14 @@ function AtencionItem({
   /* Literales y no `Route`: cada entrada del panel lleva a la pantalla donde
      se resuelve (**FR-AD-HOME-4**), y son pocas y conocidas. Enumerarlas deja
      que el compilador avise si alguna deja de existir. */
-  href: "/admin/cajas" | "/admin/equipos" | "/admin/sedes";
+  href:
+    | "/admin/cajas"
+    | "/admin/equipos"
+    | "/admin/monedas"
+    | "/admin/aprobaciones"
+    | `/admin/tasas/${string}`
+    | `/admin/jornadas/${string}`
+    | `/admin/sedes/${string}`;
   action: string;
 }): React.JSX.Element {
   return (
@@ -284,7 +532,7 @@ function AtencionItem({
 
           {/* **FR-AD-HOME-4**: cada entrada lleva a donde se resuelve. */}
           <Link
-            href={href}
+            href={href as Route}
             className="inline-flex shrink-0 items-center gap-1.5 self-start text-label font-medium text-primary underline-offset-4 hover:underline"
           >
             {action}
@@ -323,4 +571,12 @@ function SinSedes({ session }: { session: AdminSession }): React.JSX.Element {
       </Card>
     </>
   );
+}
+
+/** Un cierre forzado que nadie ha vuelto a contar (**FR-AD-JOR-20**). Las diferencias de cierre y de apertura están en Aprobaciones. */
+function textoDeDiferencia(d: DiferenciaDelDia, sede: Sede): { title: string; detail: string } {
+  return {
+    title: `Cierre forzado sin contar en ${d.jornada.cajaNombre} de ${sede.name}`,
+    detail: "Nadie ha contado el efectivo desde el cierre. El primer conteo será el de quien abra la próxima jornada.",
+  };
 }

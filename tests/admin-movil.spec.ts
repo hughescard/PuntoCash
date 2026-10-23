@@ -111,7 +111,7 @@ test.describe("contenido", () => {
 
     // Los mismos datos siguen ahí, con su etiqueta al lado.
     await expect(page.getByRole("link", { name: "PuntoCash Vedado" })).toBeVisible();
-    await expect(page.getByText("Cajas activas").first()).toBeVisible();
+    await expect(page.getByText("Operaciones hoy").first()).toBeVisible();
   });
 
   test("ninguna etiqueta de la barra inferior se sale de su hueco", async ({ page }) => {

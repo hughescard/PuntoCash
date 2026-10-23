@@ -77,12 +77,12 @@ export interface AdminUser {
 
 const mutableOperators: Operator[] = [
   {
-    id: "op-antilla",
-    name: "Antilla Servicios Financieros S.R.L.",
+    id: "op-malecon",
+    name: "Malecón Servicios Financieros S.R.L.",
     legalId: "CI-8804120321",
     contactName: "Marta Sánchez",
     phone: "+53 5 234 1190",
-    email: "marta@antillasf.cu",
+    email: "marta@malecon-sf.cu",
     status: "activo",
     createdAt: "2026-01-15T09:00:00.000Z",
   },
@@ -108,7 +108,7 @@ const mutableOperators: Operator[] = [
     status: "suspendido",
     createdAt: "2026-05-04T09:00:00.000Z",
     suspension: {
-      reason: "Revisión de arqueos con diferencia reiterada en dos de sus sedes",
+      reason: "Revisión de cierres con diferencia reiterada en dos de sus sedes",
       at: "2026-09-19T14:20:00.000Z",
       by: "PuntoCash · Control interno",
     },
@@ -130,7 +130,7 @@ const mutableOperators: Operator[] = [
   },
   {
     /* **Una sola sede.** Es el mercante que hace recorrible FR-AD-SCOPE-3
-       (**FR-AD-DOM-9**): su cabecera no muestra selector, sino el código y el
+       (nota de entrega, §8.3): su cabecera no muestra selector, sino el código y el
        nombre de su única sede como texto fijo. */
     id: "op-centro",
     name: "Centro Divisas S.R.L.",
@@ -140,6 +140,18 @@ const mutableOperators: Operator[] = [
     email: "ibetancourt@centrodivisas.cu",
     status: "activo",
     createdAt: "2026-03-12T09:00:00.000Z",
+  },
+  {
+    /* Los casos de atención que el resto de la semilla no tiene: una sede
+       suspendida dentro de su alcance y otra solo con cajas retiradas. */
+    id: "op-bahia",
+    name: "Bahía Cambios S.R.L.",
+    legalId: "CI-8807150933",
+    contactName: "Ana Barrios",
+    phone: "+53 5 702 4418",
+    email: "abarrios@bahiacambios.cu",
+    status: "activo",
+    createdAt: "2026-06-01T09:00:00.000Z",
   },
   {
     /* Dado de baja y sin sedes: su historial sigue accesible [R9]. */
@@ -158,11 +170,11 @@ export const OPERATORS: readonly Operator[] = mutableOperators;
 
 const mutableAdminUsers: AdminUser[] = [
   {
-    id: "adm-antilla-1",
-    operatorId: "op-antilla",
-    identifier: "marta@antillasf.cu",
+    id: "adm-malecon-1",
+    operatorId: "op-malecon",
+    identifier: "marta@malecon-sf.cu",
     fullName: "Marta Sánchez",
-    email: "marta@antillasf.cu",
+    email: "marta@malecon-sf.cu",
     phone: "+53 5 234 1190",
     status: "activo",
     isInitial: true,
@@ -172,11 +184,11 @@ const mutableAdminUsers: AdminUser[] = [
   },
   {
     /* Creado por Marta, no por PuntoCash: es el caso de FR-AD-USR-2. */
-    id: "adm-antilla-2",
-    operatorId: "op-antilla",
-    identifier: "dcastro@antillasf.cu",
+    id: "adm-malecon-2",
+    operatorId: "op-malecon",
+    identifier: "dcastro@malecon-sf.cu",
     fullName: "Daniel Castro",
-    email: "dcastro@antillasf.cu",
+    email: "dcastro@malecon-sf.cu",
     phone: "+53 5 234 1204",
     status: "activo",
     isInitial: false,
@@ -225,6 +237,19 @@ const mutableAdminUsers: AdminUser[] = [
     isInitial: true,
     isPrincipal: true,
     createdAt: "2026-09-18T09:00:00.000Z",
+  },
+  {
+    id: "adm-bahia-1",
+    operatorId: "op-bahia",
+    identifier: "abarrios@bahiacambios.cu",
+    fullName: "Ana Barrios",
+    email: "abarrios@bahiacambios.cu",
+    phone: "+53 5 702 4418",
+    status: "activo",
+    isInitial: true,
+    isPrincipal: true,
+    createdAt: "2026-06-01T09:00:00.000Z",
+    lastAccessAt: "2026-10-18T09:12:00.000Z",
   },
   {
     id: "adm-oriente-1",
@@ -296,12 +321,8 @@ export type OperatorWriteDenial =
   | "dado-de-baja"
   | "tiene-sedes"
   | "usuario-no-encontrado"
-  /* FR-AD-USR-7 y FR-AD-USR-8 son dos reglas distintas con dos mensajes
-     distintos, así que no pueden compartir motivo: devolver el del último
-     activo a quien solo intentó desactivarse a sí mismo le daría una razón
-     falsa («nadie de tu empresa podría entrar») habiendo otros activos. */
+  /* Traspasarse el papel a uno mismo. */
   | "es-uno-mismo"
-  | "ultimo-usuario-activo"
   | "no-es-el-inicial"
   | "correo-invalido"
   /* **FR-AD-USR-11**: §8 entera pertenece al administrador principal. */
@@ -590,7 +611,7 @@ export function transferirAdministradorPrincipal(
  * división que en trabajadores (**FR-AD-TRAB-9**), y por los mismos motivos.
  *
  * **Sí se puede editar a uno mismo**: corregir tu propio nombre o tu teléfono
- * no te deja fuera de nada. La guarda de **FR-AD-USR-7** protege la
+ * no te deja fuera de nada. La guarda de **FR-AD-USR-13** protege la
  * desactivación, que es irreversible desde el lado de quien la sufre, no la
  * edición.
  */
@@ -610,6 +631,37 @@ export function editarUsuarioAdmin(
   if (!esAdministradorPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
 
   const user = findAdminUserById(userId);
+  if (!user || user.operatorId !== operatorScope.value) {
+    return { ok: false, reason: "usuario-no-encontrado" };
+  }
+
+  user.fullName = input.fullName.trim();
+  user.phone = input.phone.trim();
+  return { ok: true, value: user };
+}
+
+/**
+ * Los datos personales **propios**, desde el perfil — **FR-AD-PERF-3**.
+ *
+ * Gemela de `editarUsuarioAdmin` con una diferencia, y es toda la razón de que
+ * exista aparte: **no exige ser el principal**. Corregir tu propio nombre o tu
+ * teléfono no es administrar usuarios, así que no puede depender de la llave
+ * de §8; si dependiera, quien no es principal no tendría ningún sitio donde
+ * hacerlo, que es el hueco que el perfil viene a cerrar.
+ *
+ * No recibe un `userId` de destino: el único usuario que toca es quien actúa.
+ * Que no se pueda pasar otro es lo que impide que esto se convierta en una
+ * puerta trasera a §8.
+ */
+export function editarDatosPropiosAdmin(
+  scope: Scope,
+  actingUserId: string,
+  input: EditarUsuarioAdminInput,
+): OperatorWriteResult<AdminUser> {
+  const operatorScope = requireOperatorScope(scope);
+  if (!operatorScope.ok) return { ok: false, reason: "alcance-insuficiente" };
+
+  const user = findAdminUserById(actingUserId);
   if (!user || user.operatorId !== operatorScope.value) {
     return { ok: false, reason: "usuario-no-encontrado" };
   }
@@ -660,7 +712,7 @@ export function cambiarCorreoUsuarioAdmin(
  * terminado nunca.
  *
  * No devuelve nada ni falla: es un apunte, y que no se pueda escribir jamás
- * debe impedir que alguien entre.
+ * no debe impedir que alguien entre.
  */
 export function registrarAccesoUsuarioAdmin(userId: string, now = new Date()): void {
   const user = findAdminUserById(userId);

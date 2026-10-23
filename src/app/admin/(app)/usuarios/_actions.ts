@@ -5,16 +5,17 @@ import { redirect } from "next/navigation";
 
 import { getAdminSession } from "@/features/admin/session-server";
 import { registrarEvento } from "@/features/network/audit";
+import { redEnAlcance } from "@/features/network/scoped-reads";
 import {
   cambiarCorreoUsuarioAdmin,
   crearUsuarioAdmin,
   desactivarUsuarioAdmin,
   editarUsuarioAdmin,
-  findAdminUserById,
+  esAdministradorPrincipal,
   reactivarUsuarioAdmin,
   transferirAdministradorPrincipal,
-  type OperatorWriteDenial,
 } from "@/features/network/operators";
+import { mensaje } from "../mensajes";
 
 /**
  * Las escrituras de §8 (Usuarios administradores).
@@ -26,11 +27,10 @@ import {
  * el dominio comprueba además que el usuario sea de ese operador. Por eso aquí
  * no aparece `redEnAlcance` por ninguna parte, y no es un descuido.
  *
- * ── Las dos guardas que esta sección tiene de propias ─────────────────────
- * **Nadie se desactiva a sí mismo** (**FR-AD-USR-7**) y **no se desactiva al
- * último activo** (**FR-AD-USR-8**). Las dos viven en el dominio y devuelven
- * motivos distintos a propósito: dar el del último activo a quien solo intentó
- * desactivarse a sí mismo le daría una razón falsa.
+ * ── La guarda propia de esta sección ──────────────────────────────────────
+ * Toda la sección es del **administrador principal** (**FR-AD-USR-11**), y
+ * **al principal no lo desactiva nadie, ni él mismo** (**FR-AD-USR-13**). Las
+ * dos reglas viven en el dominio, no solo en la pantalla.
  */
 
 /** La credencial inicial, idéntica en forma y en garantía a la de §7. */
@@ -44,22 +44,7 @@ function credencialInicial(): string {
   return `${salida.slice(0, 5)}-${salida.slice(5)}`;
 }
 
-const GENERICO = "No se pudo completar la acción. Vuelve a intentarlo.";
 
-const MOTIVOS: Partial<Record<OperatorWriteDenial, string>> = {
-  "alcance-insuficiente": "Esta acción pertenece al administrador de la empresa.",
-  "operador-no-encontrado": "No encontramos lo que buscabas.",
-  "usuario-no-encontrado": "No encontramos lo que buscabas.",
-  "identificador-duplicado": "Ese identificador ya está en uso.",
-  "correo-invalido": "Introduce un correo válido.",
-  /* **FR-AD-USR-11** y **FR-AD-USR-12**. */
-  "no-es-el-principal": "Esta sección pertenece al administrador principal de tu empresa.",
-  "es-el-principal":
-    "Al administrador principal no lo desactiva nadie. Traspasa el papel antes, si hace falta.",
-  "es-uno-mismo": "No puedes traspasarte el papel a ti mismo.",
-  "destino-no-activo":
-    "Solo puedes traspasarlo a un administrador activo: uno desactivado dejaría a tu empresa sin nadie que administre usuarios.",
-};
 
 /* -------------------------------------------------------------------------
  * Alta — FR-AD-USR-2 a FR-AD-USR-5
@@ -101,7 +86,7 @@ export async function crearUsuarioAction(
   };
 
   if (!session) {
-    return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión.", valores };
+    return { ok: false, error: mensaje("usuarios", "sesion-terminada"), valores };
   }
 
   const obligatorios = [
@@ -114,13 +99,13 @@ export async function crearUsuarioAction(
 
   const vacio = obligatorios.find((c) => !c.valor);
   if (vacio) {
-    return { ok: false, error: "Este campo es obligatorio.", campo: vacio.campo, valores };
+    return { ok: false, error: mensaje("usuarios", "campo-obligatorio"), campo: vacio.campo, valores };
   }
 
   /* **FR-AD-USR-3**: sin correo válido no habría segundo factor, y sin
      segundo factor no hay sesión **[R13]**. */
   if (!valores.correo.includes("@") || valores.correo.includes(" ")) {
-    return { ok: false, error: "Introduce un correo válido.", campo: "correo", valores };
+    return { ok: false, error: mensaje("usuarios", "correo-invalido"), campo: "correo", valores };
   }
 
   const resultado = crearUsuarioAdmin(session.scope, session.user.id, {
@@ -134,8 +119,8 @@ export async function crearUsuarioAction(
   if (!resultado.ok) {
     const campo = resultado.reason === "identificador-duplicado" ? "identificador" : undefined;
     return campo
-      ? { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO, campo, valores }
-      : { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO, valores };
+      ? { ok: false, error: mensaje("usuarios", resultado.reason), campo, valores }
+      : { ok: false, error: mensaje("usuarios", resultado.reason), valores };
   }
 
   registrarEvento({
@@ -196,7 +181,7 @@ export async function editarUsuarioAction(
   };
 
   if (!session) {
-    return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión.", valores };
+    return { ok: false, error: mensaje("usuarios", "sesion-terminada"), valores };
   }
 
   const obligatorios = [
@@ -207,7 +192,7 @@ export async function editarUsuarioAction(
 
   const vacio = obligatorios.find((c) => !c.valor);
   if (vacio) {
-    return { ok: false, error: "Este campo es obligatorio.", campo: vacio.campo, valores };
+    return { ok: false, error: mensaje("usuarios", "campo-obligatorio"), campo: vacio.campo, valores };
   }
 
   const resultado = editarUsuarioAdmin(session.scope, session.user.id, usuarioId, {
@@ -216,7 +201,7 @@ export async function editarUsuarioAction(
   });
 
   if (!resultado.ok) {
-    return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO, valores };
+    return { ok: false, error: mensaje("usuarios", resultado.reason), valores };
   }
 
   registrarEvento({
@@ -246,13 +231,13 @@ export async function cambiarCorreoUsuarioAction(
   formData: FormData,
 ): Promise<ResultadoAccionUsuario> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("usuarios", "sesion-terminada") };
 
   const usuarioId = String(formData.get("usuario") ?? "");
   const correo = String(formData.get("correo") ?? "").trim();
 
   const resultado = cambiarCorreoUsuarioAdmin(session.scope, session.user.id, usuarioId, correo);
-  if (!resultado.ok) return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO };
+  if (!resultado.ok) return { ok: false, error: mensaje("usuarios", resultado.reason) };
 
   registrarEvento({
     actorId: session.user.id,
@@ -279,14 +264,14 @@ export async function desactivarUsuarioAction(
   formData: FormData,
 ): Promise<ResultadoAccionUsuario> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("usuarios", "sesion-terminada") };
 
   const usuarioId = String(formData.get("usuario") ?? "");
 
   /* El dominio recibe **quién** lo está haciendo, no lo deduce: es lo que
-     hace cumplible **FR-AD-USR-7** sin que la pantalla sea la única guarda. */
+     hace cumplible **FR-AD-USR-13** sin que la pantalla sea la única guarda. */
   const resultado = desactivarUsuarioAdmin(session.scope, usuarioId, session.user.id);
-  if (!resultado.ok) return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO };
+  if (!resultado.ok) return { ok: false, error: mensaje("usuarios", resultado.reason) };
 
   registrarEvento({
     actorId: session.user.id,
@@ -310,12 +295,12 @@ export async function reactivarUsuarioAction(
   formData: FormData,
 ): Promise<ResultadoAccionUsuario> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("usuarios", "sesion-terminada") };
 
   const usuarioId = String(formData.get("usuario") ?? "");
 
   const resultado = reactivarUsuarioAdmin(session.scope, session.user.id, usuarioId);
-  if (!resultado.ok) return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO };
+  if (!resultado.ok) return { ok: false, error: mensaje("usuarios", resultado.reason) };
 
   registrarEvento({
     actorId: session.user.id,
@@ -330,7 +315,7 @@ export async function reactivarUsuarioAction(
 
   return {
     ok: true,
-    mensaje: `${resultado.value.fullName} vuelve a poder entrar en esta consola, con las mismas potestades que tú.`,
+    mensaje: `${resultado.value.fullName} vuelve a poder entrar en esta consola y operar todas las sedes de la empresa.`,
   };
 }
 
@@ -350,11 +335,15 @@ export async function regenerarCredencialUsuarioAction(
   formData: FormData,
 ): Promise<ResultadoCredencialUsuario> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("usuarios", "sesion-terminada") };
 
-  const usuario = findAdminUserById(String(formData.get("usuario") ?? ""));
-  if (!usuario || usuario.operatorId !== session.operator.id) {
-    return { ok: false, error: "No encontramos lo que buscabas." };
+  /* FR-AD-USR-11: §8 entera es del principal, también esta acción. */
+  if (!esAdministradorPrincipal(session.user.id)) {
+    return { ok: false, error: mensaje("usuarios", "no-es-el-principal") };
+  }
+  const usuario = redEnAlcance(session.scope).usuario(String(formData.get("usuario") ?? ""));
+  if (!usuario) {
+    return { ok: false, error: mensaje("usuarios", "no-encontrada") };
   }
 
   registrarEvento({
@@ -390,17 +379,17 @@ export async function transferirPrincipalAction(
   formData: FormData,
 ): Promise<ResultadoAccionUsuario> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("usuarios", "sesion-terminada") };
 
   /* El diálogo vive en la ficha del principal —la propia—, así que el campo
      `usuario` es **quien traspasa** y el destino viene del selector. Leer
      `usuario` como destino hacía que el dominio rechazara con «no puedes
      traspasarte el papel a ti mismo», que es exactamente lo que ocurría. */
   const destinoId = String(formData.get("destino") ?? "");
-  if (!destinoId) return { ok: false, error: "Elige a quién le traspasas la administración." };
+  if (!destinoId) return { ok: false, error: mensaje("usuarios", "destino-requerido") };
 
   const resultado = transferirAdministradorPrincipal(session.scope, session.user.id, destinoId);
-  if (!resultado.ok) return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO };
+  if (!resultado.ok) return { ok: false, error: mensaje("usuarios", resultado.reason) };
 
   registrarEvento({
     actorId: session.user.id,

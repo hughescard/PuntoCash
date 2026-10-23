@@ -88,18 +88,26 @@ espera a nada y mide una tabla que se está rehaciendo.
 
 ## Pruebas de `/admin`
 
-`admin-acceso.spec.ts` cubre el acceso en dos pasos, `admin-shell.spec.ts` el
-shell, el alcance y la navegación, y `admin-equipos.spec.ts` las dos pestañas
-de §3.
+Un archivo por sección de la consola, con el nombre de la sección:
+
+| Archivo | Qué cubre |
+| --- | --- |
+| `admin-acceso` | acceso en dos pasos, recuperación, rechazo indistinguible |
+| `admin-shell` | shell, alcance, navegación, sede ajena = 404 |
+| `admin-movil` | comportamiento del teléfono a 390px |
+| `admin-responsive` | todas las pantallas a 360, 390 y 1440px |
+| `admin-revision` | lo transversal: filtros al cambiar de sede, 404 de rutas, pegar el código, avisos de Inicio, fechas imposibles, aviso de Usuarios |
+| `admin-equipos`, `admin-cajas`, `admin-sedes`, `admin-trabajadores`, `admin-usuarios`, `admin-perfil` | §3, §4, §6, §7, §8 y §8.2 |
+| `admin-monedas`, `admin-tasas`, `admin-promociones` | §9, §10, §11 |
+| `admin-jornadas`, `admin-operaciones`, `admin-aprobaciones`, `admin-reportes` | §12 a §15 |
 
 `admin-equipos` comprueba **la pantalla**, no las reglas: esas están en
-`equipos-domain`, sin navegador. Y no desvincula de verdad, a propósito —
-todavía no se puede volver a vincular, así que una prueba que lo hiciera
-dejaría una caja sin equipo para el resto de la corrida y rompería
-`admin-cajas`, que comprueba que una caja con equipo no se puede retirar. Abre
-el diálogo, comprueba que dice lo que FR-AD-EQ-9 a 11 exigen, y cancela. Las dos entran por la interfaz —no se siembra
-ninguna cookie de sesión— porque el acceso es justamente una de las cosas que
-hay que comprobar.
+`equipos-domain`, sin navegador. Y no desvincula de verdad, a propósito: una
+prueba que lo hiciera dejaría una caja sin equipo para el resto de la corrida
+y rompería `admin-cajas`, que comprueba que una caja con equipo no se puede
+retirar. Abre el diálogo, comprueba que dice lo que FR-AD-EQ-9 a 11 exigen, y
+cancela. Todas entran por la interfaz —no se siembra ninguna cookie de
+sesión— porque el acceso es justamente una de las cosas que hay que comprobar.
 
 Las utilidades compartidas viven en `admin-helpers.ts` y `worker-helpers.ts`,
 **fuera** de `*.spec.ts` a propósito: importar un archivo de pruebas desde otro
@@ -180,7 +188,7 @@ no se puede nombrar aunque se pase junto a una sede propia, que una caja tiene
 un equipo y una sede puede tener varios kioscos, y que el alcance global no
 vincula nada. Trabaja **sobre Caribe y `sede-matanzas`**, y toda prueba que
 vincula desvincula al final: las pruebas de navegador de `/admin` entran como
-Marta, de Antilla, y dependen de que Vedado conserve su caja sin equipo
+Marta, de Malecón, y dependen de que Vedado conserve su caja sin equipo
 (`admin-cajas`) y sus dos kioscos (`network-domain`).
 
 En `network-domain` el bloque que más vale es el de `redEnAlcance`: no
@@ -308,6 +316,17 @@ vuelve visible. En pantalla estrecha se localiza por `getByRole("article")`, y
 conviene filtrar por el dato que distingue la tarjeta en vez de por su
 posición: el orden depende del alcance de quien entra.
 
+**Y a 1440 pasa lo contrario: la tarjeta está en el marcado, oculta, y va
+antes que la tabla.** Un `locator('main a[href^="/admin/usuarios/adm-"]').first()`
+elige el enlace de la tarjeta, que no se puede pulsar, y la prueba agota el
+plazo sin decir por qué. Los enlaces de fila se buscan con `:visible`.
+
+**Un campo obligatorio se llama «Sede*», no «Sede».** El asterisco de `Label`
+es `aria-hidden`, pero `getByLabel` compara contra el texto de la etiqueta y lo
+incluye, así que `getByLabel("Sede", { exact: true })` no encuentra nunca un
+campo obligatorio —y una comprobación de **ausencia** con esa forma pasa
+siempre, sin comprobar nada—. Se usa `getByLabel(/^Sede\*?$/)`.
+
 **El botón de «Iniciar sesión» está deshabilitado hasta que el formulario
 hidrata.** Es deliberado —sin eso, pulsarlo antes de tiempo hace un GET con la
 contraseña en la barra de direcciones—, pero significa que un `click` sobre él
@@ -384,17 +403,18 @@ La consola `/admin` es la excepción: **FR-AD-STATE-7** y **FR-AD-STATE-8**
 exigen comprobar cada pantalla a 360px, 390px y 1440px y que ninguna produzca
 desplazamiento horizontal, y eso sí se comprueba.
 
-`admin-responsive.spec.ts` es esa malla: recorre las seis pantallas
-construidas —Inicio, Sedes, Ficha de sede, Cajas, Nueva caja y una «en
-construcción»— más las dos de acceso a los tres anchos, y a 360px mide además
+`admin-responsive.spec.ts` es esa malla: recorre todas las pantallas de la
+consola —las fijas por su dirección y las fichas (trabajador, jornada,
+operación, solicitud) llegando desde su listado— más las dos de acceso a los
+tres anchos, y a 360px mide además
 lo que solo ahí se puede medir: los 44px de la barra inferior y de la franja
 de alcance (**FR-AD-SHELL-14**) y que un diálogo de confirmación quepa de
 lado, apile sus acciones y deje la primaria dentro de la pantalla
 (**FR-AD-SHELL-16**).
 
 Un recorrido por ancho en vez de un caso por pantalla: el `viewport` se fija
-por archivo o por bloque, no por aserción, así que veintiuna combinaciones
-serían veintiún accesos. Lo que se pierde —que el fallo diga en qué pantalla
+por archivo o por bloque, no por aserción, así que un caso por pantalla y por ancho
+serían decenas de accesos. Lo que se pierde —que el fallo diga en qué pantalla
 ocurrió— se recupera nombrándola en el mensaje de la aserción.
 
 `admin-movil.spec.ts` sigue siendo el comportamiento del teléfono a 390px

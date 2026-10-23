@@ -12,9 +12,9 @@ import {
   type RetoIdentificado,
   type RetoPresentado,
   type TerminalKind,
-  type TerminalWriteDenial,
 } from "@/features/network/devices";
 import { redEnAlcance } from "@/features/network/scoped-reads";
+import { mensaje } from "../mensajes";
 
 /**
  * Las escrituras de §3 (Equipos): **vincular** y **desvincular**.
@@ -38,20 +38,14 @@ export type ResultadoAccion = { ok: true; mensaje: string } | { ok: false; error
  * propósito: distinguirlos convertiría la pantalla en un directorio de los
  * equipos de otras empresas (**FR-AD-NAV-2**).
  */
-const MOTIVOS: Partial<Record<TerminalWriteDenial, string>> = {
-  "alcance-global-prohibido": "Esta acción pertenece al administrador de la sede.",
-  "fuera-de-alcance": "No encontramos lo que buscabas.",
-  "equipo-no-encontrado": "No encontramos lo que buscabas.",
-};
 
-const GENERICO = "No se pudo desvincular. Vuelve a intentarlo.";
 
 export async function desvincularEquipoAction(
   _previo: ResultadoAccion,
   formData: FormData,
 ): Promise<ResultadoAccion> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("equipos", "sesion-terminada") };
 
   const terminalId = String(formData.get("equipo") ?? "");
 
@@ -62,7 +56,7 @@ export async function desvincularEquipoAction(
   const equipo = red.equipo(terminalId);
 
   const resultado = desvincularEquipo(session.scope, SCOPE_CONTEXT, terminalId);
-  if (!resultado.ok) return { ok: false, error: MOTIVOS[resultado.reason] ?? GENERICO };
+  if (!resultado.ok) return { ok: false, error: mensaje("equipos", resultado.reason) };
 
   const sede = red.sede(resultado.value.branchId);
   const caja = equipo?.registerId ? red.cajasConHistorico(resultado.value.branchId).find((c) => c.id === equipo.registerId) : undefined;
@@ -108,19 +102,13 @@ export type ResultadoIdentificacion =
   | { ok: true; reto: RetoIdentificado }
   | { ok: false; error: string };
 
-const SIN_COINCIDENCIA =
-  "El código no coincide con ningún equipo pendiente. Revisa el código que muestra el equipo.";
 
-const CADUCADO: Record<TerminalKind, string> = {
-  caja: "Ese código caducó. El equipo ya muestra uno nuevo.",
-  kiosco: "Ese código caducó. El kiosco ya muestra uno nuevo.",
-};
 
 export async function identificarRetoAction(
   reto: RetoPresentado,
 ): Promise<ResultadoIdentificacion> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("equipos", "sesion-terminada") };
 
   const resultado = identificarReto(reto);
   if (resultado.ok) return { ok: true, reto: resultado.value };
@@ -130,15 +118,12 @@ export async function identificarRetoAction(
        Pero `identificarReto` no la devuelve en el rechazo, y añadirla sería
        decirle a quien prueba códigos qué clase de equipo acertó. Redacción
        neutra. */
-    return { ok: false, error: CADUCADO.caja };
+    return { ok: false, error: mensaje("equipos", "codigo-caducado") };
   }
   if (resultado.reason === "equipo-ya-vinculado") {
-    return {
-      ok: false,
-      error: "Ese equipo ya está vinculado. Desvincúlalo antes de volver a vincularlo.",
-    };
+    return { ok: false, error: mensaje("equipos", "equipo-ya-vinculado") };
   }
-  return { ok: false, error: SIN_COINCIDENCIA };
+  return { ok: false, error: mensaje("equipos", "codigo-no-coincide") };
 }
 
 /**
@@ -155,21 +140,6 @@ export type ResultadoVinculacion =
   | { ok: true; equipo: string; objeto: string; sede: string; kind: TerminalKind }
   | { ok: false; error: string };
 
-const MOTIVOS_VINCULAR: Record<TerminalWriteDenial, string> = {
-  "alcance-global-prohibido": "Esta acción pertenece al administrador de la sede.",
-  "fuera-de-alcance": "No encontramos lo que buscabas.",
-  "sede-no-encontrada": "No encontramos lo que buscabas.",
-  "caja-no-encontrada": "No encontramos lo que buscabas.",
-  "equipo-no-encontrado": "No encontramos lo que buscabas.",
-  "codigo-no-coincide": SIN_COINCIDENCIA,
-  "codigo-caducado": "Ese código caducó mientras elegías. El equipo ya muestra uno nuevo.",
-  "sede-cerrada": "Esa sede está cerrada y no admite equipos nuevos.",
-  "caja-requerida": "Elige la caja a la que pertenece este equipo.",
-  "caja-retirada": "Esa caja está retirada y no admite un equipo.",
-  "caja-ya-vinculada":
-    "Esa caja ya tiene un equipo vinculado. Desvincúlalo antes de vincular otro.",
-  "equipo-ya-vinculado": "Ese equipo ya está vinculado. Desvincúlalo antes de volver a vincularlo.",
-};
 
 export async function vincularEquipoAction(entrada: {
   reto: RetoPresentado;
@@ -177,7 +147,7 @@ export async function vincularEquipoAction(entrada: {
   registerId?: string;
 }): Promise<ResultadoVinculacion> {
   const session = await getAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión." };
+  if (!session) return { ok: false, error: mensaje("equipos", "sesion-terminada") };
 
   const resultado = vincularEquipo(session.scope, SCOPE_CONTEXT, {
     reto: entrada.reto,
@@ -186,10 +156,31 @@ export async function vincularEquipoAction(entrada: {
     by: session.user.fullName,
   });
 
-  /* `MOTIVOS_VINCULAR` cubre la unión completa de rechazos, así que no hay
-     caso por defecto: un rechazo nuevo en el dominio deja de compilar aquí,
-     que es exactamente lo que hay que notar. */
-  if (!resultado.ok) return { ok: false, error: MOTIVOS_VINCULAR[resultado.reason] };
+  /* Cada rechazo se dice con su código del catálogo (`mensajes.ts`). Dos se
+     precisan con lo que en este
+     paso ya se sabe: qué clase de equipo es (**FR-AD-EQ-20**) y qué caja
+     tiene ya equipo (**FR-AD-EQ-8**). */
+  if (!resultado.ok) {
+    if (resultado.reason === "codigo-caducado" && !entrada.registerId) {
+      return { ok: false, error: mensaje("equipos", "codigo-caducado-al-vincular", { equipo: "kiosco" }) };
+    }
+    if (resultado.reason === "caja-ya-vinculada" && entrada.registerId) {
+      const caja = redEnAlcance(session.scope)
+        .cajasConHistorico(entrada.branchId)
+        .find((c) => c.id === entrada.registerId);
+      if (caja) {
+        return { ok: false, error: mensaje("equipos", "caja-ya-vinculada", { caja: `La ${caja.name}` }) };
+      }
+    }
+    return {
+      ok: false,
+      error: mensaje(
+        "equipos",
+        resultado.reason === "codigo-caducado" ? "codigo-caducado-al-vincular" : resultado.reason,
+        { equipo: "equipo", caja: "Esa caja" },
+      ),
+    };
+  }
 
   const red = redEnAlcance(session.scope);
   const sede = red.sede(resultado.value.branchId);

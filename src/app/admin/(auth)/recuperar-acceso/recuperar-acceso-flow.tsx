@@ -21,7 +21,7 @@ import { guardarContrasenaRecuperadaAction } from "./_actions";
  */
 const ADMIN_RECUPERACION: RecuperacionCopy = {
   loginHref: "/admin/login",
-  asistencia: "al administrador principal de tu empresa",
+  asistencia: "al administrador principal de tu empresa o, si lo eres tú, a PuntoCash",
 };
 
 export function AdminRecuperarAccesoFlow(): React.JSX.Element {

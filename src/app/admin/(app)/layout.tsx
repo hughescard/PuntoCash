@@ -5,10 +5,12 @@ import { Alert } from "@/components/ui";
 import { AppHeader, AppMain, AppShell } from "@/components/shell/app-shell";
 import { Logo } from "@/components/brand/logo";
 import { getAdminSession } from "@/features/admin/session-server";
+import { sedesVisibles } from "@/features/admin/session";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { AdminIdentity, AdminScopeBar } from "./admin-identity";
 import { AdminMobileNav } from "./admin-mobile-nav";
 import { AdminSidebar } from "./admin-sidebar";
+import { OlvidarAlcance } from "./scope-selector";
 import type { AdminNavBadges } from "./admin-nav";
 
 /**
@@ -48,18 +50,22 @@ export default async function AdminAppLayout({ children }: { children: React.Rea
      (`features/network/scoped-reads.ts`). */
   const red = redEnAlcance(session.scope);
 
-  /* Indicador de Cajas (**FR-AD-SHELL-3**): «cuando haya cajas sin equipo
-     vinculado **o** sedes sin ninguna caja». Cuenta lo que impide operar, que
-     son las dos cosas. */
-  const sedesSinCaja = session.sedes.filter((sede) => red.cajasActivas(sede.id).length === 0).length;
-  /* La segunda mitad faltaba porque el dominio no conocía los equipos de toda
-     la red; dejó de ser cierto en el Paso 2. La pantalla de Sedes calcula este
-     mismo dato, y lo hace con la misma vista. */
-  const cajasSinEquipo = session.sedes
+  /* Indicadores de Cajas y de Equipos (**FR-AD-SHELL-3**): cada uno cuenta lo
+     que se resuelve en su sección, para que el número del menú sea el que se
+     encuentra al entrar. */
+  /* Cuentan las sedes que deja ver la cabecera, como las pantallas a las que llevan. */
+  const visibles = sedesVisibles(session);
+  const sedesSinCaja = visibles.filter((sede) => red.cajasActivas(sede.id).length === 0).length;
+  const cajasSinEquipo = visibles
     .flatMap((sede) => red.cajasConHistorico(sede.id))
     .filter((caja) => caja.status === "activa" && !red.cajaTieneEquipo(caja.id)).length;
-  const pendientesDeCajas = sedesSinCaja + cajasSinEquipo;
-  const badges: AdminNavBadges = { cajas: pendientesDeCajas > 0 ? pendientesDeCajas : undefined };
+  /* Aprobaciones: las solicitudes pendientes (FR-AD-APR-1). */
+  const pendientes = visibles.flatMap((sede) => red.solicitudes(sede.id)).filter((x) => x.estado === "pendiente").length;
+  const badges: AdminNavBadges = {
+    aprobaciones: pendientes > 0 ? pendientes : undefined,
+    cajas: sedesSinCaja > 0 ? sedesSinCaja : undefined,
+    equipos: cajasSinEquipo > 0 ? cajasSinEquipo : undefined,
+  };
 
   return (
     <AppShell
@@ -104,6 +110,7 @@ export default async function AdminAppLayout({ children }: { children: React.Rea
           <Alert variant="warning" title="Ya no administras esa sede" className="mb-8">
             La sede que tenías seleccionada dejó de estar a tu cargo, así que estás viendo de nuevo
             todas tus sedes.
+            <OlvidarAlcance />
           </Alert>
         ) : null}
 

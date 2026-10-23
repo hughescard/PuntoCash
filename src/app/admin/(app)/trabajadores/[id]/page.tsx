@@ -1,10 +1,11 @@
 import * as React from "react";
 import Link from "next/link";
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Building2 } from "lucide-react";
 
 import { PageHeader, Section } from "@/components/shell/app-shell";
+import { ResponsiveTable } from "@/components/patterns/responsive-table";
 import { Alert, Button, Card, CardContent } from "@/components/ui";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { maskEmail } from "@/features/auth/two-factor";
@@ -12,6 +13,8 @@ import { documentTypeLabel } from "@/features/customers/customers";
 import { getAdminSession } from "@/features/admin/session-server";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { motivoDeBloqueo, type NetworkWorker } from "@/features/network/workers";
+import { conciliacionDe, diaEnCuba, operacionesDe, type Jornada } from "@/features/network/jornadas";
+import { Diferencia, EstadoBadge, fechaCorta, fechaYHora, hora } from "../../jornadas/formato";
 import { EstadoTrabajador } from "../trabajadores-list";
 import { AccionesTrabajador } from "./acciones-trabajador";
 
@@ -40,12 +43,10 @@ export const metadata: Metadata = {
  * dos casos llevaría a alguien a reactivar a quien ya está activo y a concluir
  * que el producto está roto.
  *
- * ── Lo que falta, dicho en vez de dibujado vacío ──────────────────────────
- * **FR-AD-TRAB-9** pide además la **actividad reciente** —últimas jornadas,
- * cajas operadas y volumen— y eso lo sabrá §9 Jornadas. Y las acciones
- * —editar, reasignar, regenerar credencial, desactivar, ayudar con el
- * acceso— llegan en el tramo siguiente. Las dos cosas se anuncian: un bloque
- * vacío se lee como «este trabajador no ha operado nunca», que es otra cosa.
+ * ── Actividad reciente ────────────────────────────────────────────────────
+ * **FR-AD-TRAB-9**: su jornada en curso, si la tiene, sus últimas jornadas y
+ * las cajas en que operó. Su **volumen** está en Reportes, filtrado por él:
+ * aquí, el enlace.
  */
 export default async function AdminTrabajadorPage({
   params,
@@ -75,6 +76,11 @@ export default async function AdminTrabajadorPage({
   if (!trabajador) notFound();
 
   const bloqueo = motivoDeBloqueo(trabajador);
+  const susJornadas = red.jornadasDeTrabajador(trabajador.id);
+  const enCurso = susJornadas.find((j) => j.estado === "abierta") ?? null;
+  const recientes = susJornadas.slice(0, 10);
+  const nombreDeSede = (sedeId: string) => session.sedes.find((s) => s.id === sedeId)?.name ?? "";
+  const cajasOperadas = [...new Map(susJornadas.map((j) => [j.registerId, `${j.cajaNombre} de ${nombreDeSede(j.sedeId)}`])).values()];
 
   return (
     <>
@@ -131,12 +137,64 @@ export default async function AdminTrabajadorPage({
         </Card>
       </Section>
 
+      {/* FR-AD-TRAB-9: lo que ha operado; su volumen, en Reportes. */}
       <Section title="Actividad reciente">
-        <Alert variant="info" title="Llega con Jornadas">
-          Las últimas jornadas de {trabajador.firstName}, las cajas que operó y su volumen son
-          datos de §9, que todavía no está construida. Se mostrarán aquí en cuanto exista, en vez
-          de dibujarse ahora en blanco.
-        </Alert>
+        {enCurso ? (
+          <Alert variant="info" title="Tiene una jornada abierta" className="mb-6">
+            En {enCurso.cajaNombre} de {nombreDeSede(enCurso.sedeId)}, desde el {fechaYHora(enCurso.openedAt)}.{" "}
+            <Link href={`/admin/jornadas/${enCurso.id}` as Route} className="font-semibold underline underline-offset-4">
+              Ver la jornada
+            </Link>
+          </Alert>
+        ) : null}
+        {cajasOperadas.length > 0 ? (
+          <p className="mb-4 text-body text-text-secondary">
+            Ha operado en {cajasOperadas.length === 1 ? cajasOperadas[0] : `${cajasOperadas.slice(0, -1).join(", ")} y ${cajasOperadas.at(-1)}`}.{" "}
+            <Link
+              href={`/admin/reportes?corte=dia&trabajador=${trabajador.id}` as Route}
+              className="font-semibold text-primary underline underline-offset-4"
+            >
+              Ver su volumen por día
+            </Link>
+          </p>
+        ) : null}
+        <ResponsiveTable
+          rows={recientes}
+          rowKey={(j) => j.id}
+          rowLink={(j) => ({ href: `/admin/jornadas/${j.id}`, label: `Ver jornada de ${j.cajaNombre}, ${fechaCorta(j.openedAt)}` })}
+          columns={[
+            { key: "fecha", header: "Fecha", cell: (j) => <span className="whitespace-nowrap">{fechaCorta(j.openedAt)}</span>, hiddenOnCard: true },
+            {
+              key: "caja",
+              header: "Caja",
+              cell: (j) => `${j.cajaNombre}${session.sedes.length > 1 ? ` · ${nombreDeSede(j.sedeId)}` : ""}`,
+            },
+            {
+              key: "horas",
+              header: "Apertura y cierre",
+              cell: (j) => (
+                <span className="pc-numeric whitespace-nowrap text-text-secondary">
+                  {hora(j.openedAt)} – {j.closedAt ? (diaEnCuba(j.closedAt) === diaEnCuba(j.openedAt) ? hora(j.closedAt) : fechaYHora(j.closedAt)) : "…"}
+                </span>
+              ),
+            },
+            { key: "estado", header: "Estado", cell: (j) => <EstadoBadge estado={j.estado} />, hiddenOnCard: true },
+            { key: "ops", header: "Operaciones", numeric: true, cell: (j) => operacionesDe(j) },
+            { key: "cierre", header: "Cierre", cell: (j) => <ResultadoDeCierre jornada={j} /> },
+          ]}
+          cardTitle={(j) => fechaCorta(j.openedAt)}
+          cardBadge={(j) => <EstadoBadge estado={j.estado} />}
+          empty={<p className="text-body text-text-secondary">{trabajador.firstName} todavía no ha abierto ninguna jornada.</p>}
+        />
+        {susJornadas.length > recientes.length ? (
+          <p className="mt-3 text-body-sm text-text-secondary">
+            Las {recientes.length} más recientes de {susJornadas.length}. Las demás están en{" "}
+            <Link href="/admin/jornadas" className="font-semibold text-primary underline underline-offset-4">
+              Jornadas
+            </Link>
+            , filtrando por trabajador.
+          </p>
+        ) : null}
       </Section>
 
       <Section title="Acciones">
@@ -147,6 +205,9 @@ export default async function AdminTrabajadorPage({
             sedeId: trabajador.branchId,
             sedeName,
             activo: trabajador.status === "activo",
+            jornadaAbierta: enCurso
+              ? { id: enCurso.id, caja: enCurso.cajaNombre, sede: nombreDeSede(enCurso.sedeId) }
+              : null,
           }}
           sedes={session.sedes
             .filter((sede) => sede.status !== "cerrada")
@@ -228,5 +289,29 @@ function Dato({
       </dd>
       {nota ? <p className="mt-1 text-caption text-text-secondary">{nota}</p> : null}
     </div>
+  );
+}
+
+/** Cómo cerró: lo mismo que la columna «Cierre» de Jornadas (**FR-AD-JOR-1**). */
+function ResultadoDeCierre({ jornada: j }: { jornada: Jornada }): React.JSX.Element {
+  if (j.estado === "abierta") return <span className="text-text-secondary">—</span>;
+  if (!j.arqueo) {
+    return (
+      <span className="flex flex-col">
+        <span className="text-text-secondary">Sin contar</span>
+        {conciliacionDe(j)?.estado === "pendiente" ? (
+          <span className="text-body-sm font-semibold text-warning-foreground">Pendiente de conciliar</span>
+        ) : null}
+      </span>
+    );
+  }
+  const difs = j.arqueo.monedas.filter((m) => m.diferencia !== 0);
+  if (difs.length === 0) return <span className="font-semibold text-text-primary">Cuadrada</span>;
+  return (
+    <span className="flex flex-col">
+      {difs.map((d) => (
+        <Diferencia key={d.currency} currency={d.currency} diferencia={d.diferencia} />
+      ))}
+    </span>
   );
 }

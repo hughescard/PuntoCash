@@ -1,9 +1,11 @@
 import * as React from "react";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { formatAmount } from "@/lib/format";
-import { PUBLIC_RATE_BOARD } from "@/features/kiosk/signage-data";
+import { cifraDeTablero } from "@/lib/format";
+import { DEVICE_COOKIE_NAMES, parseDeviceCookie } from "@/features/devices/device-cookie";
+import { tableroPublico } from "@/features/network/rates";
 
 export const metadata: Metadata = {
   title: "Tasas del día",
@@ -15,8 +17,29 @@ export const metadata: Metadata = {
  * Consultation-only screen: no action leads anywhere from here. It exists so
  * a client can check the board without starting a service (§21 "consultar
  * información" alongside self-service).
+ *
+ * El tablero es **el de la sede del kiosco**, leído de `tableroPublico`: lo que
+ * su mercante fijó en `/admin/tasas` (**A12**, **FR-AD-DOM-7**). La sede sale
+ * de la cookie espejo del vínculo, la misma con la que el layout pinta la
+ * cabecera; un kiosco sin vincular no llega hasta aquí.
  */
-export default function KioskTasasPage(): React.JSX.Element {
+export default async function KioskTasasPage(): Promise<React.JSX.Element> {
+  const store = await cookies();
+  const device = parseDeviceCookie(store.get(DEVICE_COOKIE_NAMES.kiosco)?.value);
+  const tablero = device ? tableroPublico(device.branchId) : [];
+
+  if (tablero.length === 0) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center py-8 text-center">
+        <p className="text-overline uppercase text-text-secondary">PuntoCash</p>
+        <h1 className="mt-2 text-screen-title text-text-primary">Tasas del día</h1>
+        <p className="mt-6 text-body text-text-secondary">
+          Esta sucursal no publica tasas de cambio en este momento.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col items-center py-8">
       <p className="text-overline uppercase text-text-secondary">PuntoCash</p>
@@ -30,7 +53,7 @@ export default function KioskTasasPage(): React.JSX.Element {
           <span className="text-right">Venta</span>
         </div>
 
-        {PUBLIC_RATE_BOARD.map((rate) => (
+        {tablero.map((rate) => (
           <div
             key={rate.currency}
             className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-border px-6 py-5 last:border-b-0"
@@ -43,10 +66,10 @@ export default function KioskTasasPage(): React.JSX.Element {
               </span>
             </span>
             <span className="pc-numeric text-right text-amount text-text-primary">
-              {formatAmount(rate.buy, 0)}
+              {cifraDeTablero(rate.buy)}
             </span>
             <span className="pc-numeric text-right text-amount text-text-primary">
-              {formatAmount(rate.sell, 0)}
+              {cifraDeTablero(rate.sell)}
             </span>
           </div>
         ))}

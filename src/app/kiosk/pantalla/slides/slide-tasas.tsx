@@ -1,8 +1,11 @@
+"use client";
+
 import * as React from "react";
 
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { formatAmount } from "@/lib/format";
-import { PUBLIC_RATE_BOARD } from "@/features/kiosk/signage-data";
+import { cifraDeTablero } from "@/lib/format";
+import type { Branch } from "@/features/branches/branches";
+import { useTablero } from "../tableros";
 
 /**
  * "Tasas del día" — the same board and copy as the kiosk's own consultation
@@ -13,7 +16,10 @@ import { PUBLIC_RATE_BOARD } from "@/features/kiosk/signage-data";
  * landscape TV and spreads out on a vertical screen without scrolling.
  * All sizes are `em` of the signage base size (see `../layout.tsx`).
  */
-export function SlideTasas(): React.JSX.Element {
+export function SlideTasas({ branch }: { branch: Branch }): React.JSX.Element {
+  /* El tablero de **esta** sede, el que su mercante fija en `/admin/tasas`. */
+  const tablero = useTablero(branch.id);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <SlideHeading eyebrow="PuntoCash" title="Tasas del día" />
@@ -26,7 +32,7 @@ export function SlideTasas(): React.JSX.Element {
         </div>
 
         <div className="grid min-h-0 flex-1 auto-rows-fr">
-          {PUBLIC_RATE_BOARD.map((rate) => (
+          {tablero.map((rate) => (
             <div
               key={rate.currency}
               className="grid grid-cols-[1fr_auto_auto] items-center gap-x-[1.5em] border-b border-white/10 px-[1.5em] py-[0.5em] last:border-b-0"
@@ -43,12 +49,12 @@ export function SlideTasas(): React.JSX.Element {
               {/* Both figure columns are 4.5em of the base size; the header cells above are 5.3em of their own 0.85em text — the same width. */}
               <span className="w-[4.5em] text-right">
                 <span className="pc-numeric text-[2em] font-bold leading-none tracking-[-0.02em] text-white">
-                  {formatAmount(rate.buy, 0)}
+                  {cifraDeTablero(rate.buy)}
                 </span>
               </span>
               <span className="w-[4.5em] text-right">
                 <span className="pc-numeric text-[2em] font-bold leading-none tracking-[-0.02em] text-gold">
-                  {formatAmount(rate.sell, 0)}
+                  {cifraDeTablero(rate.sell)}
                 </span>
               </span>
             </div>

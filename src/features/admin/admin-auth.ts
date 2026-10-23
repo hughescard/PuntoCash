@@ -25,17 +25,19 @@
  *
  * Cuentas de demostración (contraseña `puntocash` en todas):
  *
- *   marta@antillasf.cu          → Antilla, 3 sedes, **administradora principal**
- *   dcastro@antillasf.cu        → Antilla, segundo usuario, **no principal**
+ *   marta@malecon-sf.cu          → Malecón, 3 sedes, **administradora principal**
+ *   dcastro@malecon-sf.cu        → Malecón, segundo usuario, **no principal**
  *   rortega@caribecambios.cu    → Caribe, 3 sedes
  *   ibetancourt@centrodivisas.cu → Centro Divisas, **1 sede**: la cabecera
  *                                  muestra código y nombre fijos, sin selector
  *                                  (FR-AD-SCOPE-3)
+ *   abarrios@bahiacambios.cu    → Bahía: sede suspendida y sede solo con cajas retiradas
  *   lperez@cienfuegoscambio.cu  → operador activo SIN sedes (FR-AD-ACC-7)
  *   yperez@orientedivisas.cu    → operador suspendido: no entra (A14)
  *   error@puntocash.com         → error de red, para ver el estado
  */
 
+import { LARGO_MINIMO } from "@/features/auth/password-recovery";
 import { adminUserPuedeAcceder } from "@/features/network/operators";
 import { findAdminUserByIdentifier } from "./session";
 
@@ -121,4 +123,47 @@ const contrasenasRecuperadas = new Map<string, string>();
 
 export function registrarContrasenaRecuperada(identifier: string, password: string): void {
   contrasenasRecuperadas.set(identifier.trim().toLowerCase(), password);
+}
+
+/* -------------------------------------------------------------------------
+ * Cambiar la propia contraseña desde el perfil — FR-AD-PERF-5 a FR-AD-PERF-8
+ * ---------------------------------------------------------------------- */
+
+export type CambioContrasenaResult =
+  | { status: "ok" }
+  | { status: "actual-incorrecta" }
+  | { status: "demasiado-corta" }
+  | { status: "igual-a-la-actual" }
+  | { status: "no-coinciden" };
+
+/**
+ * Comprueba la contraseña actual y fija la nueva.
+ *
+ * **Se pide la actual aunque haya sesión**, y no es desconfianza de quien
+ * entró: es de quien se sienta delante de una sesión que otro dejó abierta.
+ * Sin ella, un descuido de cinco minutos bastaría para quedarse con la cuenta.
+ *
+ * Escribe en el mismo mapa que la recuperación porque es lo mismo: la
+ * contraseña que el acceso aceptará a partir de ahora. En el producto lo hace
+ * el backend, y además cierra **las demás** sesiones de esta cuenta
+ * (**FR-AD-PERF-7**); aquí no hay registro de sesiones que cerrar.
+ */
+export async function cambiarContrasenaAdmin(
+  identifier: string,
+  actual: string,
+  nueva: string,
+  repetida: string,
+): Promise<CambioContrasenaResult> {
+  await new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
+
+  const account = identifier.trim().toLowerCase();
+  const vigente = contrasenasRecuperadas.get(account) ?? DEMO_PASSWORD;
+
+  if (actual !== vigente) return { status: "actual-incorrecta" };
+  if (nueva.length < LARGO_MINIMO) return { status: "demasiado-corta" };
+  if (nueva === vigente) return { status: "igual-a-la-actual" };
+  if (nueva !== repetida) return { status: "no-coinciden" };
+
+  contrasenasRecuperadas.set(account, nueva);
+  return { status: "ok" };
 }
