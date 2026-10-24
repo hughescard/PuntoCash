@@ -24,17 +24,18 @@ export default defineConfig({
   /*
    * Seis en local, uno en CI.
    *
-   * La máquina aguanta más, pero el cuello de botella no es la CPU: los seis
-   * trabajadores pegan contra **un solo** servidor de desarrollo, que compila
-   * cada ruta la primera vez que alguien la pide. Con más paralelismo, esa
-   * primera compilación se solapa con más pruebas a la vez, y lo que aparece
-   * no son fallos nuevos sino esperas más largas — justo la clase de carrera
-   * que ya obligó a esperar a `main` tras navegar (ver README).
-   *
-   * Si vuelven tiempos de espera agotados en pruebas que antes pasaban, bajar
-   * este número es lo primero que hay que probar, antes de tocar la prueba.
-   * Ya ocurrió con diez: la corrida pasó de 3 a 8 fallos sin que cambiara una
+   * El cuello de botella no es la CPU: los trabajadores pegan contra **un
+   * solo** servidor. Mientras ese servidor fue `next dev`, más paralelismo
+   * significaba más primeras compilaciones solapadas, y con ellas esperas más
+   * largas — la carrera que ya obligó a esperar a `main` tras navegar (ver
+   * README). Con diez la corrida pasó de 3 a 8 fallos sin que cambiara una
    * línea del producto.
+   *
+   * Bajarlo dejó de ser la primera palanca cuando el servidor pasó a ser una
+   * compilación de producción (ver `webServer`): de seis a cuatro no cambió
+   * nada —un fallo por corrida a ambos lados— porque lo que fallaba era la
+   * compilación perezosa, no el paralelismo. Si vuelven tiempos de espera
+   * agotados, mirar primero si la suite se enganchó a un `next dev` levantado.
    *
    * En CI se queda en uno: `admin-cajas` escribe contra el dominio en memoria
    * del servidor, y un solo trabajador hace ese estado predecible.
@@ -44,28 +45,27 @@ export default defineConfig({
   /*
    * Sesenta segundos, no los treinta de serie.
    *
-   * No mide nada del producto: mide el servidor de desarrollo. `next dev`
-   * compila cada ruta la primera vez que alguien la pide, y con seis
-   * trabajadores esa primera compilación se solapa con las de otras rutas. Una
-   * prueba que entra por la interfaz puede gastar la mitad de su plazo
-   * esperando a que llegue el JavaScript de la pantalla.
-   *
+   * No mide nada del producto: mide el servidor. Nació cuando ese servidor era
+   * `next dev` y compilaba cada ruta al primer acceso, de modo que una prueba
+   * podía gastar la mitad de su plazo esperando el JavaScript de la pantalla.
    * Ya ocurrió: `admin-acceso` agotó los treinta segundos esperando que el
    * botón de «Iniciar sesión» se habilitara —está deshabilitado hasta que el
    * formulario hidrata— en una corrida de 6 minutos, habiendo pasado en dos de
    * 3,6. Lo que cambió fue la carga, no el código.
    *
-   * El coste de subirlo es que una prueba de verdad colgada tarda el doble en
-   * rendirse. Se paga solo cuando algo falla, y a cambio los fallos que
-   * aparecen son fallos.
+   * Con la compilación de producción (ver `webServer`) ese margen ya casi no
+   * hace falta, pero se queda: la máquina sigue siendo compartida, y el coste
+   * de tenerlo es que una prueba de verdad colgada tarda el doble en rendirse
+   * — se paga solo cuando algo falla, y a cambio los fallos que aparecen son
+   * fallos.
    */
   timeout: 60_000,
 
   /*
    * Y diez segundos por aserción, no los cinco de serie, por lo mismo: una
-   * aserción que cae justo después de navegar compite con la compilación de esa
-   * ruta. Ya pasó con la pantalla de verificación, que esperaba un aviso que el
-   * cliente todavía no había pintado.
+   * aserción que cae justo después de navegar llegaba a competir con la
+   * compilación de esa ruta. Ya pasó con la pantalla de verificación, que
+   * esperaba un aviso que el cliente todavía no había pintado.
    *
    * Es un margen para el servidor de desarrollo, no una licencia para no
    * esperar lo que hay que esperar: una prueba que necesita más que esto está
@@ -93,11 +93,38 @@ export default defineConfig({
 
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 
+  /*
+   * Compilación de producción, no `next dev`.
+   *
+   * `next dev` compila cada ruta la primera vez que alguien la pide, y eso era
+   * el origen de los fallos intermitentes que esta suite arrastraba: no una
+   * pantalla rota, sino la primera visita a una ruta todavía sin compilar,
+   * compitiendo con la de otros trabajadores. Saltaba de archivo en cada
+   * corrida —`admin-sedes`, `admin-shell`, `worker-caja-ajustar-efectivo`,
+   * `admin-jornadas`— siempre en el mismo sitio: esperando a que llegara el
+   * JavaScript de la pantalla. Bajar `workers` de seis a cuatro no lo movió:
+   * un fallo por corrida antes y después, a un minuto más de reloj.
+   *
+   * Con `next build` todo queda compilado antes de que entre la primera
+   * prueba, y la clase entera de fallo desaparece. El precio es el build al
+   * arrancar; se amortiza en la corrida, que va más rápida y, sobre todo,
+   * deja de depender de cuán cargada esté la máquina.
+   *
+   * El build es incremental: solo la primera corrida tras tocar código paga
+   * el tiempo completo.
+   */
   webServer: {
-    command: "npm run dev",
+    command: "npm run build && npm start",
     url: `${BASE_URL}/design-system`,
-    // Locally, attach to a dev server that is already running.
+    /*
+     * En local se engancha a un servidor ya levantado, para no reconstruir en
+     * cada corrida mientras se itera. Ojo: si lo que está levantado es un
+     * `next dev`, se hereda su compilación perezosa y con ella los fallos
+     * intermitentes de arriba. Ante una corrida rara, pararlo y dejar que la
+     * suite monte el suyo es lo primero que hay que probar.
+     */
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    // Cubre el build además del arranque.
+    timeout: 300_000,
   },
 });
