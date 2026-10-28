@@ -14,6 +14,13 @@ import { useHydrated } from "@/lib/use-hydrated";
  * El libro de movimientos de una jornada, en solo lectura — **FR-AD-JOR-5**.
  * Las mismas columnas y los mismos filtros que en Worker (tipo y moneda), y
  * cada fila lleva a su detalle. En el teléfono, una tarjeta por movimiento.
+ *
+ * Lo usan las dos consolas, así que la raíz de los enlaces es un parámetro.
+ * Super administración no tiene pantalla de detalle de un movimiento —no le
+ * hace falta: ese detalle es para resolver un descuadre, y eso es del
+ * mercante— y por eso pasa `conDetalle` en falso: el concepto deja de ser un
+ * enlace en lugar de llevar a una ruta inexistente. El enlace a la operación
+ * se queda, porque es el rastro que PuntoCash sí consulta.
  */
 
 export interface MovimientoRow {
@@ -33,21 +40,36 @@ const SELECT_CLASS =
 const TIPO: FieldSpec = { id: "mov-tipo", label: "Tipo" };
 const MONEDA: FieldSpec = { id: "mov-moneda", label: "Moneda" };
 
-export function MovimientosDeJornada({ jornadaId, rows }: { jornadaId: string; rows: readonly MovimientoRow[] }) {
+export function MovimientosDeJornada({
+  jornadaId,
+  rows,
+  base = "/admin",
+  conDetalle = true,
+}: {
+  jornadaId: string;
+  rows: readonly MovimientoRow[];
+  /** La raíz de la consola que lo muestra. */
+  base?: "/admin" | "/super-admin";
+  /** Si el concepto enlaza al detalle del movimiento. */
+  conDetalle?: boolean;
+}) {
   const hydrated = useHydrated();
   const [tipo, setTipo] = React.useState<"todos" | "entrada" | "salida">("todos");
   const [moneda, setMoneda] = React.useState("todas");
   const monedas = [...new Set(rows.map((r) => r.currency))];
   const visibles = rows.filter((r) => (tipo === "todos" || r.tipo === tipo) && (moneda === "todas" || r.currency === moneda));
 
-  const enlace = (r: MovimientoRow) => (
-    <Link
-      href={`/admin/jornadas/${jornadaId}/movimientos/${r.id}` as Route}
-      className="font-semibold text-text-primary underline-offset-4 hover:underline"
-    >
-      {r.concepto}
-    </Link>
-  );
+  const enlace = (r: MovimientoRow) =>
+    conDetalle ? (
+      <Link
+        href={`${base}/jornadas/${jornadaId}/movimientos/${r.id}` as Route}
+        className="font-semibold text-text-primary underline-offset-4 hover:underline"
+      >
+        {r.concepto}
+      </Link>
+    ) : (
+      <span className="font-semibold text-text-primary">{r.concepto}</span>
+    );
 
   const columnas: readonly ResponsiveColumn<MovimientoRow>[] = [
     { key: "hora", header: "Hora", cell: (r) => <span className="pc-numeric">{r.hora}</span> },
@@ -59,7 +81,7 @@ export function MovimientosDeJornada({ jornadaId, rows }: { jornadaId: string; r
       cell: (r) =>
         r.operacion ? (
           <Link
-            href={`/admin/operaciones/${r.operacion}` as Route}
+            href={`${base}/operaciones/${r.operacion}` as Route}
             className="pc-numeric relative z-10 whitespace-nowrap text-text-primary underline underline-offset-4 hover:text-primary"
           >
             {r.operacion}
