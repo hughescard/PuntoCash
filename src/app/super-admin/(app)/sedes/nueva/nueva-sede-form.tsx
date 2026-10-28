@@ -9,6 +9,7 @@ import { Alert, Button, Card, CardContent, Field, fieldAria, Input, type FieldSp
 import { HorarioEditor } from "@/components/patterns/horario-editor";
 import { PROVINCIAS_DE_CUBA } from "@/features/geography/provincias-de-cuba";
 import { horarioDe, LUNES_A_SABADO } from "@/features/network/horario";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { crearSedeAction, type CampoDeAlta, type ResultadoAltaSede } from "../_actions";
 
 /**
@@ -60,16 +61,10 @@ export function NuevaSedeForm({
 
   if (estado?.ok) return <SedeCreada resultado={estado} />;
 
-  /* Se envía a mano, y no con `action={accion}`: con `action`, React
-     restablece el formulario tras cada respuesta y los desplegables vuelven a
-     su primera opción —también el de operador, que es controlado—. Tras un
-     rechazo, el segundo envío salía «sin asignar» y sin provincia aunque la
-     pantalla mostrara otra cosa. Así, lo escrito se queda tal cual. */
-  const enviar = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const datos = new FormData(e.currentTarget);
-    React.startTransition(() => accion(datos));
-  };
+  /* Se envía sin reiniciar: tras un rechazo, React volvía los desplegables a
+     su primera opción y el segundo envío salía «sin asignar» y sin provincia
+     (ver `lib/enviar-sin-reiniciar.ts`). */
+  const enviar = enviarSinReiniciar(accion);
 
   const errorDe = (c: CampoDeAlta) => (estado && !estado.ok && estado.campo === c ? estado.error : undefined);
   const diaConError = estado && !estado.ok ? estado.dia : undefined;

@@ -196,8 +196,10 @@ export function Section({
   return (
     <section className={cn("mb-12 last:mb-0", className)}>
       {title ? (
-        <div className="mb-4 flex items-end justify-between gap-4">
-          <div>
+        /* En el teléfono, la acción baja debajo de la descripción: en la misma
+           fila, el texto quedaba comprimido en media columna. */
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div className="min-w-0">
             <h2 className="text-section-title text-text-primary">{title}</h2>
             {description ? (
               <p className="mt-1 text-body-sm text-text-secondary">{description}</p>

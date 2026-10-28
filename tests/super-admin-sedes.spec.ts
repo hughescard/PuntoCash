@@ -6,12 +6,31 @@ import { signInAsSuperAdmin } from "./super-admin-helpers";
 /**
  * Sedes en Super administración: listado y alta.
  *
- * Las altas de estas pruebas se crean **con operador** y con un código único
- * por ejecución: el estado vive en memoria y lo comparten las demás suites, y
- * una sede sin asignar cambiaría el indicador del menú que otras comprueban.
+ * El estado vive en memoria y lo comparten las demás suites, también las de
+ * Admin, que cuentan las sedes de cada operador. Por eso las sedes de prueba
+ * llevan un código único por ejecución, se asignan a Bahía Cambios —cuyas
+ * pruebas miran sedes concretas por su nombre, no cuántas tiene— y **terminan
+ * revocadas y cerradas**: al acabar, ningún operador tiene una sede de más.
  */
 
 const codigoUnico = () => `T${Date.now().toString(36).slice(-6).toUpperCase()}`;
+
+/** Deja la sede de prueba como si no hubiera existido para los operadores. */
+async function revocarYCerrar(page: Page, sedeId: string): Promise<void> {
+  await page.goto(`/super-admin/sedes/${sedeId}`);
+  let dialogo = page.getByRole("dialog");
+  if (await page.getByRole("button", { name: "Revocar" }).count()) {
+    await page.getByRole("button", { name: "Revocar" }).click();
+    await dialogo.getByLabel(/^Motivo\*?$/).fill("Fin de la prueba automática");
+    await dialogo.getByRole("button", { name: "Revocar" }).click();
+    await expect(page.getByText("Asignación revocada")).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Cerrar la sede" }).click();
+  dialogo = page.getByRole("dialog");
+  await dialogo.getByLabel(/^Motivo\*?$/).fill("Fin de la prueba automática");
+  await dialogo.getByRole("button", { name: "Cerrar la sede" }).click();
+  await expect(page.getByText("Sede cerrada", { exact: true })).toBeVisible();
+}
 
 async function rellenarDatos(page: Page, codigo: string, nombre: string): Promise<void> {
   await page.getByLabel(/^Código\*?$/).fill(codigo);
@@ -71,18 +90,106 @@ test.describe("alta de una sede", () => {
     const codigo = codigoUnico();
     const nombre = `PuntoCash Prueba ${codigo}`;
     await rellenarDatos(page, codigo, nombre);
-    await page.getByLabel(/^Operador$/).selectOption({ label: "Caribe Cambios S.A." });
+    await page.getByLabel(/^Operador$/).selectOption({ label: "Bahía Cambios S.R.L." });
     await page.getByRole("button", { name: "Crear la sede" }).click();
     await expect(page.getByText(/Escribe el motivo de la asignación/)).toBeVisible();
 
     await page.getByLabel(/^Motivo de la asignación\*?$/).fill("Entrega inicial de la sede al operador");
     await page.getByRole("button", { name: "Crear la sede" }).click();
     await expect(page.getByText(`${nombre} está creada`)).toBeVisible();
-    await expect(page.getByText("Caribe Cambios S.A.")).toBeVisible();
+    await expect(page.getByText("Bahía Cambios S.R.L.")).toBeVisible();
 
     await page.goto("/super-admin/sedes");
     await page.getByLabel("Buscar sede").fill(codigo);
     await expect(page.getByRole("table").getByRole("row").filter({ hasText: nombre })).toBeVisible();
+
+    await revocarYCerrar(page, `sede-${codigo.toLowerCase()}`);
+  });
+});
+
+test.describe("ficha de una sede", () => {
+  test("con jornadas abiertas, revocar y cerrar se bloquean y las enumeran", async ({ page }) => {
+    await signInAsSuperAdmin(page);
+    await page.goto("/super-admin/sedes/sede-habana-vieja");
+    /* La siembra de jornadas sigue el reloj de Cuba y no abre ninguna caja
+       antes de las 8:30: de madrugada no hay jornada abierta que probar. */
+    const abiertas = await page.getByText(/Jornada abierta de|con la sesión iniciada/).count();
+    test.skip(abiertas === 0, "La siembra no tiene jornadas abiertas a esta hora (antes de las 8:30 en Cuba).");
+    for (const boton of ["Revocar", "Cerrar la sede"]) {
+      await page.getByRole("button", { name: boton }).click();
+      const dialogo = page.getByRole("dialog");
+      await expect(dialogo.getByText("Esta sede tiene jornadas abiertas. Deben cerrarse antes.")).toBeVisible();
+      await expect(dialogo.getByText(/abierta desde el/).first()).toBeVisible();
+      await expect(dialogo.getByLabel(/^Motivo/)).toHaveCount(0);
+      await dialogo.getByRole("button", { name: "Entendido" }).click();
+      await expect(dialogo).toBeHidden();
+    }
+  });
+
+  test("una sede de prueba recorre todas sus acciones", async ({ page }) => {
+    test.setTimeout(120_000);
+    await signInAsSuperAdmin(page);
+    await page.goto("/super-admin/sedes/nueva");
+    const codigo = codigoUnico();
+    const nombre = `PuntoCash Ficha ${codigo}`;
+    await rellenarDatos(page, codigo, nombre);
+    await page.getByLabel(/^Operador$/).selectOption({ label: "Bahía Cambios S.R.L." });
+    await page.getByLabel(/^Motivo de la asignación\*?$/).fill("Entrega inicial para la prueba de la ficha");
+    await page.getByRole("button", { name: "Crear la sede" }).click();
+    await page.getByRole("link", { name: "Ver su ficha" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: nombre })).toBeVisible();
+
+    // Editar: con operador, solo código y nombre.
+    await page.getByRole("link", { name: "Editar datos" }).click();
+    await expect(page.getByLabel(/^Dirección\*?$/)).toHaveCount(0);
+    await page.getByLabel(/^Nombre\*?$/).fill(`${nombre} Centro`);
+    await page.getByRole("button", { name: "Guardar cambios" }).click();
+    await expect(page.getByText("Datos guardados")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: `${nombre} Centro` })).toBeVisible();
+
+    // Servicios: quitar uno pide motivo.
+    await page.getByRole("button", { name: "Cambiar servicios" }).click();
+    let dialogo = page.getByRole("dialog");
+    await dialogo.getByLabel("Giros").uncheck();
+    await dialogo.getByRole("button", { name: "Guardar servicios" }).click();
+    await expect(dialogo.getByText(/Escribe el motivo/)).toBeVisible();
+    await dialogo.getByLabel(/^Motivo\*?$/).fill("Giros todavía no disponible en esta zona");
+    await dialogo.getByRole("button", { name: "Guardar servicios" }).click();
+    await expect(page.getByText("Servicios actualizados")).toBeVisible();
+
+    // Suspender y reactivar.
+    await page.getByRole("button", { name: "Suspender la sede" }).click();
+    dialogo = page.getByRole("dialog");
+    await dialogo.getByLabel(/^Motivo\*?$/).fill("Inspección de la licencia de la sucursal");
+    await dialogo.getByRole("button", { name: "Suspender" }).click();
+    await expect(page.getByText("Sede suspendida", { exact: true })).toBeVisible();
+    await expect(page.getByText("Inspección de la licencia de la sucursal").first()).toBeVisible();
+    await page.getByRole("button", { name: "Reactivar la sede" }).click();
+    dialogo = page.getByRole("dialog");
+    await dialogo.getByLabel(/^Motivo\*?$/).fill("Licencia revisada y en regla");
+    await dialogo.getByRole("button", { name: "Reactivar" }).click();
+    await expect(page.getByText("Sede reactivada", { exact: true })).toBeVisible();
+
+    // Revocar y volver a asignar.
+    await page.getByRole("button", { name: "Revocar" }).click();
+    dialogo = page.getByRole("dialog");
+    await dialogo.getByLabel(/^Motivo\*?$/).fill("Cambio de operador acordado");
+    await dialogo.getByRole("button", { name: "Revocar" }).click();
+    await expect(page.getByText("Asignación revocada")).toBeVisible();
+    await expect(page.getByText("Esta sede no tiene operador.", { exact: false }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Asignar un operador" }).click();
+    dialogo = page.getByRole("dialog");
+    await dialogo.getByLabel(/^Operador\*?$/).selectOption({ label: "Bahía Cambios S.R.L." });
+    await dialogo.getByLabel(/^Motivo\*?$/).fill("Nuevo tramo con el mismo operador");
+    await expect(dialogo.getByText("Desde")).toBeVisible();
+    await dialogo.getByRole("button", { name: "Asignar" }).click();
+    await expect(page.getByText("Sede asignada")).toBeVisible();
+    await expect(page.getByText("Cambio de operador acordado")).toBeVisible(); // el tramo anterior, en el historial
+
+    // Revocar y cerrar: la sede de prueba no le queda a ningún operador.
+    await revocarYCerrar(page, `sede-${codigo.toLowerCase()}`);
+    await expect(page.getByRole("button", { name: "Suspender la sede" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Editar datos" })).toHaveCount(0);
   });
 });
 
