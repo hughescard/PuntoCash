@@ -237,11 +237,7 @@ export default async function SuperAdminSedePage({
 
             {operador ? (
               <div className="mt-6 border-t border-border pt-5">
-                <h3 className="text-body font-semibold text-text-primary">Quién la administra</h3>
-                <p className="mt-1 text-body-sm text-text-secondary">
-                  Las personas de {operador.name} con acceso a su consola. Administran todas las sedes de esa empresa,
-                  no solo esta. Las da de alta su administrador principal.
-                </p>
+                <h3 className="text-body font-semibold text-text-primary">Administradores</h3>
 
                 {administradores.length === 0 ? (
                   <p className="mt-3 text-body-sm text-warning-foreground">
@@ -371,6 +367,7 @@ export default async function SuperAdminSedePage({
 
       {/* 5 · Cajas y equipos */}
       <Section title="Cajas y equipos" description="Los monta y los gestiona su operador. Aquí solo se consultan.">
+        <h3 className="mb-3 text-body font-semibold text-text-primary">Cajas</h3>
         {cajas.length === 0 ? (
           <Vacio>
             {operador
