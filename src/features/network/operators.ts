@@ -475,6 +475,44 @@ export function regenerarCredencialUsuarioInicial(
   return { ok: true, value: initial };
 }
 
+/**
+ * **Restablecer el acceso del administrador principal** (decisión de Claudia
+ * del 27/10, ampliada el 28/10: disponible siempre, con motivo).
+ *
+ * Desde el modelo del principal, una empresa solo se queda fuera de su propia
+ * gestión de usuarios si **el principal** pierde el acceso: es el único que
+ * puede cambiar correos o dar de alta a otros, así que nadie de su empresa
+ * puede arreglarle un correo perdido. PuntoCash puede cambiarle el correo de
+ * verificación y darle una credencial nueva (la credencial la genera y la
+ * muestra quien llama, una sola vez; aquí no se guarda).
+ *
+ * No crea usuarios ni toca a ningún otro, y no cambia quién es el principal.
+ */
+export function restablecerAccesoDelPrincipal(
+  scope: Scope,
+  operatorId: string,
+  input: { email: string; reason: string },
+): OperatorWriteResult<{ user: AdminUser; correoAnterior: string }> {
+  if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
+  if (!isMotivoValido(input.reason)) return { ok: false, reason: "motivo-requerido" };
+  const operator = findOperatorById(operatorId);
+  if (!operator) return { ok: false, reason: "operador-no-encontrado" };
+  if (operator.status === "baja") return { ok: false, reason: "dado-de-baja" };
+
+  const principal = administradorPrincipalDe(operatorId);
+  if (!principal) return { ok: false, reason: "usuario-no-encontrado" };
+
+  const email = input.email.trim();
+  if (email.length <= 3 || !email.includes("@") || email.includes(" ")) {
+    return { ok: false, reason: "correo-invalido" };
+  }
+
+  const correoAnterior = principal.email;
+  principal.email = email;
+  principal.status = "activo";
+  return { ok: true, value: { user: principal, correoAnterior } };
+}
+
 /* -------------------------------------------------------------------------
  * Escrituras del mercante sobre sus propios usuarios (regla A4)
  * ---------------------------------------------------------------------- */

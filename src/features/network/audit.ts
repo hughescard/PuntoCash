@@ -33,6 +33,7 @@ export type AuditEventType =
   | "operador.reactivado"
   | "operador.baja"
   | "operador.credencial-inicial-regenerada"
+  | "operador.acceso-principal-restablecido"
   | "servicio.habilitado"
   | "servicio.deshabilitado"
   | "moneda-plataforma.alta"
