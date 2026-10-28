@@ -25,8 +25,8 @@ export const metadata: Metadata = {
  *
  *   1. **Hoy en la red**: qué sedes han operado, cuántas operaciones y cuántas
  *      personas las han hecho.
- *   2. **Pendiente de PuntoCash**: solo si hay algo, y solo lo que nadie más
- *      puede resolver (entregar sedes y operadores, fijar rangos).
+ *   2. **Pendientes**: solo si hay algo, y solo lo que nadie más que
+ *      PuntoCash puede resolver (entregar sedes y operadores, fijar rangos).
  *   3. **Actividad por sede**: una fila por sede con su operador, su estado,
  *      sus operaciones de hoy y la última operación (cuándo y quién).
  */
@@ -75,7 +75,7 @@ export default async function SuperAdminInicioPage({
       </Section>
 
       {pendientes.length > 0 ? (
-        <Section title="Pendiente de PuntoCash" description="Lo que solo PuntoCash puede resolver.">
+        <Section title="Pendientes">
           <ul className="flex flex-col gap-3">
             {pendientes.map((p) => (
               <Pendiente key={claveDePendiente(p)} {...textoDePendiente(p)} />
