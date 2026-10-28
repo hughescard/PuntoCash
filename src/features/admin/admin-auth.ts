@@ -25,21 +25,28 @@
  *
  * Cuentas de demostración (contraseña `puntocash` en todas):
  *
- *   marta@malecon-sf.cu          → Malecón, 3 sedes, **administradora principal**
- *   dcastro@malecon-sf.cu        → Malecón, segundo usuario, **no principal**
- *   rortega@caribecambios.cu    → Caribe, 3 sedes
- *   ibetancourt@centrodivisas.cu → Centro Divisas, **1 sede**: la cabecera
- *                                  muestra código y nombre fijos, sin selector
- *                                  (FR-AD-SCOPE-3)
- *   abarrios@bahiacambios.cu    → Bahía: sede suspendida y sede solo con cajas retiradas
- *   lperez@cienfuegoscambio.cu  → operador activo SIN sedes (FR-AD-ACC-7)
- *   yperez@orientedivisas.cu    → operador suspendido: no entra (A14)
- *   error@puntocash.com         → error de red, para ver el estado
+ * **Se entra con el identificador o con el correo, indistintamente**
+ * (decisión del 28/10/2026): el identificador es un nombre de usuario y el
+ * correo es otro dato, y los dos llegan a la misma cuenta.
+ *
+ *   msanchez    · marta@malecon-sf.cu          → Malecón, 3 sedes, **principal**
+ *   dcastro     · dcastro@malecon-sf.cu        → Malecón, segundo usuario, no principal
+ *   rortega     · rortega@caribecambios.cu     → Caribe, 3 sedes
+ *   ibetancourt · ibetancourt@centrodivisas.cu → Centro Divisas, **1 sede**: la
+ *                                                cabecera muestra código y nombre
+ *                                                fijos, sin selector (FR-AD-SCOPE-3)
+ *   abarrios    · abarrios@bahiacambios.cu     → Bahía: sede suspendida y sede solo
+ *                                                con cajas retiradas
+ *   lperez      · lperez@cienfuegoscambio.cu   → operador activo SIN sedes (FR-AD-ACC-7)
+ *   yperez      · yperez@orientedivisas.cu     → operador suspendido: no entra (A14)
+ *   error@puntocash.com                        → error de red, para ver el estado
  */
 
 import { LARGO_MINIMO } from "@/features/auth/password-recovery";
+import { maskEmail } from "@/features/auth/two-factor";
 import { adminUserPuedeAcceder } from "@/features/network/operators";
-import { findAdminUserByIdentifier } from "./session";
+import { normalizarCuenta } from "@/features/auth/identificador";
+import { findAdminUserByCuenta } from "./session";
 
 export interface AdminCredentials {
   identifier: string;
@@ -51,7 +58,14 @@ export type AdminLoginResult =
    * Credenciales correctas. Todavía no hay sesión: hay un código en camino
    * [R13]. **No lleva identidad**: quién es se lo queda el servidor.
    */
-  | { status: "challenge-required" }
+  /**
+   * El correo al que fue el código, **ya enmascarado**. Lo dice el servidor
+   * porque solo él sabe de quién es la cuenta: desde que se entra con el
+   * identificador o con el correo, lo tecleado puede ser un nombre de usuario
+   * que no se parece en nada al correo de esa persona. Enmascarado y no
+   * entero, que es lo que la pantalla enseña (FR-2FA-5).
+   */
+  | { status: "challenge-required"; correoEnmascarado: string }
   /** Cualquier motivo de rechazo. Uno solo, a propósito (FR-AD-ACC-5). */
   | { status: "invalid-credentials" }
   | { status: "network-error" };
@@ -71,7 +85,7 @@ const LATENCY_MS = 900;
  * ahí, mientras el `AdminLoginResult` que sí llega al navegador no lo lleva.
  */
 export type AdminCredentialCheck =
-  | { status: "ok"; userId: string }
+  | { status: "ok"; userId: string; correoEnmascarado: string }
   | { status: "invalid-credentials" }
   | { status: "network-error" };
 
@@ -85,18 +99,19 @@ export async function verificarCredencialesAdmin({
 
   if (account === "error@puntocash.com") return { status: "network-error" };
 
-  const user = findAdminUserByIdentifier(account);
+  /* Vale el identificador o el correo (decisión del 28/10/2026). */
+  const user = findAdminUserByCuenta(account);
 
   /* Un único desenlace para todos los motivos. `adminUserPuedeAcceder` mete
      dentro el estado del operador, que es lo que hace que un usuario activo de
      una empresa suspendida tampoco entre (A14). */
-  const aceptada = contrasenasRecuperadas.get(account) ?? DEMO_PASSWORD;
+  const aceptada = contrasenasRecuperadas.get(claveDe(account)) ?? DEMO_PASSWORD;
 
   if (!user || password !== aceptada || !adminUserPuedeAcceder(user)) {
     return { status: "invalid-credentials" };
   }
 
-  return { status: "ok", userId: user.id };
+  return { status: "ok", userId: user.id, correoEnmascarado: maskEmail(user.email) };
 }
 
 /* -------------------------------------------------------------------------
@@ -121,8 +136,22 @@ export async function verificarCredencialesAdmin({
  */
 const contrasenasRecuperadas = new Map<string, string>();
 
+/**
+ * La contraseña se guarda **por cuenta, no por lo que se tecleó**.
+ *
+ * Desde que se entra con el identificador o con el correo, la misma persona
+ * tiene dos formas de nombrarse. Guardarla por la cadena tecleada hacía que
+ * recuperar la contraseña escribiendo el correo y entrar después con el
+ * identificador siguiera aceptando la contraseña vieja. La clave es el
+ * usuario; solo cuando no existe —las cuentas inventadas de la
+ * demostración— se cae en lo tecleado.
+ */
+function claveDe(cuenta: string): string {
+  return findAdminUserByCuenta(cuenta)?.id ?? normalizarCuenta(cuenta);
+}
+
 export function registrarContrasenaRecuperada(identifier: string, password: string): void {
-  contrasenasRecuperadas.set(identifier.trim().toLowerCase(), password);
+  contrasenasRecuperadas.set(claveDe(identifier), password);
 }
 
 /* -------------------------------------------------------------------------
@@ -156,14 +185,14 @@ export async function cambiarContrasenaAdmin(
 ): Promise<CambioContrasenaResult> {
   await new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
 
-  const account = identifier.trim().toLowerCase();
-  const vigente = contrasenasRecuperadas.get(account) ?? DEMO_PASSWORD;
+  const clave = claveDe(identifier);
+  const vigente = contrasenasRecuperadas.get(clave) ?? DEMO_PASSWORD;
 
   if (actual !== vigente) return { status: "actual-incorrecta" };
   if (nueva.length < LARGO_MINIMO) return { status: "demasiado-corta" };
   if (nueva === vigente) return { status: "igual-a-la-actual" };
   if (nueva !== repetida) return { status: "no-coinciden" };
 
-  contrasenasRecuperadas.set(account, nueva);
+  contrasenasRecuperadas.set(clave, nueva);
   return { status: "ok" };
 }

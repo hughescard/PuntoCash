@@ -47,7 +47,7 @@ const SEGUNDO = campo("segundo-apellido", "Segundo apellido", { required: false 
 const TELEFONO = campo("telefono", "Teléfono");
 const CORREO = campo("correo", "Correo electrónico");
 const IDENTIFICADOR = campo("identificador", "Identificador de acceso", {
-  description: "Con esto inicia sesión. No tiene que ser su correo.",
+  description: "Su nombre de usuario, sin «@». Podrá entrar con él o con su correo.",
 });
 
 type Campo = "identificador" | "correo" | "nombre" | "primer-apellido" | "telefono";

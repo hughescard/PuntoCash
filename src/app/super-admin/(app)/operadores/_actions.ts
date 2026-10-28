@@ -43,11 +43,20 @@ function credencialInicial(): string {
 
 const esCorreo = (v: string) => v.length > 3 && v.includes("@") && !v.includes(" ");
 
+/** Qué campo señalar cuando el rechazo del dominio pertenece a uno concreto. */
+const CAMPO_DE_RECHAZO: Partial<Record<OperatorWriteDenial, CampoAltaOperador>> = {
+  "identificador-duplicado": "usuario-identificador",
+  "identificador-invalido": "usuario-identificador",
+  "correo-duplicado": "usuario-correo",
+};
+
 const MENSAJE: Record<OperatorWriteDenial, string> = {
   "alcance-insuficiente": "Esta acción solo la puede hacer PuntoCash.",
   "operador-no-encontrado": "No encontramos ese operador.",
   "operador-duplicado": "Ya existe ese operador.",
   "identificador-duplicado": "Ya hay un usuario con ese identificador de acceso.",
+  "identificador-invalido": "El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo.",
+  "correo-duplicado": "Ya hay un usuario con ese correo. Con el correo también se entra, así que no puede repetirse.",
   "motivo-requerido": `Escribe el motivo: al menos ${MOTIVO_MIN_LENGTH} caracteres.`,
   "ya-suspendido": "El operador ya estaba suspendido. Recarga para ver su estado.",
   "no-suspendido": "El operador no está suspendido. Recarga para ver su estado.",
@@ -141,7 +150,8 @@ export async function crearOperadorAction(_p: ResultadoAltaOperador, formData: F
     },
   });
   if (!r.ok) {
-    return r.reason === "identificador-duplicado" ? falla(MENSAJE[r.reason], "usuario-identificador") : falla(MENSAJE[r.reason]);
+    const campo = CAMPO_DE_RECHAZO[r.reason];
+    return campo ? falla(MENSAJE[r.reason], campo) : falla(MENSAJE[r.reason]);
   }
 
   registrarEvento({

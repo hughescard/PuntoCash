@@ -19,7 +19,7 @@ import { useHydrated } from "@/lib/use-hydrated";
 
 const IDENTIFIER: FieldSpec = {
   id: "sa-login-identifier",
-  label: "Correo electrónico",
+  label: "Usuario o correo electrónico",
 };
 
 const PASSWORD: FieldSpec = {
@@ -76,7 +76,7 @@ export function SuperAdminLoginForm(): React.JSX.Element {
     // Validación previa al envío (§9 "Prevención de errores"), con el mensaje
     // pegado a su propio campo (§20).
     const errors: FieldErrors = {};
-    if (!identifier) errors.identifier = "Introduce tu correo electrónico.";
+    if (!identifier) errors.identifier = "Introduce tu identificador de acceso o tu correo.";
     if (!password) errors.password = "Introduce tu contraseña.";
 
     setFailure(null);
@@ -100,7 +100,7 @@ export function SuperAdminLoginForm(): React.JSX.Element {
          con el identificador que se acaba de escribir: es la experiencia del
          segundo factor y vive en el navegador. El reto que **decide** lo tiene
          el servidor, y la sesión solo se abre contra él (ver `_actions.ts`). */
-      openChallenge(identifier);
+      openChallenge(identifier, result.correoEnmascarado);
 
       /* Queda cerrado mientras carga el destino: un segundo envío abriría un
          reto nuevo e invalidaría el código recién enviado. */
@@ -138,7 +138,7 @@ export function SuperAdminLoginForm(): React.JSX.Element {
           autoFocus
           disabled={disabled}
           invalid={Boolean(fieldErrors.identifier)}
-          placeholder="Ingresa tu correo de PuntoCash"
+          placeholder="Tu usuario o tu correo de PuntoCash"
           prefix={<User className="size-[18px]" aria-hidden="true" />}
         />
       </Field>

@@ -29,7 +29,7 @@ const TELEFONO = campo("telefono", "Teléfono");
 const CORREO = campo("correo", "Correo electrónico");
 const AREA = campo("area", "Área");
 const IDENTIFICADOR = campo("identificador", "Identificador de acceso", {
-  description: "Con esto inicia sesión. Por norma, su correo de PuntoCash.",
+  description: "Su nombre de usuario, sin «@». Podrá entrar con él o con su correo.",
 });
 
 type Campo = "identificador" | "correo" | "nombre" | "primer-apellido" | "telefono" | "area";

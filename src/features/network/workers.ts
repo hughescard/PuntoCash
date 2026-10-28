@@ -18,6 +18,7 @@
  * está en la nota de entrega (§8.3).
  */
 
+import { cuentaCoincide, esIdentificadorValido, normalizarCuenta } from "@/features/auth/identificador";
 import { type DocumentType } from "@/features/customers/customers";
 import { findSedeById } from "./sedes";
 import { findOperatorById } from "./operators";
@@ -127,8 +128,23 @@ export function findWorkerById(id: string | null | undefined): NetworkWorker | n
 }
 
 export function findWorkerByIdentifier(identifier: string): NetworkWorker | null {
-  const needle = identifier.trim().toLowerCase();
+  const needle = normalizarCuenta(identifier);
   return mutableWorkers.find((w) => w.identifier.toLowerCase() === needle) ?? null;
+}
+
+/**
+ * A quién pertenece lo tecleado al entrar: vale **el identificador o el
+ * correo** (decisión del 28/10/2026). Un identificador no lleva «@», así que
+ * los dos no se confunden nunca.
+ */
+export function findWorkerByCuenta(cuenta: string): NetworkWorker | null {
+  return mutableWorkers.find((w) => cuentaCoincide(w, cuenta)) ?? null;
+}
+
+/** El correo es único: con él se entra. */
+function correoTomado(email: string, exceptoId?: string): boolean {
+  const needle = normalizarCuenta(email);
+  return mutableWorkers.some((w) => w.id !== exceptoId && w.email.toLowerCase() === needle);
 }
 
 export function workersOf(branchId: string): readonly NetworkWorker[] {
@@ -186,7 +202,11 @@ export type WorkerWriteDenial =
   | "sede-no-encontrada"
   | "sede-cerrada"
   | "identificador-duplicado"
+  /* Un nombre de usuario, no un correo (`features/auth/identificador.ts`). */
+  | "identificador-invalido"
   | "documento-duplicado"
+  /* Con el correo también se entra, así que no puede repetirse. */
+  | "correo-duplicado"
   | "correo-invalido"
   | "trabajador-no-encontrado"
   | "jornada-abierta"
@@ -240,6 +260,8 @@ export function crearTrabajador(
   /* Sin correo válido no podría verificar nunca su segundo factor, así que el
      alta no debe permitirse (FR-AD-TRAB-6) [R13]. */
   if (!isCorreoValido(input.email)) return { ok: false, reason: "correo-invalido" };
+  if (correoTomado(input.email)) return { ok: false, reason: "correo-duplicado" };
+  if (!esIdentificadorValido(input.identifier)) return { ok: false, reason: "identificador-invalido" };
   if (findWorkerByIdentifier(input.identifier)) return { ok: false, reason: "identificador-duplicado" };
   if (mutableWorkers.some((w) => w.documentId === input.documentId)) {
     return { ok: false, reason: "documento-duplicado" };
@@ -428,6 +450,7 @@ export function cambiarCorreoTrabajador(
   /* Sin largo mínimo, como al desactivar (FR-AD-TRAB-10). */
   if (!motivo.trim()) return { ok: false, reason: "motivo-requerido" };
   if (!isCorreoValido(email)) return { ok: false, reason: "correo-invalido" };
+  if (correoTomado(email, target.id)) return { ok: false, reason: "correo-duplicado" };
 
   const anterior = target.email;
   target.email = email.trim();

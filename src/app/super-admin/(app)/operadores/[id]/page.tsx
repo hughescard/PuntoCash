@@ -251,8 +251,9 @@ export default async function SuperAdminOperadorPage({
                       {u.isPrincipal ? <Badge variant="info">Principal</Badge> : null}
                     </p>
                     <p className="mt-0.5 text-body-sm text-text-secondary">
-                      {/* Si el identificador ya es su correo, repetirlo enmascarado no aporta nada. */}
-                      {u.identifier === u.email ? u.identifier : `${u.identifier} · ${maskEmail(u.email)}`}
+                      {/* Los dos sirven para entrar, y desde el 28/10 son
+                          siempre datos distintos: el usuario y su correo. */}
+                      {`${u.identifier} · ${maskEmail(u.email)}`}
                     </p>
                     <p className="mt-0.5 text-body-sm text-text-secondary">
                       {u.lastAccessAt ? `Último acceso: ${fechaYHora(u.lastAccessAt)}` : "Nunca ha entrado"}

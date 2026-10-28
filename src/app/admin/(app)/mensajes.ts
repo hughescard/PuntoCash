@@ -60,6 +60,9 @@ export const MENSAJES = {
     "tipo-documento-requerido": "Elige un tipo de documento.",
     "sede-cerrada": "Esa sede está cerrada y no admite trabajadores nuevos.",
     "identificador-duplicado": "Ese identificador ya está en uso.",
+    "identificador-invalido":
+      "El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo.",
+    "correo-duplicado": "Ese correo ya está en uso. Con el correo también se entra, así que no puede repetirse.",
     "documento-duplicado": "Ya existe un trabajador con ese documento.",
     "jornada-abierta":
       "Tiene una jornada abierta. Hasta que se haga su cierre, o lo fuerces desde la jornada, no se puede.",
@@ -69,6 +72,9 @@ export const MENSAJES = {
   usuarios: {
     "alcance-insuficiente": "Esta acción pertenece al administrador de la empresa.",
     "identificador-duplicado": "Ese identificador ya está en uso.",
+    "identificador-invalido":
+      "El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo.",
+    "correo-duplicado": "Ese correo ya está en uso. Con el correo también se entra, así que no puede repetirse.",
     "no-es-el-principal": "Esta sección pertenece al administrador principal de tu empresa.",
     "es-el-principal": "Al administrador principal no lo desactiva nadie. Traspasa el papel antes, si hace falta.",
     "es-uno-mismo": "No puedes traspasarte el papel a ti mismo.",

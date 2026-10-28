@@ -61,7 +61,7 @@ const DOCUMENTO = campo("documento", "Número de documento");
 const TELEFONO = campo("telefono", "Teléfono");
 const CORREO = campo("correo", "Correo electrónico");
 const IDENTIFICADOR = campo("identificador", "Identificador de acceso", {
-  description: "Con esto inicia sesión. No es su correo.",
+  description: "Su nombre de usuario, sin «@». Podrá entrar con él o con su correo.",
 });
 const SEDE = campo("sede", "Sede", { description: "Solo aparecen las sedes que administras." });
 

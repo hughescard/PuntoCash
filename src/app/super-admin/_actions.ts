@@ -49,7 +49,7 @@ export async function iniciarAccesoSuperAdmin(
     sameSite: "lax",
     maxAge: 10 * 60,
   });
-  return { status: "challenge-required" };
+  return { status: "challenge-required", correoEnmascarado: check.correoEnmascarado };
 }
 
 export async function abrirSesionSuperAdmin(code: string): Promise<void> {

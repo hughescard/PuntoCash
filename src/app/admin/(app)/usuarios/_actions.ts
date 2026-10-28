@@ -14,6 +14,7 @@ import {
   esAdministradorPrincipal,
   reactivarUsuarioAdmin,
   transferirAdministradorPrincipal,
+  type OperatorWriteDenial,
 } from "@/features/network/operators";
 import { mensaje } from "../mensajes";
 
@@ -58,6 +59,13 @@ export interface ValoresDelAltaUsuario {
   identificador: string;
   telefono: string;
 }
+
+/** Qué campo señalar cuando el rechazo del dominio pertenece a uno concreto. */
+const CAMPO_DE_RECHAZO: Partial<Record<OperatorWriteDenial, "identificador" | "correo">> = {
+  "identificador-duplicado": "identificador",
+  "identificador-invalido": "identificador",
+  "correo-duplicado": "correo",
+};
 
 export type ResultadoAltaUsuario =
   | { ok: true; usuarioId: string; nombre: string; identificador: string; credencial: string }
@@ -117,7 +125,7 @@ export async function crearUsuarioAction(
   });
 
   if (!resultado.ok) {
-    const campo = resultado.reason === "identificador-duplicado" ? "identificador" : undefined;
+    const campo = CAMPO_DE_RECHAZO[resultado.reason];
     return campo
       ? { ok: false, error: mensaje("usuarios", resultado.reason), campo, valores }
       : { ok: false, error: mensaje("usuarios", resultado.reason), valores };

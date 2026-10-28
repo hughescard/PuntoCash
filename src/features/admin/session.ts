@@ -22,6 +22,7 @@
  * también una prueba o una utilidad. Quien lee cookies es `session-server.ts`.
  */
 
+import { cuentaCoincide } from "@/features/auth/identificador";
 import {
   findOperatorById,
   type AdminUser,
@@ -95,6 +96,15 @@ export interface AdminSession {
 export function findAdminUserByIdentifier(identifier: string): AdminUser | null {
   const account = identifier.trim().toLowerCase();
   return ADMIN_USERS.find((u) => u.identifier.toLowerCase() === account) ?? null;
+}
+
+/**
+ * A quién pertenece lo que se tecleó al entrar: vale **el identificador o el
+ * correo** (decisión del 28/10/2026). Los dos no se parecen nunca —un
+ * identificador no lleva «@»—, así que no hay que elegir entre ellos.
+ */
+export function findAdminUserByCuenta(cuenta: string): AdminUser | null {
+  return ADMIN_USERS.find((u) => cuentaCoincide(u, cuenta)) ?? null;
 }
 
 /**

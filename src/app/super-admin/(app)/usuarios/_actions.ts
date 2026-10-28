@@ -41,6 +41,9 @@ const MENSAJES: Record<PuntoCashUserDenial, string> = {
   "no-es-el-principal": "Solo el principal puede administrar las cuentas de la consola.",
   "usuario-no-encontrado": "No encontramos esa cuenta. Puede que ya no exista.",
   "identificador-duplicado": "Ya hay una cuenta con ese identificador.",
+  "identificador-invalido":
+    "El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo.",
+  "correo-duplicado": "Ya hay una cuenta con ese correo. Con el correo también se entra, así que no puede repetirse.",
   "es-el-principal": "El principal no se desactiva: sin él no habría quien diera de alta a otro.",
   "es-uno-mismo": "No puedes traspasarte el papel a ti mismo.",
   "destino-no-activo": "Solo se puede traspasar a una cuenta activa.",
@@ -64,6 +67,13 @@ export interface ValoresAltaSuperAdmin {
   telefono: string;
   area: string;
 }
+
+/** Qué campo señalar cuando el rechazo del dominio pertenece a uno concreto. */
+const CAMPO_DE_RECHAZO: Partial<Record<PuntoCashUserDenial, "identificador" | "correo">> = {
+  "identificador-duplicado": "identificador",
+  "identificador-invalido": "identificador",
+  "correo-duplicado": "correo",
+};
 
 export type ResultadoAltaSuperAdmin =
   | { ok: true; usuarioId: string; nombre: string; identificador: string; credencial: string }
@@ -122,7 +132,7 @@ export async function crearUsuarioSuperAdminAction(
   });
 
   if (!resultado.ok) {
-    const campo = resultado.reason === "identificador-duplicado" ? "identificador" : undefined;
+    const campo = CAMPO_DE_RECHAZO[resultado.reason];
     return campo
       ? { ok: false, error: MENSAJES[resultado.reason], campo, valores }
       : { ok: false, error: MENSAJES[resultado.reason], valores };

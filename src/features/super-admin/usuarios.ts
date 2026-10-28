@@ -17,13 +17,18 @@
  * traspasa.
  */
 
+import { cuentaCoincide, esIdentificadorValido, normalizarCuenta } from "@/features/auth/identificador";
 import { isMotivoValido } from "@/features/network/sedes";
 
 export type PuntoCashUserStatus = "activo" | "desactivado";
 
 export interface PuntoCashUser {
   id: string;
-  /** Con lo que se entra; en PuntoCash es siempre el correo corporativo. */
+  /**
+   * El nombre de usuario con el que se entra. Es un dato propio: ni el nombre
+   * de la persona ni su correo, aunque en el acceso valgan los dos
+   * (decisión del 28/10/2026, `features/auth/identificador.ts`).
+   */
   identifier: string;
   fullName: string;
   /** Canal del segundo factor [R13]. */
@@ -44,7 +49,7 @@ export interface PuntoCashUser {
 const USUARIOS: PuntoCashUser[] = [
   {
     id: "sa-1",
-    identifier: "emarrero@puntocash.com",
+    identifier: "emarrero",
     fullName: "Elena Marrero Fonseca",
     email: "emarrero@puntocash.com",
     area: "Operaciones de red",
@@ -56,7 +61,7 @@ const USUARIOS: PuntoCashUser[] = [
   },
   {
     id: "sa-2",
-    identifier: "jaguilera@puntocash.com",
+    identifier: "jaguilera",
     fullName: "Jorge Aguilera Ruiz",
     email: "jaguilera@puntocash.com",
     area: "Control interno",
@@ -70,7 +75,7 @@ const USUARIOS: PuntoCashUser[] = [
     /* Una cuenta que ya no entra: su acceso falla con el mismo mensaje que
        una contraseña equivocada (FR-SA-ACC-4). */
     id: "sa-3",
-    identifier: "rvaldes@puntocash.com",
+    identifier: "rvaldes",
     fullName: "Raúl Valdés Pino",
     email: "rvaldes@puntocash.com",
     area: "Operaciones de red",
@@ -92,8 +97,13 @@ export function findPuntoCashUserById(id: string | null | undefined): PuntoCashU
 }
 
 export function findPuntoCashUserByIdentifier(identifier: string): PuntoCashUser | null {
-  const account = identifier.trim().toLowerCase();
+  const account = normalizarCuenta(identifier);
   return mutableUsers.find((u) => u.identifier.toLowerCase() === account) ?? null;
+}
+
+/** A quién pertenece lo tecleado al entrar: vale el identificador o el correo. */
+export function findPuntoCashUserByCuenta(cuenta: string): PuntoCashUser | null {
+  return mutableUsers.find((u) => cuentaCoincide(u, cuenta)) ?? null;
 }
 
 /** Si esta cuenta es la que administra las cuentas de la consola. */
@@ -109,6 +119,8 @@ export type PuntoCashUserDenial =
   | "no-es-el-principal"
   | "usuario-no-encontrado"
   | "identificador-duplicado"
+  | "identificador-invalido"
+  | "correo-duplicado"
   | "es-el-principal"
   | "es-uno-mismo"
   | "destino-no-activo"
@@ -128,8 +140,14 @@ export interface CrearPuntoCashUserInput {
 }
 
 function identifierTaken(identifier: string, exceptId?: string): boolean {
-  const account = identifier.trim().toLowerCase();
+  const account = normalizarCuenta(identifier);
   return mutableUsers.some((u) => u.id !== exceptId && u.identifier.toLowerCase() === account);
+}
+
+/** El correo también entra, así que tampoco puede repetirse. */
+function correoTomado(email: string, exceptId?: string): boolean {
+  const account = normalizarCuenta(email);
+  return mutableUsers.some((u) => u.id !== exceptId && u.email.toLowerCase() === account);
 }
 
 function esCorreoValido(email: string): boolean {
@@ -143,8 +161,10 @@ export function crearUsuarioPuntoCash(
   now = new Date(),
 ): PuntoCashUserResult<PuntoCashUser> {
   if (!esSuperAdminPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
+  if (!esIdentificadorValido(input.identifier)) return { ok: false, reason: "identificador-invalido" };
   if (identifierTaken(input.identifier)) return { ok: false, reason: "identificador-duplicado" };
   if (!esCorreoValido(input.email)) return { ok: false, reason: "correo-invalido" };
+  if (correoTomado(input.email)) return { ok: false, reason: "correo-duplicado" };
 
   const user: PuntoCashUser = {
     id: input.id,
@@ -184,6 +204,7 @@ export function cambiarCorreoUsuarioPuntoCash(
   const user = findPuntoCashUserById(userId);
   if (!user) return { ok: false, reason: "usuario-no-encontrado" };
   if (!esCorreoValido(email)) return { ok: false, reason: "correo-invalido" };
+  if (correoTomado(email, user.id)) return { ok: false, reason: "correo-duplicado" };
 
   const anterior = user.email;
   user.email = email.trim();

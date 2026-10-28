@@ -125,7 +125,7 @@ test("un operador de prueba recorre el alta y todas sus acciones", async ({ page
 
 test("un identificador de acceso repetido se rechaza", async ({ page }) => {
   await signInAsSuperAdmin(page);
-  await darDeAlta(page, `Prueba Repetido ${sello()}`, "marta@malecon-sf.cu");
+  await darDeAlta(page, `Prueba Repetido ${sello()}`, "msanchez");
   await expect(page.getByText("Ya hay un usuario con ese identificador de acceso.")).toBeVisible();
 });
 

@@ -100,8 +100,10 @@ export type CampoDelAlta = "nombre" | "primer-apellido" | "documento" | "telefon
 /** Qué campo señalar cuando el rechazo pertenece a uno concreto. */
 const CAMPO: Partial<Record<WorkerWriteDenial, CampoDelAlta>> = {
   "identificador-duplicado": "identificador",
+  "identificador-invalido": "identificador",
   "documento-duplicado": "documento",
   "correo-invalido": "correo",
+  "correo-duplicado": "correo",
 };
 
 const VACIO: ValoresDelAlta = {

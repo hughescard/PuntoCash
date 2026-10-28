@@ -13,12 +13,12 @@ import { ELENA, JORGE, signInAsSuperAdmin } from "./super-admin-helpers";
 const ANCHOS = [1440, 1024, 768, 390] as const;
 
 /** Da de alta una cuenta de prueba y deja la página en su ficha. */
-async function altaDePrueba(page: Page, identificador: string): Promise<void> {
+async function altaDePrueba(page: Page, identificador: string, correo = `${identificador}@puntocash.com`): Promise<void> {
   await page.goto("/super-admin/usuarios/nuevo");
   await page.getByLabel(/^Nombre\*?$/).fill("Prueba");
   await page.getByLabel(/^Primer apellido\*?$/).fill("Alta Consola");
   await page.getByLabel(/^Teléfono\*?$/).fill("+53 7 000 1111");
-  await page.getByLabel(/^Correo electrónico\*?$/).fill(identificador);
+  await page.getByLabel(/^Correo electrónico\*?$/).fill(correo);
   await page.getByLabel(/^Identificador de acceso\*?$/).fill(identificador);
   await page.getByLabel(/^Área\*?$/).fill("Control interno");
   await page.getByRole("button", { name: "Dar de alta" }).click();
@@ -40,13 +40,13 @@ test.describe("Usuarios de la consola · principal", () => {
 
   test("dar de alta enseña la credencial una sola vez y la cuenta abre su ficha", async ({ page }) => {
     await signInAsSuperAdmin(page, ELENA);
-    await altaDePrueba(page, `prueba.${Date.now()}@puntocash.com`);
+    await altaDePrueba(page, `prueba.${Date.now()}`);
     await expect(page.getByText("Cópiala ahora: no se podrá volver a consultar")).toHaveCount(0);
   });
 
   test("desactivar sin motivo se rechaza y con motivo se aplica", async ({ page }) => {
     await signInAsSuperAdmin(page, ELENA);
-    await altaDePrueba(page, `motivo.${Date.now()}@puntocash.com`);
+    await altaDePrueba(page, `motivo.${Date.now()}`);
 
     await page.getByRole("button", { name: "Desactivar" }).click();
     const dialogo = page.getByRole("dialog");

@@ -90,7 +90,7 @@ export async function iniciarAccesoAdmin(
     maxAge: 10 * 60,
   });
 
-  return { status: "challenge-required" };
+  return { status: "challenge-required", correoEnmascarado: check.correoEnmascarado };
 }
 
 /**

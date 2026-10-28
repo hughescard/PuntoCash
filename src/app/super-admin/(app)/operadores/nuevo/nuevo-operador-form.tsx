@@ -31,7 +31,7 @@ const U_CORREO = campo("usuario-correo", "Correo electrónico", {
   description: "Es donde recibirá su código de verificación en cada inicio de sesión.",
 });
 const U_IDENT = campo("usuario-identificador", "Identificador de acceso", {
-  description: "Con esto inicia sesión. No tiene que ser su correo.",
+  description: "Su nombre de usuario, sin «@». Podrá entrar con él o con su correo.",
 });
 
 const SELECT =

@@ -319,7 +319,7 @@ test("un motivo demasiado corto no basta para retirar una caja", () => {
 test("un trabajador se adscribe a una sede, y el alta exige correo", () => {
   const sinCorreo = crearTrabajador(MALECON, SCOPE_CONTEXT, {
     id: "trb-test-1",
-    identifier: "prueba@puntocash.com",
+    identifier: "aprueba",
     fullName: "Ana Prueba",
     firstName: "Ana",
     documentType: "CI" as const,
@@ -333,7 +333,7 @@ test("un trabajador se adscribe a una sede, y el alta exige correo", () => {
 
   const alta = crearTrabajador(MALECON, SCOPE_CONTEXT, {
     id: "trb-test-1",
-    identifier: "prueba@puntocash.com",
+    identifier: "aprueba",
     fullName: "Ana Prueba",
     firstName: "Ana",
     documentType: "CI" as const,

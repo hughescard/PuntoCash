@@ -141,7 +141,16 @@ export function maskEmail(email: string): string {
   return `${visible || "•••"}@${domain}`;
 }
 
-/** Deriva el correo de destino del identificador escrito en el inicio de sesión. */
+/**
+ * Deriva el correo de destino de lo escrito en el inicio de sesión.
+ *
+ * Es el **último recurso**: desde que se entra con el identificador o con el
+ * correo (decisión del 28/10/2026), lo tecleado puede ser un nombre de usuario
+ * que no dice nada del correo de esa persona. Quien conoce la cuenta —el
+ * servidor en Admin y en Super administración, el padrón en Worker— pasa el
+ * destino ya enmascarado a `openChallenge`, y esto solo se usa cuando no hay
+ * cuenta que consultar: las inventadas de la demostración.
+ */
 function emailFor(identifier: string): string {
   const account = identifier.trim().toLowerCase();
   return account.includes("@") ? account : `${account}@puntocash.com`;
@@ -163,7 +172,7 @@ function view(challenge: Challenge): TwoFactorChallengeView {
  * Crea el reto y "envía" el primer código. La llama el inicio de sesión cuando
  * las credenciales son correctas — nunca la pantalla de verificación.
  */
-export function openChallenge(identifier: string): TwoFactorChallengeView {
+export function openChallenge(identifier: string, destinoEnmascarado?: string): TwoFactorChallengeView {
   const email = emailFor(identifier);
   const ttlMs = email === "caduca@puntocash.com" ? SHORT_TTL_MS : TTL_MS;
   const now = Date.now();
@@ -171,7 +180,9 @@ export function openChallenge(identifier: string): TwoFactorChallengeView {
   current = {
     id: nextId(),
     code: DEMO_CODE,
-    maskedEmail: maskEmail(email),
+    /* El destino lo dice quien conoce la cuenta; si nadie lo dice, se deriva
+       de lo tecleado, que es lo único que hay. */
+    maskedEmail: destinoEnmascarado ?? maskEmail(email),
     expiresAt: now + ttlMs,
     resendAvailableAt: now + RESEND_COOLDOWN_MS,
     attemptsRemaining: MAX_ATTEMPTS,

@@ -18,6 +18,7 @@
  * credencial del inicial que creó. No crea uno nuevo ni toca ningún otro.
  */
 
+import { esIdentificadorValido, normalizarCuenta } from "@/features/auth/identificador";
 import { isGlobal, requireOperatorScope, type Scope } from "./scope";
 import { isMotivoValido } from "./sedes";
 
@@ -172,7 +173,7 @@ const mutableAdminUsers: AdminUser[] = [
   {
     id: "adm-malecon-1",
     operatorId: "op-malecon",
-    identifier: "marta@malecon-sf.cu",
+    identifier: "msanchez",
     fullName: "Marta Sánchez",
     email: "marta@malecon-sf.cu",
     phone: "+53 5 234 1190",
@@ -186,7 +187,7 @@ const mutableAdminUsers: AdminUser[] = [
     /* Creado por Marta, no por PuntoCash: es el caso de FR-AD-USR-2. */
     id: "adm-malecon-2",
     operatorId: "op-malecon",
-    identifier: "dcastro@malecon-sf.cu",
+    identifier: "dcastro",
     fullName: "Daniel Castro",
     email: "dcastro@malecon-sf.cu",
     phone: "+53 5 234 1204",
@@ -199,7 +200,7 @@ const mutableAdminUsers: AdminUser[] = [
   {
     id: "adm-caribe-1",
     operatorId: "op-caribe",
-    identifier: "rortega@caribecambios.cu",
+    identifier: "rortega",
     fullName: "Reinaldo Ortega",
     email: "rortega@caribecambios.cu",
     phone: "+53 5 611 7788",
@@ -214,7 +215,7 @@ const mutableAdminUsers: AdminUser[] = [
        código y el nombre fijos, no un selector (**FR-AD-SCOPE-3**). */
     id: "adm-centro-1",
     operatorId: "op-centro",
-    identifier: "ibetancourt@centrodivisas.cu",
+    identifier: "ibetancourt",
     fullName: "Idalmis Betancourt",
     email: "ibetancourt@centrodivisas.cu",
     phone: "+53 5 442 3310",
@@ -229,7 +230,7 @@ const mutableAdminUsers: AdminUser[] = [
        sede. Entra con normalidad; lo que ve es un Inicio vacío explicado. */
     id: "adm-cienfuegos-1",
     operatorId: "op-cienfuegos",
-    identifier: "lperez@cienfuegoscambio.cu",
+    identifier: "lperez",
     fullName: "Liudmila Pérez",
     email: "lperez@cienfuegoscambio.cu",
     phone: "+53 5 330 9025",
@@ -241,7 +242,7 @@ const mutableAdminUsers: AdminUser[] = [
   {
     id: "adm-bahia-1",
     operatorId: "op-bahia",
-    identifier: "abarrios@bahiacambios.cu",
+    identifier: "abarrios",
     fullName: "Ana Barrios",
     email: "abarrios@bahiacambios.cu",
     phone: "+53 5 702 4418",
@@ -254,7 +255,7 @@ const mutableAdminUsers: AdminUser[] = [
   {
     id: "adm-oriente-1",
     operatorId: "op-oriente",
-    identifier: "yperez@orientedivisas.cu",
+    identifier: "yperez",
     fullName: "Yuliet Pérez",
     email: "yperez@orientedivisas.cu",
     phone: "+53 5 228 4471",
@@ -315,6 +316,11 @@ export type OperatorWriteDenial =
   | "operador-no-encontrado"
   | "operador-duplicado"
   | "identificador-duplicado"
+  /* El identificador es un nombre de usuario: ni vacío, ni con «@», ni con
+     caracteres raros (`features/auth/identificador.ts`). */
+  | "identificador-invalido"
+  /* Dos cuentas con el mismo correo harían ambiguo entrar con el correo. */
+  | "correo-duplicado"
   | "motivo-requerido"
   | "ya-suspendido"
   | "no-suspendido"
@@ -337,9 +343,19 @@ export type OperatorWriteDenial =
 
 export type OperatorWriteResult<T> = { ok: true; value: T } | { ok: false; reason: OperatorWriteDenial };
 
-function identifierTaken(identifier: string): boolean {
-  const needle = identifier.trim().toLowerCase();
-  return mutableAdminUsers.some((u) => u.identifier.toLowerCase() === needle);
+function identifierTaken(identifier: string, exceptoId?: string): boolean {
+  const needle = normalizarCuenta(identifier);
+  return mutableAdminUsers.some((u) => u.id !== exceptoId && u.identifier.toLowerCase() === needle);
+}
+
+/**
+ * El correo también es único, y no por pulcritud: con él se entra
+ * (decisión del 28/10/2026), así que dos cuentas con el mismo correo dejarían
+ * sin respuesta a quién pertenece lo que se teclea.
+ */
+function correoTomado(email: string, exceptoId?: string): boolean {
+  const needle = normalizarCuenta(email);
+  return mutableAdminUsers.some((u) => u.id !== exceptoId && u.email.toLowerCase() === needle);
 }
 
 export interface CrearOperadorInput {
@@ -364,7 +380,9 @@ export function crearOperador(
 ): OperatorWriteResult<{ operator: Operator; user: AdminUser }> {
   if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
   if (findOperatorById(input.id)) return { ok: false, reason: "operador-duplicado" };
+  if (!esIdentificadorValido(input.initialUser.identifier)) return { ok: false, reason: "identificador-invalido" };
   if (identifierTaken(input.initialUser.identifier)) return { ok: false, reason: "identificador-duplicado" };
+  if (correoTomado(input.initialUser.email)) return { ok: false, reason: "correo-duplicado" };
 
   const operator: Operator = {
     id: input.id,
@@ -536,7 +554,9 @@ export function crearUsuarioAdmin(
   if (!esAdministradorPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
   const operator = findOperatorById(operatorScope.value);
   if (!operator) return { ok: false, reason: "operador-no-encontrado" };
+  if (!esIdentificadorValido(input.identifier)) return { ok: false, reason: "identificador-invalido" };
   if (identifierTaken(input.identifier)) return { ok: false, reason: "identificador-duplicado" };
+  if (correoTomado(input.email)) return { ok: false, reason: "correo-duplicado" };
 
   const user: AdminUser = {
     id: input.id,
@@ -735,6 +755,8 @@ export function cambiarCorreoUsuarioAdmin(
   if (valor.length <= 3 || !valor.includes("@") || valor.includes(" ")) {
     return { ok: false, reason: "correo-invalido" };
   }
+  /* Con el correo se entra, así que no puede quedarse con el de otro. */
+  if (correoTomado(valor, user.id)) return { ok: false, reason: "correo-duplicado" };
 
   const anterior = user.email;
   user.email = valor;
