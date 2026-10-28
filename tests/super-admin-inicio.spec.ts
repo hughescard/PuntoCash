@@ -93,11 +93,12 @@ test.describe("inicio", () => {
   });
 
   test("la tabla filtra por operador y la sede sin operador se distingue", async ({ page }) => {
+    /* Sin contar el total: otras suites crean sedes en el mismo servidor. */
     const tabla = page.getByRole("table");
-    await expect(tabla.getByRole("row")).toHaveCount(13);
     await page.getByLabel("Operador").selectOption({ label: "Sedes sin operador" });
-    await expect(tabla.getByRole("row")).toHaveCount(2);
-    await expect(tabla.getByText("Sin operador")).toBeVisible();
+    await expect(tabla.getByRole("row").filter({ hasText: "PuntoCash Santiago" })).toBeVisible();
+    await expect(tabla.getByRole("row").filter({ hasText: "PuntoCash Vedado" })).toHaveCount(0);
+    await expect(tabla.getByText("Sin operador").first()).toBeVisible();
     await expect(page).toHaveURL(/operador=sin-operador/);
   });
 
