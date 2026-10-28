@@ -68,6 +68,7 @@ export function NuevoOperadorForm(): React.JSX.Element {
               <select {...fieldAria(TIPO)} name="tipo-documento" defaultValue="NIT" disabled={enviando} className={SELECT}>
                 <option value="NIT">NIT (empresa)</option>
                 <option value="CI">Carné de identidad</option>
+                <option value="PASAPORTE">Pasaporte</option>
               </select>
             </Field>
             {texto(DOCUMENTO, "documento", { className: "pc-numeric" })}

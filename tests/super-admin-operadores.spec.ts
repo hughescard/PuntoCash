@@ -13,10 +13,11 @@ import { signInAsSuperAdmin } from "./super-admin-helpers";
 
 const sello = () => Date.now().toString(36).slice(-6).toUpperCase();
 
-async function darDeAlta(page: Page, nombre: string, ident: string): Promise<void> {
+async function darDeAlta(page: Page, nombre: string, ident: string, documento = { tipo: "NIT", numero: `NIT${sello()}` }): Promise<void> {
   await page.goto("/super-admin/operadores/nuevo");
   await page.getByLabel(/^Nombre o razón social\*?$/).fill(nombre);
-  await page.getByLabel(/^Número de documento\*?$/).fill(`NIT${sello()}`);
+  await page.getByLabel(/^Tipo de documento\*?$/).selectOption(documento.tipo);
+  await page.getByLabel(/^Número de documento\*?$/).fill(documento.numero);
   await page.getByLabel(/^Persona de contacto\*?$/).fill("Prueba Contacto");
   await page.locator("#operador-telefono").fill("+53 5 000 1111");
   await page.locator("#operador-correo").fill("contacto@prueba.cu");
@@ -84,12 +85,15 @@ test("un operador de prueba recorre el alta y todas sus acciones", async ({ page
   await signInAsSuperAdmin(page);
   const nombre = `Prueba Operador ${sello()}`;
   const ident = `prueba${sello().toLowerCase()}`;
-  await darDeAlta(page, nombre, ident);
+  /* Con pasaporte: el tipo que se añadió para operadores extranjeros (28/10). */
+  const pasaporte = `K${sello()}`;
+  await darDeAlta(page, nombre, ident, { tipo: "PASAPORTE", numero: pasaporte });
 
   await expect(page.getByText(`${nombre} está dado de alta`)).toBeVisible();
   await expect(page.getByText("Credencial inicial")).toBeVisible();
   await page.getByRole("link", { name: "Ver su ficha y asignarle una sede" }).click();
   await expect(page.getByRole("heading", { level: 1, name: nombre })).toBeVisible();
+  await expect(page.getByText(`Pasaporte ${pasaporte}`).first()).toBeVisible();
   await expect(page.getByText("Todavía no se le ha entregado ninguna sede.")).toBeVisible();
 
   // Asignar: el diálogo ofrece las sedes sin operador (no se confirma).

@@ -75,3 +75,15 @@ export function resumenDeOperador(operador: Operator, ahora: Date = new Date()):
     jornadasAbiertas: sedes.flatMap((s) => jornadasDeSede(s.id).filter((j) => j.closedAt === null)),
   };
 }
+
+/**
+ * El documento de un operador tal como se lee: «NIT 01234567890»,
+ * «CI 88041203210», «Pasaporte K1234567». Se guarda como «TIPO-número».
+ */
+export function documentoLegible(legalId: string): string {
+  const [tipo, ...resto] = legalId.split("-");
+  const numero = resto.join("-");
+  if (!numero) return legalId;
+  const etiqueta = tipo === "PASAPORTE" ? "Pasaporte" : tipo;
+  return `${etiqueta} ${numero}`;
+}

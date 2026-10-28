@@ -108,7 +108,9 @@ export async function crearOperadorAction(_p: ResultadoAltaOperador, formData: F
   if (OPERATORS.some((o) => o.name.trim().toLowerCase() === nombre.toLowerCase())) {
     return falla("Ya existe un operador con ese nombre.", "nombre");
   }
-  if (!["NIT", "CI"].includes(tipoDoc) || !/^[A-Za-z0-9-]{4,20}$/.test(numDoc)) {
+  /* NIT para empresas, CI para una persona natural, pasaporte para un
+     extranjero (decisión de Claudia del 28/10). */
+  if (!["NIT", "CI", "PASAPORTE"].includes(tipoDoc) || !/^[A-Za-z0-9-]{4,20}$/.test(numDoc)) {
     return falla("Escribe el número del documento, sin espacios.", "documento");
   }
   if (!contacto) return falla("Escribe la persona de contacto.", "contacto");

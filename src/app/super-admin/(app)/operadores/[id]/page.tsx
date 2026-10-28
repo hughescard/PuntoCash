@@ -14,7 +14,7 @@ import { adminUsersOf, administradorPrincipalDe, findOperatorById } from "@/feat
 import { asignacionVigente, estadoDeSede, historialDeOperador } from "@/features/network/assignments";
 import { listarEventos } from "@/features/network/audit";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
-import { resumenDeOperador } from "@/features/super-admin/operadores";
+import { resumenDeOperador, documentoLegible } from "@/features/super-admin/operadores";
 import { fechaCorta, fechaYHora } from "@/app/admin/(app)/jornadas/formato";
 import { EstadoDeSedeBadge } from "../../_compartido/estado-de-sede";
 import { EstadoDeOperadorBadge } from "../../_compartido/estado-de-operador";
@@ -87,7 +87,7 @@ export default async function SuperAdminOperadorPage({
     <>
       <PageHeader
         title={operador.name}
-        description={`${operador.legalId} · alta el ${fechaCorta(operador.createdAt)}`}
+        description={`${documentoLegible(operador.legalId)} · alta el ${fechaCorta(operador.createdAt)}`}
         actions={
           <Button variant="secondary" asChild>
             <Link href="/super-admin/operadores">
@@ -130,7 +130,7 @@ export default async function SuperAdminOperadorPage({
           <CardContent className="pt-6">
             <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
               <Dato etiqueta="Nombre o razón social" valor={operador.name} />
-              <Dato etiqueta="Documento" valor={operador.legalId} numerico />
+              <Dato etiqueta="Documento" valor={documentoLegible(operador.legalId)} numerico />
               <div className="sm:col-span-2">
                 <Dato etiqueta="Contacto" valor={<ContactoDeOperador operador={operador} />} />
               </div>
