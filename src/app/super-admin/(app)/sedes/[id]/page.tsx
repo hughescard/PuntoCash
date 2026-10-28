@@ -239,44 +239,40 @@ export default async function SuperAdminSedePage({
               <div className="mt-6 border-t border-border pt-5">
                 <h3 className="text-body font-semibold text-text-primary">Administradores</h3>
 
-                {administradores.length === 0 ? (
-                  <p className="mt-3 text-body-sm text-warning-foreground">
-                    Esta empresa no tiene ningún usuario: nadie puede poner la sede en marcha. Se resuelve desde la
-                    ficha del operador.
-                  </p>
-                ) : (
-                  <ul className="mt-3 flex flex-col divide-y divide-border">
-                    {administradores.map((u) => (
-                      /* En el teléfono se apila a la izquierda: en una fila
-                         con «justify-between», el estado quedaba centrado. */
-                      <li
-                        key={u.id}
-                        className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-3"
-                      >
-                        <div className="min-w-0">
-                          <p className="flex flex-wrap items-center gap-2 text-body font-medium text-text-primary">
-                            {u.fullName}
-                            {u.isPrincipal ? <Badge variant="info">Principal</Badge> : null}
-                          </p>
-                          <p className="mt-0.5 text-body-sm text-text-secondary">
-                            {u.identifier} · {maskEmail(u.email)}
-                          </p>
-                          <p className="pc-numeric mt-0.5 text-body-sm text-text-secondary">{u.phone}</p>
-                        </div>
-                        <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 sm:flex-col sm:items-end sm:gap-1">
-                          {u.status === "activo" ? (
-                            <Badge variant="success">Activo</Badge>
-                          ) : (
-                            <Badge variant="neutral">Desactivado</Badge>
-                          )}
-                          <span className="text-caption text-text-secondary">
-                            {u.lastAccessAt ? `Último acceso: ${fechaYHora(u.lastAccessAt)}` : "Nunca ha entrado"}
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {/* Siempre hay al menos uno: el principal nace con la empresa,
+                    no se desactiva y solo cambia por traspaso a otro activo.
+                    Por eso aquí no hay estado vacío que atender. */}
+                <ul className="mt-3 flex flex-col divide-y divide-border">
+                  {administradores.map((u) => (
+                    /* En el teléfono se apila a la izquierda: en una fila
+                       con «justify-between», el estado quedaba centrado. */
+                    <li
+                      key={u.id}
+                      className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="flex flex-wrap items-center gap-2 text-body font-medium text-text-primary">
+                          {u.fullName}
+                          {u.isPrincipal ? <Badge variant="info">Principal</Badge> : null}
+                        </p>
+                        <p className="mt-0.5 text-body-sm text-text-secondary">
+                          {u.identifier} · {maskEmail(u.email)}
+                        </p>
+                        <p className="pc-numeric mt-0.5 text-body-sm text-text-secondary">{u.phone}</p>
+                      </div>
+                      <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 sm:flex-col sm:items-end sm:gap-1">
+                        {u.status === "activo" ? (
+                          <Badge variant="success">Activo</Badge>
+                        ) : (
+                          <Badge variant="neutral">Desactivado</Badge>
+                        )}
+                        <span className="text-caption text-text-secondary">
+                          {u.lastAccessAt ? `Último acceso: ${fechaYHora(u.lastAccessAt)}` : "Nunca ha entrado"}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
           </CardContent>
