@@ -9,6 +9,7 @@ import {
   allRegistersOf,
   asignacionVigente,
   asignarSede,
+  estadoDeSede,
   cerrarSede,
   crearCaja,
   crearTrabajador,
@@ -492,7 +493,7 @@ test("no se asigna una sede que ya tiene operador vigente", () => {
   if (!result.ok) expect(result.reason).toBe("ya-asignada");
 });
 
-test("revocar no se permite con jornadas abiertas, cierra el tramo y suspende la sede", () => {
+test("revocar no se permite con jornadas abiertas, cierra el tramo y deja la sede sin asignar", () => {
   const motivo = "Traspaso ordenado de la administración de la sucursal";
 
   const abiertas = revocarAsignacion(GLOBAL_SCOPE, "sede-matanzas", motivo, { hasOpenJornadas: true });
@@ -509,8 +510,12 @@ test("revocar no se permite con jornadas abiertas, cierra el tramo y suspende la
   expect(historialDeSede("sede-matanzas")).toHaveLength(tramosAntes);
   expect(historialDeSede("sede-matanzas").at(-1)?.endedReason).toContain("Traspaso ordenado");
   expect(asignacionVigente("sede-matanzas")).toBeNull();
-  /* Sin administrador responsable, la sede no puede operarse (FR-SA-ASG-10). */
-  expect(findSedeById("sede-matanzas")?.status).toBe("suspendida");
+  /* Sin administrador responsable queda «sin asignar», no suspendida: sus
+     trabajadores no entran, pero no hay sanción que levantar. */
+  expect(estadoDeSede(findSedeById("sede-matanzas")!)).toBe("sin-asignar");
+  expect(findSedeById("sede-matanzas")?.status).toBe("activa");
+  const deMatanzas = workersOf("sede-matanzas").find((w) => w.status === "activo");
+  if (deMatanzas) expect(motivoDeBloqueo(deMatanzas)).toBe("sin-operador");
   /* Pero no retira cajas ni desactiva trabajadores (FR-SA-ASG-7, FR-SA-ASG-8). */
   expect(registersOf("sede-matanzas")).toHaveLength(cajasAntes);
   expect(workersOf("sede-matanzas").filter((w) => w.status === "activo")).toHaveLength(trabajadoresAntes);
@@ -524,7 +529,7 @@ test("revocar no se permite con jornadas abiertas, cierra el tramo y suspende la
       reason: "Restitución del operador al concluir la prueba",
     }).ok,
   ).toBe(true);
-  expect(findSedeById("sede-matanzas")?.status).toBe("activa");
+  expect(estadoDeSede(findSedeById("sede-matanzas")!)).toBe("activa");
 });
 
 test("no se asigna una sede a un operador suspendido", () => {

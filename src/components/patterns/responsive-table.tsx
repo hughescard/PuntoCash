@@ -79,6 +79,19 @@ export interface ResponsiveTableProps<T> {
   rowLink?: (row: T) => { href: string; label: string } | null;
   /** Qué decir cuando no hay ni una fila. Los dos vacíos —sin datos y sin resultados— nunca comparten mensaje (**FR-AD-STATE-1**). */
   empty: React.ReactNode;
+  /**
+   * Desde qué ancho se ve la tabla. Por defecto `lg` (1024px). Una tabla con
+   * muchas columnas no cabe junto a la barra lateral a 1024 —le quedan unos
+   * 720px— y se pasa a `xl` para que la tableta vea tarjetas en vez de una
+   * tabla recortada.
+   */
+  tablaDesde?: "lg" | "xl";
+  /**
+   * Tarjetas en dos columnas desde 768px. En una tableta una lista larga de
+   * tarjetas a todo lo ancho deja media pantalla vacía en cada una y obliga a
+   * desplazarse el doble; en el teléfono siguen siendo una columna.
+   */
+  tarjetasEnDosColumnas?: boolean;
   className?: string;
 }
 
@@ -92,6 +105,8 @@ export function ResponsiveTable<T>({
   cardFooter,
   rowLink,
   empty,
+  tablaDesde = "lg",
+  tarjetasEnDosColumnas = false,
   className,
 }: ResponsiveTableProps<T>): React.JSX.Element {
   if (rows.length === 0) {
@@ -112,7 +127,7 @@ export function ResponsiveTable<T>({
   return (
     <div className={className}>
       {/* Teléfono y tableta. */}
-      <ul className="flex flex-col gap-3 lg:hidden">
+      <ul className={cn(tarjetasEnDosColumnas ? "grid gap-3 md:grid-cols-2" : "flex flex-col gap-3", tablaDesde === "xl" ? "xl:hidden" : "lg:hidden")}>
         {rows.map((row) => {
           // Un subtítulo vacío no debe dejar un párrafo en blanco: hay filas
           // que lo tienen (una caja retirada) y filas que no.
@@ -183,7 +198,7 @@ export function ResponsiveTable<T>({
       </ul>
 
       {/* Escritorio. */}
-      <TableContainer className="hidden lg:block">
+      <TableContainer className={cn("hidden", tablaDesde === "xl" ? "xl:block" : "lg:block")}>
         <Table>
           <TableHeader>
             <TableRow>

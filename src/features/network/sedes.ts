@@ -215,10 +215,10 @@ const SEMILLA: Omit<Sede, "hours">[] = [
     createdAt: "2026-09-25T09:00:00.000Z",
   },
   {
-    /* Recién entrada en la red y todavía sin operador: nace suspendida porque
-       sin administrador responsable nadie puede crearle cajas ni vincularle
-       equipos (FR-SA-SEDE-10). Es el caso que el Inicio del Super Admin debe
-       destacar (FR-SA-HOME-7). */
+    /* Recién entrada en la red y todavía sin operador: está «Sin asignar»
+       (`estadoDeSede`), no suspendida. Sin administrador responsable nadie
+       puede crearle cajas ni vincularle equipos, y es el caso que el Inicio de
+       PuntoCash destaca. */
     id: "sede-santiago",
     code: "STG",
     name: "PuntoCash Santiago",
@@ -226,7 +226,7 @@ const SEMILLA: Omit<Sede, "hours">[] = [
     locality: "Santiago de Cuba, Santiago de Cuba",
     horario: horarioDe(LUNES_A_SABADO, "08:30", "17:30"),
     phone: "+53 22 65 3471",
-    status: "suspendida",
+    status: "activa",
     services: ["cambio-moneda", "remesas", "giros"],
     createdAt: "2026-09-18T09:00:00.000Z",
   },
@@ -364,8 +364,9 @@ export interface CrearSedeInput {
 
 /**
  * Crea una sede. Nace **sin cajas**: las da de alta su mercante cuando la pone
- * en marcha (FR-SA-SEDE-4). Nace `suspendida` porque todavía no tiene operador
- * asignado; asignarle uno la activa (FR-SA-SEDE-10, `assignments.ts`).
+ * en marcha (FR-SA-SEDE-4). Nace `activa` —PuntoCash no la ha sancionado— y,
+ * mientras no tenga operador, su estado en pantalla es «Sin asignar», que se
+ * deriva de la asignación (`estadoDeSede` en `assignments.ts`).
  */
 export function crearSede(scope: Scope, input: CrearSedeInput, now = new Date()): SedeWriteResult<Sede> {
   if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
@@ -386,7 +387,7 @@ export function crearSede(scope: Scope, input: CrearSedeInput, now = new Date())
     horario: input.horario,
     hours: textoDeHorario(input.horario),
     phone: input.phone,
-    status: "suspendida",
+    status: "activa",
     services: [...input.services],
     createdAt: now.toISOString(),
   };

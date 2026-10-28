@@ -75,7 +75,14 @@ export type AuditEventType =
   | "solicitud.aprobada"
   | "solicitud.rechazada"
   | "jornada.cierre-forzado"
-  | "reporte.exportado";
+  | "reporte.exportado"
+  // ---- Cuentas de PuntoCash ---------------------------------------------
+  | "usuario-puntocash.contrasena-cambiada"
+  | "usuario-puntocash.alta"
+  | "usuario-puntocash.editado"
+  | "usuario-puntocash.desactivado"
+  | "usuario-puntocash.reactivado"
+  | "usuario-puntocash.principal-traspasado";
 
 export interface AuditEvent {
   id: string;

@@ -12,7 +12,7 @@
  */
 
 import { findOperatorById } from "./operators";
-import { findSedeById, isMotivoValido, SEDES } from "./sedes";
+import { findSedeById, isMotivoValido, SEDES, type Sede } from "./sedes";
 import { isGlobal, type Scope } from "./scope";
 
 export interface Assignment {
@@ -228,9 +228,9 @@ export function asignarSede(
   };
   mutableAssignments.push(assignment);
 
-  /* Una sede suspendida por no tener administrador vuelve a activarse al
-     tenerlo; una suspendida por decisión de PuntoCash no (FR-SA-SEDE-10). */
-  if (sede.status === "suspendida" && !sede.suspension) sede.status = "activa";
+  /* No toca el estado de la sede: «sin asignar» se deriva de no tener tramo
+     vigente (`estadoDeSede`), y una suspensión es una decisión de PuntoCash
+     que solo se levanta reactivando. */
 
   return { ok: true, value: assignment };
 }
@@ -265,8 +265,41 @@ export function revocarAsignacion(
   vigente.endedAt = now.toISOString();
   vigente.endedReason = reason.trim();
 
-  /* Sin administrador responsable no puede operarse (FR-SA-ASG-10). */
-  if (sede.status === "activa") sede.status = "suspendida";
+  /* La sede queda «sin asignar» (`estadoDeSede`): sin administrador
+     responsable sus trabajadores no entran (`motivoDeBloqueo`), pero no se la
+     marca como suspendida. Suspender es una sanción con motivo e historial, y
+     quedarse sin operador no lo es (decisión del 27/10/2026). */
 
   return { ok: true, value: vigente };
+}
+
+/* -------------------------------------------------------------------------
+ * Estado de una sede tal como lo ve PuntoCash
+ * ---------------------------------------------------------------------- */
+
+/**
+ * El estado de una sede en la consola de PuntoCash.
+ *
+ * `Sede.status` guarda solo lo que PuntoCash **decide** —activa, suspendida,
+ * cerrada—. «Sin asignar» no es una decisión sino un hecho: la sede no tiene
+ * tramo vigente. Por eso se **deriva** y no se guarda, y por eso una sede sin
+ * operador no aparece en el historial de suspensiones (decisión del 27/10/2026).
+ *
+ * El orden de precedencia es el de lo que más pesa: una sede cerrada lo está
+ * aunque no tenga operador, y una suspendida sigue suspendida aunque se le
+ * revoque el mercante.
+ */
+export type EstadoDeSede = "sin-asignar" | "activa" | "operador-suspendido" | "suspendida" | "cerrada";
+
+/**
+ * «Operador suspendido» también se deriva: la sede no está sancionada, pero
+ * nadie de ella puede entrar mientras su empresa lo esté. Mostrarla como
+ * «Activa» diría lo contrario de lo que pasa en el mostrador.
+ */
+export function estadoDeSede(sede: Pick<Sede, "id" | "status">): EstadoDeSede {
+  if (sede.status === "cerrada") return "cerrada";
+  if (sede.status === "suspendida") return "suspendida";
+  const tramo = asignacionVigente(sede.id);
+  if (!tramo) return "sin-asignar";
+  return findOperatorById(tramo.operatorId)?.status === "activo" ? "activa" : "operador-suspendido";
 }
