@@ -13,10 +13,12 @@ import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 import { EstadoDeSedeBadge } from "../_compartido/estado-de-sede";
 
 /**
- * La tabla de estado de la red (FR-SA-HOME-6 y 7): una fila por sede, filtrable
- * por operador y ordenable por cualquier columna. En el teléfono, donde no hay
- * cabeceras que pulsar, se ordena con «Ordenar por».
+ * La actividad por sede: una fila por sede, filtrable por operador y ordenable
+ * por cualquier columna. En el teléfono, donde no hay cabeceras que pulsar, se
+ * ordena con «Ordenar por».
  *
+ * Es un registro, no una lista de tareas: quién opera cada sede, cuánto ha
+ * operado hoy, cuántas personas lo han hecho y cuál fue la última operación.
  * Por defecto va primero lo que solo PuntoCash puede resolver —las sedes sin
  * operador—, después las suspendidas y después las activas.
  */
@@ -29,15 +31,16 @@ export interface FilaEstadoDeRed {
   estado: EstadoDeSede;
   operadorId: string | null;
   operador: string | null;
-  cajas: number;
-  sinEquipo: number;
-  abiertas: number;
-  primeraApertura: string | null;
   operacionesHoy: number;
-  avisos: number;
+  trabajadoresHoy: number;
+  /** ISO, solo para ordenar. */
+  ultimaEn: string | null;
+  /** Ya formateadas en el servidor: «Hoy, 14:32» o la fecha y hora. */
+  ultimaCuando: string | null;
+  ultimaQuien: string | null;
 }
 
-type Clave = "estado" | "sede" | "operador" | "jornada" | "operaciones" | "avisos";
+type Clave = "estado" | "sede" | "operador" | "operaciones" | "ultima";
 
 const PRIORIDAD: Readonly<Record<EstadoDeSede, number>> = {
   "sin-asignar": 0,
@@ -55,12 +58,10 @@ function valor(f: FilaEstadoDeRed, clave: Clave): string | number {
       return f.nombre;
     case "operador":
       return f.operador ?? "";
-    case "jornada":
-      return f.abiertas;
     case "operaciones":
       return f.operacionesHoy;
-    case "avisos":
-      return f.avisos;
+    case "ultima":
+      return f.ultimaEn ?? "";
   }
 }
 
@@ -72,9 +73,8 @@ const ORDENES: readonly { value: string; label: string }[] = [
   { value: "estado|asc", label: "Estado (sin asignar primero)" },
   { value: "sede|asc", label: "Sede (A–Z)" },
   { value: "operador|asc", label: "Operador (A–Z)" },
-  { value: "avisos|desc", label: "Más asuntos abiertos" },
   { value: "operaciones|desc", label: "Más operaciones hoy" },
-  { value: "jornada|desc", label: "Más cajas abiertas" },
+  { value: "ultima|desc", label: "Última operación más reciente" },
 ];
 
 export function EstadoDeRed({
@@ -173,50 +173,37 @@ export function EstadoDeRed({
       cell: (f) => <EstadoDeSedeBadge estado={f.estado} />,
     },
     {
-      /* Cajas y jornada en una sola columna: «3 de 4 abiertas» ya dice cuántas
-         cajas hay, y lo que importa de las que no tienen equipo es que no
-         pueden abrir. Así la tabla cabe entera a 1024 sin desplazarse. */
-      key: "jornada",
-      header: cabecera("jornada", "Cajas abiertas"),
-      cardHeader: "Cajas abiertas",
-      sort: sort("jornada"),
-      cell: (f) => (
-        <span className="flex flex-col">
-          {f.cajas === 0 ? (
-            <span className="text-text-secondary">Sin cajas</span>
-          ) : (
-            <span className={`whitespace-nowrap ${f.abiertas > 0 ? "font-semibold text-text-primary" : "text-text-secondary"}`}>
-              {f.abiertas} de {f.cajas}
-            </span>
-          )}
-          {f.abiertas > 0 && f.primeraApertura ? (
-            <span className="whitespace-nowrap text-caption text-text-secondary">primera a las {f.primeraApertura}</span>
-          ) : null}
-          {f.sinEquipo > 0 ? (
-            <span className="whitespace-nowrap text-caption text-warning-foreground">{f.sinEquipo} sin equipo</span>
-          ) : null}
-        </span>
-      ),
-    },
-    {
       key: "operaciones",
       header: cabecera("operaciones", "Operaciones hoy", true),
       cardHeader: "Operaciones hoy",
       sort: sort("operaciones"),
       numeric: true,
-      cell: (f) => f.operacionesHoy,
+      cell: (f) => (
+        <span className="flex flex-col items-end">
+          <span className={f.operacionesHoy > 0 ? "font-semibold text-text-primary" : "text-text-secondary"}>
+            {f.operacionesHoy}
+          </span>
+          {f.trabajadoresHoy > 0 ? (
+            <span className="whitespace-nowrap text-caption text-text-secondary">
+              {f.trabajadoresHoy === 1 ? "1 trabajador" : `${f.trabajadoresHoy} trabajadores`}
+            </span>
+          ) : null}
+        </span>
+      ),
     },
     {
-      key: "avisos",
-      header: cabecera("avisos", "Asuntos", true),
-      cardHeader: "Asuntos abiertos",
-      sort: sort("avisos"),
-      numeric: true,
+      key: "ultima",
+      header: cabecera("ultima", "Última operación"),
+      cardHeader: "Última operación",
+      sort: sort("ultima"),
       cell: (f) =>
-        f.avisos === 0 ? (
-          <span className="text-text-secondary">—</span>
+        f.ultimaCuando ? (
+          <span className="flex flex-col">
+            <span className="whitespace-nowrap text-text-primary">{f.ultimaCuando}</span>
+            <span className="text-caption text-text-secondary">{f.ultimaQuien}</span>
+          </span>
         ) : (
-          <span className="font-semibold text-warning-foreground">{f.avisos}</span>
+          <span className="text-text-secondary">Sin operaciones</span>
         ),
     },
   ];

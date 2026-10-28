@@ -68,22 +68,28 @@ test.describe("inicio", () => {
     await signInAsSuperAdmin(page);
   });
 
-  test("separa las decisiones de PuntoCash de lo que resuelve cada operador", async ({ page }) => {
+  test("señala solo lo que PuntoCash puede resolver", async ({ page }) => {
     const main = page.getByRole("main");
     await expect(main.getByText("PuntoCash Santiago no tiene operador")).toBeVisible();
     await expect(main.getByRole("link", { name: "Asignar un operador" })).toHaveAttribute("href", "/super-admin/sedes/sede-santiago");
+    await expect(main.getByText("Cienfuegos Cambio S.R.L. no tiene ninguna sede")).toBeVisible();
     await expect(main.getByText("2 sedes tienen el CAD en su lista y no pueden cotizarlo")).toBeVisible();
-    await expect(main.getByText("PuntoCash observa la red.", { exact: false })).toBeVisible();
   });
 
-  test("lo de dentro de una sede se agrupa por operador, con su contacto", async ({ page }) => {
-    await expect(page.getByRole("link", { name: "marta@malecon-sf.cu" })).toHaveAttribute("href", "mailto:marta@malecon-sf.cu");
-    await expect(page.getByText(/Lleva \d+ días asignada y no tiene ninguna caja/).first()).toBeVisible();
+  test("no muestra la gestión interna de cada operador", async ({ page }) => {
+    const main = page.getByRole("main");
+    await expect(main.getByRole("heading", { name: "Lo que resuelve cada operador" })).toHaveCount(0);
+    await expect(main.getByText(/días asignada y no tiene ninguna caja/)).toHaveCount(0);
+    await expect(main.getByText(/sin equipo vinculado/)).toHaveCount(0);
   });
 
-  test("un operador suspendido no aparece como quien debe resolver", async ({ page }) => {
-    const seccion = page.getByRole("main").locator("section").filter({ has: page.getByRole("heading", { name: "Lo que resuelve cada operador" }) });
-    await expect(seccion.getByRole("link", { name: "Oriente Divisas" })).toHaveCount(0);
+  test("la tabla registra la actividad de cada sede: operaciones de hoy y la última operación", async ({ page }) => {
+    const tabla = page.getByRole("table");
+    await expect(tabla.getByRole("columnheader", { name: /Operaciones hoy/ })).toBeVisible();
+    await expect(tabla.getByRole("columnheader", { name: /Última operación/ })).toBeVisible();
+    await expect(tabla.getByRole("columnheader", { name: /Cajas abiertas|Asuntos/ })).toHaveCount(0);
+    const santiago = tabla.getByRole("row").filter({ hasText: "PuntoCash Santiago" });
+    await expect(santiago.getByText("Sin operaciones")).toBeVisible();
   });
 
   test("la tabla filtra por operador y la sede sin operador se distingue", async ({ page }) => {
