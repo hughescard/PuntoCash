@@ -12,7 +12,7 @@ import { PUNTOCASH_USERS } from "@/features/super-admin/usuarios";
 import { UsuariosSuperAdminList, type UsuarioSuperAdminRow } from "./usuarios-list";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Usuarios",
+  title: "Super administración · Usuarios",
   robots: { index: false, follow: false },
 };
 

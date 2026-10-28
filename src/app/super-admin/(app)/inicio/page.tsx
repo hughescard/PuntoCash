@@ -20,7 +20,7 @@ import { ContactoDeOperador } from "../_compartido/contacto";
 import { EstadoDeRed, type FilaEstadoDeRed } from "./estado-de-red";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Inicio",
+  title: "Super administración · Inicio",
   robots: { index: false, follow: false },
 };
 

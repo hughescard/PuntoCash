@@ -9,7 +9,7 @@ import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import { CambiarContrasenaSuperAdmin } from "./cambiar-contrasena";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Cambiar contraseña",
+  title: "Super administración · Cambiar contraseña",
   robots: { index: false, follow: false },
 };
 

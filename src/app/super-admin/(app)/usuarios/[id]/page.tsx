@@ -14,7 +14,7 @@ import { EstadoUsuarioSA } from "../usuarios-list";
 import { AccionesUsuarioSA } from "./acciones-usuario";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Ficha de usuario",
+  title: "Super administración · Ficha de usuario",
   robots: { index: false, follow: false },
 };
 

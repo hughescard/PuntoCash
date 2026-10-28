@@ -10,7 +10,7 @@ import { maskEmail } from "@/features/auth/two-factor";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Perfil",
+  title: "Super administración · Perfil",
   robots: { index: false, follow: false },
 };
 

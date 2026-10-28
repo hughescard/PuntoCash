@@ -9,8 +9,8 @@ import { TwoFactorHeading } from "@/components/patterns/two-factor-form";
 import { SuperAdminVerificationForm } from "./super-admin-verification-form";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Verificación en dos pasos",
-  description: "Verificación de acceso a la consola de administración de la red PuntoCash.",
+  title: "Super administración · Verificación en dos pasos",
+  description: "Verificación de acceso a la consola de super administración de PuntoCash.",
   robots: { index: false, follow: false },
 };
 

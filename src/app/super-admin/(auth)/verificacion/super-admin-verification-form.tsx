@@ -10,7 +10,7 @@ const SUPER_ADMIN_2FA: TwoFactorScreenCopy = {
   loginHref: "/super-admin/login",
   afterVerification: "/super-admin/inicio",
   successTitle: "Verificación completada",
-  successMessage: "Bienvenido a la administración de la red PuntoCash.",
+  successMessage: "Bienvenido a la super administración de PuntoCash.",
   assistance: "al área de sistemas de PuntoCash",
   onVerified: async (code) => {
     await abrirSesionSuperAdmin(code);

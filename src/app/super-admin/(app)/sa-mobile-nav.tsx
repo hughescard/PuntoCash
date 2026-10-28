@@ -121,7 +121,7 @@ export function SuperAdminMobileNav({
               título no se pinta porque el propio cajón ya es la navegación. */}
           <DialogTitle className="sr-only">Navegación</DialogTitle>
           <DialogDescription className="sr-only">
-            Todas las secciones de la consola de administración de la red.
+            Todas las secciones de la consola de super administración.
           </DialogDescription>
 
           <nav

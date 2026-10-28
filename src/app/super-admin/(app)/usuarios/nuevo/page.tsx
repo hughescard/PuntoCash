@@ -9,7 +9,7 @@ import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import { NuevoUsuarioSuperAdminForm } from "./nuevo-usuario-form";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Dar de alta un usuario",
+  title: "Super administración · Dar de alta un usuario",
   robots: { index: false, follow: false },
 };
 

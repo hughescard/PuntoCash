@@ -5,8 +5,8 @@ import { Logo } from "@/components/brand/logo";
 import { SuperAdminLoginForm } from "./super-admin-login-form";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Iniciar sesión",
-  description: "Acceso a la consola de administración de la red PuntoCash.",
+  title: "Super administración · Iniciar sesión",
+  description: "Acceso a la consola de super administración de PuntoCash.",
   robots: { index: false, follow: false },
 };
 
@@ -24,7 +24,7 @@ export default function SuperAdminLoginPage() {
         className="hidden lg:flex"
         highlight="Toda la red"
         headline="a la vista, bajo tus reglas."
-        supporting="Administración de la red · PuntoCash"
+        supporting="Super administración · PuntoCash"
       />
 
       <div className="flex min-h-screen flex-col bg-surface px-5 py-10 sm:px-8">
@@ -34,7 +34,7 @@ export default function SuperAdminLoginPage() {
 
         <div className="m-auto w-full max-w-[28rem]">
           <header className="mb-10 text-center">
-            <p className="text-overline uppercase text-text-secondary">Administración de la red</p>
+            <p className="text-overline uppercase text-text-secondary">Super administración</p>
             <h1 className="mt-3 text-screen-title text-text-primary">Bienvenido</h1>
             <p className="mx-auto mt-3 max-w-[22rem] text-body text-text-secondary">
               Accede con tu cuenta de PuntoCash para gestionar las sedes y los operadores de la red.

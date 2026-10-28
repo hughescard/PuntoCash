@@ -5,8 +5,8 @@ import { Logo } from "@/components/brand/logo";
 import { SuperAdminRecuperarAccesoFlow } from "./recuperar-acceso-flow";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Recuperar acceso",
-  description: "Recuperación de contraseña de la consola de administración de la red PuntoCash.",
+  title: "Super administración · Recuperar acceso",
+  description: "Recuperación de contraseña de la consola de super administración de PuntoCash.",
   robots: { index: false, follow: false },
 };
 
@@ -21,7 +21,7 @@ export default function SuperAdminRecuperarAccesoPage() {
         className="hidden lg:flex"
         highlight="Recupera tu acceso"
         headline="y vuelve a tu consola."
-        supporting="Administración de la red · PuntoCash"
+        supporting="Super administración · PuntoCash"
       />
 
       <div className="flex min-h-screen flex-col bg-surface px-5 py-10 sm:px-8">

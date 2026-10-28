@@ -11,7 +11,7 @@ import { findPuntoCashUserById } from "@/features/super-admin/usuarios";
 import { EditarUsuarioSuperAdminForm } from "./editar-usuario-form";
 
 export const metadata: Metadata = {
-  title: "Administración de la red · Editar usuario",
+  title: "Super administración · Editar usuario",
   robots: { index: false, follow: false },
 };
 
