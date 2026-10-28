@@ -30,6 +30,7 @@ import {
   type ResultadoAccionSuperAdmin,
   type ResultadoCredencialSuperAdmin,
 } from "../_actions";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 
 /**
  * Lo que la ficha de un usuario permite hacer (FR-SA-USR).
@@ -167,7 +168,7 @@ function CambiarCorreoSA({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion} noValidate>
+          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
@@ -245,7 +246,7 @@ function CredencialSA({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion} noValidate>
+          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
@@ -311,7 +312,7 @@ function EstadoSA({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion} noValidate>
+          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
@@ -379,7 +380,7 @@ function TraspasarSA({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion} noValidate>
+          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
                 <Alert variant="error" title="No se pudo traspasar">

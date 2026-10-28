@@ -28,6 +28,7 @@ import {
   type ResultadoAccionTrabajador,
   type ResultadoCredencial,
 } from "../_actions";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 
 /**
  * Lo que la ficha permite hacer — **FR-AD-TRAB-12** a **FR-AD-TRAB-15**.
@@ -238,7 +239,7 @@ function Desactivar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="trabajador" value={trabajador.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -317,7 +318,7 @@ function Reactivar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="trabajador" value={trabajador.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -400,7 +401,7 @@ function Reasignar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="trabajador" value={trabajador.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -515,7 +516,7 @@ function Credencial({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="trabajador" value={trabajador.id} />
 
             <DialogBody className="flex flex-col gap-4">

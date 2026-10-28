@@ -30,6 +30,7 @@ import {
   type ResultadoAccionUsuario,
   type ResultadoCredencialUsuario,
 } from "../_actions";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 
 /**
  * Lo que la ficha de un usuario permite hacer — **FR-AD-USR-6** a
@@ -218,7 +219,7 @@ function CambiarCorreo({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion} noValidate>
+          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -322,7 +323,7 @@ function Credencial({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -405,7 +406,7 @@ function Desactivar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -472,7 +473,7 @@ function Reactivar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -572,7 +573,7 @@ function Traspasar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">

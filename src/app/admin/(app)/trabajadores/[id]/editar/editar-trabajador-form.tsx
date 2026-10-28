@@ -21,6 +21,7 @@ import {
   type CampoDeEdicion,
   type ResultadoEdicion,
 } from "../../_actions";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 
 /**
  * Los datos personales de un trabajador — **FR-AD-TRAB-9**.
@@ -86,7 +87,7 @@ export function EditarTrabajadorForm({
     estado && !estado.ok && estado.campo === campo ? estado.error : undefined;
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max">
       <input type="hidden" name="trabajador" value={trabajador.id} />
 
       <Card>
