@@ -34,6 +34,12 @@ export interface Operator {
   id: string;
   /** Nombre o razón social. Aparece como dato, nunca como marca (regla A9). */
   name: string;
+  /**
+   * Documento, guardado como «TIPO-número»: `NIT`, `CI` o `PASAPORTE`.
+   * Un mercante es casi siempre una persona jurídica y entonces lleva **NIT**;
+   * CI y pasaporte quedan para quien opere como persona natural. Todos los
+   * sembrados son sociedades, así que todos llevan NIT.
+   */
   legalId: string;
   contactName: string;
   phone: string;
@@ -80,7 +86,7 @@ const mutableOperators: Operator[] = [
   {
     id: "op-malecon",
     name: "Malecón Servicios Financieros S.R.L.",
-    legalId: "CI-8804120321",
+    legalId: "NIT-23014578061",
     contactName: "Marta Sánchez",
     phone: "+53 5 234 1190",
     email: "marta@malecon-sf.cu",
@@ -90,7 +96,7 @@ const mutableOperators: Operator[] = [
   {
     id: "op-caribe",
     name: "Caribe Cambios S.A.",
-    legalId: "CI-9107235544",
+    legalId: "NIT-23019930447",
     contactName: "Reinaldo Ortega",
     phone: "+53 5 812 7733",
     email: "rortega@caribecambios.cu",
@@ -102,7 +108,7 @@ const mutableOperators: Operator[] = [
        FR-SA-OPE-11 y que suspender no desmonta nada (FR-SA-SUS-7). */
     id: "op-oriente",
     name: "Oriente Divisas",
-    legalId: "CI-8511048876",
+    legalId: "NIT-23025671208",
     contactName: "Yuliet Pérez",
     phone: "+53 5 445 0021",
     email: "yperez@orientedivisas.cu",
@@ -122,7 +128,7 @@ const mutableOperators: Operator[] = [
        recorrerlo en la demostración. */
     id: "op-cienfuegos",
     name: "Cienfuegos Cambio S.R.L.",
-    legalId: "CI-9312076610",
+    legalId: "NIT-23031184905",
     contactName: "Liudmila Pérez",
     phone: "+53 5 677 4412",
     email: "lperez@cienfuegoscambio.cu",
@@ -135,7 +141,7 @@ const mutableOperators: Operator[] = [
        nombre de su única sede como texto fijo. */
     id: "op-centro",
     name: "Centro Divisas S.R.L.",
-    legalId: "CI-8604092117",
+    legalId: "NIT-23046702153",
     contactName: "Idalmis Betancourt",
     phone: "+53 5 304 6618",
     email: "ibetancourt@centrodivisas.cu",
@@ -147,7 +153,7 @@ const mutableOperators: Operator[] = [
        suspendida dentro de su alcance y otra solo con cajas retiradas. */
     id: "op-bahia",
     name: "Bahía Cambios S.R.L.",
-    legalId: "CI-8807150933",
+    legalId: "NIT-23052398674",
     contactName: "Ana Barrios",
     phone: "+53 5 702 4418",
     email: "abarrios@bahiacambios.cu",
@@ -158,7 +164,7 @@ const mutableOperators: Operator[] = [
     /* Dado de baja y sin sedes: su historial sigue accesible [R9]. */
     id: "op-atlantico",
     name: "Atlántico Casas de Cambio",
-    legalId: "CI-7903118820",
+    legalId: "NIT-23067415920",
     contactName: "Osmany Vega",
     phone: "+53 5 118 9902",
     email: "ovega@atlanticocc.cu",
