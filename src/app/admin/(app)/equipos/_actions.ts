@@ -8,6 +8,7 @@ import { registrarEvento } from "@/features/network/audit";
 import {
   desvincularEquipo,
   identificarReto,
+  renombrarEquipo,
   vincularEquipo,
   type RetoIdentificado,
   type RetoPresentado,
@@ -82,6 +83,44 @@ export async function desvincularEquipoAction(
   };
 }
 
+/**
+ * Cambiar el rótulo de un equipo ya vinculado (**FR-AD-EQ-30**).
+ *
+ * No toca el vínculo ni el identificador del equipo: es el nombre con el que
+ * la consola lo muestra. Por eso no pide motivo —no hay nada que deshacer— y
+ * deja su evento de auditoría como el resto de las escrituras de la sección.
+ */
+export async function renombrarEquipoAction(
+  _previo: ResultadoAccion,
+  formData: FormData,
+): Promise<ResultadoAccion> {
+  const session = await getAdminSession();
+  if (!session) return { ok: false, error: mensaje("equipos", "sesion-terminada") };
+
+  const terminalId = String(formData.get("equipo") ?? "");
+  const etiqueta = String(formData.get("etiqueta") ?? "");
+
+  const resultado = renombrarEquipo(session.scope, SCOPE_CONTEXT, terminalId, etiqueta);
+  if (!resultado.ok) return { ok: false, error: mensaje("equipos", resultado.reason) };
+
+  const red = redEnAlcance(session.scope);
+  const sede = red.sede(resultado.value.branchId);
+
+  registrarEvento({
+    actorId: session.user.id,
+    actorName: session.user.fullName,
+    actorRole: "admin-sede",
+    type: resultado.value.kind === "caja" ? "equipo-caja.renombrado" : "kiosco.renombrado",
+    subject: `${resultado.value.id} · ${resultado.value.label} · ${sede?.name ?? ""}`.trim(),
+    branchId: resultado.value.branchId,
+    operatorId: session.operator.id,
+  });
+
+  revalidatePath("/admin", "layout");
+
+  return { ok: true, mensaje: `El equipo ahora se llama «${resultado.value.label}».` };
+}
+
 /* -------------------------------------------------------------------------
  * Vincular — §3.4, las dos vías
  * ---------------------------------------------------------------------- */
@@ -145,6 +184,8 @@ export async function vincularEquipoAction(entrada: {
   reto: RetoPresentado;
   branchId: string;
   registerId?: string;
+  /** El rótulo con el que la consola nombrará al equipo (**FR-AD-EQ-30**). */
+  etiqueta?: string;
 }): Promise<ResultadoVinculacion> {
   const session = await getAdminSession();
   if (!session) return { ok: false, error: mensaje("equipos", "sesion-terminada") };
@@ -153,6 +194,7 @@ export async function vincularEquipoAction(entrada: {
     reto: entrada.reto,
     branchId: entrada.branchId,
     ...(entrada.registerId ? { registerId: entrada.registerId } : {}),
+    ...(entrada.etiqueta?.trim() ? { label: entrada.etiqueta.trim() } : {}),
     by: session.user.fullName,
   });
 

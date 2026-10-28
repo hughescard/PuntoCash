@@ -27,6 +27,8 @@ export const MENSAJES = {
     "caja-requerida": "Elige la caja a la que pertenece este equipo.",
     "caja-retirada": "Esa caja está retirada y no admite un equipo.",
     "sede-cerrada": "Esa sede está cerrada y no admite equipos nuevos.",
+    "etiqueta-requerida": "Escribe la etiqueta del equipo.",
+    "etiqueta-kiosco-requerida": "Los kioscos necesitan una etiqueta.",
     "error-inesperado": "No se pudo desvincular. Vuelve a intentarlo.",
   },
   cajas: {

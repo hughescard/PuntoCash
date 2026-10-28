@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v8.0
+## Documento de Requisitos Funcionales (FRD) · v8.1
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 8.1 | 26/10/2026 | **Se dice quién pone el rótulo de un equipo, que estaba sin decir.** El rótulo se mostraba en Equipos, en la ficha de sede, en la jornada y en el diálogo de forzar cierre, pero ningún requisito decía de dónde salía ni dónde se cambia, y el formulario de vincular no lo pedía. Nuevo **FR-AD-EQ-30**: lo pone el administrador de la sede al vincular —opcional en una caja, obligatorio en un kiosco— y puede cambiarlo después desde Equipos. **FR-AD-EQ-7 / 8 / 13 / 14** añaden el campo, y **FR-AD-EQ-5** y **FR-AD-EQ-12** la acción. Ninguna otra regla cambia |
 | 8.0 | 21/10/2026 | Documento reescrito para desarrollo: una subsección por pantalla, reglas y códigos de rechazo en lugar de textos de interfaz, referencias a la demostración y catálogo de mensajes (Apéndice C). Ninguna regla de la 7.16 se pierde; se escriben las que la consola ya cumplía y el documento no decía (cierre de sesión, revalidación de la sesión en cada petición, sedes cerradas fuera de los selectores, sedes cerradas fuera del panel de atención). Salen las secciones «Qué es este módulo» y «No especificado». Los códigos de requisito se conservan |
 | 7.16 | 21/10/2026 | Revisión completa antes de la segunda entrega: filtros al cambiar de sede, 404 de rutas inexistentes, pantalla de error, motivos sin largo mínimo en Trabajadores, aviso de Usuarios que se cierra, exportación sin el corte por trabajador si hay uno elegido |
 | 7.15 | 20/10/2026 | Exportación de reportes a Excel y PDF |
@@ -385,7 +386,7 @@ Lo propio de esta consola: la ayuda, cuando el correo registrado ya no sirve, re
 | Vinculado | Fecha de vinculación y quién la vinculó |
 | Última actividad | Fecha y hora de la última señal del equipo |
 | Jornada | Como en Cajas (**FR-AD-CAJA-1**): si tiene una abierta, trabajador, desde cuándo, si está en sesión y enlace a `/admin/jornadas/{id}`; si no, cerrada |
-| Acción | «Desvincular» si tiene equipo; «Vincular un equipo» → `/admin/equipos/vincular` si no |
+| Acción | Si tiene equipo, «Editar etiqueta» (**FR-AD-EQ-30**) y «Desvincular»; si no, «Vincular un equipo» → `/admin/equipos/vincular` |
 
 **FR-AD-EQ-6 · Cajas sin equipo.**
 
@@ -404,7 +405,7 @@ Lo propio de esta consola: la ayuda, cuando el correo registrado ya no sirve, re
 | Vinculado | Fecha de vinculación y quién lo vinculó |
 | Última actividad | Fecha y hora de la última señal del kiosco |
 | Solicitudes | Solicitudes generadas en el periodo (pendiente de dependencia, §18) |
-| Acción | «Desvincular» |
+| Acción | «Editar etiqueta» (**FR-AD-EQ-30**) y «Desvincular» |
 
 **Ver en la demo:** `marta@malecon-sf.cu`, **Equipos** → Kioscos de autoservicio (dos en PuntoCash Vedado). Sin kioscos: `rortega@caribecambios.cu`. La columna de solicitudes no se puede ver en la demo.
 
@@ -502,6 +503,7 @@ Se inicia con «Desvincular» en un kiosco y se confirma en un diálogo, sin mot
 | --- | --- | --- |
 | Sede | Sí | Solo sedes del alcance que no están cerradas; una suspendida se admite y se marca como tal **[A1]**, **[FR-AS-LINK-4]**. Si el usuario tiene una sola, no se elige: se usa esa |
 | Caja | Solo para un equipo de caja | Solo cajas activas de la sede elegida. Una caja admite **un equipo como máximo** **[A11]**, **[FR-DEV-3]**: las que ya tienen equipo aparecen no disponibles, con el identificador del equipo que la ocupa. Para sustituir el equipo de una caja hay que desvincular el anterior primero. Si la sede no tiene ninguna caja activa sin equipo, la pantalla lo indica y ofrece crear una caja → `/admin/cajas/nueva?sede={sedeId}` |
+| Etiqueta | Solo para un kiosco | El rótulo con el que la consola nombra al equipo (**FR-AD-EQ-30**). En una caja es **opcional**: vacía, se usa el nombre de la caja, que ya la identifica. En un kiosco es **obligatoria**, porque una sede puede tener varios y el identificador no distingue el de la entrada del de la sala de espera. Código de rechazo si falta en un kiosco: `etiqueta-requerida` |
 
 - Un kiosco no lleva caja: pertenece a la sede.
 - Una sede puede tener **varios kioscos** vinculados a la vez.

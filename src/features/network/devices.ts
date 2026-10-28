@@ -364,7 +364,8 @@ export type TerminalWriteDenial =
   | "caja-retirada"
   | "caja-ya-vinculada"
   | "equipo-no-encontrado"
-  | "equipo-ya-vinculado";
+  | "equipo-ya-vinculado"
+  | "etiqueta-requerida";
 
 export type TerminalWriteResult<T> =
   | { ok: true; value: T }
@@ -510,6 +511,33 @@ export function desvincularEquipo(
   if (denial) return { ok: false, reason: denial };
 
   mutableTerminals.splice(mutableTerminals.indexOf(terminal), 1);
+  return { ok: true, value: terminal };
+}
+
+/**
+ * Cambia el rótulo de un equipo vinculado (**FR-AD-EQ-30**).
+ *
+ * El rótulo es solo el nombre con el que la consola lo muestra: el
+ * identificador del equipo, su sede y su caja no se tocan. Un rótulo vacío se
+ * rechaza en vez de recomponer el de por defecto, porque quien abre este
+ * diálogo quiere ponerle un nombre, y dejarlo en blanco sería un descuido.
+ */
+export function renombrarEquipo(
+  scope: Scope,
+  ctx: TerminalScopeContext,
+  terminalId: string,
+  label: string,
+): TerminalWriteResult<Terminal> {
+  const terminal = findTerminalById(terminalId);
+  if (!terminal) return { ok: false, reason: "equipo-no-encontrado" };
+
+  const denial = guardScope(scope, terminal.branchId, ctx);
+  if (denial) return { ok: false, reason: denial };
+
+  const limpio = label.trim();
+  if (!limpio) return { ok: false, reason: "etiqueta-requerida" };
+
+  terminal.label = limpio;
   return { ok: true, value: terminal };
 }
 

@@ -22,6 +22,11 @@ import { useHydrated } from "@/lib/use-hydrated";
 import { JornadaCelda } from "../cajas/cajas-de-sede";
 import type { JornadaDeCaja } from "../jornadas/formato";
 import { desvincularEquipoAction, type ResultadoAccion } from "./_actions";
+import {
+  BotonEditarEtiqueta,
+  DialogoEtiqueta,
+  type EquipoRenombrable,
+} from "./etiqueta-de-equipo";
 
 /**
  * Las cajas del alcance y el equipo de cada una — **FR-AD-EQ-5** y
@@ -57,6 +62,7 @@ export interface CajaEquipoRow {
 
 export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): React.JSX.Element {
   const [desvinculando, setDesvinculando] = React.useState<CajaEquipoRow | null>(null);
+  const [renombrando, setRenombrando] = React.useState<EquipoRenombrable | null>(null);
 
   const columnas: readonly ResponsiveColumn<CajaEquipoRow>[] = [
     { key: "sede", header: "Sede", cell: (fila) => fila.sede, hiddenOnCard: true },
@@ -107,7 +113,9 @@ export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): R
     {
       key: "acciones",
       header: <span className="sr-only">Acciones</span>,
-      cell: (fila) => <Acciones fila={fila} onDesvincular={setDesvinculando} />,
+      cell: (fila) => (
+        <Acciones fila={fila} onDesvincular={setDesvinculando} onRenombrar={setRenombrando} />
+      ),
       hiddenOnCard: true,
     },
   ];
@@ -121,7 +129,9 @@ export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): R
         cardTitle={(fila) => fila.caja}
         cardSubtitle={(fila) => fila.sede}
         cardBadge={(fila) => <EstadoVinculo fila={fila} />}
-        cardFooter={(fila) => <Acciones fila={fila} onDesvincular={setDesvinculando} />}
+        cardFooter={(fila) => (
+          <Acciones fila={fila} onDesvincular={setDesvinculando} onRenombrar={setRenombrando} />
+        )}
         empty={
           <p className="text-body text-text-secondary">
             Ninguna de tus sedes tiene cajas todavía. Créalas en Cajas y después vincula sus equipos.
@@ -136,6 +146,10 @@ export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): R
           jornada={desvinculando.jornada}
           onCerrar={() => setDesvinculando(null)}
         />
+      ) : null}
+
+      {renombrando ? (
+        <DialogoEtiqueta equipo={renombrando} onCerrar={() => setRenombrando(null)} />
       ) : null}
     </>
   );
@@ -152,9 +166,11 @@ function EstadoVinculo({ fila }: { fila: CajaEquipoRow }): React.JSX.Element {
 function Acciones({
   fila,
   onDesvincular,
+  onRenombrar,
 }: {
   fila: CajaEquipoRow;
   onDesvincular: (fila: CajaEquipoRow) => void;
+  onRenombrar: (equipo: EquipoRenombrable) => void;
 }): React.JSX.Element {
   /* Abre un diálogo, así que antes de hidratar no hace nada: el servidor lo
      pinta y React todavía no escucha. Queda cerrado hasta entonces, por la
@@ -166,10 +182,13 @@ function Acciones({
      acción que la saca de donde está (**FR-AD-EQ-6**). Y eso es un enlace, que
      funciona desde el primer pintado. */
   return fila.equipo ? (
-    <Button variant="tertiary" size="sm" disabled={!hydrated} onClick={() => onDesvincular(fila)}>
-      <Unlink aria-hidden="true" />
-      Desvincular
-    </Button>
+    <span className="flex flex-wrap items-center gap-1">
+      <BotonEditarEtiqueta equipo={fila.equipo} onElegir={onRenombrar} />
+      <Button variant="tertiary" size="sm" disabled={!hydrated} onClick={() => onDesvincular(fila)}>
+        <Unlink aria-hidden="true" />
+        Desvincular
+      </Button>
+    </span>
   ) : (
     <Button variant="secondary" size="sm" asChild>
       <Link href="/admin/equipos/vincular">Vincular un equipo</Link>
