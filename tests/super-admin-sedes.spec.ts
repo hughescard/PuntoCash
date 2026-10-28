@@ -108,6 +108,25 @@ test.describe("alta de una sede", () => {
 });
 
 test.describe("ficha de una sede", () => {
+  test("dice quién la administra: las personas del operador, con el principal marcado", async ({ page }) => {
+    await signInAsSuperAdmin(page);
+    await page.goto("/super-admin/sedes/sede-vedado");
+
+    const asignacion = page
+      .getByRole("main")
+      .locator("section")
+      .filter({ has: page.getByRole("heading", { name: "Asignación vigente" }) });
+
+    await expect(asignacion.getByText("Quién la administra")).toBeVisible();
+    /* Las personas, no la entidad: es lo que faltaba para saber a quién llamar. */
+    await expect(asignacion.getByText("Marta Sánchez")).toBeVisible();
+    await expect(asignacion.getByText("Principal", { exact: true })).toBeVisible();
+    await expect(asignacion.getByText("msanchez · m•••a@malecon-sf.cu")).toBeVisible();
+    await expect(asignacion.getByText("Daniel Castro")).toBeVisible();
+    /* Un principal por entidad, no uno por sede: la pantalla lo dice. */
+    await expect(asignacion.getByText(/Administran todas las sedes de esa empresa/)).toBeVisible();
+  });
+
   test("con jornadas abiertas, revocar y cerrar se bloquean y las enumeran", async ({ page }) => {
     await signInAsSuperAdmin(page);
     await page.goto("/super-admin/sedes/sede-habana-vieja");

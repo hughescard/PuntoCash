@@ -11,9 +11,10 @@ import { cifraDeTablero, formatAmount, formatDate } from "@/lib/format";
 import { GLOBAL_SCOPE } from "@/features/network/scope";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { findSedeById } from "@/features/network/sedes";
-import { findOperatorById, OPERATORS } from "@/features/network/operators";
+import { adminUsersOf, findOperatorById, OPERATORS } from "@/features/network/operators";
 import { listarEventos } from "@/features/network/audit";
 import { estadoDeSede, historialDeSede } from "@/features/network/assignments";
+import { maskEmail } from "@/features/auth/two-factor";
 import { CATALOGO_MONEDAS } from "@/features/network/currencies";
 import { lineasDeHorario } from "@/features/network/horario";
 import { jornadasDeSede, saldosDe } from "@/features/network/jornadas";
@@ -63,6 +64,11 @@ export default async function SuperAdminSedePage({
   const vigente = tramos.find((t) => !t.endedAt) ?? null;
   const pasados = tramos.filter((t) => t.endedAt).slice().reverse();
   const operador = vigente ? findOperatorById(vigente.operatorId) : null;
+  /* Quiénes administran esta sede: los usuarios del operador que la tiene.
+     Son los mismos para todas sus sedes —hay un principal por entidad, no uno
+     por sede (decisión del 28/10)—, y la pantalla lo dice para que nadie los
+     tome por personas asignadas a esta sucursal. */
+  const administradores = operador ? adminUsersOf(operador.id) : [];
   const cajas = red.cajasConHistorico(sede.id);
   const kioscos = red.kioscos(sede.id);
   const trabajadores = red.trabajadores(sede.id);
@@ -228,6 +234,55 @@ export default async function SuperAdminSedePage({
                 pueden entrar.
               </p>
             )}
+
+            {operador ? (
+              <div className="mt-6 border-t border-border pt-5">
+                <h3 className="text-body font-semibold text-text-primary">Quién la administra</h3>
+                <p className="mt-1 text-body-sm text-text-secondary">
+                  Las personas de {operador.name} con acceso a su consola. Administran todas las sedes de esa empresa,
+                  no solo esta. Las da de alta su administrador principal.
+                </p>
+
+                {administradores.length === 0 ? (
+                  <p className="mt-3 text-body-sm text-warning-foreground">
+                    Esta empresa no tiene ningún usuario: nadie puede poner la sede en marcha. Se resuelve desde la
+                    ficha del operador.
+                  </p>
+                ) : (
+                  <ul className="mt-3 flex flex-col divide-y divide-border">
+                    {administradores.map((u) => (
+                      /* En el teléfono se apila a la izquierda: en una fila
+                         con «justify-between», el estado quedaba centrado. */
+                      <li
+                        key={u.id}
+                        className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="flex flex-wrap items-center gap-2 text-body font-medium text-text-primary">
+                            {u.fullName}
+                            {u.isPrincipal ? <Badge variant="info">Principal</Badge> : null}
+                          </p>
+                          <p className="mt-0.5 text-body-sm text-text-secondary">
+                            {u.identifier} · {maskEmail(u.email)}
+                          </p>
+                          <p className="pc-numeric mt-0.5 text-body-sm text-text-secondary">{u.phone}</p>
+                        </div>
+                        <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 sm:flex-col sm:items-end sm:gap-1">
+                          {u.status === "activo" ? (
+                            <Badge variant="success">Activo</Badge>
+                          ) : (
+                            <Badge variant="neutral">Desactivado</Badge>
+                          )}
+                          <span className="text-caption text-text-secondary">
+                            {u.lastAccessAt ? `Último acceso: ${fechaYHora(u.lastAccessAt)}` : "Nunca ha entrado"}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </Section>
