@@ -64,7 +64,9 @@ test("la jornada dice de qué sede y de qué operador es, y no ofrece ninguna ac
   await expect(main.getByRole("button", { name: /Forzar/i })).toHaveCount(0);
 });
 
-for (const width of [1024, 768, 390]) {
+/* 1280 es el ancho de escritorio mínimo que soporta el producto y el más
+   estrecho en el que el listado todavía es tabla: es donde aprieta. */
+for (const width of [1280, 1024, 768, 390]) {
   test(`a ${width}px el listado y la jornada no desbordan`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await sinDesbordamientoHorizontal(page, "el listado");

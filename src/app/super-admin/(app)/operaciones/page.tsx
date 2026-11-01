@@ -82,11 +82,11 @@ export default async function SuperAdminOperacionesPage({
   );
 }
 
-/** «250,00 USD → 79.000,00 CUP» en un cambio; el importe, en lo demás. */
-function importe(o: OperacionDeRed): string {
+/** Un cambio entrega una moneda y recibe otra; lo demás es un importe solo. */
+function importe(o: OperacionDeRed): { entrega: string; recibe: string | null } {
   return o.amount.kind === "exchange"
-    ? `${formatMoney(o.amount.source)} → ${formatMoney(o.amount.destination)}`
-    : formatMoney(o.amount.money);
+    ? { entrega: formatMoney(o.amount.source), recibe: formatMoney(o.amount.destination) }
+    : { entrega: formatMoney(o.amount.money), recibe: null };
 }
 
 /** Un giro se envía o se paga, y son dos operaciones distintas. */

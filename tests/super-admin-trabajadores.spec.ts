@@ -69,7 +69,9 @@ test("la ficha lleva a su sede, a su operador y a sus jornadas", async ({ page }
   await expect(main.getByRole("heading", { name: "Sedes en las que ha trabajado" })).toBeVisible();
 });
 
-for (const width of [1024, 768, 390]) {
+/* 1280 es el ancho de escritorio mínimo que soporta el producto y el más
+   estrecho en el que el listado todavía es tabla: es donde aprieta. */
+for (const width of [1280, 1024, 768, 390]) {
   test(`a ${width}px el listado y la ficha no desbordan`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     for (const ruta of ["/super-admin/trabajadores", "/super-admin/trabajadores/trb-1"]) {

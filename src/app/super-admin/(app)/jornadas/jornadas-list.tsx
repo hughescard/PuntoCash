@@ -109,7 +109,12 @@ export function JornadasDeRedList({
       header: "Caja y sede",
       hiddenOnCard: true,
       cell: (r) => (
-        <span className="flex min-w-40 flex-col">
+        /* Anchos acotados y recorte en la tabla: el nombre de una sede o de
+           un operador es dato de la red y puede ser largo, y una tabla cuyo
+           ancho depende del contenido se desborda el día que alguien da de
+           alta una sede con nombre largo. Debajo de xl son tarjetas y no
+           hace falta recortar nada. */
+        <span className="flex min-w-32 flex-col xl:max-w-40">
           <Link
             href={`/super-admin/jornadas/${r.id}` as Route}
             className="font-medium text-text-primary underline-offset-4 hover:underline"
@@ -118,7 +123,8 @@ export function JornadasDeRedList({
           </Link>
           <Link
             href={`/super-admin/sedes/${r.sedeId}` as Route}
-            className="text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
+            title={r.sede}
+            className="text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline xl:truncate"
           >
             {r.sede}
           </Link>
@@ -130,9 +136,14 @@ export function JornadasDeRedList({
       header: "Operador",
       cell: (r) =>
         r.operadorId ? (
+          /* Una línea con puntos suspensivos y el nombre entero en el
+             `title`: una razón social larga estiraba la fila y a 1280 —el
+             ancho mínimo— empujaba la columna de cierre fuera de la pantalla.
+             El nombre completo está en el filtro y en la ficha del operador. */
           <Link
             href={`/super-admin/operadores/${r.operadorId}` as Route}
-            className="relative z-10 inline-block min-w-40 text-text-primary underline-offset-4 hover:underline"
+            title={r.operador ?? undefined}
+            className="relative z-10 block text-text-primary underline-offset-4 hover:underline xl:max-w-40 xl:truncate min-[1400px]:max-w-64"
           >
             {r.operador}
           </Link>
@@ -146,7 +157,8 @@ export function JornadasDeRedList({
       cell: (r) => (
         <Link
           href={`/super-admin/trabajadores/${r.workerId}` as Route}
-          className="relative z-10 text-text-primary underline underline-offset-4 hover:text-primary"
+          title={r.trabajador}
+          className="relative z-10 block text-text-primary underline underline-offset-4 hover:text-primary xl:max-w-36 xl:truncate"
         >
           {r.trabajador}
         </Link>
@@ -158,7 +170,11 @@ export function JornadasDeRedList({
       cell: (r) => (
         <span className="flex flex-col">
           <span className="whitespace-nowrap text-text-primary">{r.fecha}</span>
-          <span className="pc-numeric whitespace-nowrap text-caption text-text-secondary">
+          {/* Sin `nowrap`: cuando una jornada cierra al día siguiente, el
+              cierre lleva su fecha y la línea se vuelve larguísima. En una
+              sola línea empujaba la columna de cierre fuera de la pantalla
+              a 1280, que es el ancho mínimo. */}
+          <span className="pc-numeric text-caption text-text-secondary">
             {r.apertura} – {r.cierre ?? "abierta"}
           </span>
         </span>

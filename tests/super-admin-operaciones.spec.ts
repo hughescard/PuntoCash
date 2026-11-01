@@ -24,20 +24,28 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/super-admin/operaciones");
 });
 
-test("el listado trae la sede y el operador de cada operación, y no el nombre del cliente", async ({ page }) => {
+test("el listado trae el cliente con su documento, y la sede con su operador", async ({ page }) => {
   const tabla = page.getByRole("table");
-  for (const columna of ["Operación", "Servicio", "Importe", "Sede y operador", "Caja y trabajador", "Estado"]) {
+  for (const columna of ["Operación", "Servicio", "Cliente", "Importe", "Sede y operador", "Trabajador"]) {
     await expect(tabla.getByRole("columnheader", { name: columna, exact: true })).toBeVisible();
   }
-  await expect(tabla.getByRole("columnheader", { name: "Cliente", exact: true })).toHaveCount(0);
+  /* El documento acompaña al nombre: un nombre solo no identifica a nadie. */
+  await expect(tabla.getByRole("cell", { name: /\d{11}/ }).first()).toBeVisible();
   await expect(tabla.getByRole("link", { name: /^PuntoCash / }).first()).toBeVisible();
+  /* Ni caja ni columna de estado: la caja es del mercante, y el estado va
+     junto al código para dejarle sitio al cliente. */
+  await expect(tabla.getByRole("columnheader", { name: /Caja/ })).toHaveCount(0);
+  await expect(tabla.getByRole("columnheader", { name: "Estado", exact: true })).toHaveCount(0);
+  await expect(tabla.getByRole("cell", { name: /^PC-/ }).first()).toContainText("Completada");
 });
 
-test("se busca por cliente y por documento aunque no haya columna de cliente", async ({ page }) => {
+test("se busca por cliente y por documento", async ({ page }) => {
+  const tabla = page.getByRole("table");
   await page.getByLabel("Buscar").fill("Yasmani");
-  await expect(page.getByText(/operaciones? en el periodo/)).toBeVisible();
-  await abrirUnaOperacion(page);
-  await expect(page.getByRole("main").getByText("Yasmani", { exact: false }).first()).toBeVisible();
+  await expect(tabla.getByRole("cell", { name: /Yasmani/ }).first()).toBeVisible();
+
+  await page.getByLabel("Buscar").fill("87051234567");
+  await expect(tabla.getByRole("cell", { name: /Yasmani/ }).first()).toBeVisible();
 });
 
 test("filtrar por operador y por servicio acota el listado", async ({ page }) => {
@@ -71,7 +79,9 @@ test("el detalle lleva a la sede, al trabajador y a la jornada", async ({ page }
   await expect(contexto.getByRole("link", { name: /^Caja / })).toBeVisible();
 });
 
-for (const width of [1024, 768, 390]) {
+/* 1280 es el ancho de escritorio mínimo que soporta el producto y el más
+   estrecho en el que el listado todavía es tabla: es donde aprieta. */
+for (const width of [1280, 1024, 768, 390]) {
   test(`a ${width}px el listado y el detalle no desbordan`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await sinDesbordamientoHorizontal(page, "el listado");

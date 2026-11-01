@@ -24,12 +24,14 @@ import { SELECT, TODAS } from "../equipos/controles";
  * la administra otro, aquí sigue apareciendo el de entonces: es con él con
  * quien se concilia esa operación.
  *
- * **No hay columna de cliente**, a diferencia de la consola del mercante, y
- * es a propósito. Lo que PuntoCash registra de la red es qué se hizo, dónde,
- * cuándo y quién lo hizo; el cliente es de quien lo atendió. Sigue estando
- * en el detalle de cada operación y se busca por nombre o documento desde
- * arriba, así que no se pierde nada: lo que se evita es pasear los nombres
- * de cientos de personas por una pantalla que no los necesita.
+ * **El cliente tiene columna propia, con su documento debajo.** No es un
+ * dato que solo interese a quien lo atendió: hay servicios por llegar que
+ * exigen que la persona tenga contrato con PuntoCash, y podrá usarlos desde
+ * cualquier sede, la administre quien la administre. O sea, el cliente será
+ * de PuntoCash aunque el mostrador no lo sea. Hasta que exista ese dominio
+ * de clientes, esta columna es la trazabilidad que hay: quién hizo cada
+ * operación, identificado por su documento y no solo por un nombre que
+ * puede repetirse.
  */
 
 export interface OperacionDeRedRow {
@@ -51,7 +53,8 @@ export interface OperacionDeRedRow {
   accion: string | null;
   cliente: string;
   documento: string;
-  importe: string;
+  /** En un cambio, lo que entrega y lo que recibe; en lo demás, solo el importe. */
+  importe: { entrega: string; recibe: string | null };
   estado: OperationStatus;
   desdeKiosco: boolean;
 }
@@ -116,13 +119,20 @@ export function OperacionesDeRedList({
 
   const columnas: readonly ResponsiveColumn<OperacionDeRedRow>[] = [
     {
+      /* El estado va aquí, junto al código, y no en columna propia: con siete
+         datos por fila una columna más estrecha el resto hasta que la razón
+         social de un operador ocupa cuatro líneas a 1280. Casi todas las
+         operaciones están completadas, así que lo que importa del estado es
+         verlo cuando no lo está, y eso una insignia junto al código lo hace
+         igual de bien. */
       key: "operacion",
       header: "Operación",
       hiddenOnCard: true,
       cell: (r) => (
-        <span className="flex flex-col">
+        <span className="flex flex-col items-start gap-1">
           <span className="pc-numeric whitespace-nowrap font-semibold text-text-primary">{r.codigo}</span>
           <span className="pc-numeric whitespace-nowrap text-caption text-text-secondary">{r.fecha}</span>
+          <OperationStatusBadge status={r.estado} />
         </span>
       ),
     },
@@ -140,22 +150,52 @@ export function OperacionesDeRedList({
         </span>
       ),
     },
-    { key: "importe", header: "Importe", cell: (r) => <span className="pc-numeric">{r.importe}</span> },
+    {
+      key: "cliente",
+      header: "Cliente",
+      cell: (r) => (
+        <span className="flex flex-col">
+          <span className="text-text-primary">{r.cliente}</span>
+          <span className="pc-numeric text-caption text-text-secondary">{r.documento}</span>
+        </span>
+      ),
+    },
+    {
+      key: "importe",
+      header: "Importe",
+      /* El cambio se parte en dos líneas a propósito, no por desbordamiento:
+         así se lee igual a 1280 que a 1440, y las cifras quedan alineadas. */
+      cell: (r) => (
+        <span className="flex flex-col">
+          <span className="pc-numeric whitespace-nowrap">{r.importe.entrega}</span>
+          {r.importe.recibe ? (
+            <span className="pc-numeric whitespace-nowrap text-text-secondary">→ {r.importe.recibe}</span>
+          ) : null}
+        </span>
+      ),
+    },
     {
       key: "donde",
       header: "Sede y operador",
+      /* Una línea cada uno, cortando con puntos suspensivos y el nombre
+         entero en el `title`. Sin esto, una razón social como «Malecón
+         Servicios Financieros S.R.L.» ocupa cuatro líneas a 1280 y estira
+         toda la fila. El nombre completo está en el desplegable de operador,
+         en el detalle y a un clic en su ficha. */
       cell: (r) => (
-        <span className="flex flex-col">
+        <span className="flex min-w-0 flex-col xl:max-w-44 min-[1400px]:max-w-72">
           <Link
             href={`/super-admin/sedes/${r.sedeId}` as Route}
-            className="relative z-10 w-fit text-text-primary underline-offset-4 hover:underline"
+            title={r.sede}
+            className="relative z-10 text-text-primary underline-offset-4 hover:underline xl:truncate"
           >
             {r.sede}
           </Link>
           {r.operadorId ? (
             <Link
               href={`/super-admin/operadores/${r.operadorId}` as Route}
-              className="relative z-10 w-fit text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
+              title={r.operador ?? undefined}
+              className="relative z-10 text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline xl:truncate"
             >
               {r.operador}
             </Link>
@@ -166,21 +206,21 @@ export function OperacionesDeRedList({
       ),
     },
     {
+      /* Sin la caja: en esta consola la unidad es la sede, no el mostrador.
+         Igual que el listado de trabajadores, que tampoco la lleva. La caja
+         está en el detalle de la operación y en Jornadas, donde sí es la
+         unidad, y aquí deja sitio para el cliente y el operador. */
       key: "quien",
-      header: "Caja y trabajador",
+      header: "Trabajador",
       cell: (r) => (
-        <span className="flex flex-col">
-          <span>{r.caja}</span>
-          <Link
-            href={`/super-admin/trabajadores/${r.workerId}` as Route}
-            className="relative z-10 w-fit text-caption text-text-secondary underline underline-offset-4 hover:text-primary"
-          >
-            {r.trabajador}
-          </Link>
-        </span>
+        <Link
+          href={`/super-admin/trabajadores/${r.workerId}` as Route}
+          className="relative z-10 w-fit text-text-primary underline underline-offset-4 hover:text-primary"
+        >
+          {r.trabajador}
+        </Link>
       ),
     },
-    { key: "estado", header: "Estado", hiddenOnCard: true, cell: (r) => <OperationStatusBadge status={r.estado} /> },
   ];
 
   return (
