@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v8.1
+## Documento de Requisitos Funcionales (FRD) · v8.2
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -20,7 +20,7 @@
 - Cada requisito tiene un código `FR-AD-<área>-<n>`. «Debe» indica comportamiento obligatorio.
 - El documento fija las **reglas**: qué datos muestra cada pantalla, qué se permite, qué se rechaza y con qué código, qué se guarda y qué se audita.
 - Los **textos, avisos y la disposición** de cada pantalla están en la **demostración**, que es la referencia de diseño.
-- Cada **«Ver en la demo»** dice con qué cuenta entrar y qué pasos seguir para ver ese caso. Todas las cuentas usan la contraseña `puntocash` y el código de verificación `123456`.
+- Cada **«Ver en la demo»** dice con qué cuenta entrar y qué pasos seguir para ver ese caso. Todas las cuentas usan la contraseña `puntocash` y el código de verificación `123456`. En cada cuenta se entra con el correo que se indica o con su nombre de usuario, indistintamente (**FR-AD-ACC-11**): `marta@malecon-sf.cu` es `msanchez`, `dcastro@malecon-sf.cu` es `dcastro`, `rortega@caribecambios.cu` es `rortega`, `ibetancourt@centrodivisas.cu` es `ibetancourt`, `lperez@cienfuegoscambio.cu` es `lperez`, `abarrios@bahiacambios.cu` es `abarrios` y `yperez@orientedivisas.cu` es `yperez`.
 - Cada rechazo del servidor tiene un **código** (`ultima-caja`). El mensaje que ve el usuario para cada código está en el **Apéndice C**.
 - **El servidor revalida toda regla al confirmar**, aunque la pantalla ya la haya comprobado: las condiciones pueden cambiar con la pantalla abierta **[R3]**.
 - Todo «no existe o está fuera del alcance de la sesión» se rechaza con el mismo código, `no-encontrada`, y responde igual que un recurso inexistente (**FR-AD-NAV-3**).
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 8.2 | 02/11/2026 | **Se recoge lo que la consola ya hacía y el documento no decía, y se corrige una demo.** (1) **El identificador de acceso es un nombre de usuario**, no un correo: de 3 a 30 caracteres, sin «@»; el acceso y la recuperación aceptan el identificador **o** el correo, y el correo es **único**. Nuevo **FR-AD-ACC-11**; se completan la recuperación (**FR-AD-ACC-8**), el alta de trabajador y de usuario, y el cambio de correo, con los códigos `identificador-invalido` y `correo-duplicado` y sus mensajes (Apéndice C). (2) Dos defectos del acceso, ya corregidos, pasan a ser requisito: la contraseña pertenece a la cuenta y no a lo tecleado, y la verificación anuncia el correo real de la cuenta. (3) Nuevo **FR-AD-SHELL-17**: en el teléfono la acción de una sección baja debajo de su descripción. (4) **FR-AD-PROM-3**: una promoción de red dice «Publicada por PuntoCash». (5) La demo de **FR-AD-USR-4** usaba como identificador un correo, que desde ahora se rechaza. |
 | 8.1 | 26/10/2026 | **Se dice quién pone el rótulo de un equipo, que estaba sin decir.** El rótulo se mostraba en Equipos, en la ficha de sede, en la jornada y en el diálogo de forzar cierre, pero ningún requisito decía de dónde salía ni dónde se cambia, y el formulario de vincular no lo pedía. Nuevo **FR-AD-EQ-30**: lo pone el administrador de la sede al vincular —opcional en una caja, obligatorio en un kiosco— y puede cambiarlo después desde Equipos. **FR-AD-EQ-7 / 8 / 13 / 14** añaden el campo, y **FR-AD-EQ-5** y **FR-AD-EQ-12** la acción. Ninguna otra regla cambia |
 | 8.0 | 21/10/2026 | Documento reescrito para desarrollo: una subsección por pantalla, reglas y códigos de rechazo en lugar de textos de interfaz, referencias a la demostración y catálogo de mensajes (Apéndice C). Ninguna regla de la 7.16 se pierde; se escriben las que la consola ya cumplía y el documento no decía (cierre de sesión, revalidación de la sesión en cada petición, sedes cerradas fuera de los selectores, sedes cerradas fuera del panel de atención). Salen las secciones «Qué es este módulo» y «No especificado». Los códigos de requisito se conservan |
 | 7.16 | 21/10/2026 | Revisión completa antes de la segunda entrega: filtros al cambiar de sede, 404 de rutas inexistentes, pantalla de error, motivos sin largo mínimo en Trabajadores, aviso de Usuarios que se cierra, exportación sin el corte por trabajador si hay uno elegido |
@@ -74,6 +75,10 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 | **FR-AD-SHELL-16** | Los diálogos de confirmación (**FR-AD-STATE-3**) se leen y se accionan a 360px, con las acciones apiladas y la acción primaria alcanzable sin desplazar |
 
 **Ver en la demo:** `marta@malecon-sf.cu`, cualquier sección, estrechando la ventana por debajo de 1024px. Filtros agrupados: **Operaciones**. Diálogo: **Equipos** → «Desvincular» a 360px.
+
+**FR-AD-SHELL-17 · Cabecera de sección.** Cuando una sección lleva título, descripción y una acción (un botón como «Dar de alta» o «Cambiar horario»), por debajo de **640px** la acción baja debajo de la descripción, a todo lo ancho disponible; desde 640px va a la derecha, alineada con el pie del título. En la misma fila el texto quedaba comprimido en media columna.
+
+**Ver en la demo:** `marta@malecon-sf.cu`, **Sedes** → cualquier sede, estrechando la ventana por debajo de 640px.
 
 ---
 
@@ -297,7 +302,7 @@ Rigen **FR-A11Y-1 a FR-A11Y-3** de `PuntoCash_Worker_Functional_Requirements_v1.
 
 **FR-AD-ACC-1 · Flujo.** El mismo flujo de dos pasos que Worker, sin variación:
 
-1. Credenciales: usuario o correo, y contraseña.
+1. Credenciales: identificador de acceso o correo, indistintamente, y contraseña (**FR-AD-ACC-11**).
 2. Código de seis dígitos enviado al correo registrado: cinco minutos de vigencia, tres intentos y hasta tres envíos.
 
 - La sesión solo existe cuando el código se verifica **[R13]**.
@@ -332,6 +337,16 @@ Rigen **FR-A11Y-1 a FR-A11Y-3** de `PuntoCash_Worker_Functional_Requirements_v1.
 - Operador suspendido: `yperez@orientedivisas.cu`.
 - Usuario desactivado: con `marta@malecon-sf.cu`, **Usuarios** → desactivar a Daniel Castro; cerrar sesión y entrar con `dcastro@malecon-sf.cu`.
 
+**FR-AD-ACC-11 · Identificador y correo.** Cada cuenta tiene un **identificador de acceso** y un **correo**, y con cualquiera de los dos se entra y se recupera la contraseña.
+
+- **El identificador es un nombre de usuario**, no un correo: de 3 a 30 caracteres, solo letras, números, punto, guion y guion bajo, y **sin «@»**. Así lo tecleado nunca puede ser a la vez el identificador de una persona y el correo de otra, y no hace falta decidir cuál gana.
+- **El correo es único** entre los usuarios administradores, porque con él se entra. Lo mismo rige entre los trabajadores (**FR-AD-TRAB-6**). Mayúsculas y espacios en los extremos no distinguen una cuenta de otra.
+- **La contraseña pertenece a la cuenta, no a lo tecleado.** Quien recupera su contraseña escribiendo el correo y después entra con el identificador entra con la contraseña nueva, y la vieja deja de valer.
+- **La verificación anuncia el correo real de la cuenta**, enmascarado (**FR-AD-FMT-3**), escriba la persona su identificador o su correo. Nunca uno deducido de lo tecleado.
+- El rechazo sigue siendo único (**FR-AD-ACC-5**): una cuenta que no existe se dice igual con el identificador que con el correo.
+
+**Ver en la demo:** entrar con `msanchez` y con `marta@malecon-sf.cu`: los dos llevan a la verificación, que anuncia `m•••a@malecon-sf.cu`.
+
 **FR-AD-ACC-7 · Sin sedes.** Un usuario válido de un operador activo sin ninguna sede asignada **sí** inicia sesión y llega a Inicio en estado vacío (**FR-AD-HOME-8**).
 
 **Ver en la demo:** `lperez@cienfuegoscambio.cu`.
@@ -342,7 +357,7 @@ Rigen **FR-A11Y-1 a FR-A11Y-3** de `PuntoCash_Worker_Functional_Requirements_v1.
 
 **FR-AD-ACC-8.** El mismo flujo de tres pasos que Worker, con sus mismas reglas (Worker FRD §2.13, **FR-REC-1** a **FR-REC-12**):
 
-1. Identificador.
+1. Identificador o correo (**FR-AD-ACC-11**).
 2. Código.
 3. Contraseña nueva.
 
@@ -1041,8 +1056,8 @@ Por debajo de 1024px cada trabajador es una tarjeta (**FR-AD-SHELL-13**). Un usu
 | Tipo de documento | Sí | Del catálogo de tipos de documento. Por defecto, CI |
 | Número de documento | Sí | Único entre todos los trabajadores de la red |
 | Teléfono | Sí | Texto libre |
-| Correo | Sí | Formato de correo válido. Recibe el código de verificación de cada inicio de sesión **[R13]** |
-| Identificador de acceso | Sí | Único en toda la red, sin distinguir mayúsculas de minúsculas |
+| Correo | Sí | Formato de correo válido, **único entre los trabajadores de la red**: con él también se entra (**FR-AD-ACC-11**). Recibe el código de verificación de cada inicio de sesión **[R13]** |
+| Identificador de acceso | Sí | Nombre de usuario de 3 a 30 caracteres, letras, números, punto, guion o guion bajo, **sin «@»** (**FR-AD-ACC-11**). Único en toda la red, sin distinguir mayúsculas de minúsculas |
 | Sede | Sí | Solo sedes del alcance vigente que no estén cerradas. Una suspendida se admite y se marca «· suspendida» (**FR-AD-TRAB-14**). Si el usuario tiene una sola sede elegible, no se elige: se usa esa |
 
 - **El alta elige sede, nunca caja** **[A13]**: el formulario no tiene campo de caja.
@@ -1062,6 +1077,8 @@ Por debajo de 1024px cada trabajador es una tarjeta (**FR-AD-SHELL-13**). Un usu
 | --- | --- |
 | Un campo obligatorio vacío (el primero que falte) | `campo-obligatorio` |
 | Correo con formato inválido | `correo-invalido` |
+| Ya existe un trabajador con ese correo | `correo-duplicado` |
+| Identificador que no es un nombre de usuario válido (con «@», demasiado corto o largo, o con caracteres no admitidos) | `identificador-invalido` |
 | Ya existe un trabajador con ese identificador en la red | `identificador-duplicado` |
 | Ya existe un trabajador con ese documento | `documento-duplicado` |
 | La sede está cerrada | `sede-cerrada` |
@@ -1070,8 +1087,10 @@ Por debajo de 1024px cada trabajador es una tarjeta (**FR-AD-SHELL-13**). Un usu
 **Ver en la demo** (`marta@malecon-sf.cu`, Dar de alta, resto de campos rellenos):
 
 - Identificador duplicado: identificador `jperez`.
+- Identificador inválido: identificador `ana@correo.cu`.
 - Documento duplicado: número `88041203211`.
 - Correo inválido: correo `abc`.
+- Correo duplicado: correo `jperez@puntocash.com`.
 
 **FR-AD-TRAB-8 · Al guardar: credencial inicial.**
 
@@ -1180,6 +1199,7 @@ Responde al caso en que el trabajador dice que no le llega el código de verific
 | Condición | Código |
 | --- | --- |
 | Correo vacío o con formato inválido | `correo-invalido` |
+| Otro trabajador ya tiene ese correo | `correo-duplicado` |
 | Motivo vacío | `motivo-requerido` |
 | El trabajador no existe o está fuera del alcance | `no-encontrada` |
 
@@ -1387,8 +1407,8 @@ Por debajo de 1024px cada usuario es una tarjeta (**FR-AD-SHELL-13**).
 | Primer apellido | Sí | Ídem |
 | Segundo apellido | No | Ídem |
 | Teléfono | Sí | Texto libre |
-| Correo | Sí | Formato de correo válido. Es el canal del segundo factor **[R13]** |
-| Identificador de acceso | Sí | Único entre todos los usuarios administradores, sin distinguir mayúsculas de minúsculas |
+| Correo | Sí | Formato de correo válido, **único entre los usuarios administradores**: con él también se entra (**FR-AD-ACC-11**). Es el canal del segundo factor **[R13]** |
+| Identificador de acceso | Sí | Nombre de usuario de 3 a 30 caracteres, letras, números, punto, guion o guion bajo, **sin «@»** (**FR-AD-ACC-11**). Único entre todos los usuarios administradores, sin distinguir mayúsculas de minúsculas |
 
 - El usuario nace en la empresa de quien lo crea, con potestad sobre todas sus sedes. No se elige sede.
 - **FR-AD-USR-4:** antes de confirmar, la pantalla advierte que el usuario nuevo podrá hacer todo lo que hace quien lo crea en la operación, en todas sus sedes, salvo esta sección.
@@ -1401,10 +1421,16 @@ Por debajo de 1024px cada usuario es una tarjeta (**FR-AD-SHELL-13**).
 | --- | --- |
 | Un campo obligatorio vacío (el primero que falte) | `campo-obligatorio` |
 | Correo con formato inválido | `correo-invalido` |
+| Ya existe un usuario administrador con ese correo | `correo-duplicado` |
+| Identificador que no es un nombre de usuario válido (con «@», demasiado corto o largo, o con caracteres no admitidos) | `identificador-invalido` |
 | Ya existe un usuario administrador con ese identificador | `identificador-duplicado` |
 | Quien actúa no es el principal | `no-es-el-principal` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Dar de alta, identificador `dcastro@malecon-sf.cu`.
+**Ver en la demo** (`marta@malecon-sf.cu`, Dar de alta, resto de campos rellenos):
+
+- Identificador duplicado: identificador `dcastro`.
+- Identificador inválido: identificador `ana@correo.cu`.
+- Correo duplicado: correo `dcastro@malecon-sf.cu`.
 
 **FR-AD-USR-5 · Al guardar.**
 
@@ -1478,6 +1504,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 | Condición | Código |
 | --- | --- |
 | Correo vacío o con formato inválido | `correo-invalido` |
+| Otro usuario administrador ya tiene ese correo | `correo-duplicado` |
 | Quien actúa no es el principal | `no-es-el-principal` |
 | El usuario no existe o es de otra empresa | `no-encontrada` |
 
@@ -2993,7 +3020,7 @@ El volumen de lo operado por las sedes en un periodo. **Solo lectura.**
 | Entidad | Contenido |
 | --- | --- |
 | `Operador` | La empresa mercante: nombre, identificación legal, contacto, estado (activo, suspendido, baja) |
-| `UsuarioAdmin` | Una persona del operador en esta consola: identificador de acceso, nombre, teléfono, correo de verificación, estado, si es el **usuario inicial** y si es el **administrador principal**, fecha de alta y último acceso |
+| `UsuarioAdmin` | Una persona del operador en esta consola: identificador de acceso (nombre de usuario, sin «@»), nombre, teléfono, correo de verificación, estado, si es el **usuario inicial** y si es el **administrador principal**, fecha de alta y último acceso |
 | `Sede` | Código, nombre, dirección, municipio y provincia, teléfono, horario por días, estado (activa, suspendida, cerrada) con los datos de la suspensión, fecha de alta |
 | `ServiciosSede` | Los servicios que PuntoCash habilitó en la sede: cambio de moneda, remesas, giros |
 | `Asignacion` | Sede ↔ Operador por periodos: inicio, fin y motivo de cada uno |
@@ -3090,7 +3117,7 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 | Crear una caja | Una sede del alcance, y un identificador libre dentro de esa sede |
 | Retirar una caja | Sin jornada abierta, sin equipo vinculado, y que no sea la última activa de una sede activa |
 | Reactivar una caja | Nada. No restaura ningún vínculo de equipo |
-| Dar de alta un trabajador | Una sede del alcance; un identificador libre en toda la red; un documento no registrado; un correo válido |
+| Dar de alta un trabajador | Una sede del alcance; un identificador libre en toda la red y que sea un nombre de usuario válido; un documento no registrado; un correo válido y no usado por otro trabajador |
 | Desactivar o reasignar un trabajador | Sin jornada abierta **[R6]** |
 | Reactivar un trabajador | Nada: vuelve a su sede de siempre. **Siempre es posible**: PuntoCash no desactiva personas **[A14]** |
 | Que un trabajador pueda iniciar sesión | Estar activo; su sede y su operador no suspendidos; y un equipo vinculado a una caja **de su sede** (**FR-DEV-1**, **FR-AUTH-8**) |
@@ -3270,6 +3297,8 @@ El mensaje que ve el usuario para cada código de rechazo. Un código se busca p
 | `tipo-documento-requerido` | Elige un tipo de documento. |
 | `sede-cerrada` | Esa sede está cerrada y no admite trabajadores nuevos. |
 | `identificador-duplicado` | Ese identificador ya está en uso. |
+| `identificador-invalido` | El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo. |
+| `correo-duplicado` | Ese correo ya está en uso. Con el correo también se entra, así que no puede repetirse. |
 | `documento-duplicado` | Ya existe un trabajador con ese documento. |
 | `jornada-abierta` | Tiene una jornada abierta. Hasta que se haga su cierre, o lo fuerces desde la jornada, no se puede. |
 | `motivo-requerido` | Escribe el motivo. |
@@ -3281,6 +3310,8 @@ El mensaje que ve el usuario para cada código de rechazo. Un código se busca p
 | --- | --- |
 | `alcance-insuficiente` | Esta acción pertenece al administrador de la empresa. |
 | `identificador-duplicado` | Ese identificador ya está en uso. |
+| `identificador-invalido` | El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo. |
+| `correo-duplicado` | Ese correo ya está en uso. Con el correo también se entra, así que no puede repetirse. |
 | `no-es-el-principal` | Esta sección pertenece al administrador principal de tu empresa. |
 | `es-el-principal` | Al administrador principal no lo desactiva nadie. Traspasa el papel antes, si hace falta. |
 | `es-uno-mismo` | No puedes traspasarte el papel a ti mismo. |
