@@ -142,7 +142,7 @@ const promociones: Promocion[] = (ALMACEN.__puntocashPromociones ??= [
     desde: sumarDias(HOY, -20),
     hasta: sumarDias(HOY, 40),
     creadaAt: SEMBRADA,
-    creadaPor: "PuntoCash",
+    creadaPor: "Elena Marrero Fonseca",
   },
   {
     id: "promo-malecon-remesas",
@@ -200,7 +200,7 @@ const promociones: Promocion[] = (ALMACEN.__puntocashPromociones ??= [
     desde: sumarDias(HOY, 50),
     hasta: sumarDias(HOY, 80),
     creadaAt: SEMBRADA,
-    creadaPor: "PuntoCash",
+    creadaPor: "Jorge Aguilera Ruiz",
   },
   {
     id: "promo-caribe-miramar",

@@ -6,6 +6,7 @@ import { Save } from "lucide-react";
 
 import { Alert, Button, Card, CardContent, Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { composicionDe, enPantallaALaVez } from "@/features/network/promotion-coincidence";
 import { CampoImagen } from "@/app/admin/(app)/promociones/campo-imagen";
 import { VistaPrevia } from "@/app/admin/(app)/promociones/promocion-form";
@@ -97,20 +98,6 @@ export function PromocionRedForm({
     null,
   );
 
-  /*
-   * Se envía por `onSubmit` y no con `<form action>`. Con `action`, React
-   * restablece el formulario al terminar la acción, y tras un rechazo del
-   * servidor los botones de opción y las casillas volvían a su valor inicial
-   * —«Solo las sedes que elija» sin marcar, con su lista a la vista— aunque el
-   * estado de la pantalla dijera otra cosa. Lo escrito tiene que seguir ahí.
-   */
-  const [, empezar] = React.useTransition();
-  function enviar(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const datosDelFormulario = new FormData(e.currentTarget);
-    empezar(() => accion(datosDelFormulario));
-  }
-
   /* Controlado entero: la vista previa, los contadores y las coincidencias
      dependen de lo que se teclea, y tras un rechazo nada debe vaciarse. */
   const [titulo, setTitulo] = React.useState(datos.titulo);
@@ -150,7 +137,7 @@ export function PromocionRedForm({
   );
 
   return (
-    <form onSubmit={enviar} className="max-w-form-max">
+    <form onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max">
       {datos.id ? <input type="hidden" name="id" value={datos.id} /> : null}
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
