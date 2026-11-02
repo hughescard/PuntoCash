@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ImagePlus, Megaphone, Save, Trash2 } from "lucide-react";
+import { Megaphone, Save } from "lucide-react";
 
 import { Alert, Button, Card, CardContent, Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { enPantallaALaVez } from "@/features/network/promotion-coincidence";
+import { CampoImagen } from "./campo-imagen";
 import {
   crearPromocionAction,
   editarPromocionAction,
@@ -79,6 +81,20 @@ export function PromocionForm({
     null,
   );
 
+  /*
+   * Se envía por `onSubmit` y no con `<form action>`. Con `action`, React
+   * restablece el formulario al terminar la acción, y tras un rechazo del
+   * servidor las sedes marcadas volvían a quedar sin marcar aunque el estado de
+   * la pantalla dijera otra cosa (**FR-AD-PROM-5**: el formulario conserva todo
+   * lo escrito).
+   */
+  const [, empezar] = React.useTransition();
+  function enviar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const datosDelFormulario = new FormData(e.currentTarget);
+    empezar(() => accion(datosDelFormulario));
+  }
+
   /* Controlado entero: la vista previa, los contadores y las coincidencias
      dependen de lo que se teclea, y tras un rechazo nada debe vaciarse. */
   const [titulo, setTitulo] = React.useState(datos.titulo);
@@ -87,46 +103,8 @@ export function PromocionForm({
   const [desde, setDesde] = React.useState(datos.desde);
   const [hasta, setHasta] = React.useState(datos.hasta);
 
-  /* La imagen: la que ya tenía (dirección), una nueva (data URL reducida aquí),
-     o ninguna. Solo viaja al servidor si cambia. */
+  /* La imagen vive en su campo; aquí solo se guarda lo que la vista previa necesita. */
   const [imagen, setImagen] = React.useState<string | null>(datos.imagenUrl ?? null);
-  const [imagenNueva, setImagenNueva] = React.useState<string | null>(null);
-  const [quitada, setQuitada] = React.useState(false);
-  const [errorImagen, setErrorImagen] = React.useState<string | null>(null);
-  const [procesando, setProcesando] = React.useState(false);
-  const archivoRef = React.useRef<HTMLInputElement>(null);
-
-  async function elegirImagen(archivo: File | undefined) {
-    setErrorImagen(null);
-    if (!archivo) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type)) {
-      setErrorImagen("La imagen tiene que ser JPG, PNG o WebP.");
-      return;
-    }
-    setProcesando(true);
-    try {
-      const reducida = await reducirImagen(archivo);
-      if (reducida.length > maxImagenBytes * 1.37) {
-        setErrorImagen("La imagen pesa demasiado. Prueba con una más pequeña.");
-        return;
-      }
-      setImagen(reducida);
-      setImagenNueva(reducida);
-      setQuitada(false);
-    } catch {
-      setErrorImagen("No se pudo leer la imagen. Prueba con otra.");
-    } finally {
-      setProcesando(false);
-      if (archivoRef.current) archivoRef.current.value = "";
-    }
-  }
-
-  function quitarImagen() {
-    setImagen(null);
-    setImagenNueva(null);
-    setQuitada(Boolean(datos.imagenUrl));
-    setErrorImagen(null);
-  }
 
   const errorDe = (campo: CampoPromocion) =>
     estado && !estado.ok && estado.campo === campo ? estado.error : undefined;
@@ -142,19 +120,15 @@ export function PromocionForm({
      del periodo, no cuántas tocan el periodo en total: una de un mes junto a
      cuatro de una semana, una detrás de otra, nunca son más de dos en pantalla.
      Basta mirar el primer día y cada día en que empieza otra. */
-  const coincidencias = elegidas.map((sedeId) => {
-    let n = 0;
-    if (desde && hasta) {
-      const solapadas = otras.filter((o) => o.sedes.includes(sedeId) && o.desde <= hasta && desde <= o.hasta);
-      const dias = [desde, ...solapadas.map((o) => o.desde).filter((d) => d > desde)];
-      n = Math.max(0, ...dias.map((d) => solapadas.filter((o) => o.desde <= d && d <= o.hasta).length));
-    }
-    return { sedeId, nombre: sedes.find((s) => s.id === sedeId)?.name ?? sedeId, n };
-  });
+  const coincidencias = elegidas.map((sedeId) => ({
+    sedeId,
+    nombre: sedes.find((s) => s.id === sedeId)?.name ?? sedeId,
+    n: enPantallaALaVez(otras, sedeId, desde, hasta).length,
+  }));
   const demasiadas = coincidencias.filter((c) => c.n + 1 > maxEnRotacion);
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form onSubmit={enviar} className="max-w-form-max">
       {datos.id ? <input type="hidden" name="id" value={datos.id} /> : null}
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
@@ -194,58 +168,13 @@ export function PromocionForm({
           </Field>
 
           {/* **FR-AD-PROM-12**: imagen opcional. */}
-          <div>
-            <p className="text-label font-medium text-text-primary">Imagen (opcional)</p>
-            <p id="promo-imagen-ayuda" className="mt-1 text-body-sm text-text-secondary">
-              JPG, PNG o WebP. Se muestra entera, junto al título y el texto.
-            </p>
-            {imagenNueva ? <input type="hidden" name="imagen" value={imagenNueva} /> : null}
-            {quitada ? <input type="hidden" name="quitar-imagen" value="1" /> : null}
-            <input
-              ref={archivoRef}
-              id="promo-imagen"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              aria-describedby="promo-imagen-ayuda"
-              disabled={enviando || procesando}
-              onChange={(e) => void elegirImagen(e.target.files?.[0])}
-            />
-            {imagen ? (
-              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element -- vista previa de la imagen elegida */}
-                <img src={imagen} alt="Imagen de la promoción" className="h-32 w-auto max-w-full rounded-control border border-border object-contain" />
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button type="button" variant="secondary" size="sm" disabled={enviando || procesando} onClick={() => archivoRef.current?.click()}>
-                    <ImagePlus aria-hidden="true" />
-                    Cambiar imagen
-                  </Button>
-                  <Button type="button" variant="tertiary" size="sm" disabled={enviando || procesando} onClick={quitarImagen}>
-                    <Trash2 aria-hidden="true" />
-                    Quitar imagen
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="mt-3"
-                loading={procesando}
-                disabled={enviando}
-                onClick={() => archivoRef.current?.click()}
-              >
-                <ImagePlus aria-hidden="true" />
-                Añadir imagen
-              </Button>
-            )}
-            {errorImagen || errorDe("imagen") ? (
-              <p role="alert" className="mt-2 text-body-sm font-semibold text-error">
-                {errorImagen ?? errorDe("imagen")}
-              </p>
-            ) : null}
-          </div>
+          <CampoImagen
+            inicialUrl={datos.imagenUrl ?? null}
+            maxBytes={maxImagenBytes}
+            deshabilitado={enviando}
+            error={errorDe("imagen")}
+            onVista={setImagen}
+          />
 
           <fieldset className="min-w-0" aria-describedby={errorDe("sedes") ? "promo-sedes-error" : undefined}>
             <legend className="text-label font-medium text-text-primary">
@@ -411,30 +340,4 @@ export function VistaPrevia({
       </div>
     </div>
   );
-}
-
-/**
- * Reduce la imagen en el navegador antes de enviarla: como mucho 1920 px por
- * su lado mayor, que es una pantalla Full HD entera, y en WebP, que conserva la
- * transparencia de un PNG. Una foto de móvil de 6 MB queda en unos cientos de KB.
- */
-async function reducirImagen(archivo: File): Promise<string> {
-  const url = URL.createObjectURL(archivo);
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = reject;
-      el.src = url;
-    });
-    const escala = Math.min(1, 1920 / Math.max(img.naturalWidth, img.naturalHeight));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(img.naturalWidth * escala));
-    canvas.height = Math.max(1, Math.round(img.naturalHeight * escala));
-    canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const webp = canvas.toDataURL("image/webp", 0.85);
-    return webp.startsWith("data:image/webp") ? webp : canvas.toDataURL("image/jpeg", 0.85);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
 }

@@ -11,6 +11,8 @@ import { cifraDeTablero, formatAmount, formatDate } from "@/lib/format";
 import { GLOBAL_SCOPE } from "@/features/network/scope";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { findSedeById } from "@/features/network/sedes";
+import { promocionPorId } from "@/features/network/promotions";
+import { quienPublica } from "@/features/super-admin/promociones";
 import { adminUsersOf, findOperatorById, OPERATORS } from "@/features/network/operators";
 import { listarEventos } from "@/features/network/audit";
 import { estadoDeSede, historialDeSede } from "@/features/network/assignments";
@@ -546,8 +548,16 @@ export default async function SuperAdminSedePage({
                       <img src={p.imagen} alt="" className="h-14 w-20 shrink-0 rounded-control bg-surface-subtle object-contain" />
                     ) : null}
                     <div className="min-w-0">
-                      <p className="font-semibold text-text-primary">{p.titulo}</p>
+                      <p className="font-semibold text-text-primary">
+                        <Link href={`/super-admin/promociones/${p.id}` as Route} className="underline-offset-4 hover:underline">
+                          {p.titulo}
+                        </Link>
+                      </p>
                       <p className="mt-0.5 text-body-sm text-text-secondary">{p.texto}</p>
+                      {/* De quién es: PuntoCash la cambia, la de un operador solo la ve. */}
+                      <p className="mt-1 text-caption text-text-secondary">
+                        Publica {quienPublicaPromocion(p.id)}
+                      </p>
                     </div>
                   </li>
                 ))}
@@ -558,6 +568,12 @@ export default async function SuperAdminSedePage({
       </Section>
     </>
   );
+}
+
+/** «PuntoCash» o el nombre del operador que publica esa promoción. */
+function quienPublicaPromocion(id: string): string {
+  const promo = promocionPorId(id);
+  return promo ? quienPublica(promo).texto : "—";
 }
 
 /* -------------------------------------------------------------------------

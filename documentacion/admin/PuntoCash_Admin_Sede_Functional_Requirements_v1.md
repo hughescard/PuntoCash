@@ -2183,7 +2183,7 @@ Por debajo de 1024px cada promoción es una tarjeta (**FR-AD-SHELL-13**).
 | --- | --- |
 | De la empresa, programada o vigente | **Edición**: el formulario de 11.2 con los datos puestos (sedes: las del alcance donde se muestra), «Guardar cambios» y, en la cabecera, «Retirar». Si es vigente, **Desde no se puede cambiar** |
 | De la empresa, vencida o retirada | **Lectura**: texto, sedes, fechas, quién la publicó y la vista previa, sin controles. Un aviso indica que terminó, o quién la retiró y cuándo, y que para volver a anunciarla hay que crear una nueva |
-| De red | **Lectura** igual, sin controles. Un aviso indica que la publica PuntoCash y que no se puede cambiar ni retirar |
+| De red | **Lectura** igual, sin controles. Un aviso indica que la publica PuntoCash y que no se puede cambiar ni retirar. «Publicada por» dice **PuntoCash**, nunca el nombre de la persona que la publicó |
 | De otra empresa, o inexistente | `no-encontrada` (**FR-AD-NAV-3**) |
 
 **Rechazos del servidor al editar.** Los de 11.2, y además:

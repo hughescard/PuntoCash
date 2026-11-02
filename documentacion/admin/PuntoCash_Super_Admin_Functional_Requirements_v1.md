@@ -1,11 +1,13 @@
 # PuntoCash — Super Admin
-## Documento de Requisitos Funcionales (FRD) · v3.2
+## Documento de Requisitos Funcionales (FRD) · v3.3
 
 **Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/super-admin` contiene un README de marcador de posición.
 
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y como referencia de aceptación.
 
 **Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
+
+**Control de cambios — v3.3 (2026-11-02).** **Promociones de red: el destino se guarda como sedes, no como regla; la saturación dice de quién es el exceso; y la lista es solo de lo que PuntoCash gobierna.** §11 se precisa en cuatro puntos. (1) **FR-SA-PROM-2**: «por operador» y «por provincia» dejan de ser criterios de destino y pasan a ser **atajos para marcar sedes**. Lo que una promoción guarda es «toda la red» —que incluye las sedes que se creen después— o la lista de sedes marcadas; si una sede cambia de operador sigue mostrándola, porque el cliente en la sala ve PuntoCash y no al operador. (2) **FR-SA-PROM-5** se reparte en dos sitios: el formulario dice, por sede, con cuántas coincidiría **a la vez** y de quién es cada una, y el listado avisa de las sedes que hoy ya pasan de cuatro. Separar «de PuntoCash» de «de un operador» importa porque PuntoCash solo puede retirar las suyas. (3) **FR-SA-PROM-9** (nuevo): el listado contiene **solo** las de red; las de un operador cuentan para la saturación y se abren en solo lectura desde la ficha de la sede, pero no son de esta consola. (4) **FR-SA-PROM-10** (nuevo): el administrador de sede ve «Publicada por PuntoCash» en una promoción de red, nunca el nombre de la persona que la publicó. Además, el formulario conserva lo escrito tras un rechazo del servidor (FR-SA-PROM-3 remite a FR-AD-PROM-5).
 
 **Control de cambios — v3.2 (2026-10-28).** **Un operador nunca se queda sin administrador, y el documento deja de admitir lo contrario.** Tres requisitos arrastraban un modelo anterior al administrador principal. **FR-SA-ASG-3** contemplaba asignar una sede a un operador sin usuarios y mandaba crear uno en ese momento: ese caso no existe, porque el alta del operador crea al principal (**FR-SA-OPE-5**), a él no lo desactiva nadie (**FR-AD-USR-13**) y el papel solo se traspasa a otro activo (**FR-AD-USR-12**); el requisito pasa a enunciar la garantía y a prohibir que las pantallas avisen de un caso imposible. **FR-SA-OPE-11** se apoyaba en ese mismo caso y en **FR-AD-USR-8**, que está retirado: ahora es el **restablecimiento del acceso del administrador principal**, disponible siempre y no solo ante una incidencia. **FR-SA-OPE-10** y la lista de eventos de **FR-SA-AUD-2** se ajustan a lo anterior. Sin cambios en el resto. Esta versión es un parche sobre la v3.1: la reescritura completa en el formato de la v8 de Admin sigue pendiente.
 
@@ -369,21 +371,35 @@ Tres vistas, dos de ellas editables. Es el marco dentro del cual cada mercante d
 
 ## 11. Promociones de red
 
-**FR-SA-PROM-1** `/super-admin/promociones` gestiona las promociones que PuntoCash publica sobre su red, distintas de las que cada mercante publica para sus sedes (**FR-AD-PROM-1**).
+**FR-SA-PROM-1** `/super-admin/promociones` gestiona las promociones que PuntoCash publica sobre su red, distintas de las que cada mercante publica para sus sedes (**FR-AD-PROM-1**). Las presenta en tres pestañas por estado —**Vigentes** (por defecto), **Programadas** y **Vencidas**— con su número, calculado con la fecha de hoy en la hora de Cuba, y ofrece «Nueva promoción» en la cabecera. Cada fila dice dónde se muestra, sus fechas y quién la publicó; una retirada lo dice con su fecha.
 
-**FR-SA-PROM-2** Cada promoción de red se dirige a **todas las sedes** o a **un subconjunto** elegido por operador, provincia o selección manual.
+**FR-SA-PROM-2** Cada promoción de red se dirige a **toda la red** o a **las sedes que se marquen**.
 
-**FR-SA-PROM-3** Campos, validaciones, estados (programada / vigente / vencida), previsualización y retirada se comportan igual que en la consola del mercante (**FR-AD-PROM-4** a **FR-AD-PROM-9**).
+- **Toda la red** llega a todas las sedes abiertas, también a las que se creen después.
+- **Sedes elegidas** guarda las sedes marcadas. El formulario ofrece dos atajos para marcarlas —**las de un operador** y **las de una provincia**— que **suman** a lo ya marcado, y «Marcar todas» y «Quitar todas». Los atajos no son una regla: lo que se guarda son esas sedes, y si una cambia de operador sigue mostrando la promoción.
+- Cada sede de la lista muestra su provincia y su operador de hoy («Sin operador» si no tiene), y «suspendida» si lo está. Las sedes cerradas no se ofrecen: no admiten promociones.
+- Sin ninguna sede marcada, el servidor rechaza con «Elige al menos una sede, o marca toda la red.» y el formulario conserva lo escrito.
 
-**FR-SA-PROM-4** Una promoción de red **no puede ser editada ni retirada por el Admin de sede**, que la ve en solo lectura **[FR-AD-PROM-3]**. Esta pantalla debe indicarlo al crearla, para que quien la publica sepa que el mercante no podrá quitarla de su sala de espera.
+**FR-SA-PROM-3** Campos, validaciones, estados (programada / vigente / vencida), previsualización, imagen opcional y retirada se comportan igual que en la consola del mercante (**FR-AD-PROM-4** a **FR-AD-PROM-9**, **FR-AD-PROM-12**). En una promoción vigente, la fecha de inicio no se cambia.
 
-**FR-SA-PROM-5** La pantalla debe mostrar, por sede, **cuántas promociones se exhibirían a la vez** sumando las de red y las del mercante, y advertir cuando el número supere lo que el carrusel puede rotar de forma legible. Una sucursal con nueve promociones en rotación no anuncia ninguna.
+**FR-SA-PROM-4** Una promoción de red **no puede ser editada ni retirada por el Admin de sede**, que la ve en solo lectura **[FR-AD-PROM-3]**. El formulario lo indica siempre, con un aviso informativo —«Solo PuntoCash puede cambiarla o retirarla»—, para que quien la publica sepa que el mercante no podrá quitarla de su sala de espera.
+
+**FR-SA-PROM-5** Una sala que rota demasiadas promociones no anuncia ninguna: cada una ocupa su propia pantalla 12 segundos, y con más de **cuatro** a la vez un cliente que espera no llega a verlas todas. Lo que cuenta es cuántas se ven **a la vez** en el día más cargado del periodo, no cuántas lo tocan.
+
+- **En el formulario**, para cada sede a la que llegaría, con fechas puestas: con cuántas promociones coincidiría y **de quién es cada una** («1 de PuntoCash, 3 de Malecón Servicios Financieros S.R.L.»), sumando las de red y las de los operadores. Si alguna sede pasara de cuatro, un aviso de advertencia la nombra con ese desglose y recuerda que las de un operador solo puede retirarlas su administrador. Es un aviso, no un bloqueo. Con «toda la red», solo se nombran las sedes que pasarían de cuatro; si ninguna, una línea dice cuál sería la más cargada.
+- **En el listado**, un aviso de advertencia nombra las sedes que **hoy** tienen más de cuatro promociones vigentes, con el desglose por quién las publica.
 
 **FR-SA-PROM-6** Solo se exhiben las vigentes en la fecha actual **[FR-PANT-DATA-5]**.
 
 **FR-SA-PROM-7** Nada de lo publicado aquí puede alimentar ni modificar una operación **[R10]**, **[FR-PANT-DATA-2]**.
 
-**FR-SA-PROM-8** Alta, edición y retirada generan eventos de auditoría **[RP-21]**.
+**FR-SA-PROM-8** Alta, edición y retirada generan eventos de auditoría **[RP-21]**: `promocion-red.alta`, `promocion-red.editada` y `promocion-red.retirada`, con quién y cuándo y, en alta y edición, título, texto, sedes («Toda la red» o sus nombres), fechas y si lleva imagen, antes y después.
+
+**FR-SA-PROM-9** El listado contiene **solo** las promociones de red. Las de un operador no son de esta consola: cuentan para la saturación (**FR-SA-PROM-5**) y se abren **en solo lectura** desde «Promociones en pantalla hoy» de la ficha de la sede, que enlaza cada una e indica quién la publica. Esa ficha dice de quién es, que PuntoCash no la cambia ni la retira porque la gobierna el administrador del operador, y enlaza al operador. Una de red ya terminada o retirada también se abre en solo lectura. Ninguna de las dos ofrece controles que fallarían.
+
+**FR-SA-PROM-10** En la consola del mercante, una promoción de red figura como «Publicada por **PuntoCash**» (**FR-AD-PROM-3**); nunca se muestra el nombre de la persona de PuntoCash que la publicó. Ese nombre queda en el registro de auditoría y en la ficha de esta consola.
+
+**Ver en la demo:** `/super-admin/promociones` con `emarrero@puntocash.com`. Vigentes: una de toda la red y una dirigida a Santiago, Holguín y Camagüey; Programadas: la del horario de fin de año. Atajos: «Nueva promoción», «Solo las sedes que elija» y marcar las de La Habana. Saturación: publicar tres promociones vigentes hoy en PuntoCash Santiago y abrir una cuarta.
 
 ---
 
