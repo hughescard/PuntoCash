@@ -18,9 +18,12 @@ import { useHydrated } from "@/lib/use-hydrated";
 export function FormularioPeriodo({
   className,
   children,
+  ruta = "/admin/reportes",
 }: {
   className?: string;
   children: React.ReactNode;
+  /** La pantalla de reportes a la que pertenece: la de cada consola. */
+  ruta?: string;
 }): React.JSX.Element {
   const router = useRouter();
   const hydrated = useHydrated();
@@ -29,13 +32,13 @@ export function FormularioPeriodo({
   const aplicar = (form: HTMLFormElement) => {
     const q = new URLSearchParams();
     for (const [k, v] of new FormData(form)) if (typeof v === "string" && v) q.set(k, v);
-    startTransition(() => router.push(`/admin/reportes?${q.toString()}` as Route, { scroll: false }));
+    startTransition(() => router.push(`${ruta}?${q.toString()}` as Route, { scroll: false }));
   };
 
   return (
     <form
       method="get"
-      action="/admin/reportes"
+      action={ruta}
       aria-busy={pendiente || undefined}
       className={className}
       onChange={(e) => {

@@ -65,10 +65,9 @@ export async function reportePdf(k: Contenido): Promise<Uint8Array> {
   page.drawText(k.empresa, { x: M, y: y - 38, size: 10, font: f.medium, color: c(COLOR.gris) });
   y -= 60;
 
-  const datos: [string, string][] = [
+  const datos: (readonly [string, string])[] = [
     ["Periodo", k.periodo],
-    ["Sedes", k.sedes],
-    ["Trabajador", k.trabajador],
+    ...k.portada,
     ["Generado", `${fechaYHora(k.generado.toISOString())} · ${k.generadoPor}`],
   ];
   for (const [etiqueta, valor] of datos) {
@@ -116,7 +115,7 @@ export async function reportePdf(k: Contenido): Promise<Uint8Array> {
     const escala = Math.max(0.7, Math.min(1, util / anchoMinimo(s)));
     const tamFila = 8.5 * escala;
     const tamCabecera = 6.5 * escala;
-    const cabecera = [s.primera, ...(s.segunda ? [s.segunda] : []), "Operaciones", ...s.columnas];
+    const cabecera = [s.primera, ...(s.segunda ? [s.segunda] : []), s.etiquetaOperaciones ?? "Operaciones", ...s.columnas];
     const numerica = (i: number) => i >= (s.segunda ? 2 : 1);
 
     const pintarCabecera = () => {
@@ -158,11 +157,26 @@ export async function reportePdf(k: Contenido): Promise<Uint8Array> {
       }
     };
 
-    const celdasDe = (titulo: string, segunda: string | undefined, operaciones: number, valores: number[]) => [
+    const celdasDe = (
+      titulo: string,
+      segunda: string | undefined,
+      operaciones: number,
+      valores: (number | null)[],
+    ) => [
       titulo,
       ...(s.segunda ? [segunda ?? ""] : []),
-      String(operaciones),
-      ...valores.map((v, i) => (s.conSigno?.[i] ? formatSignedAmount(v) : v === 0 ? "—" : formatAmount(v))),
+      s.operacionesConDecimales ? formatAmount(operaciones, 1) : String(operaciones),
+      ...valores.map((v, i) =>
+        v === null
+          ? ""
+          : s.conSigno?.[i]
+            ? formatSignedAmount(v)
+            : s.enteras?.[i]
+              ? String(v)
+              : v === 0
+                ? "—"
+                : formatAmount(v),
+      ),
     ];
 
     for (const r of s.filas) fila(celdasDe(r.titulo, r.segunda, r.operaciones, r.valores), f.regular, "fino");
@@ -174,7 +188,8 @@ export async function reportePdf(k: Contenido): Promise<Uint8Array> {
       }
       page.drawLine({ start: { x: M, y }, end: { x: M + util, y }, thickness: 1, color: c(COLOR.navy) });
       const operaciones = s.filas.reduce((a, r) => a + r.operaciones, 0);
-      const valores = s.columnas.map((_, i) => s.filas.reduce((a, r) => a + r.valores[i]!, 0));
+      /* Una columna que no se suma se deja en blanco. */
+      const valores = s.columnas.map((_, i) => (s.sinTotal?.[i] ? null : s.filas.reduce((a, r) => a + r.valores[i]!, 0)));
       fila(celdasDe("Total", "", operaciones, valores), f.semibold, "total");
     }
     y -= 22;

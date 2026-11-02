@@ -27,6 +27,9 @@ export function TablaReporte({
   primera,
   vacio,
   conSigno = [],
+  enteras = [],
+  operacionesConDecimales = false,
+  ordenInicial = { clave: "titulo", desc: false },
 }: {
   filas: readonly FilaReporte[];
   /** Las monedas, o las cifras, de las columnas: una cada una. */
@@ -37,8 +40,14 @@ export function TablaReporte({
   vacio: string;
   /** Columnas que pueden ser negativas y llevan signo. */
   conSigno?: readonly string[];
+  /** Columnas que cuentan cosas —«Sedes»— y no llevan decimales. */
+  enteras?: readonly string[];
+  /** Las operaciones son un promedio (la vista por sede administrada) y se escriben con decimales. */
+  operacionesConDecimales?: boolean;
+  /** El orden con el que se abre la tabla; por defecto, por nombre. */
+  ordenInicial?: { clave: Clave; desc: boolean };
 }): React.JSX.Element {
-  const [orden, setOrden] = React.useState<{ clave: Clave; desc: boolean }>({ clave: "titulo", desc: false });
+  const [orden, setOrden] = React.useState<{ clave: Clave; desc: boolean }>(ordenInicial);
 
   const ordenadas = ordenable
     ? [...filas].sort((a, b) => {
@@ -99,7 +108,7 @@ export function TablaReporte({
       cardHeader: "Operaciones",
       sort: sort("operaciones"),
       numeric: true,
-      cell: (f) => f.operaciones,
+      cell: (f) => (operacionesConDecimales ? formatAmount(f.operaciones, 1) : f.operaciones),
     },
     ...columnas.map(
       (m): ResponsiveColumn<FilaReporte> => ({
@@ -111,6 +120,7 @@ export function TablaReporte({
         cell: (f) => {
           const v = f.volumen[m] ?? 0;
           if (conSigno.includes(m)) return formatSignedAmount(v);
+          if (enteras.includes(m)) return v;
           return v === 0 ? <span className="text-text-secondary">—</span> : formatAmount(v);
         },
       }),
@@ -134,7 +144,7 @@ export function TablaReporte({
             <option value="operaciones|desc">Más operaciones</option>
             {columnas.map((m) => (
               <option key={m} value={`${m}|desc`}>
-                Más volumen en {m}
+                {enteras.includes(m) ? `Más ${m.toLowerCase()}` : `Más volumen en ${m}`}
               </option>
             ))}
           </select>

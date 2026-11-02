@@ -1,11 +1,13 @@
 # PuntoCash — Super Admin
-## Documento de Requisitos Funcionales (FRD) · v3.3
+## Documento de Requisitos Funcionales (FRD) · v3.4
 
 **Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/super-admin` contiene un README de marcador de posición.
 
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y como referencia de aceptación.
 
 **Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
+
+**Control de cambios — v3.4 (2026-11-02).** **Reportes: lo que se pide ahora es lo que se construyó, y el reporte se puede descargar.** §12 estaba escrita antes de decidir qué cuenta como volumen de un mercante cuando una sede cambia de manos, y decía «sin exportación». Se reescribe. REP-1 y REP-2 fijan los cinco cortes y el periodo (el de Admin, con un solo tope: un año). REP-4 deja de pedir «normalizar» en abstracto: el corte por operador muestra el **total** y, con un interruptor, el **promedio por sede administrada**, y la columna «Sedes» dice entre cuántas se divide. REP-5 (nuevo) fija de quién es cada operación: **el mercante que administraba la sede el día en que se hizo**, no el de hoy, de modo que el reporte de un mercante no cambia cuando una sede se entrega a otro; una fila «Sin operador» aparece solo si hay operaciones sin dueño, para que las filas sigan sumando el total. REP-8 (nuevo): se exporta a **Excel** y a **PDF** con los cinco cortes, y por eso la línea de §17 que decía «sin exportación de reportes» pasa a decir solo «de auditoría». La excepción a **[R11]** es la misma que en Admin: el archivo lleva únicamente totales, nunca datos de un cliente.
 
 **Control de cambios — v3.3 (2026-11-02).** **Promociones de red: el destino se guarda como sedes, no como regla; la saturación dice de quién es el exceso; y la lista es solo de lo que PuntoCash gobierna.** §11 se precisa en cuatro puntos. (1) **FR-SA-PROM-2**: «por operador» y «por provincia» dejan de ser criterios de destino y pasan a ser **atajos para marcar sedes**. Lo que una promoción guarda es «toda la red» —que incluye las sedes que se creen después— o la lista de sedes marcadas; si una sede cambia de operador sigue mostrándola, porque el cliente en la sala ve PuntoCash y no al operador. (2) **FR-SA-PROM-5** se reparte en dos sitios: el formulario dice, por sede, con cuántas coincidiría **a la vez** y de quién es cada una, y el listado avisa de las sedes que hoy ya pasan de cuatro. Separar «de PuntoCash» de «de un operador» importa porque PuntoCash solo puede retirar las suyas. (3) **FR-SA-PROM-9** (nuevo): el listado contiene **solo** las de red; las de un operador cuentan para la saturación y se abren en solo lectura desde la ficha de la sede, pero no son de esta consola. (4) **FR-SA-PROM-10** (nuevo): el administrador de sede ve «Publicada por PuntoCash» en una promoción de red, nunca el nombre de la persona que la publicó. Además, el formulario conserva lo escrito tras un rechazo del servidor (FR-SA-PROM-3 remite a FR-AD-PROM-5).
 
@@ -405,19 +407,23 @@ Tres vistas, dos de ellas editables. Es el marco dentro del cual cada mercante d
 
 ## 12. Reportes
 
-**FR-SA-REP-1** `/super-admin/reportes` presenta el volumen de la red en cinco cortes: **por operador**, **por sede**, **por servicio**, **por provincia** y **por día**.
+**FR-SA-REP-1** `/super-admin/reportes` presenta el volumen de la red en cinco cortes: **por operador**, **por sede**, **por servicio**, **por provincia** y **por día**. Se elige el corte en «Agrupar por»; las cifras de arriba (operaciones completadas y volumen por moneda) son las del periodo entero y no cambian con el corte.
 
-**FR-SA-REP-2** Rango de fechas y accesos rápidos, igual que **FR-AD-REP-2**.
+**FR-SA-REP-2** El periodo se elige con rangos rápidos (hoy, últimos 7 días, últimos 30 días, mes en curso) o con dos fechas, igual que **FR-AD-REP-2**; un periodo de más de un año se recorta y la pantalla lo dice. Cambiar de corte conserva el periodo.
 
-**FR-SA-REP-3** Cifras por moneda, sin conversión a moneda única (**FR-AD-REP-3**).
+**FR-SA-REP-3** Cifras por moneda, sin conversión a moneda única (**FR-AD-REP-3**). Cada operación completada cuenta una vez y en bruto; la posición neta de un cambio de moneda se muestra aparte, nunca como volumen.
 
-**FR-SA-REP-4** El corte **por operador** permite comparar mercantes entre sí en número de operaciones y volumen por moneda, normalizado por número de sedes administradas para que la comparación sea legible.
+**FR-SA-REP-4** El corte **por operador** compara mercantes entre sí: operaciones, **«Sedes»** (las que administró en algún momento del periodo) y volumen por moneda. Un interruptor, «Total del mercante» / «Por sede administrada», divide operaciones y volumen entre sus sedes, para que un mercante de tres sedes y uno de una se puedan comparar; «Sedes» no se divide, y un mercante sin sedes en el periodo no aparece en esa vista. El interruptor solo existe en este corte.
 
-**FR-SA-REP-5** El corte **por sede** permite identificar las sedes de mayor y menor actividad, con el operador de cada una a la vista.
+**FR-SA-REP-5** Cada operación es **del mercante que administraba la sede el día en que se hizo**, no del que la administra hoy (**FR-SA-OPS-2**). Una fila «Sin operador» aparece solo si hay operaciones sin dueño, para que la suma de las filas siga siendo el total.
 
-**FR-SA-REP-6** Ninguna representación gráfica introduce una paleta propia ni elementos decorativos (**FR-AD-REP-5**).
+**FR-SA-REP-6** El corte **por sede** identifica las sedes de mayor y menor actividad, con el operador de cada una a la vista —los dos, si cambió en el periodo—; se abre ordenado por operaciones, de mayor a menor. Las sedes cerradas solo salen si operaron en el periodo. El corte **por provincia** agrupa las sedes del reporte por su provincia, y el **por servicio** separa compra y venta de divisa y añade el cambio por divisa (comprado, vendido, volumen y posición neta). Ninguna gráfica introduce una paleta propia ni elementos decorativos (**FR-AD-REP-5**).
 
-**FR-SA-REP-7** Los reportes no muestran comisiones, rentas, liquidaciones ni margen **[A8]**, y no incluyen exportación a archivo en esta versión **[R11]**.
+**FR-SA-REP-7** Los reportes no muestran comisiones, rentas, liquidaciones ni margen **[A8]**.
+
+**FR-SA-REP-8** «Exportar a Excel» y «Exportar a PDF» descargan el periodo de la pantalla con **los cinco cortes**, más la vista por sede administrada, en `/super-admin/reportes/exportar/{xlsx|pdf}`. Sin sesión de PuntoCash llevan al acceso; otro formato responde 404. Cada exportación queda en la auditoría como «reporte exportado». El archivo lleva solo totales **[R11]**.
+
+**Ver en la demo:** `/super-admin/reportes` con `emarrero@puntocash.com`. «Agrupar por» recorre los cinco cortes; en «Por operador», «Por sede administrada» divide entre sedes; «Exportar a Excel» y «Exportar a PDF» descargan el periodo en pantalla.
 
 ---
 
@@ -510,7 +516,7 @@ La pantalla que hace verificable todo lo anterior.
 - **Sin sub-roles**: el Super Admin es un rol único e indivisible, lo que significa que cualquier persona con esta consola puede revocar una sede, suspender a un mercante o darlo de baja. Si el negocio quiere separar quien consulta de quien decide, es una decisión pendiente.
 - **Sin gestión de cajas, equipos, trabajadores, usuarios administradores, listas de monedas por sede ni pares de cotización.** Son ausencias deliberadas **[A14]**, especificadas en FR-SA-EQ-5, FR-SA-TRAB-4, FR-SA-OPE-6, FR-SA-TASA-8 y FR-SA-TASA-13, y explicadas al usuario en FR-SA-STATE-4. No son carencias por cubrir más adelante.
 - **Sin inventario de Pantallas informativas** **[FR-SA-EQ-9]**.
-- **Sin exportación de reportes ni de auditoría** **[R11]**. La auditoría es el caso donde esa carencia más probablemente se note.
+- **Sin exportación de la auditoría** **[R11]**. Es el caso donde esa carencia más probablemente se note. Los reportes sí se exportan (**FR-SA-REP-8**), porque solo llevan totales.
 - **Sin notificaciones** fuera de la consola: un mercante suspendido se entera al intentar entrar, no por correo. Merece revisión del negocio.
 - **Sin recuperación de acceso** funcional.
 - **Sin nada económico** **[A8]**.

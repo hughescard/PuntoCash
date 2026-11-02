@@ -1,11 +1,10 @@
-import * as React from "react";
 import Link from "next/link";
 import type { Metadata, Route } from "next";
 import { redirect } from "next/navigation";
 import { CalendarDays, FileSpreadsheet, FileText, Layers, Store, UserRound } from "lucide-react";
 
 import { PageHeader } from "@/components/shell/app-shell";
-import { Alert, Button, Card, CardContent, Input } from "@/components/ui";
+import { Alert, Button, Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { formatAmount } from "@/lib/format";
 import { getAdminSession } from "@/features/admin/session-server";
@@ -14,6 +13,7 @@ import { calcularReporte, diaLargo, type Corte } from "./calculo";
 import { TablaReporte } from "./tabla-reporte";
 import { GraficoPorDia } from "./grafico-por-dia";
 import { FormularioPeriodo } from "./formulario-periodo";
+import { Cifra } from "./cifra";
 
 export const metadata: Metadata = {
   title: "Administración de sede · Reportes",
@@ -84,7 +84,7 @@ export default async function AdminReportesPage({
         actions={
           /* FR-AD-REP-7: los cortes del periodo y el trabajador que hay en pantalla. Enlaces
              corrientes y no `Link`: un archivo no se precarga. */
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Button variant="secondary" asChild>
               <a href={exportar("xlsx")} download>
                 <FileSpreadsheet aria-hidden="true" />
@@ -278,26 +278,5 @@ export default async function AdminReportesPage({
         </section>
       ) : null}
     </>
-  );
-}
-
-function Cifra({ etiqueta, valor, largo }: { etiqueta: string; valor: string; largo: number }): React.JSX.Element {
-  return (
-    <Card>
-      <CardContent className="px-4 pb-5 pt-5 sm:px-6 sm:pb-6 sm:pt-6">
-        <p className="text-caption uppercase tracking-wide text-text-secondary">{etiqueta}</p>
-        {/* Una cifra no se parte nunca en dos líneas: si las hay largas, todas bajan de tamaño. */}
-        <p
-          className={cn(
-            "pc-numeric mt-2 whitespace-nowrap text-text-primary",
-            /* En el teléfono, dos tarjetas por fila: el tamaño se ajusta a la cifra más larga del total. */
-            largo > 12 ? "text-body font-semibold" : largo > 8 ? "text-card-title" : "text-section-title",
-            largo > 12 ? "sm:text-section-title" : "sm:text-screen-title",
-          )}
-        >
-          {valor}
-        </p>
-      </CardContent>
-    </Card>
   );
 }
