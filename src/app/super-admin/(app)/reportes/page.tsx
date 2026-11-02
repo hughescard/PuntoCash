@@ -30,7 +30,7 @@ const CORTES: readonly { value: CorteRed; label: string; icon: typeof Store }[] 
 ];
 
 /**
- * Reportes de la red — **FR-SA-REP-1** a **FR-SA-REP-9**.
+ * Reportes de la red — **FR-SA-REP-1** a **FR-SA-REP-8**.
  *
  * El volumen de toda la red, en un corte a la vez y en un rango de fechas. La
  * definición es la de Admin: por moneda, en bruto, cada operación completada una

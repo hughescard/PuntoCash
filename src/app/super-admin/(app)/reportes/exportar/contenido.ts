@@ -11,7 +11,7 @@ import {
 } from "../calculo";
 
 /**
- * Lo que lleva un reporte de la red exportado — **FR-SA-REP-9**.
+ * Lo que lleva un reporte de la red exportado — **FR-SA-REP-8**.
  *
  * Es el mismo `Contenido` que pinta el archivo de Admin, con otra portada: los
  * cinco cortes del periodo y, junto al de operador, su comparación por sede

@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Exportar el reporte de la red — **FR-SA-REP-9**, sobre la plantilla de Admin.
+ * Exportar el reporte de la red — **FR-SA-REP-8**, sobre la plantilla de Admin.
  *
  * `GET /super-admin/reportes/exportar/pdf` o `/xlsx`, con el mismo periodo de
  * la pantalla en la dirección. Sale del mismo cálculo que la pantalla y lleva
