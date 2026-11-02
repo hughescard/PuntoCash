@@ -19,9 +19,12 @@ import type { NavGroup, NavItem } from "@/components/shell/sidebar-nav";
 /**
  * Los destinos de la consola de PuntoCash, en un solo sitio (FR-SA-SHELL-2).
  *
- * Tres bloques que separan lo que PuntoCash **decide** de lo que **solo
- * consulta** (FR-SA-SHELL-3): quien busca en «Consulta» un botón para crear
- * una caja ya sabe, por dónde está, que esa sección no lo tiene.
+ * Cuatro bloques por lo que la persona viene a hacer, no por el permiso que
+ * tiene en cada pantalla: **Red** (quién y dónde: sedes, operadores, cajas,
+ * trabajadores), **Oferta** (qué se ofrece: servicios, monedas y tasas,
+ * promociones), **Actividad** (qué pasa: jornadas, operaciones, reportes) y
+ * **Administración** (quién entra a la consola y qué dejó huella). Dentro de
+ * cada pantalla, lo que PuntoCash puede o no cambiar ya se ve por sus botones.
  */
 
 export interface SuperAdminNavBadges {
@@ -48,11 +51,12 @@ export function superAdminNavGroups(
         { href: "/super-admin/inicio", label: "Inicio", icon: House },
         { href: "/super-admin/sedes", label: "Sedes", icon: Store, badge: badges.sedes },
         { href: "/super-admin/operadores", label: "Operadores", icon: Building2 },
-        ...(principal ? [{ href: "/super-admin/usuarios", label: "Usuarios", icon: UserCog }] : []),
+        { href: "/super-admin/equipos", label: "Cajas y equipos", icon: MonitorSmartphone },
+        { href: "/super-admin/trabajadores", label: "Trabajadores", icon: Users },
       ],
     },
     {
-      label: "Límites",
+      label: "Oferta",
       items: [
         { href: "/super-admin/servicios", label: "Servicios", icon: LayoutGrid },
         { href: "/super-admin/monedas-y-tasas", label: "Monedas y tasas", icon: Coins },
@@ -60,13 +64,17 @@ export function superAdminNavGroups(
       ],
     },
     {
-      label: "Consulta",
+      label: "Actividad",
       items: [
-        { href: "/super-admin/equipos", label: "Cajas y equipos", icon: MonitorSmartphone },
-        { href: "/super-admin/trabajadores", label: "Trabajadores", icon: Users },
         { href: "/super-admin/jornadas", label: "Jornadas", icon: CalendarClock },
         { href: "/super-admin/operaciones", label: "Operaciones", icon: List },
         { href: "/super-admin/reportes", label: "Reportes", icon: ChartColumn },
+      ],
+    },
+    {
+      label: "Administración",
+      items: [
+        ...(principal ? [{ href: "/super-admin/usuarios", label: "Usuarios", icon: UserCog }] : []),
         { href: "/super-admin/auditoria", label: "Auditoría", icon: ScrollText },
       ],
     },

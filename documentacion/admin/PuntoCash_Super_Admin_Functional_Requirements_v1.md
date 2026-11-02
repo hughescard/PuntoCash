@@ -47,9 +47,9 @@ Y como el resto de la capa: no opera caja, no registra operaciones, no verifica 
 
 **FR-SA-SHELL-1** Misma composición de shell que la consola del mercante, con grupos de rutas `(auth)` y `(app)` (equivale a **FR-AD-SHELL-1**).
 
-**FR-SA-SHELL-2** La barra lateral debe agrupar sus destinos en tres bloques que reflejen el reparto de §0: **Red** (Inicio, Sedes, Operadores), **Límites** (Servicios, Monedas y tasas, Promociones) y **Consulta** (Cajas y equipos, Trabajadores, Operaciones, Reportes, Auditoría).
+**FR-SA-SHELL-2** La barra lateral debe agrupar sus destinos en cuatro bloques, por lo que la persona viene a hacer: **Red** (Inicio, Sedes, Operadores, Cajas y equipos, Trabajadores), **Oferta** (Servicios, Monedas y tasas, Promociones), **Actividad** (Jornadas, Operaciones, Reportes) y **Administración** (Usuarios, solo para el principal; Auditoría).
 
-**FR-SA-SHELL-3** Esa agrupación es un requisito, no una preferencia de diseño: separar lo que PuntoCash decide de lo que solo consulta es la forma más directa de que nadie busque en esta consola un botón que no existe **[A14]**.
+**FR-SA-SHELL-3** La agrupación no separa lo que PuntoCash decide de lo que solo consulta: esa distinción no ayudaba a encontrar nada (nadie busca Promociones o Servicios pensando en «límites»). Lo que PuntoCash puede cambiar en cada pantalla lo dicen sus propios botones **[A14]**.
 
 **FR-SA-SHELL-4** La cabecera muestra la marca **PuntoCash**, un distintivo visible que identifica la consola como administración general de la red, el nombre de la persona con sesión iniciada, y los accesos de Perfil y Cerrar sesión.
 

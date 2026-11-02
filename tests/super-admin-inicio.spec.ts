@@ -46,7 +46,7 @@ test.describe("shell", () => {
 
   test("la barra lateral separa lo que se decide de lo que se consulta", async ({ page }) => {
     const nav = page.getByRole("navigation", { name: "Navegación principal" });
-    for (const grupo of ["Red", "Límites", "Consulta"]) await expect(nav.getByText(grupo, { exact: true })).toBeVisible();
+    for (const grupo of ["Red", "Oferta", "Actividad", "Administración"]) await expect(nav.getByText(grupo, { exact: true })).toBeVisible();
     /* Un número, no «1»: otras suites revocan sedes de prueba en el mismo servidor. */
     await expect(nav.getByRole("link", { name: /Sedes/ })).toContainText(/\d/);
   });
