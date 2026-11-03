@@ -1,5 +1,5 @@
 # PuntoCash — Super administración
-## Documento de Requisitos Funcionales (FRD) · v5.0
+## Documento de Requisitos Funcionales (FRD) · v5.1
 
 **Alcance:** la consola de PuntoCash sobre su red, `/super-admin`. No cubre la consola del mercante (`/admin`).
 
@@ -31,6 +31,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 5.1 | 03/11/2026 | Un mercante ve cada sede solo desde que es suya; PuntoCash, todo (**FR-SA-DOM-4**) |
 | 5.0 | 03/11/2026 | **Reescritura completa en el formato de la v8 del FRD de Admin.** El documento describe la consola construida, no un diseño previo: una subsección por pantalla y por acción, rechazos con código, auditoría en tablas y «Ver en la demo». Incorpora las decisiones del 03/11: cerrar una sede termina su administración (**FR-SA-ASG-13**); una sede suspendida sin operador se asigna y PuntoCash mantiene su contacto (**FR-SA-SEDE-24**, **FR-SA-ASG-12**); toda credencial entregada es la contraseña (**FR-SA-OPE-16**, **FR-SA-USR-6**); motivo al cambiar un rango ya definido, al retirar una promoción de red y al traspasar el principal (**FR-SA-TASA-16**, **FR-SA-PROM-12**, **FR-SA-USR-10**). Secciones nuevas: Jornadas (**FR-SA-JOR**), Usuarios (**FR-SA-USR**) y Perfil (**FR-SA-PERF**). Los códigos de la v4.2 se conservan donde el requisito sigue; los redefinidos y los retirados se listan abajo |
 | 4.2 | 03/11/2026 | Banderas de la lista ISO (FR-SA-MON-9) |
 | 4.1 | 03/11/2026 | Rangos con hasta 4 decimales |
@@ -1130,7 +1131,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 **FR-SA-DOM-3 · Lo que el dominio no expone a esta consola.** Ninguna escritura sobre cajas, equipos, trabajadores, administradores de un mercante (salvo el restablecimiento del principal), monedas de una sede ni tasas de una sede (salvo el ajuste al límite, **FR-SA-TASA-8**) acepta el alcance global **[RP-26]**.
 
-**FR-SA-DOM-4 · Operador en una fecha.** El dominio responde quién administraba una sede en cualquier instante **[RP-20]**, y Jornadas, Operaciones, Reportes y los recuentos de Operadores lo usan **[RP-27]**.
+**FR-SA-DOM-4 · Operador en una fecha.** El dominio responde quién administraba una sede en cualquier instante **[RP-20]**, y Jornadas, Operaciones, Reportes y los recuentos de Operadores lo usan **[RP-27]**. Con el alcance de un operador, las lecturas de jornadas, solicitudes y operaciones devuelven solo lo ocurrido en sus tramos (**FR-AD-SCOPE-7**); con el alcance global, todo.
 
 ---
 

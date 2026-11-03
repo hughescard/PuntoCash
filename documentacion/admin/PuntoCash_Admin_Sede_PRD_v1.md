@@ -1,11 +1,13 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos de Producto (PRD) · v1.18
+## Documento de Requisitos de Producto (PRD) · v1.19
 
 **Estado:** Describe la consola de administración de sede **completa**. Lo que queda fuera de la capa se nombra en §6; no se da por hecho en ningún punto de este documento.
 
 **Destinatarios:** Producto, negocio, liderazgo técnico, jefatura de proyecto, desarrollo y QA.
 
 **Alcance:** Únicamente la consola **Admin de sede** (`/admin`), la del mercante que administra una o varias sedes. **No cubre Super Admin** (`/super-admin`), la consola de PuntoCash sobre su red: esa consola tiene su propio PRD, `PuntoCash_Super_Admin_PRD_v1.md`.
+
+**Control de cambios — v1.19 (03/11/2026).** **Una sede se ve desde que es del mercante.** Quien recibe una sede no ve las jornadas, aprobaciones ni operaciones del operador anterior; hereda la sucursal montada.
 
 **Control de cambios — v1.18 (21/10/2026).** Revisión completa antes de la entrega. Tres decisiones de producto: **cambiar de sede no hace perder la pantalla** —se conservan el periodo y los filtros, salvo la caja y el trabajador, que son de la sede que se deja—; el **motivo** de desactivar a un trabajador o corregir su correo es obligatorio pero **sin largo mínimo**, porque basta con que diga algo; y un reporte exportado con un trabajador elegido **no lleva el corte por trabajador**, que sería una sola fila. El documento deja de llamarse entrega parcial.
 
@@ -222,6 +224,8 @@ Una caja **no empieza de cero cada día**: lo que deja un cierre es lo que encue
 **Operaciones** responde *¿qué han hecho mis cajas con cada cliente?*: cada cambio de moneda, cada remesa pagada, cada giro enviado o pagado, con su cliente, su importe y su estado. Se listan **todas**, también las rechazadas, fallidas o canceladas, porque muchas en una misma caja dicen algo. El detalle es el mismo que ve el trabajador, con lo que él no necesita y el mercante sí: dónde se hizo, quién la hizo, en qué jornada y, si vino del kiosco, qué solicitud la originó. Es de **solo lectura**: desde aquí no se reimprime, no se anula ni se corrige nada **[A6]**, **[A7]**.
 
 Todo lo que esta consola muestra está acotado al **alcance vigente** de la sesión: las sedes que el operador administra en este momento. El selector de alcance filtra dentro de ese conjunto; no lo elige ni lo amplía **[A1]**.
+
+Y dentro de cada sede, **solo desde que es suya**. Cuando una sede cambia de manos, el mercante que la recibe no ve las jornadas, las aprobaciones ni las operaciones del anterior: no responde de ellas, y son actividad de otra empresa. Lo que hereda es la sucursal montada —cajas, equipos, trabajadores, monedas y tasas—, que sí ve completa. PuntoCash, en cambio, ve el historial entero de cada sede.
 
 ---
 

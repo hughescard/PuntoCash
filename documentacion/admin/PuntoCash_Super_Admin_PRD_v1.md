@@ -1,11 +1,13 @@
 # PuntoCash — Super administración
-## Documento de Requisitos de Producto (PRD) · v1.0
+## Documento de Requisitos de Producto (PRD) · v1.1
 
 **Estado:** Describe la consola de PuntoCash sobre su red **completa**, tal como se entrega. Lo que queda fuera se nombra en §6; no se da por hecho en ningún punto de este documento.
 
 **Destinatarios:** Producto, negocio, liderazgo técnico, jefatura de proyecto, desarrollo y QA.
 
 **Alcance:** Únicamente la consola **Super administración** (`/super-admin`), la que usa PuntoCash para gobernar su red. **No cubre la consola del mercante** (`/admin`), que tiene su propio PRD.
+
+**Control de cambios — v1.1 (03/11/2026).** Un mercante ve cada sede solo desde que es suya (§4, **RP-27**); PuntoCash, el historial entero.
 
 **Control de cambios — v1.0 (03/11/2026).** Primera versión. La consola tenía su diseño dentro del PRD de la capa de administración (`PuntoCash_Administracion_PRD_v1.md`), escrito cuando aún no estaba construida. Ahora que lo está, tiene documento propio, como Admin de sede y Worker. Las reglas **A1–A14** y los requisitos **RP-17 a RP-26** son de la capa entera y se citan con su número de siempre; este documento añade **RP-27 a RP-30**, que solo rigen aquí.
 
@@ -65,7 +67,7 @@ Los conceptos de la capa —sede, operador, asignación, caja, equipo, trabajado
 | --- | --- | --- |
 | **Estado de una sede** | Lo que PuntoCash **decide** se guarda: activa, suspendida o cerrada. Lo que es un **hecho** se deriva y no se guarda: **sin asignar** (no tiene operador vigente) y **operador suspendido** (su operador lo está). Una sede sin operador no está sancionada, y por eso no se le llama suspendida. | PuntoCash, lo guardado; el sistema, lo derivado |
 | **Asignación (tramo)** | El periodo en que un operador administró una sede, con inicio, fin y motivo. Una sede tiene como mucho un tramo abierto **[A2]**. Revocar y **cerrar la sede** terminan el tramo; ninguno se borra. | PuntoCash **[A3]** |
-| **Operador de la fecha** | El que administraba una sede en un momento dado. Es al que se atribuyen una jornada, una operación y su volumen, aunque hoy la sede la administre otro. | Se deriva del historial de tramos |
+| **Operador de la fecha** | El que administraba una sede en un momento dado. Es al que se atribuyen una jornada, una operación y su volumen, aunque hoy la sede la administre otro. Por lo mismo, **un mercante ve cada sede solo desde que es suya**: lo anterior es de otra empresa. PuntoCash ve el historial entero. | Se deriva del historial de tramos |
 | **Administrador principal del operador** | El primer administrador del mercante, que PuntoCash crea al dar de alta al operador. Es quien gestiona los demás administradores de su empresa en Admin. PuntoCash le **restablece el acceso** cuando hace falta, y nunca crea a nadie más dentro de la empresa. | PuntoCash lo crea; luego se traspasa dentro de la empresa |
 | **Catálogo de monedas** | Las monedas que la plataforma admite. Se eligen de la **lista ISO 4217**, que trae el código, el nombre, el símbolo y la bandera: nada de eso se escribe a mano. Toda moneda se maneja con **cuatro decimales**. Una moneda se **añade**, se **retira** y se **reincorpora**; no se edita. | PuntoCash |
 | **Rango de una moneda** | Los límites de compra y de venta, en pesos cubanos, dentro de los cuales cualquier sede de la red puede fijar la tasa de esa moneda. Sin rango, nadie la cotiza. Admite hasta cuatro decimales. | PuntoCash **[A5]** |
@@ -167,7 +169,7 @@ Rigen las catorce reglas de la capa, **A1–A14**, enunciadas en el PRD de Admin
 
 Rigen sobre esta consola **RP-17 a RP-26**, de la capa entera. Estos cuatro son propios de ella:
 
-**RP-27.** Toda jornada, operación y cifra de volumen debe atribuirse al operador que administraba su sede en la fecha en que ocurrió, y esa atribución no debe cambiar cuando la sede pasa a otro operador.
+**RP-27.** Toda jornada, operación y cifra de volumen debe atribuirse al operador que administraba su sede en la fecha en que ocurrió, y esa atribución no debe cambiar cuando la sede pasa a otro operador. Un mercante no debe ver la actividad de una sede de antes de que fuera suya.
 
 **RP-28.** Ninguna sede cerrada debe tener un operador vigente, y ningún operador debe quedar sin poder darse de baja por conservar una sede que ya no existe.
 

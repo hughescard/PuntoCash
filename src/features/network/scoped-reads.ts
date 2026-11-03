@@ -39,7 +39,7 @@
  * que debe copiar.
  */
 
-import { asignacionVigente, estaEnAlcance, sedesEnAlcance } from "./assignments";
+import { asignacionVigente, estaEnAlcance, operadorVigenteEn, sedesEnAlcance } from "./assignments";
 import type { Assignment } from "./assignments";
 import { allRegistersOf, findRegisterById, registersOf } from "./registers";
 import type { Register } from "./registers";
@@ -178,6 +178,19 @@ export function redEnAlcance(scope: Scope): RedEnAlcance {
     return estaEnAlcance(scope, sedeId);
   }
 
+  /**
+   * Lo que pasó en una sede **mientras era de este operador** (decisión del
+   * 3/11/2026): un mercante ve una sede desde que es suya, no lo que hizo en
+   * ella el operador anterior. Cuenta cada tramo suyo, también uno pasado si
+   * la sede volvió a él. PuntoCash, con alcance global, lo ve todo.
+   */
+  function suyoEnLaFecha(sedeId: string, instante: string): boolean {
+    if (!dentro(sedeId)) return false;
+    if (scope.kind === "global") return true;
+    return operadorVigenteEn(sedeId, new Date(instante)) === scope.operatorId;
+  }
+  const jornadaSuya = (j: Jornada | null): j is Jornada => j !== null && suyoEnLaFecha(j.sedeId, j.openedAt);
+
   /** Si un usuario administrador es de la empresa del alcance. */
   function esDeLaEmpresa(user: AdminUser): boolean {
     return scope.kind === "global" || user.operatorId === scope.operatorId;
@@ -225,12 +238,12 @@ export function redEnAlcance(scope: Scope): RedEnAlcance {
     },
 
     jornadas(sedeId) {
-      return dentro(sedeId) ? jornadasDeSede(sedeId) : [];
+      return dentro(sedeId) ? jornadasDeSede(sedeId).filter(jornadaSuya) : [];
     },
 
     jornada(id) {
       const j = jornadaPorId(id);
-      return j && dentro(j.sedeId) ? j : null;
+      return jornadaSuya(j) ? j : null;
     },
 
     jornadaAbiertaDeCaja(registerId) {
@@ -239,11 +252,11 @@ export function redEnAlcance(scope: Scope): RedEnAlcance {
 
     jornadaAbiertaDeTrabajador(workerId) {
       const j = jornadaAbiertaDeTrabajador(workerId);
-      return j && dentro(j.sedeId) ? j : null;
+      return jornadaSuya(j) ? j : null;
     },
 
     jornadasDeTrabajador(workerId) {
-      return jornadasDeTrabajador(workerId).filter((j) => dentro(j.sedeId));
+      return jornadasDeTrabajador(workerId).filter(jornadaSuya);
     },
 
     diaDeSede(sedeId) {
@@ -251,31 +264,29 @@ export function redEnAlcance(scope: Scope): RedEnAlcance {
     },
 
     solicitudes(sedeId) {
-      return dentro(sedeId) ? solicitudesDeSede(sedeId) : [];
+      return dentro(sedeId) ? solicitudesDeSede(sedeId).filter((s) => jornadaSuya(jornadaPorId(s.jornadaId))) : [];
     },
 
     solicitud(id) {
       const s = solicitudPorId(id);
-      return s && dentro(s.sedeId) ? s : null;
+      return s && jornadaSuya(jornadaPorId(s.jornadaId)) ? s : null;
     },
 
     solicitudesDeJornada(jornadaId) {
-      const j = jornadaPorId(jornadaId);
-      return j && dentro(j.sedeId) ? solicitudesDeJornada(jornadaId) : [];
+      return jornadaSuya(jornadaPorId(jornadaId)) ? solicitudesDeJornada(jornadaId) : [];
     },
 
     operaciones(sedeId) {
-      return dentro(sedeId) ? operacionesDeSede(sedeId) : [];
+      return dentro(sedeId) ? operacionesDeSede(sedeId).filter((o) => suyoEnLaFecha(sedeId, o.fechaHora)) : [];
     },
 
     operacion(codigo) {
       const o = operacionPorCodigo(codigo);
-      return o && dentro(o.sedeId) ? o : null;
+      return o && suyoEnLaFecha(o.sedeId, o.fechaHora) ? o : null;
     },
 
     operacionesDeJornada(jornadaId) {
-      const j = jornadaPorId(jornadaId);
-      return j && dentro(j.sedeId) ? operacionesDeJornada(jornadaId) : [];
+      return jornadaSuya(jornadaPorId(jornadaId)) ? operacionesDeJornada(jornadaId) : [];
     },
 
     diferenciasDelDia(sedeId) {

@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v8.6
+## Documento de Requisitos Funcionales (FRD) · v8.7
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 8.7 | 03/11/2026 | **Una sede se ve desde que es del operador (FR-AD-SCOPE-7, nuevo).** Las jornadas, solicitudes y operaciones del operador anterior dejan de verse. |
 | 8.6 | 03/11/2026 | **Las tasas admiten hasta 4 decimales** (código `demasiados-decimales`; cifras con mínimo 2 y máximo 4). FR-AD-STATE-7 se comprueba también a 1280 y 1440; la lista de Operaciones deja que el texto de la sede se parta, y la de Jornadas deja partirse la fecha y el horario, para no desbordar a 1280. |
 | 8.5 | 03/11/2026 | **Worker queda recableado contra la lista de la sede (FR-AD-MON-2).** «Añadir moneda» en la caja ofrece las monedas de la lista de su sede que la caja aún no tiene habilitadas; Worker ya no tiene una lista propia. Si la caja ya tiene todas las de la sede, la pantalla lo dice y remite al administrador. Nombre y símbolo de cada moneda salen de la lista ISO 4217 compartida por toda la plataforma, y todas las monedas se manejan con cuatro decimales (decisión de PuntoCash, FRD de Super administración v3.8). |
 | 8.4 | 03/11/2026 | **Las monedas que PuntoCash retira del catálogo dejan de ofrecerse.** «Añadir moneda» solo lista las monedas disponibles, y el dominio rechaza con `moneda-retirada` añadir una retirada a una sede. Las sedes que ya la tienen **la conservan**, con su saldo y su historial, hasta que su mercante la quite (FR-AD-MON-6 y -7 no cambian). Código nuevo en el Apéndice C. Consecuencia del catálogo mantenido por PuntoCash (FRD de Super Admin v3.7). |
@@ -195,6 +196,10 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 - La selección se olvida en ese momento. Si la sede vuelve a asignarse más tarde, la consola no se filtra a ella sin que nadie la elija.
 
 No se puede ver en la demo.
+
+**FR-AD-SCOPE-7 · Desde que es suya.** Dentro de cada sede, la consola muestra solo lo ocurrido **mientras la administra el operador de la sesión**: jornadas (por su apertura), sus movimientos y solicitudes, y operaciones (por su fecha). Lo que hizo el operador anterior no aparece en ningún listado, detalle, recuento ni reporte, y su dirección directa responde como inexistente (`no-encontrada`). Si una sede vuelve a un operador que ya la tuvo, ve también sus tramos anteriores. Cajas, equipos, trabajadores, monedas y tasas son los de hoy y se ven completos **[A1]**.
+
+**Ver en la demo:** `rortega@caribecambios.cu` (Caribe, que tiene PuntoCash Miramar desde el 30/06/2026), Jornadas con «Desde» 01/06/2026: no aparece ninguna de junio. En Super administración, las mismas fechas muestran las de Atlántico.
 
 ---
 
