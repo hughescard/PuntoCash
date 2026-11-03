@@ -1,11 +1,13 @@
 # PuntoCash — Super Admin
-## Documento de Requisitos Funcionales (FRD) · v3.8
+## Documento de Requisitos Funcionales (FRD) · v3.9
 
 **Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/super-admin` contiene un README de marcador de posición.
 
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y como referencia de aceptación.
 
 **Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
+
+**Control de cambios — v3.9 (2026-11-03).** **Una promoción de red llega a toda sede, ofrezca o no el servicio que anuncia (FR-SA-PROM-11, nuevo).** Una sede no solo presta servicios: también es el escaparate de PuntoCash, y por eso informa y promociona a sus clientes haya o no una operación detrás del aviso, y lo hace igual la administre PuntoCash o un mercante. Por eso la consola **no** cruza el destino de una promoción con los servicios habilitados de cada sede. Cierra la duda que quedaba abierta desde el tramo 5. Sin cambios de comportamiento.
 
 **Control de cambios — v3.8 (2026-11-03).** **Las monedas se eligen de la lista ISO 4217, y los decimales son cuatro, fijos.** (1) «Añadir moneda» ya no pide código, nombre, símbolo y decimales: PuntoCash **elige una moneda de la lista ISO 4217** (159 monedas, sin metales ni unidades de cuenta) y de ella salen el código, el nombre y el símbolo. Así no se puede registrar una moneda con un código o un símbolo equivocado, ni quedarse con uno que luego no se pueda corregir. La lista solo ofrece las que no están ya en el catálogo, retiradas incluidas (esas se reincorporan). (2) **Toda moneda se maneja con cuatro decimales**, sin excepción y sin que nadie lo pueda editar: es una regla del catálogo, no un dato de cada moneda, así que el alta no lo pregunta y la tabla ya no lo muestra por fila. Dicho: ninguna pantalla existente formatea importes con cuatro decimales todavía; la regla queda fijada en el catálogo y se aplica a medida que cada pantalla se revise. (3) En la tabla, las tres acciones de cada fila (rango, retirar rango, retirar o reincorporar moneda) pasan a un **menú «⋯» de acciones**, para no repetir los mismos tres botones en cada fila. (4) **Worker queda recableado**: «Añadir moneda» en la caja ofrece la lista de monedas de la sede de la caja (la que decide su mercante, **FR-AD-MON-2**) menos las que la caja ya tiene, y ya no tiene catálogo propio. Una moneda nueva del catálogo llega a la caja solo si el mercante la añade antes a su sede. Esto sustituye la salvedad del v3.7 sobre la lista fija de once monedas.
 
@@ -414,6 +416,8 @@ Tres vistas, dos de ellas editables. Es el marco dentro del cual cada mercante d
 **FR-SA-PROM-9** El listado contiene **solo** las promociones de red. Las de un operador no son de esta consola: cuentan para la saturación (**FR-SA-PROM-5**) y se abren **en solo lectura** desde «Promociones en pantalla hoy» de la ficha de la sede, que enlaza cada una e indica quién la publica. Esa ficha dice de quién es, que PuntoCash no la cambia ni la retira porque la gobierna el administrador del operador, y enlaza al operador. Una de red ya terminada o retirada también se abre en solo lectura. Ninguna de las dos ofrece controles que fallarían.
 
 **FR-SA-PROM-10** En la consola del mercante, una promoción de red figura como «Publicada por **PuntoCash**» (**FR-AD-PROM-3**); nunca se muestra el nombre de la persona de PuntoCash que la publicó. Ese nombre queda en el registro de auditoría y en la ficha de esta consola.
+
+**FR-SA-PROM-11** El destino de una promoción de red **no depende de los servicios de la sede**: puede llegar a una sede que no ofrece el servicio que anuncia. Una sede cumple también una función publicitaria para PuntoCash —informa y promociona ante sus clientes—, la administre PuntoCash o un mercante, y esa función no está atada a lo que se opere en ella. La consola no avisa ni bloquea por esto.
 
 **Ver en la demo:** `/super-admin/promociones` con `emarrero@puntocash.com`. Vigentes: una de toda la red y una dirigida a Santiago, Holguín y Camagüey; Programadas: la del horario de fin de año. Atajos: «Nueva promoción», «Solo las sedes que elija» y marcar las de La Habana. Saturación: publicar tres promociones vigentes hoy en PuntoCash Santiago y abrir una cuarta.
 
