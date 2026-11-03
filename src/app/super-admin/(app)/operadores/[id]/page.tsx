@@ -236,7 +236,7 @@ export default async function SuperAdminOperadorPage({
       </Section>
 
       <Section
-        title="Usuarios administradores"
+        title="Administradores"
         description={`${r.usuariosActivos} de ${r.usuarios} activos. Los gestiona su administrador principal desde su consola.`}
         actions={!baja && principal ? <RestablecerAcceso operadorId={operador.id} principal={{ nombre: principal.fullName, correo: principal.email }} /> : null}
       >

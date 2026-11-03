@@ -57,7 +57,7 @@ test.describe("ficha de un operador de la demo", () => {
     await page.goto("/super-admin/operadores/op-malecon");
   });
 
-  test("muestra sus sedes, operaciones del mes y usuarios, sin solicitudes pendientes", async ({ page }) => {
+  test("muestra sus sedes, operaciones del mes y administradores, sin solicitudes pendientes", async ({ page }) => {
     const main = page.getByRole("main");
     await expect(main.getByRole("link", { name: "PuntoCash Vedado" })).toBeVisible();
     await expect(main.getByRole("heading", { name: /^Operaciones de / })).toBeVisible();

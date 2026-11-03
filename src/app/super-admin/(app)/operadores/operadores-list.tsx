@@ -99,7 +99,7 @@ export function OperadoresList({
       cell: (r) => (
         <span className="flex flex-col">
           <span className="whitespace-nowrap text-text-primary">
-            {r.usuariosActivos} {r.usuariosActivos === 1 ? "usuario" : "usuarios"}
+            {r.usuariosActivos} {r.usuariosActivos === 1 ? "administrador" : "administradores"}
           </span>
           <span className="whitespace-nowrap text-caption text-text-secondary">
             {r.trabajadores} {r.trabajadores === 1 ? "trabajador" : "trabajadores"}

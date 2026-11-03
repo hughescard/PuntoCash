@@ -1,11 +1,13 @@
 # PuntoCash — Super Admin
-## Documento de Requisitos Funcionales (FRD) · v3.5
+## Documento de Requisitos Funcionales (FRD) · v3.6
 
 **Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/super-admin` contiene un README de marcador de posición.
 
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y como referencia de aceptación.
 
 **Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
+
+**Control de cambios — v3.6 (2026-11-02).** **En Operadores, a los administradores se les llama «administradores», no «usuarios».** Los trabajadores también son usuarios del producto, y llamar «usuarios» solo a los administradores de una empresa confunde. La columna «Personas» del listado dice «N administradores» y «N trabajadores»; el bloque de la ficha se titula «Administradores»; **FR-SA-OPE-1**, **OPE-8**, **OPE-9** y **OPE-10** se redactan igual. Sin cambios de comportamiento. «Usuarios» queda para las cuentas de PuntoCash (el menú) y para el nombre de la sección de Admin; el resto de la consola y de los documentos que aún dicen «usuario administrador» (el formulario de alta del operador, los eventos de auditoría, el FRD de Admin) están por decidir.
 
 **Control de cambios — v3.5 (2026-11-02).** **Auditoría: lo que se pide ahora es lo que se construyó, y el registro se puede descargar.** §14 se reescribe. **FR-SA-AUD-1** fija las columnas (fecha y hora, evento con su objeto, quién y con qué rol, sede y operador, motivo) y que se lee por tandas de 50, sin ventana de fechas obligatoria: a diferencia de Operaciones, el registro de gobierno crece a decenas de actos por semana, y quien audita busca un acto, no un periodo. **FR-SA-AUD-2** distingue lo que se registra de lo que **ninguna pantalla produce hoy**: el alta y la retirada de monedas del catálogo (la tabla de Monedas y tasas no mantiene el catálogo) y la credencial inicial regenerada (la sustituyó el restablecimiento del acceso del principal) salen de la lista de obligatorios hasta que esas acciones existan, y se añade «auditoría exportada». **FR-SA-AUD-4** precisa que la búsqueda mira el motivo **y el objeto**, y que el tipo de evento se elige agrupado por lo que se gobierna. **FR-SA-AUD-5** se limita a lo que el registro sabe: enlaza a la **sede** y al **operador**, no a la persona o a la caja sobre la que se actuó. **FR-SA-AUD-9** (nuevo): **Excel** con lo que hay en pantalla; como este archivo —a diferencia de un reporte— **nombra personas**, la exportación misma queda en el registro con sus filtros. **FR-SA-AUD-10** (nuevo): quien consta como autor es siempre una persona de la consola, no el nombre de un área. §17 deja de decir «sin exportación de la auditoría». Un defecto corregido de paso: el registro vivía en el módulo y no en `globalThis`, de modo que en el servidor de desarrollo lo que registraba una exportación no lo veía la pantalla.
 
@@ -209,7 +211,7 @@ El panel que responde "¿cómo está la red ahora mismo?".
 
 ## 5. Operadores
 
-**FR-SA-OPE-1** `/super-admin/operadores` lista los mercantes con: nombre, contacto, estado (activo / suspendido / dado de baja), sedes administradas, usuarios administradores activos, trabajadores activos, equipos vinculados, fecha de alta y volumen del periodo.
+**FR-SA-OPE-1** `/super-admin/operadores` lista los mercantes con: nombre, contacto, estado (activo / suspendido / dado de baja), sedes administradas, administradores activos, trabajadores activos, equipos vinculados, fecha de alta y volumen del periodo.
 
 **FR-SA-OPE-2** Filtros por estado y búsqueda por nombre. Un conmutador "sin sedes" identifica a los operadores dados de alta que aún no administran nada.
 
@@ -223,11 +225,11 @@ El panel que responde "¿cómo está la red ahora mismo?".
 
 **FR-SA-OPE-7** El alta **no** asigna sedes. Asignar es un acto propio, desde la ficha de la sede o del operador **[A3]**.
 
-**FR-SA-OPE-8** `/super-admin/operadores/[id]` muestra: datos del operador, **sus sedes vigentes**, **su historial de asignaciones**, **sus usuarios administradores**, **sus trabajadores**, **sus cajas y equipos**, **su volumen** y **sus solicitudes de aprobación pendientes**.
+**FR-SA-OPE-8** `/super-admin/operadores/[id]` muestra: datos del operador, **sus sedes vigentes**, **su historial de asignaciones**, **sus administradores**, **sus trabajadores**, **sus cajas y equipos**, **su volumen** y **sus solicitudes de aprobación pendientes**.
 
-**FR-SA-OPE-9** Los bloques de usuarios administradores, trabajadores, cajas y equipos, y solicitudes pendientes son **de solo lectura** **[A14]**. Muestran lo que ese mercante tiene montado y lo que tiene sin resolver, sin ofrecer tocarlo ni resolverlo.
+**FR-SA-OPE-9** Los bloques de administradores, trabajadores, cajas y equipos, y solicitudes pendientes son **de solo lectura** **[A14]**. Muestran lo que ese mercante tiene montado y lo que tiene sin resolver, sin ofrecer tocarlo ni resolverlo.
 
-**FR-SA-OPE-10** El bloque de usuarios administradores debe mostrar cuántos hay activos, **cuál es el principal** y cuándo accedió cada uno por última vez. Es el dato que permite detectar al mercante cuyo principal lleva tiempo sin entrar; la respuesta a eso es **FR-SA-OPE-11**, no crear un usuario por él.
+**FR-SA-OPE-10** El bloque de administradores debe mostrar cuántos hay activos, **cuál es el principal** y cuándo accedió cada uno por última vez. Es el dato que permite detectar al mercante cuyo principal lleva tiempo sin entrar; la respuesta a eso es **FR-SA-OPE-11**, no crear un usuario por él.
 
 **FR-SA-OPE-11** Esta consola puede **restablecer el acceso del administrador principal** del mercante: cambiarle el correo de verificación y entregarle una credencial nueva, con el mismo tratamiento que **FR-AD-TRAB-8**. Está disponible **siempre**, no solo ante una incidencia. El destinatario es el **principal**, no el usuario inicial: el inicial es un hecho histórico que puede corresponder a otra persona o estar desactivado, mientras que una empresa solo queda fuera de su consola si quien pierde el acceso es el principal. Es la única escritura de esta consola sobre un usuario del mercante, exige motivo escrito de al menos 10 caracteres y genera evento de auditoría. No crea un usuario nuevo ni modifica ningún otro.
 
