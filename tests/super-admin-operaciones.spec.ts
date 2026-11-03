@@ -57,6 +57,15 @@ test("filtrar por operador y por servicio acota el listado", async ({ page }) =>
   await expect(tabla.getByRole("cell", { name: "Cambio de moneda" })).toHaveCount(0);
 });
 
+test("una operación anterior al traspaso de Miramar muestra a Atlántico, no a Caribe", async ({ page }) => {
+  await page.getByLabel("Operador").selectOption({ label: "Atlántico Casas de Cambio" });
+  const tabla = page.getByRole("table");
+  const filas = tabla.getByRole("row").filter({ hasText: "PuntoCash Miramar" });
+  await expect(filas.first()).toBeVisible();
+  await expect(filas.first()).toContainText("Atlántico");
+  await expect(tabla.getByRole("row").filter({ hasText: "Caribe Cambios" })).toHaveCount(0);
+});
+
 test("el detalle nombra al operador responsable y no ofrece ninguna acción", async ({ page }) => {
   await abrirUnaOperacion(page);
   const main = page.getByRole("main");

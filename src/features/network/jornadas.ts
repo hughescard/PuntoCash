@@ -189,14 +189,27 @@ const BENEFICIARIOS: readonly { nombre: string; ci: string; provincia: [string, 
 
 let secuencia = 0;
 
-function sembrar(now: Date): Jornada[] {
-  const rnd = generador(20261016);
-  const hoy = hoyEnCuba(now);
+interface OpcionesDeSiembra {
+  /** El «hoy» de la siembra, «AAAA-MM-DD». Por defecto, hoy en Cuba. */
+  hoy?: string;
+  desde?: number;
+  hasta?: number;
+  sedes?: readonly string[];
+  semilla?: number;
+  codigo?: number;
+}
+
+function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
+  /* Cada siembra lleva su propia secuencia: la histórica no desplaza ni un
+     número de `rnd()` de la de esta semana, así que nada de lo ya sembrado cambia. */
+  const rnd = generador(o.semilla ?? 20261016);
+  const hoy = o.hoy ?? hoyEnCuba(now);
   const out: Jornada[] = [];
-  let codigo = 7000;
+  let codigo = o.codigo ?? 7000;
 
   for (const sede of SEDES) {
     if (sede.status !== "activa") continue;
+    if (o.sedes && !o.sedes.includes(sede.id)) continue;
     const trabajadores = workersOf(sede.id).filter((w) => w.status === "activo");
     const cajas = registersOf(sede.id).filter((c) => equipoDeCaja(c.id));
     if (trabajadores.length === 0) continue;
@@ -207,7 +220,7 @@ function sembrar(now: Date): Jornada[] {
       /* La jornada anterior de esta caja: su cierre es lo que encuentra la siguiente. */
       let anterior: Jornada | null = null;
 
-      for (let dia = -7; dia <= 0; dia += 1) {
+      for (let dia = o.desde ?? -7; dia <= (o.hasta ?? 0); dia += 1) {
         const fecha = sumarDias(hoy, dia);
         const trabajador = trabajadores[(indiceCaja + dia + 70) % trabajadores.length]!;
         /* Un trabajador no tiene dos jornadas a la vez: con menos trabajadores
@@ -553,7 +566,7 @@ function sembrarApertura(
  * la anterior y se descarta junto con lo que se deriva de él —operaciones y
  * solicitudes—, para no mezclar datos de dos siembras.
  */
-const VERSION_DE_SIEMBRA = "2026-10-20.2";
+const VERSION_DE_SIEMBRA = "2026-11-03.1";
 
 const ALMACEN = globalThis as typeof globalThis & {
   __puntocashJornadas?: Jornada[];
@@ -567,7 +580,22 @@ if (ALMACEN.__puntocashSiembraJornadas !== VERSION_DE_SIEMBRA) {
   delete ALMACEN.__puntocashSolicitudes;
   ALMACEN.__puntocashSiembraJornadas = VERSION_DE_SIEMBRA;
 }
-const jornadas: Jornada[] = (ALMACEN.__puntocashJornadas ??= sembrar(new Date()));
+const jornadas: Jornada[] = (ALMACEN.__puntocashJornadas ??= sembrarTodo(new Date()));
+
+/**
+ * Esta semana, más el historial de la sede que cambió de mercante: tres
+ * jornadas de PuntoCash Miramar justo antes del 30 de junio, cuando todavía
+ * era de Atlántico. Sin ellas, el operador de la fecha (**FR-SA-OPS-2**) no se
+ * vería en ninguna pantalla —la siembra normal solo cubre ocho días—.
+ */
+export const HISTORIAL_DE_MIRAMAR = { ultimoDia: "2026-06-29", operador: "op-atlantico" } as const;
+
+function sembrarTodo(now: Date): Jornada[] {
+  return [
+    ...sembrar(now),
+    ...sembrar(now, { hoy: "2026-06-30", desde: -3, hasta: -1, sedes: ["sede-miramar"], semilla: 20260630, codigo: 6000 }),
+  ];
+}
 
 /* -------------------------------------------------------------------------
  * Lecturas
