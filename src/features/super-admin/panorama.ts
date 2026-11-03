@@ -98,7 +98,7 @@ export function panoramaDeRed(ahora: Date = new Date()): PanoramaDeRed {
     }
   }
   for (const m of CATALOGO_MONEDAS) {
-    if (m.code === MONEDA_LOCAL || rangoDe(m.code)) continue;
+    if (m.code === MONEDA_LOCAL || m.retiradaEl || rangoDe(m.code)) continue;
     const sedes = vivas.filter(
       (s) =>
         estadoDeSede(s) !== "sin-asignar" &&

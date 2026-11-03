@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 
 import {
   Alert,
@@ -20,11 +20,19 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
+import { SELECT } from "../equipos/controles";
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { cifraDeTablero } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
-import { definirRangoAction, retirarRangoAction, type ResultadoRango } from "./_actions";
+import {
+  anadirMonedaAlCatalogoAction,
+  definirRangoAction,
+  reincorporarMonedaAction,
+  retirarMonedaDelCatalogoAction,
+  retirarRangoAction,
+  type ResultadoRango,
+} from "./_actions";
 
 /**
  * Una fila por moneda del catálogo, con su rango de compra y de venta contra
@@ -41,6 +49,12 @@ interface Intervalo {
 export interface FilaDeRango {
   code: string;
   nombre: string;
+  simbolo: string;
+  decimales: number;
+  /** Fecha en que se retiró del catálogo, ya formateada, o `null` si sigue disponible. */
+  retirada: string | null;
+  /** Cajas activas que la tienen habilitada hoy (`enLista` son las sedes). */
+  cajas: number;
   rango: { compra: Intervalo; venta: Intervalo } | null;
   /** Ya formateados en el servidor. */
   actualizadoEl: string | null;
@@ -56,7 +70,9 @@ const tramo = (i: Intervalo) => `${cifraDeTablero(i.min)} – ${cifraDeTablero(i
 
 export function TablaDeRangos({ filas }: { filas: readonly FilaDeRango[] }): React.JSX.Element {
   const hydrated = useHydrated();
-  const [abierto, setAbierto] = React.useState<{ fila: FilaDeRango; accion: "editar" | "retirar" } | null>(null);
+  const [abierto, setAbierto] = React.useState<
+    { accion: "anadir" } | { fila: FilaDeRango; accion: "editar" | "retirar" | "retirar-moneda" | "reincorporar" } | null
+  >(null);
   const [hecho, setHecho] = React.useState<string | null>(null);
   const cerrar = React.useCallback(() => setAbierto(null), []);
   const terminar = React.useCallback((m: string) => {
@@ -129,22 +145,24 @@ export function TablaDeRangos({ filas }: { filas: readonly FilaDeRango[] }): Rea
       key: "acciones",
       header: <span className="sr-only">Acciones</span>,
       cell: (f) => (
-        <span className="flex flex-wrap gap-2 xl:flex-nowrap">
-          <Button
-            size="sm"
-            /* Destacado solo donde alguna sede espera la moneda: es la única
-               fila en la que definir el rango responde a algo que ya pasa. */
-            variant={!f.rango && f.esperando > 0 ? "primary" : "secondary"}
-            disabled={!hydrated}
-            onClick={() => {
-              setHecho(null);
-              setAbierto({ fila: f, accion: "editar" });
-            }}
-            aria-label={`${f.rango ? "Cambiar" : "Definir"} el rango del ${f.code}`}
-          >
-            {f.rango ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}
-            {f.rango ? "Cambiar" : "Definir rango"}
-          </Button>
+        <span className="flex flex-wrap items-start gap-x-2 gap-y-1 py-1.5">
+          {f.retirada && !f.rango ? null : (
+            <Button
+              size="sm"
+              /* Destacado solo donde alguna sede espera la moneda: es la única
+                 fila en la que definir el rango responde a algo que ya pasa. */
+              variant={!f.rango && f.esperando > 0 ? "primary" : "secondary"}
+              disabled={!hydrated}
+              onClick={() => {
+                setHecho(null);
+                setAbierto({ fila: f, accion: "editar" });
+              }}
+              aria-label={`${f.rango ? "Cambiar" : "Definir"} el rango del ${f.code}`}
+            >
+              {f.rango ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}
+              {f.rango ? "Cambiar" : "Definir rango"}
+            </Button>
+          )}
           {f.rango ? (
             <Button
               size="sm"
@@ -157,9 +175,38 @@ export function TablaDeRangos({ filas }: { filas: readonly FilaDeRango[] }): Rea
               aria-label={`Retirar el rango del ${f.code}`}
             >
               <Trash2 aria-hidden="true" />
-              Retirar
+              Retirar rango
             </Button>
           ) : null}
+          {f.retirada ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={!hydrated}
+              onClick={() => {
+                setHecho(null);
+                setAbierto({ fila: f, accion: "reincorporar" });
+              }}
+              aria-label={`Reincorporar el ${f.code} al catálogo`}
+            >
+              <RotateCcw aria-hidden="true" />
+              Reincorporar
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="tertiary"
+              disabled={!hydrated}
+              onClick={() => {
+                setHecho(null);
+                setAbierto({ fila: f, accion: "retirar-moneda" });
+              }}
+              aria-label={`Retirar el ${f.code} del catálogo`}
+            >
+              <Trash2 aria-hidden="true" />
+              Retirar moneda
+            </Button>
+          )}
         </span>
       ),
     },
@@ -167,10 +214,25 @@ export function TablaDeRangos({ filas }: { filas: readonly FilaDeRango[] }): Rea
 
   return (
     <>
-      <p className="mb-4 text-body-sm text-text-secondary">
-        Cada operador fija la tasa de su sede dentro de estos rangos. El peso cubano es la moneda de referencia y no lleva
-        rango.
-      </p>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <p className="text-body-sm text-text-secondary sm:max-w-3xl">
+          Estas son las monedas de la plataforma: de aquí elige cada mercante las de sus sedes, y cada operador fija la tasa
+          de su sede dentro del rango de la moneda. El peso cubano es la moneda de referencia: no lleva rango y no se puede
+          retirar.
+        </p>
+        <Button
+          variant="secondary"
+          className="self-start"
+          disabled={!hydrated}
+          onClick={() => {
+            setHecho(null);
+            setAbierto({ accion: "anadir" });
+          }}
+        >
+          <Plus aria-hidden="true" />
+          Añadir moneda
+        </Button>
+      </div>
       {hecho ? (
         <Alert variant="success" title="Hecho" className="mb-6">
           {hecho}
@@ -183,9 +245,20 @@ export function TablaDeRangos({ filas }: { filas: readonly FilaDeRango[] }): Rea
         tablaDesde="xl"
         tarjetasEnDosColumnas
         cardTitle={(f) => <Moneda fila={f} />}
-        cardBadge={(f) => (f.rango ? <Badge variant="success">Cotizable</Badge> : <Badge variant="neutral">No cotizable</Badge>)}
+        cardBadge={(f) =>
+          f.retirada ? (
+            <Badge variant="warning">Retirada</Badge>
+          ) : f.rango ? (
+            <Badge variant="success">Cotizable</Badge>
+          ) : (
+            <Badge variant="neutral">No cotizable</Badge>
+          )
+        }
         empty={null}
       />
+      {abierto?.accion === "anadir" ? <AnadirMonedaAlCatalogo onCerrar={cerrar} onHecho={terminar} /> : null}
+      {abierto?.accion === "retirar-moneda" ? <RetirarMonedaDelCatalogo key={abierto.fila.code} fila={abierto.fila} onCerrar={cerrar} onHecho={terminar} /> : null}
+      {abierto?.accion === "reincorporar" ? <ReincorporarMoneda key={abierto.fila.code} fila={abierto.fila} onCerrar={cerrar} onHecho={terminar} /> : null}
       {abierto?.accion === "editar" ? <EditorDeRango key={abierto.fila.code} fila={abierto.fila} onCerrar={cerrar} onHecho={terminar} /> : null}
       {abierto?.accion === "retirar" ? <RetirarRango key={abierto.fila.code} fila={abierto.fila} onCerrar={cerrar} onHecho={terminar} /> : null}
     </>
@@ -197,8 +270,14 @@ function Moneda({ fila }: { fila: FilaDeRango }): React.JSX.Element {
     <span className="inline-flex items-center gap-2.5">
       <CurrencyFlag currency={fila.code} />
       <span className="flex flex-col leading-tight">
-        <span className="pc-numeric font-semibold text-text-primary">{fila.code}</span>
+        <span className="pc-numeric font-semibold text-text-primary">
+          {fila.code}
+          {fila.retirada ? <span className="ml-2 align-middle"><Badge variant="warning">Retirada</Badge></span> : null}
+        </span>
         <span className="whitespace-nowrap text-caption text-text-secondary">{fila.nombre}</span>
+        <span className="whitespace-nowrap text-caption text-text-secondary">
+          {fila.simbolo} · {fila.decimales === 1 ? "1 decimal" : `${fila.decimales} decimales`}
+        </span>
       </span>
     </span>
   );
@@ -435,6 +514,221 @@ function RetirarRango({
             </Button>
             <Button type="submit" variant="destructive" loading={enviando}>
               Retirar el rango
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* -------------------------------------------------------------------------
+ * El catálogo: añadir, retirar, reincorporar
+ * ---------------------------------------------------------------------- */
+
+const CODIGO: FieldSpec = { id: "moneda-codigo", label: "Código", required: true, description: "Tres letras, como USD." };
+const NOMBRE: FieldSpec = { id: "moneda-nombre", label: "Nombre", required: true };
+const SIMBOLO: FieldSpec = { id: "moneda-simbolo", label: "Símbolo", required: true, description: "Como se escribe junto a una cifra." };
+const DECIMALES: FieldSpec = { id: "moneda-decimales", label: "Decimales", required: true };
+
+function AnadirMonedaAlCatalogo({ onCerrar, onHecho }: { onCerrar: () => void; onHecho: (m: string) => void }): React.JSX.Element {
+  const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(anadirMonedaAlCatalogoAction, null);
+  React.useEffect(() => {
+    if (estado?.ok) onHecho(estado.mensaje);
+  }, [estado, onHecho]);
+  const [codigo, setCodigo] = React.useState("");
+  const [nombre, setNombre] = React.useState("");
+  const [simbolo, setSimbolo] = React.useState("");
+  const [decimales, setDecimales] = React.useState("2");
+  const completo = /^[A-Za-z]{3}$/.test(codigo.trim()) && nombre.trim() !== "" && simbolo.trim() !== "";
+
+  return (
+    <Dialog open onOpenChange={(o) => (o ? undefined : onCerrar())}>
+      <DialogContent size="md">
+        <DialogHeader>
+          <DialogTitle>Añadir una moneda al catálogo</DialogTitle>
+          <DialogDescription>
+            Queda a disposición de toda la red. No se activa en ninguna sede: cada mercante la añade a las suyas.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <DialogBody className="flex flex-col gap-5">
+            {estado && !estado.ok ? (
+              <Alert variant="error" title="No se pudo añadir">
+                {estado.error}
+              </Alert>
+            ) : null}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field {...CODIGO}>
+                <Input
+                  {...fieldAria(CODIGO)}
+                  name="codigo"
+                  value={codigo}
+                  maxLength={3}
+                  disabled={enviando}
+                  autoFocus
+                  autoCapitalize="characters"
+                  onChange={(e) => setCodigo(e.currentTarget.value.toUpperCase())}
+                  className="pc-numeric"
+                />
+              </Field>
+              <Field {...SIMBOLO}>
+                <Input
+                  {...fieldAria(SIMBOLO)}
+                  name="simbolo"
+                  value={simbolo}
+                  maxLength={5}
+                  disabled={enviando}
+                  onChange={(e) => setSimbolo(e.currentTarget.value)}
+                />
+              </Field>
+            </div>
+            <Field {...NOMBRE}>
+              <Input {...fieldAria(NOMBRE)} name="nombre" value={nombre} disabled={enviando} onChange={(e) => setNombre(e.currentTarget.value)} />
+            </Field>
+            <Field {...DECIMALES}>
+              <select
+                {...fieldAria(DECIMALES)}
+                name="decimales"
+                value={decimales}
+                disabled={enviando}
+                onChange={(e) => setDecimales(e.currentTarget.value)}
+                className={SELECT}
+              >
+                {[0, 1, 2, 3, 4].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <p className="text-body-sm text-text-secondary">
+              Para que las sedes puedan cotizarla, define después su rango contra el peso cubano.
+            </p>
+          </DialogBody>
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={onCerrar} disabled={enviando}>
+              Cancelar
+            </Button>
+            <Button type="submit" loading={enviando} disabled={!completo}>
+              Añadir la moneda
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RetirarMonedaDelCatalogo({
+  fila,
+  onCerrar,
+  onHecho,
+}: {
+  fila: FilaDeRango;
+  onCerrar: () => void;
+  onHecho: (m: string) => void;
+}): React.JSX.Element {
+  const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(retirarMonedaDelCatalogoAction, null);
+  React.useEffect(() => {
+    if (estado?.ok) onHecho(estado.mensaje);
+  }, [estado, onHecho]);
+  const MOTIVO: FieldSpec = {
+    id: "moneda-retiro-motivo",
+    label: "Motivo",
+    required: true,
+    description: "Al menos 10 caracteres. Queda en la auditoría con tu nombre.",
+  };
+  const sedes = fila.enLista;
+
+  return (
+    <Dialog open onOpenChange={(o) => (o ? undefined : onCerrar())}>
+      <DialogContent size="md">
+        <DialogHeader>
+          <DialogTitle>Retirar el {fila.code} del catálogo</DialogTitle>
+          <DialogDescription>
+            Ningún mercante podrá añadir {fila.nombre.toLowerCase()} a una sede. Solo cambia lo que viene.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <input type="hidden" name="moneda" value={fila.code} />
+          <DialogBody className="flex flex-col gap-4">
+            {estado && !estado.ok ? (
+              <Alert variant="error" title="No se pudo retirar">
+                {estado.error}
+              </Alert>
+            ) : null}
+            <Alert
+              variant="warning"
+              title={
+                sedes === 0
+                  ? "Ninguna sede la tiene en su lista"
+                  : `Seguirá en ${sedes} ${sedes === 1 ? "sede" : "sedes"}, en ${fila.cajas} ${fila.cajas === 1 ? "caja" : "cajas"}`
+              }
+            >
+              <p>
+                {sedes === 0
+                  ? "Nadie deja de usarla."
+                  : "No se quita de las sedes que ya la tienen: quitarla de cada una es decisión de su mercante."}{" "}
+                No toca saldos ni ningún registro histórico.
+              </p>
+              {fila.rango ? <p className="mt-1">Su rango y las tasas de las sedes que la cotizan se mantienen.</p> : null}
+            </Alert>
+            <Field {...MOTIVO}>
+              <Input {...fieldAria(MOTIVO)} name="motivo" disabled={enviando} autoFocus />
+            </Field>
+          </DialogBody>
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={onCerrar} disabled={enviando}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="destructive" loading={enviando}>
+              Retirar la moneda
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReincorporarMoneda({
+  fila,
+  onCerrar,
+  onHecho,
+}: {
+  fila: FilaDeRango;
+  onCerrar: () => void;
+  onHecho: (m: string) => void;
+}): React.JSX.Element {
+  const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(reincorporarMonedaAction, null);
+  React.useEffect(() => {
+    if (estado?.ok) onHecho(estado.mensaje);
+  }, [estado, onHecho]);
+  return (
+    <Dialog open onOpenChange={(o) => (o ? undefined : onCerrar())}>
+      <DialogContent size="md">
+        <DialogHeader>
+          <DialogTitle>Reincorporar el {fila.code} al catálogo</DialogTitle>
+          <DialogDescription>
+            Los mercantes podrán volver a añadir {fila.nombre.toLowerCase()} a sus sedes. Retirada el {fila.retirada}.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <input type="hidden" name="moneda" value={fila.code} />
+          <DialogBody>
+            {estado && !estado.ok ? (
+              <Alert variant="error" title="No se pudo reincorporar">
+                {estado.error}
+              </Alert>
+            ) : null}
+          </DialogBody>
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={onCerrar} disabled={enviando}>
+              Cancelar
+            </Button>
+            <Button type="submit" loading={enviando}>
+              Reincorporar la moneda
             </Button>
           </DialogFooter>
         </form>

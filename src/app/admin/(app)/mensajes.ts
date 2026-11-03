@@ -94,6 +94,7 @@ export const MENSAJES = {
     "moneda-requerida": "Elige la moneda que quieres añadir.",
     "sede-cerrada": "Esa sede está cerrada, así que no admite cambios en sus monedas.",
     "moneda-desconocida": "Esa moneda no está en el catálogo de PuntoCash.",
+    "moneda-retirada": "PuntoCash retiró {moneda} del catálogo: ya no se puede añadir a más sedes.",
     "ya-en-la-lista": "{moneda} ya está en la lista de esta sede.",
     "no-en-la-lista": "{moneda} ya no estaba en la lista de esta sede.",
     "con-saldo": "{moneda} tiene saldo en {cajas}. Debe quedar en cero antes de retirarla de la lista.",

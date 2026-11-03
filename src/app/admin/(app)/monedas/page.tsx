@@ -7,7 +7,7 @@ import { PageHeader, Section } from "@/components/shell/app-shell";
 import { Alert, Badge } from "@/components/ui";
 import { getAdminSession } from "@/features/admin/session-server";
 import { sedesVisibles } from "@/features/admin/session";
-import { CATALOGO_MONEDAS, monedaDelCatalogo } from "@/features/network/currencies";
+import { monedaDelCatalogo, monedasDisponibles } from "@/features/network/currencies";
 import { redEnAlcance, type RedEnAlcance } from "@/features/network/scoped-reads";
 import type { Sede } from "@/features/network/sedes";
 import { AnadirMoneda, MonedasDeSede, type MonedaRow } from "./monedas-de-sede";
@@ -77,7 +77,7 @@ function BloqueDeSede({ red, sede }: { red: RedEnAlcance; sede: Sede }): React.J
   });
 
   const enLista = new Set(lista.map((m) => m.code));
-  const disponibles = CATALOGO_MONEDAS.filter((m) => !enLista.has(m.code));
+  const disponibles = monedasDisponibles().filter((m) => !enLista.has(m.code));
 
   return (
     <Section

@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v8.3
+## Documento de Requisitos Funcionales (FRD) · v8.4
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 8.4 | 03/11/2026 | **Las monedas que PuntoCash retira del catálogo dejan de ofrecerse.** «Añadir moneda» solo lista las monedas disponibles, y el dominio rechaza con `moneda-retirada` añadir una retirada a una sede. Las sedes que ya la tienen **la conservan**, con su saldo y su historial, hasta que su mercante la quite (FR-AD-MON-6 y -7 no cambian). Código nuevo en el Apéndice C. Consecuencia del catálogo mantenido por PuntoCash (FRD de Super Admin v3.7). |
 | 8.3 | 02/11/2026 | **En la consola, a los administradores se les llama «administradores», no «usuarios».** Los trabajadores también son usuarios del producto, y llamar «usuarios» solo a los administradores de la empresa confundía. La entrada del menú y la sección §8 pasan a llamarse **Administradores**; los títulos, el buscador, la columna del listado, los avisos y los mensajes de la sección dicen «administrador». Las rutas (`/admin/usuarios`) y los códigos no cambian. El botón del traspaso pasa a «Traspasar la administración principal». Sin cambios de comportamiento. |
 | 8.2 | 02/11/2026 | **Se recoge lo que la consola ya hacía y el documento no decía, y se corrige una demo.** (1) **El identificador de acceso es un nombre de usuario**, no un correo: de 3 a 30 caracteres, sin «@»; el acceso y la recuperación aceptan el identificador **o** el correo, y el correo es **único**. Nuevo **FR-AD-ACC-11**; se completan la recuperación (**FR-AD-ACC-8**), el alta de trabajador y de usuario, y el cambio de correo, con los códigos `identificador-invalido` y `correo-duplicado` y sus mensajes (Apéndice C). (2) Dos defectos del acceso, ya corregidos, pasan a ser requisito: la contraseña pertenece a la cuenta y no a lo tecleado, y la verificación anuncia el correo real de la cuenta. (3) Nuevo **FR-AD-SHELL-17**: en el teléfono la acción de una sección baja debajo de su descripción. (4) **FR-AD-PROM-3**: una promoción de red dice «Publicada por PuntoCash». (5) La demo de **FR-AD-USR-4** usaba como identificador un correo, que desde ahora se rechaza. |
 | 8.1 | 26/10/2026 | **Se dice quién pone el rótulo de un equipo, que estaba sin decir.** El rótulo se mostraba en Equipos, en la ficha de sede, en la jornada y en el diálogo de forzar cierre, pero ningún requisito decía de dónde salía ni dónde se cambia, y el formulario de vincular no lo pedía. Nuevo **FR-AD-EQ-30**: lo pone el administrador de la sede al vincular —opcional en una caja, obligatorio en un kiosco— y puede cambiarlo después desde Equipos. **FR-AD-EQ-7 / 8 / 13 / 14** añaden el campo, y **FR-AD-EQ-5** y **FR-AD-EQ-12** la acción. Ninguna otra regla cambia |
@@ -1749,7 +1750,7 @@ Se inicia con «Añadir moneda» en el bloque de una sede y se hace en un diálo
 
 | Campo | Obligatorio | Reglas |
 | --- | --- | --- |
-| Moneda | Sí | Solo las monedas del catálogo que la sede todavía no tiene |
+| Moneda | Sí | Solo las monedas del catálogo que la sede todavía no tiene y que PuntoCash no ha retirado del catálogo |
 
 **FR-AD-MON-4 · Efecto.**
 
@@ -1764,6 +1765,7 @@ Se inicia con «Añadir moneda» en el bloque de una sede y se hace en un diálo
 | Moneda sin elegir | `moneda-requerida` |
 | La moneda no está en el catálogo | `moneda-desconocida` |
 | La moneda ya está en la lista de la sede | `ya-en-la-lista` |
+| PuntoCash retiró la moneda del catálogo | `moneda-retirada` |
 | La sede está cerrada | `sede-cerrada` |
 | La sede no existe o está fuera del alcance | `no-encontrada` |
 
@@ -3337,6 +3339,7 @@ El mensaje que ve el usuario para cada código de rechazo. Un código se busca p
 | `moneda-requerida` | Elige la moneda que quieres añadir. |
 | `sede-cerrada` | Esa sede está cerrada, así que no admite cambios en sus monedas. |
 | `moneda-desconocida` | Esa moneda no está en el catálogo de PuntoCash. |
+| `moneda-retirada` | PuntoCash retiró {moneda} del catálogo: ya no se puede añadir a más sedes. |
 | `ya-en-la-lista` | {moneda} ya está en la lista de esta sede. |
 | `no-en-la-lista` | {moneda} ya no estaba en la lista de esta sede. |
 | `con-saldo` | {moneda} tiene saldo en {cajas}. Debe quedar en cero antes de retirarla de la lista. |

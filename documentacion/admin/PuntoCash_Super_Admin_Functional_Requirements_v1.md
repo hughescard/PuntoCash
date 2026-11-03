@@ -1,11 +1,13 @@
 # PuntoCash — Super Admin
-## Documento de Requisitos Funcionales (FRD) · v3.6
+## Documento de Requisitos Funcionales (FRD) · v3.7
 
 **Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/super-admin` contiene un README de marcador de posición.
 
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y como referencia de aceptación.
 
 **Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
+
+**Control de cambios — v3.7 (2026-11-03).** **PuntoCash mantiene el catálogo de monedas de la plataforma.** Revierte la decisión del 28/10 de dejarlo fijo: la consola añade, retira y reincorpora monedas, y **FR-SA-MON-1 a MON-6** pasan de «sin construir» a construidos. Va en la **misma tabla que los rangos** (una fila por moneda, decisión del 27/10), no en una vista aparte: «Añadir moneda» arriba, y «Retirar moneda» o «Reincorporar» en cada fila. Tres precisiones: (1) el catálogo **se añade y se retira, no se edita**: el código, el nombre, el símbolo y los decimales no cambian después del alta, porque cambiar los decimales de una moneda con saldos movería cifras ya registradas; (2) una moneda retirada **no desaparece**: queda al final de la tabla, con su etiqueta, porque siguen existiendo sedes que la tienen y es desde ahí desde donde se reincorpora (**FR-SA-MON-7**, nuevo); (3) a una moneda retirada **no se le puede abrir un rango nuevo**, pero el que ya tiene se puede seguir cambiando y retirando, porque las sedes que la cotizan lo siguen necesitando (**FR-SA-MON-8**, nuevo). Los eventos de auditoría de estos cambios dejan de estar excluidos de **FR-SA-AUD-2**. Fuera de alcance, y dicho: el símbolo y los decimales se guardan y se muestran aquí, pero ninguna otra pantalla los usa todavía, y **Worker sigue con su lista fija de once monedas** hasta que se recablee contra este dominio (nota de entrega, §8.3): una moneda nueva aparece en Admin y en Super administración, no en la caja del trabajador.
 
 **Control de cambios — v3.6 (2026-11-02).** **A los administradores de una empresa se les llama «administradores», no «usuarios».** Los trabajadores también son usuarios del producto, y llamar «usuarios» solo a los administradores de una empresa confunde. La columna «Personas» del listado dice «N administradores» y «N trabajadores»; el bloque de la ficha se titula «Administradores»; **FR-SA-OPE-1**, **OPE-8**, **OPE-9** y **OPE-10** se redactan igual. Sin cambios de comportamiento. El cambio alcanza también al formulario de alta del operador (el bloque «Administrador principal» y su aviso), a los mensajes de rechazo del alta, a las etiquetas y el grupo de la auditoría («Administrador creado», «Administradores») y, en Admin, a la sección que antes se llamaba «Usuarios» (ahora «Administradores», FRD de Admin v8.3). «Usuarios» queda para las cuentas de PuntoCash, el menú de Super Admin.
 
@@ -317,7 +319,7 @@ Tres vistas, dos de ellas editables. Es el marco dentro del cual cada mercante d
 
 **FR-SA-MON-1** La primera vista mantiene el **catálogo de monedas que la plataforma soporta**: código ISO, nombre, símbolo y número de decimales. Es de donde cada mercante elige las monedas de sus sedes (**FR-AD-MON-3**), y por tanto lo que acota, en último término, qué efectivo puede existir en una caja de la red.
 
-**FR-SA-MON-2** Cada moneda del catálogo debe mostrar en cuántas sedes está en la lista y en cuántas cajas está habilitada hoy, para que retirarla no sea una decisión a ciegas.
+**FR-SA-MON-2** Cada moneda del catálogo debe mostrar en cuántas sedes está en la lista y en cuántas cajas está habilitada hoy, para que retirarla no sea una decisión a ciegas. Cuentan las sedes que no están cerradas y las cajas activas. En la tabla, la fila dice sedes («en la lista de N») y la confirmación de retirar dice sedes y cajas.
 
 **FR-SA-MON-3** Añadir una moneda al catálogo la pone a disposición de toda la red; no la activa en ninguna sede. Quien la incorpora a una sucursal es su mercante **[A4]**.
 
@@ -325,7 +327,13 @@ Tres vistas, dos de ellas editables. Es el marco dentro del cual cada mercante d
 
 **FR-SA-MON-5** No es posible retirar del catálogo la moneda local: es la que toda caja de la red necesita.
 
-**FR-SA-MON-6** Todo cambio en el catálogo genera un evento de auditoría **[RP-21]**.
+**FR-SA-MON-6** Todo cambio en el catálogo genera un evento de auditoría **[RP-21]**: la alta (también la reincorporación) y la retirada, esta última con su motivo.
+
+**FR-SA-MON-7** Una moneda retirada **no desaparece del catálogo**: se muestra al final de la tabla con la etiqueta «Retirada» y desde ahí se puede **reincorporar**, sin motivo, para que los mercantes vuelvan a poder añadirla. Una retirada **no se da de alta de nuevo**: el intento se rechaza y remite a reincorporar.
+
+**FR-SA-MON-8** A una moneda retirada que **no tiene rango** no se le puede definir uno: no se abre a la red una moneda que ya no se ofrece. Si **ya lo tiene**, se puede seguir cambiando y retirando, porque las sedes que la cotizan lo siguen necesitando. Una moneda retirada no cuenta entre los Pendientes de Inicio como «moneda sin rango».
+
+**FR-SA-MON-9** El catálogo **se añade y se retira, no se edita**: ni el código, ni el nombre, ni el símbolo ni los decimales cambian después del alta.
 
 ### 9.2 Rangos de la red
 
@@ -467,7 +475,7 @@ La pantalla que hace verificable todo lo anterior.
 
 **FR-SA-AUD-1** `/super-admin/auditoria` lista los eventos de gobierno de toda la red, del más reciente al más antiguo, con: fecha y hora (en Cuba), el evento y el objeto afectado, quién actuó (persona y rol; en un mercante, también su operador), la sede y el operador a los que se refiere, y el motivo declarado. Se enseñan **50 a la vez**, con «Mostrar más eventos»; no hay ventana de fechas obligatoria. Pulsar un evento abre su detalle.
 
-**FR-SA-AUD-2** Tipos de evento que deben quedar registrados, como mínimo. **De PuntoCash:** creación, edición, suspensión, reactivación y cierre de sede; alta, suspensión, reactivación y baja de operador; asignación y revocación de sede; alta del administrador inicial y restablecimiento del acceso del administrador principal (**FR-SA-OPE-11**); habilitación y deshabilitación de servicio; definición, cambio y retirada de rango de tasas; fijación automática de tasa al límite; alta, edición y retirada de promoción de red; alta, edición, desactivación y reactivación de cuentas de PuntoCash, traspaso de la administración principal y cambio de contraseña; **reporte exportado** y **auditoría exportada**. **Del mercante:** alta, retirada y reactivación de caja; vinculación y desvinculación de equipo de caja; vinculación y desvinculación de kiosco; alta, edición, desactivación, reactivación y asistencia de acceso de trabajador; alta, edición, desactivación y reactivación de administrador; alta y retirada de moneda en la lista de una sede; definición, cambio y retirada de la tasa de una sede; alta, edición y retirada de promoción de sede; resolución de solicitud de aprobación; cierre forzado de jornada. **Alta y retirada de moneda del catálogo de la plataforma** quedan fuera de esta lista mientras ninguna pantalla mantenga el catálogo (**FR-SA-MON-1** a **MON-6** no están construidos); cuando lo estén, vuelven a ser obligatorias.
+**FR-SA-AUD-2** Tipos de evento que deben quedar registrados, como mínimo. **De PuntoCash:** creación, edición, suspensión, reactivación y cierre de sede; alta, suspensión, reactivación y baja de operador; asignación y revocación de sede; alta del administrador inicial y restablecimiento del acceso del administrador principal (**FR-SA-OPE-11**); habilitación y deshabilitación de servicio; definición, cambio y retirada de rango de tasas; fijación automática de tasa al límite; alta, edición y retirada de promoción de red; alta, edición, desactivación y reactivación de cuentas de PuntoCash, traspaso de la administración principal y cambio de contraseña; **reporte exportado** y **auditoría exportada**. **Del mercante:** alta, retirada y reactivación de caja; vinculación y desvinculación de equipo de caja; vinculación y desvinculación de kiosco; alta, edición, desactivación, reactivación y asistencia de acceso de trabajador; alta, edición, desactivación y reactivación de administrador; alta y retirada de moneda en la lista de una sede; definición, cambio y retirada de la tasa de una sede; alta, edición y retirada de promoción de sede; resolución de solicitud de aprobación; cierre forzado de jornada. **Alta, reincorporación y retirada de moneda del catálogo de la plataforma** (**FR-SA-MON-6**).
 
 **FR-SA-AUD-3** La pantalla permite filtrar por **quién actuó** —PuntoCash, un mercante o ambos—, que es lo que separa los dos bloques de FR-SA-AUD-2: ver solo lo que hizo PuntoCash, o solo lo que hizo un mercante, es la consulta más frecuente cuando se revisa un incidente.
 

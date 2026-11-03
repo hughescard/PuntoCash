@@ -10,7 +10,7 @@ import { redEnAlcance } from "@/features/network/scoped-reads";
 import { SEDES } from "@/features/network/sedes";
 import { OPERATORS } from "@/features/network/operators";
 import { asignacionVigente } from "@/features/network/assignments";
-import { CATALOGO_MONEDAS, monedasDeSede } from "@/features/network/currencies";
+import { CATALOGO_MONEDAS, monedasDeSede, usoDeMoneda } from "@/features/network/currencies";
 import { MONEDA_LOCAL, motivoFueraDeVigor, rangoDe, SERVICIO_CAMBIO, tasaDe, tasasDeSede } from "@/features/network/rates";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import { fechaCorta, fechaYHora } from "@/app/admin/(app)/jornadas/formato";
@@ -29,7 +29,8 @@ export const metadata: Metadata = {
  *
  *   · **Monedas y rangos** (decisión del 27/10): una tabla, una fila por moneda
  *     del catálogo, con su rango de compra y de venta contra el CUP. Sin
- *     rango, nadie la cotiza. El catálogo es fijo (decisión del 28/10).
+ *     rango, nadie la cotiza. PuntoCash añade y retira monedas del catálogo
+     desde esta misma tabla (decisión del 2/11, que revierte la del 28/10).
  *   · **Tasas por sede** (decisión del 28/10): de solo lectura y sin capa de
  *     alertas. Qué monedas tiene y qué tasa publica cada sede.
  */
@@ -45,7 +46,11 @@ export default async function SuperAdminMonedasYTasasPage({
   const red = redEnAlcance(GLOBAL_SCOPE);
   const vivas = SEDES.filter((s) => s.status !== "cerrada");
 
-  const filas: FilaDeRango[] = CATALOGO_MONEDAS.filter((m) => m.code !== MONEDA_LOCAL).map((m) => {
+  /* Las retiradas van al final: siguen a la vista porque quedan sedes que las
+     tienen y porque es desde aquí desde donde se reincorporan. */
+  const delCatalogo = CATALOGO_MONEDAS.filter((m) => m.code !== MONEDA_LOCAL);
+  const ordenadas = [...delCatalogo.filter((m) => !m.retiradaEl), ...delCatalogo.filter((m) => m.retiradaEl)];
+  const filas: FilaDeRango[] = ordenadas.map((m) => {
     const rango = rangoDe(m.code);
     const conLaMoneda = vivas.filter((s) => monedasDeSede(s.id).some((x) => x.code === m.code));
     const tasas = vivas
@@ -55,12 +60,16 @@ export default async function SuperAdminMonedasYTasasPage({
     return {
       code: m.code,
       nombre: m.name,
+      simbolo: m.symbol,
+      decimales: m.decimals,
+      retirada: m.retiradaEl ? fechaCorta(m.retiradaEl) : null,
+      cajas: usoDeMoneda(m.code).cajas,
       rango: rango ? { compra: rango.compra, venta: rango.venta } : null,
       actualizadoEl: rango ? fechaCorta(rango.updatedAt) : null,
       actualizadoPor: rango ? rango.updatedBy : null,
       enLista: conLaMoneda.length,
       /* Las que la tienen en su lista y Cambio de moneda: las que la cotizarían con rango. */
-      esperando: rango ? 0 : conLaMoneda.filter((s) => s.services.includes(SERVICIO_CAMBIO)).length,
+      esperando: rango || m.retiradaEl ? 0 : conLaMoneda.filter((s) => s.services.includes(SERVICIO_CAMBIO)).length,
       cotizan: vivas.filter((s) => red.tablero(s.id).some((t) => t.currency === m.code)).length,
       tasas,
     };
@@ -101,7 +110,7 @@ export default async function SuperAdminMonedasYTasasPage({
     <>
       <PageHeader
         title="Monedas y tasas"
-        description="El rango de cada moneda contra el peso cubano, y las tasas que publica cada sede dentro de él."
+        description="Las monedas de la plataforma, su rango contra el peso cubano, y las tasas que publica cada sede dentro de él."
       />
 
       <nav aria-label="Vistas" className="mb-6 flex gap-1 border-b border-border">

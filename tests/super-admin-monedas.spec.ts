@@ -68,6 +68,70 @@ test.describe("monedas y rangos", () => {
   });
 });
 
+/**
+ * El catálogo (FR-SA-MON-1 a MON-6). Una sola prueba, con una moneda inventada
+ * de código aleatorio: el dominio es del servidor y lo comparten las demás
+ * suites, así que no se toca ninguna moneda real, y la prueba la deja
+ * retirada, que es lo que no estorba a nadie (las retiradas no se ofrecen).
+ */
+test("añadir, retirar y reincorporar una moneda del catálogo, con su rastro en la auditoría", async ({ page }) => {
+  const letra = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  const codigo = `X${letra()}${letra()}`;
+  await signInAsSuperAdmin(page);
+  await page.goto("/super-admin/monedas-y-tasas");
+
+  await page.getByRole("button", { name: "Añadir moneda" }).click();
+  let dialogo = page.getByRole("dialog");
+  await expect(dialogo.getByRole("button", { name: "Añadir la moneda" })).toBeDisabled();
+  await dialogo.getByLabel(/^Código/).fill(codigo.toLowerCase());
+  await dialogo.getByLabel(/^Nombre/).fill(`Moneda de prueba ${codigo}`);
+  await dialogo.getByLabel(/^Símbolo/).fill("T$");
+  await dialogo.getByLabel(/^Decimales/).selectOption("3");
+  await dialogo.getByRole("button", { name: "Añadir la moneda" }).click();
+  await expect(page.getByText(`${codigo} añadida al catálogo`)).toBeVisible();
+
+  const fila = page.getByRole("table").getByRole("row").filter({ hasText: `Moneda de prueba ${codigo}` });
+  await expect(fila.getByText("T$ · 3 decimales")).toBeVisible();
+  await expect(fila.getByText("Sin rango")).toBeVisible();
+  await expect(fila.getByText("En ninguna lista")).toBeVisible();
+
+  await page.getByRole("button", { name: `Retirar el ${codigo} del catálogo` }).click();
+  dialogo = page.getByRole("dialog");
+  await expect(dialogo.getByText("Ninguna sede la tiene en su lista")).toBeVisible();
+  await dialogo.getByRole("button", { name: "Retirar la moneda" }).click();
+  await expect(dialogo.getByText(/Escribe el motivo/)).toBeVisible();
+  await dialogo.getByLabel(/^Motivo/).fill("Prueba automática: la moneda se retira del catálogo");
+  await dialogo.getByRole("button", { name: "Retirar la moneda" }).click();
+  await expect(page.getByText(`${codigo} retirada del catálogo`)).toBeVisible();
+  await expect(fila.getByText("Retirada")).toBeVisible();
+
+  /* Una retirada no se vuelve a dar de alta: se reincorpora. */
+  await page.getByRole("button", { name: "Añadir moneda" }).click();
+  dialogo = page.getByRole("dialog");
+  await dialogo.getByLabel(/^Código/).fill(codigo);
+  await dialogo.getByLabel(/^Nombre/).fill("Otra vez");
+  await dialogo.getByLabel(/^Símbolo/).fill("T$");
+  await dialogo.getByRole("button", { name: "Añadir la moneda" }).click();
+  await expect(dialogo.getByText(/está retirada del catálogo/)).toBeVisible();
+  await dialogo.getByRole("button", { name: "Cancelar" }).click();
+
+  await page.getByRole("button", { name: `Reincorporar el ${codigo} al catálogo` }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Reincorporar la moneda" }).click();
+  await expect(page.getByText(`${codigo} vuelve a estar en el catálogo`)).toBeVisible();
+  await expect(fila.getByText("Retirada")).toHaveCount(0);
+
+  /* Se deja retirada. */
+  await page.getByRole("button", { name: `Retirar el ${codigo} del catálogo` }).click();
+  await page.getByRole("dialog").getByLabel(/^Motivo/).fill("Prueba automática: se deja retirada al terminar");
+  await page.getByRole("dialog").getByRole("button", { name: "Retirar la moneda" }).click();
+  await expect(page.getByText(`${codigo} retirada del catálogo`)).toBeVisible();
+
+  /* Cada cambio quedó en la auditoría, con quién y por qué. */
+  await page.goto(`/super-admin/auditoria?texto=${codigo}`);
+  await expect(page.locator("main :visible", { hasText: "Moneda retirada del catálogo de la plataforma" }).first()).toBeVisible();
+  await expect(page.locator("main :visible", { hasText: "Moneda añadida al catálogo de la plataforma" }).first()).toBeVisible();
+});
+
 test("tasas por sede: lo que publica cada una, de solo lectura", async ({ page }) => {
   await signInAsSuperAdmin(page);
   await page.goto("/super-admin/monedas-y-tasas?vista=sedes");

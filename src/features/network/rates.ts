@@ -402,6 +402,8 @@ export type RangoWriteDenial =
   | "alcance-insuficiente"
   | "moneda-local"
   | "moneda-desconocida"
+  /** Retirada del catálogo y sin rango: no se abre a la red una moneda que ya no se ofrece. */
+  | "moneda-retirada"
   | "valor-invalido"
   | "minimo-mayor"
   | "rango-incoherente"
@@ -478,7 +480,9 @@ export function definirRango(
 ): RangoWriteResult<{ rango: RangoDeTasa; anterior: RangoDeTasa | null; ajustes: readonly AjusteDeTasa[] }> {
   if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
   if (input.code === MONEDA_LOCAL) return { ok: false, reason: "moneda-local" };
-  if (!monedaDelCatalogo(input.code)) return { ok: false, reason: "moneda-desconocida" };
+  const moneda = monedaDelCatalogo(input.code);
+  if (!moneda) return { ok: false, reason: "moneda-desconocida" };
+  if (moneda.retiradaEl && !rangos.has(input.code)) return { ok: false, reason: "moneda-retirada" };
   const mal = validarRango(input.compra, input.venta);
   if (mal) return { ok: false, reason: mal };
 
