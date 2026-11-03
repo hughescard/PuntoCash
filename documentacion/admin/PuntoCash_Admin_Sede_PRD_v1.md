@@ -5,7 +5,7 @@
 
 **Destinatarios:** Producto, negocio, liderazgo técnico, jefatura de proyecto, desarrollo y QA.
 
-**Alcance:** Únicamente la consola **Admin de sede** (`/admin`), la del mercante que administra una o varias sedes. **No cubre Super Admin** (`/super-admin`), la consola de PuntoCash sobre su red: esa superficie no entra en esta entrega y vive en `PuntoCash_Administracion_PRD_v1.md`.
+**Alcance:** Únicamente la consola **Admin de sede** (`/admin`), la del mercante que administra una o varias sedes. **No cubre Super Admin** (`/super-admin`), la consola de PuntoCash sobre su red: esa consola tiene su propio PRD, `PuntoCash_Super_Admin_PRD_v1.md`.
 
 **Control de cambios — v1.18 (21/10/2026).** Revisión completa antes de la entrega. Tres decisiones de producto: **cambiar de sede no hace perder la pantalla** —se conservan el periodo y los filtros, salvo la caja y el trabajador, que son de la sede que se deja—; el **motivo** de desactivar a un trabajador o corregir su correo es obligatorio pero **sin largo mínimo**, porque basta con que diga algo; y un reporte exportado con un trabajador elegido **no lleva el corte por trabajador**, que sería una sola fila. El documento deja de llamarse entrega parcial.
 
