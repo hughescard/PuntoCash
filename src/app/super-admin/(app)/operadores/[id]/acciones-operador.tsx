@@ -227,7 +227,7 @@ function DialogoRestablecer({
         <DialogHeader>
           <DialogTitle>Restablecer el acceso de {principal.nombre}</DialogTitle>
           <DialogDescription>
-            El administrador principal es el único de su empresa que puede gestionar usuarios. Si pierde el acceso, nadie
+            El administrador principal es el único de su empresa que puede gestionar administradores. Si pierde el acceso, nadie
             más de su empresa puede arreglarlo.
           </DialogDescription>
         </DialogHeader>
@@ -264,7 +264,7 @@ function DialogoRestablecer({
               </Field>
               <CampoMotivo disabled={enviando} />
               <p className="text-body-sm text-text-secondary">
-                No crea ningún usuario ni cambia quién es el principal. Solo le da una credencial nueva y, si hace falta, otro
+                No crea ningún administrador ni cambia quién es el principal. Solo le da una credencial nueva y, si hace falta, otro
                 correo.
               </p>
             </DialogBody>

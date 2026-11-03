@@ -80,7 +80,7 @@ export const MENSAJES = {
     "es-uno-mismo": "No puedes traspasarte el papel a ti mismo.",
     "destino-requerido": "Elige a quién le traspasas la administración.",
     "destino-no-activo":
-      "Solo puedes traspasarlo a un administrador activo: uno desactivado dejaría a tu empresa sin nadie que administre usuarios.",
+      "Solo puedes traspasarlo a un administrador activo: uno desactivado dejaría a tu empresa sin nadie que gestione a los demás administradores.",
     "error-inesperado": "No se pudo completar la acción. Vuelve a intentarlo.",
   },
   perfil: {

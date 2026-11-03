@@ -42,7 +42,7 @@ export function AvisoSoloTuya(): React.JSX.Element | null {
       }
     >
       Eres el administrador principal: nadie más de tu empresa ve esta sección ni puede dar de alta,
-      editar o desactivar usuarios administradores.
+      editar o desactivar administradores.
     </Alert>
   );
 }

@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v8.2
+## Documento de Requisitos Funcionales (FRD) · v8.3
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 8.3 | 02/11/2026 | **En la consola, a los administradores se les llama «administradores», no «usuarios».** Los trabajadores también son usuarios del producto, y llamar «usuarios» solo a los administradores de la empresa confundía. La entrada del menú y la sección §8 pasan a llamarse **Administradores**; los títulos, el buscador, la columna del listado, los avisos y los mensajes de la sección dicen «administrador». Las rutas (`/admin/usuarios`) y los códigos no cambian. El botón del traspaso pasa a «Traspasar la administración principal». Sin cambios de comportamiento. |
 | 8.2 | 02/11/2026 | **Se recoge lo que la consola ya hacía y el documento no decía, y se corrige una demo.** (1) **El identificador de acceso es un nombre de usuario**, no un correo: de 3 a 30 caracteres, sin «@»; el acceso y la recuperación aceptan el identificador **o** el correo, y el correo es **único**. Nuevo **FR-AD-ACC-11**; se completan la recuperación (**FR-AD-ACC-8**), el alta de trabajador y de usuario, y el cambio de correo, con los códigos `identificador-invalido` y `correo-duplicado` y sus mensajes (Apéndice C). (2) Dos defectos del acceso, ya corregidos, pasan a ser requisito: la contraseña pertenece a la cuenta y no a lo tecleado, y la verificación anuncia el correo real de la cuenta. (3) Nuevo **FR-AD-SHELL-17**: en el teléfono la acción de una sección baja debajo de su descripción. (4) **FR-AD-PROM-3**: una promoción de red dice «Publicada por PuntoCash». (5) La demo de **FR-AD-USR-4** usaba como identificador un correo, que desde ahora se rechaza. |
 | 8.1 | 26/10/2026 | **Se dice quién pone el rótulo de un equipo, que estaba sin decir.** El rótulo se mostraba en Equipos, en la ficha de sede, en la jornada y en el diálogo de forzar cierre, pero ningún requisito decía de dónde salía ni dónde se cambia, y el formulario de vincular no lo pedía. Nuevo **FR-AD-EQ-30**: lo pone el administrador de la sede al vincular —opcional en una caja, obligatorio en un kiosco— y puede cambiarlo después desde Equipos. **FR-AD-EQ-7 / 8 / 13 / 14** añaden el campo, y **FR-AD-EQ-5** y **FR-AD-EQ-12** la acción. Ninguna otra regla cambia |
 | 8.0 | 21/10/2026 | Documento reescrito para desarrollo: una subsección por pantalla, reglas y códigos de rechazo en lugar de textos de interfaz, referencias a la demostración y catálogo de mensajes (Apéndice C). Ninguna regla de la 7.16 se pierde; se escriben las que la consola ya cumplía y el documento no decía (cierre de sesión, revalidación de la sesión en cada petición, sedes cerradas fuera de los selectores, sedes cerradas fuera del panel de atención). Salen las secciones «Qué es este módulo» y «No especificado». Los códigos de requisito se conservan |
@@ -109,13 +110,13 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 | Bloque | Destinos |
 | --- | --- |
 | Operación | Inicio, Jornadas, Aprobaciones, Operaciones |
-| Sucursal | Sedes, Cajas, Equipos, Trabajadores, Usuarios |
+| Sucursal | Sedes, Cajas, Equipos, Trabajadores, Administradores |
 | Configuración | Monedas, Tasas, Promociones, Reportes |
 
-- **Usuarios** solo existe para el administrador principal (**FR-AD-USR-11**): trece destinos para él, doce para los demás.
-- El servidor decide si incluye Usuarios al armar el menú. La entrada no llega al navegador de quien no es principal.
+- **Administradores** solo existe para el administrador principal (**FR-AD-USR-11**): trece destinos para él, doce para los demás.
+- El servidor decide si incluye Administradores al armar el menú. La entrada no llega al navegador de quien no es principal.
 
-**Ver en la demo:** `marta@malecon-sf.cu` (trece destinos) y `dcastro@malecon-sf.cu` (doce, sin Usuarios).
+**Ver en la demo:** `marta@malecon-sf.cu` (trece destinos) y `dcastro@malecon-sf.cu` (doce, sin Administradores).
 
 **FR-AD-SHELL-3 · Indicadores.** Tres destinos llevan un número cuando es mayor que cero:
 
@@ -173,7 +174,7 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 
 | Filtran por la sede elegida | Muestran siempre todo el alcance |
 | --- | --- |
-| Inicio, Cajas, Equipos, Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Promociones, Reportes, y los indicadores del menú (**FR-AD-SHELL-3**) | Sedes, Trabajadores y Usuarios, con la sede como columna cuando aplica |
+| Inicio, Cajas, Equipos, Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Promociones, Reportes, y los indicadores del menú (**FR-AD-SHELL-3**) | Sedes, Trabajadores y Administradores, con la sede como columna cuando aplica |
 
 - La selección se conserva durante la navegación.
 - Una sesión nueva empieza en «Todas mis sedes».
@@ -217,9 +218,9 @@ No se puede ver en la demo.
 | `/admin/trabajadores/[id]` | Ficha de un trabajador |
 | `/admin/trabajadores/[id]/editar` | Edición de sus datos personales |
 | `/admin/trabajadores/[id]/acceso` | Ayudar con el acceso |
-| `/admin/usuarios` | Usuarios administradores de la empresa. **Solo para el administrador principal** |
-| `/admin/usuarios/nuevo` | Alta de un usuario administrador. **Solo para el administrador principal** |
-| `/admin/usuarios/[id]` | Ficha de un usuario administrador. **Solo para el administrador principal** |
+| `/admin/usuarios` | Administradores de la empresa. **Solo para el administrador principal** |
+| `/admin/usuarios/nuevo` | Alta de un administrador. **Solo para el administrador principal** |
+| `/admin/usuarios/[id]` | Ficha de un administrador. **Solo para el administrador principal** |
 | `/admin/usuarios/[id]/editar` | Edición de sus datos personales. **Solo para el administrador principal** |
 | `/admin/perfil` | Datos de la persona con sesión iniciada |
 | `/admin/perfil/editar` | Edición de sus propios datos personales |
@@ -275,12 +276,12 @@ Rigen **FR-FMT-1 a FR-FMT-5** de `PuntoCash_Worker_Functional_Requirements_v1.md
 | Kiosco | `KIO-NNNN-NNNN` |
 | Código del reto de vinculación | Seis cifras. Se muestra y se admite agrupado de tres en tres («482 913»); al leerlo se ignoran los espacios |
 
-**FR-AD-FMT-3 · Correo de verificación.** El correo de verificación de un trabajador o de un usuario administrador se muestra **enmascarado** en todo listado y en toda ficha. Excepciones, que lo muestran entero: la asistencia de acceso de un trabajador (**FR-AD-TRAB-10**) y el diálogo «Cambiar correo» de un usuario administrador (**FR-AD-USR-6**).
+**FR-AD-FMT-3 · Correo de verificación.** El correo de verificación de un trabajador o de un administrador se muestra **enmascarado** en todo listado y en toda ficha. Excepciones, que lo muestran entero: la asistencia de acceso de un trabajador (**FR-AD-TRAB-10**) y el diálogo «Cambiar correo» de un administrador (**FR-AD-USR-6**).
 
 **FR-AD-FMT-4 · Credenciales.**
 
 - Ninguna pantalla muestra, copia ni exporta una credencial de dispositivo **[A10]**, **FR-AD-EQ-25**.
-- La credencial inicial de una persona (trabajador o usuario administrador) se muestra **una sola vez**, en el resultado del alta o de la regeneración, y no vuelve a ser consultable.
+- La credencial inicial de una persona (trabajador o administrador) se muestra **una sola vez**, en el resultado del alta o de la regeneración, y no vuelve a ser consultable.
 
 **Ver en la demo:** `marta@malecon-sf.cu`. Identificadores: **Equipos**. Correo enmascarado: **Trabajadores**, cualquier ficha. Credencial una sola vez: **Trabajadores** → alta de un trabajador.
 
@@ -335,12 +336,12 @@ Rigen **FR-A11Y-1 a FR-A11Y-3** de `PuntoCash_Worker_Functional_Requirements_v1.
 - Contraseña incorrecta: `marta@malecon-sf.cu` con cualquier otra contraseña.
 - Usuario inexistente: cualquier correo no listado.
 - Operador suspendido: `yperez@orientedivisas.cu`.
-- Usuario desactivado: con `marta@malecon-sf.cu`, **Usuarios** → desactivar a Daniel Castro; cerrar sesión y entrar con `dcastro@malecon-sf.cu`.
+- Usuario desactivado: con `marta@malecon-sf.cu`, **Administradores** → desactivar a Daniel Castro; cerrar sesión y entrar con `dcastro@malecon-sf.cu`.
 
 **FR-AD-ACC-11 · Identificador y correo.** Cada cuenta tiene un **identificador de acceso** y un **correo**, y con cualquiera de los dos se entra y se recupera la contraseña.
 
 - **El identificador es un nombre de usuario**, no un correo: de 3 a 30 caracteres, solo letras, números, punto, guion y guion bajo, y **sin «@»**. Así lo tecleado nunca puede ser a la vez el identificador de una persona y el correo de otra, y no hace falta decidir cuál gana.
-- **El correo es único** entre los usuarios administradores, porque con él se entra. Lo mismo rige entre los trabajadores (**FR-AD-TRAB-6**). Mayúsculas y espacios en los extremos no distinguen una cuenta de otra.
+- **El correo es único** entre los administradores, porque con él se entra. Lo mismo rige entre los trabajadores (**FR-AD-TRAB-6**). Mayúsculas y espacios en los extremos no distinguen una cuenta de otra.
 - **La contraseña pertenece a la cuenta, no a lo tecleado.** Quien recupera su contraseña escribiendo el correo y después entra con el identificador entra con la contraseña nueva, y la vieja deja de valer.
 - **La verificación anuncia el correo real de la cuenta**, enmascarado (**FR-AD-FMT-3**), escriba la persona su identificador o su correo. Nunca uno deducido de lo tecleado.
 - El rechazo sigue siendo único (**FR-AD-ACC-5**): una cuenta que no existe se dice igual con el identificador que con el correo.
@@ -1330,11 +1331,11 @@ Se inicia con «Desactivar» en la ficha de un trabajador activo y se confirma e
 
 ---
 
-## 8. Usuarios administradores
+## 8. Administradores
 
-Los usuarios administradores de la empresa (el operador de la sesión) **[A4]**, **[A3]**. Pertenecen al operador, no a una sede.
+Los administradores de la empresa (el operador de la sesión) **[A4]**, **[A3]**. Pertenecen al operador, no a una sede.
 
-### 8.1 Usuarios administradores — sección del administrador principal
+### 8.1 Administradores — sección del administrador principal
 
 #### 8.1.1 Acceso y papeles
 
@@ -1343,15 +1344,15 @@ Los usuarios administradores de la empresa (el operador de la sesión) **[A4]**,
 - Toda la sección (`/admin/usuarios`, `/admin/usuarios/nuevo`, `/admin/usuarios/[id]`, `/admin/usuarios/[id]/editar`) pertenece a **un único usuario por empresa: el administrador principal**.
 - Solo él da de alta, edita, cambia el correo, regenera la credencial, desactiva, reactiva y traspasa el papel.
 - Para cualquier otro usuario **la sección no existe**:
-  - la entrada «Usuarios» no está en el menú, y se omite **en el servidor**, al construir el menú; el HTML entregado no la contiene (**FR-AD-SHELL-2**);
+  - la entrada «Administradores» no está en el menú, y se omite **en el servidor**, al construir el menú; el HTML entregado no la contiene (**FR-AD-SHELL-2**);
   - sus rutas responden como inexistentes, con 404 (**FR-AD-NAV-3**), no como prohibidas.
 - Toda escritura de la sección comprueba en el servidor que quien actúa es el principal.
 
-**Ver en la demo:** `dcastro@malecon-sf.cu`: el menú no tiene Usuarios, y entrar en `/admin/usuarios` responde 404. `marta@malecon-sf.cu`: el menú tiene Usuarios.
+**Ver en la demo:** `dcastro@malecon-sf.cu`: el menú no tiene Administradores, y entrar en `/admin/usuarios` responde 404. `marta@malecon-sf.cu`: el menú tiene Administradores.
 
 **FR-AD-USR-4 · Un único nivel de permisos sobre la operación.**
 
-- Todos los usuarios administradores de un operador pueden exactamente lo mismo en la operación, en **todas** sus sedes: sedes, cajas, equipos, trabajadores, monedas, tasas, promociones, aprobaciones y reportes.
+- Todos los administradores de un operador pueden exactamente lo mismo en la operación, en **todas** sus sedes: sedes, cajas, equipos, trabajadores, monedas, tasas, promociones, aprobaciones y reportes.
 - La única diferencia entre usuarios es esta sección, que es del principal.
 - El modelo tiene una sola marca, «es el principal». Sin roles, sub-roles, permisos por capacidad ni usuarios limitados a una sede.
 
@@ -1371,7 +1372,7 @@ Los usuarios administradores de la empresa (el operador de la sesión) **[A4]**,
 
 **FR-AD-USR-1 · Contenido.**
 
-- Muestra todos los usuarios administradores del operador de la sesión, activos y desactivados.
+- Muestra todos los administradores del operador de la sesión, activos y desactivados.
 - Orden: el principal primero; después los activos; dentro de cada grupo, por nombre.
 - Búsqueda por nombre o identificador, en la dirección (`texto`).
 - Ofrece «Dar de alta» → `/admin/usuarios/nuevo`.
@@ -1393,7 +1394,7 @@ Datos de cada usuario:
 
 Por debajo de 1024px cada usuario es una tarjeta (**FR-AD-SHELL-13**).
 
-**Ver en la demo:** `marta@malecon-sf.cu`, **Usuarios**. Para cerrar el aviso, su control de cierre; al volver a entrar ya no aparece.
+**Ver en la demo:** `marta@malecon-sf.cu`, **Administradores**. Para cerrar el aviso, su control de cierre; al volver a entrar ya no aparece.
 
 ---
 
@@ -1407,13 +1408,13 @@ Por debajo de 1024px cada usuario es una tarjeta (**FR-AD-SHELL-13**).
 | Primer apellido | Sí | Ídem |
 | Segundo apellido | No | Ídem |
 | Teléfono | Sí | Texto libre |
-| Correo | Sí | Formato de correo válido, **único entre los usuarios administradores**: con él también se entra (**FR-AD-ACC-11**). Es el canal del segundo factor **[R13]** |
-| Identificador de acceso | Sí | Nombre de usuario de 3 a 30 caracteres, letras, números, punto, guion o guion bajo, **sin «@»** (**FR-AD-ACC-11**). Único entre todos los usuarios administradores, sin distinguir mayúsculas de minúsculas |
+| Correo | Sí | Formato de correo válido, **único entre los administradores**: con él también se entra (**FR-AD-ACC-11**). Es el canal del segundo factor **[R13]** |
+| Identificador de acceso | Sí | Nombre de usuario de 3 a 30 caracteres, letras, números, punto, guion o guion bajo, **sin «@»** (**FR-AD-ACC-11**). Único entre todos los administradores, sin distinguir mayúsculas de minúsculas |
 
 - El usuario nace en la empresa de quien lo crea, con potestad sobre todas sus sedes. No se elige sede.
 - **FR-AD-USR-4:** antes de confirmar, la pantalla advierte que el usuario nuevo podrá hacer todo lo que hace quien lo crea en la operación, en todas sus sedes, salvo esta sección.
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Dar de alta.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Dar de alta.
 
 **Rechazos.** Cada rechazo de campo se muestra junto a su campo. El formulario conserva lo escrito.
 
@@ -1421,9 +1422,9 @@ Por debajo de 1024px cada usuario es una tarjeta (**FR-AD-SHELL-13**).
 | --- | --- |
 | Un campo obligatorio vacío (el primero que falte) | `campo-obligatorio` |
 | Correo con formato inválido | `correo-invalido` |
-| Ya existe un usuario administrador con ese correo | `correo-duplicado` |
+| Ya existe un administrador con ese correo | `correo-duplicado` |
 | Identificador que no es un nombre de usuario válido (con «@», demasiado corto o largo, o con caracteres no admitidos) | `identificador-invalido` |
-| Ya existe un usuario administrador con ese identificador | `identificador-duplicado` |
+| Ya existe un administrador con ese identificador | `identificador-duplicado` |
 | Quien actúa no es el principal | `no-es-el-principal` |
 
 **Ver en la demo** (`marta@malecon-sf.cu`, Dar de alta, resto de campos rellenos):
@@ -1452,11 +1453,11 @@ Un usuario que no existe o es de otra empresa responde `no-encontrada`, con 404 
 | Cabecera | Nombre completo e identificador; si es el propio usuario, lo indica |
 | Aviso | Si está desactivado: que no puede entrar y que puede reactivarse desde aquí |
 | Datos | Estado, identificador de acceso, teléfono, correo de verificación **enmascarado** (**FR-AD-FMT-3**), fecha de alta, último acceso o que nunca ha entrado |
-| Acciones | «Editar datos» → `/admin/usuarios/{id}/editar`; «Cambiar correo»; «Regenerar credencial»; «Traspasar la administración de usuarios» (8.1.6); «Desactivar» si está activo y no es el principal; «Reactivar» si está desactivado |
+| Acciones | «Editar datos» → `/admin/usuarios/{id}/editar`; «Cambiar correo»; «Regenerar credencial»; «Traspasar la administración principal» (8.1.6); «Desactivar» si está activo y no es el principal; «Reactivar» si está desactivado |
 
 La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-13**).
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro.
 
 **FR-AD-USR-13 · Al principal no lo desactiva nadie, ni él mismo.**
 
@@ -1465,7 +1466,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 - El servidor rechaza la desactivación del principal con `es-el-principal`.
 - Garantiza que la empresa siempre tiene un administrador capaz de dar de alta a otro.
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Marta Sánchez. Sin otro usuario activo: `rortega@caribecambios.cu`, Usuarios → Reinaldo Ortega.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Marta Sánchez. Sin otro usuario activo: `rortega@caribecambios.cu`, Administradores → Reinaldo Ortega.
 
 ---
 
@@ -1490,7 +1491,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 | Quien actúa no es el principal | `no-es-el-principal` |
 | El usuario no existe o es de otra empresa | `no-encontrada` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro → «Editar datos».
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro → «Editar datos».
 
 **FR-AD-USR-6 · Cambiar correo.** Se inicia con «Cambiar correo» y se hace en un diálogo, sin motivo.
 
@@ -1504,11 +1505,11 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 | Condición | Código |
 | --- | --- |
 | Correo vacío o con formato inválido | `correo-invalido` |
-| Otro usuario administrador ya tiene ese correo | `correo-duplicado` |
+| Otro administrador ya tiene ese correo | `correo-duplicado` |
 | Quien actúa no es el principal | `no-es-el-principal` |
 | El usuario no existe o es de otra empresa | `no-encontrada` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro → «Cambiar correo». El aviso propio: en la ficha de Marta Sánchez.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro → «Cambiar correo». El aviso propio: en la ficha de Marta Sánchez.
 
 **FR-AD-USR-5 · Regenerar credencial.** Igual que 7.6: se confirma en un diálogo sin motivo, es un restablecimiento que sustituye la contraseña vigente, y la credencial nueva se muestra una sola vez. El principal puede regenerar la suya.
 
@@ -1517,7 +1518,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 | Quien actúa no es el principal | `no-es-el-principal` |
 | El usuario no existe o es de otra empresa | `no-encontrada` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro → «Regenerar credencial».
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro → «Regenerar credencial».
 
 **Desactivar.** Se inicia con «Desactivar» en un usuario activo que no es el principal, y se confirma en un diálogo, sin motivo (**FR-AD-STATE-3**).
 
@@ -1530,7 +1531,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 | Quien actúa no es el principal | `no-es-el-principal` |
 | El usuario no existe o es de otra empresa | `no-encontrada` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro → «Desactivar».
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro → «Desactivar».
 
 **FR-AD-USR-9 · Reactivar.** Se inicia con «Reactivar» en un usuario desactivado, desde la misma ficha, y se confirma en un diálogo, sin motivo.
 
@@ -1547,7 +1548,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 
 #### 8.1.6 Traspasar el papel de principal
 
-**FR-AD-USR-12.** El principal traspasa el papel **desde su propia ficha**, con «Traspasar la administración de usuarios», y lo confirma en un diálogo.
+**FR-AD-USR-12.** El principal traspasa el papel **desde su propia ficha**, con «Traspasar la administración principal», y lo confirma en un diálogo.
 
 - El control solo aparece en la ficha del principal y solo si hay al menos otro usuario activo en la empresa.
 - El diálogo advierte que quien traspasa deja de ver esta sección.
@@ -1570,10 +1571,10 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 
 - **Inmediato y en un solo acto**: al confirmar hay exactamente un principal, el destinatario. En ningún momento hay dos principales ni ninguno.
 - Quien traspasó pasa a «Administrador»: **deja de ver esta sección** y conserva todo lo demás.
-- La confirmación lleva a `/admin/inicio` con una carga completa del shell, que llega ya sin la entrada «Usuarios».
+- La confirmación lleva a `/admin/inicio` con una carga completa del shell, que llega ya sin la entrada «Administradores».
 - El usuario inicial no cambia (**FR-AD-USR-14**).
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Marta Sánchez → «Traspasar la administración de usuarios», destinatario Daniel Castro. Después, el menú de Marta no tiene Usuarios.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Marta Sánchez → «Traspasar la administración principal», destinatario Daniel Castro. Después, el menú de Marta no tiene Administradores.
 
 ---
 
@@ -1615,7 +1616,7 @@ Lo que cada persona con sesión ve y cambia de sí misma, sea o no el principal.
 | Quien mira | Indicación |
 | --- | --- |
 | No es el principal | Que se lo pida al administrador principal, por su nombre |
-| Es el principal | Que se cambia desde su ficha en Usuarios, con enlace a `/admin/usuarios/{su id}` |
+| Es el principal | Que se cambia desde su ficha en Administradores, con enlace a `/admin/usuarios/{su id}` |
 
 **Ver en la demo:** `dcastro@malecon-sf.cu`, Perfil (remite a Marta Sánchez). `marta@malecon-sf.cu`, Perfil (enlace a su ficha).
 
@@ -3012,7 +3013,7 @@ El volumen de lo operado por las sedes en un periodo. **Solo lectura.**
 **FR-AD-DOM-1 · Dominio de red.** La consola trabaja sobre un dominio de red compartido con la consola de PuntoCash y con las superficies que leen el contenido público de cada sede. Incluye:
 
 - operadores, sedes, asignaciones, cajas, equipos y trabajadores;
-- usuarios administradores, monedas, tasas y promociones;
+- administradores, monedas, tasas y promociones;
 - solicitudes de aprobación y auditoría.
 
 **FR-AD-DOM-2 · Entidades.**
@@ -3110,7 +3111,7 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 | Cualquier pantalla del shell | Un segundo factor verificado **[R13]** |
 | Cualquier pantalla del shell | Un usuario activo, de un operador activo **[A14]** |
 | Que una pantalla muestre algo | Al menos una sede en el alcance; sin ninguna, las pantallas se muestran vacías por ausencia, no por filtro (**FR-AD-ACC-7**, **FR-AD-HOME-8**) |
-| Ver la sección de Usuarios (§8) | Ser el **administrador principal** del operador de la sesión (**FR-AD-USR-11**) |
+| Ver la sección de Administradores (§8) | Ser el **administrador principal** del operador de la sesión (**FR-AD-USR-11**) |
 | Vincular un equipo de caja | Una sede del alcance **con al menos una caja activa y sin equipo vinculado**, y un reto vigente y no usado |
 | Vincular un kiosco | Una sede del alcance y un reto vigente y no usado |
 | Desvincular un equipo | Nada más que el vínculo. No exige que la jornada esté cerrada **[A11]**, **[FR-DEV-7]** |
@@ -3121,8 +3122,8 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 | Desactivar o reasignar un trabajador | Sin jornada abierta **[R6]** |
 | Reactivar un trabajador | Nada: vuelve a su sede de siempre. **Siempre es posible**: PuntoCash no desactiva personas **[A14]** |
 | Que un trabajador pueda iniciar sesión | Estar activo; su sede y su operador no suspendidos; y un equipo vinculado a una caja **de su sede** (**FR-DEV-1**, **FR-AUTH-8**) |
-| Dar de alta, editar, cambiar el correo, regenerar la credencial, desactivar o reactivar un usuario administrador | Ser el administrador principal (**FR-AD-USR-11**) |
-| Desactivar un usuario administrador | Que no sea el principal (**FR-AD-USR-13**) |
+| Dar de alta, editar, cambiar el correo, regenerar la credencial, desactivar o reactivar un administrador | Ser el administrador principal (**FR-AD-USR-11**) |
+| Desactivar un administrador | Que no sea el principal (**FR-AD-USR-13**) |
 | Traspasar el papel de principal | Ser su titular, y un destinatario **activo** distinto de uno mismo (**FR-AD-USR-12**) |
 | Recuperar la contraseña | Nada: se llega sin sesión y la respuesta es idéntica exista la cuenta o no (**FR-REC-4**) |
 | Añadir una moneda a una sede | Una sede del alcance no cerrada, y una moneda del catálogo que la sede no tenga. **No** depende del servicio de Cambio de moneda (**FR-AD-MON-5**) |
@@ -3304,7 +3305,7 @@ El mensaje que ve el usuario para cada código de rechazo. Un código se busca p
 | `motivo-requerido` | Escribe el motivo. |
 | `error-inesperado` | No se pudo completar la acción. Vuelve a intentarlo. |
 
-### Usuarios administradores — §8.1
+### Administradores — §8.1
 
 | Código | Mensaje |
 | --- | --- |

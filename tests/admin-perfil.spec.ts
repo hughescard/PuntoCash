@@ -67,14 +67,14 @@ test.describe("§8.2 Perfil", () => {
     await expect(main.getByLabel("Repite la contraseña nueva")).toHaveValue("otra-clave-1");
   });
 
-  test("al principal, el correo le remite a su propia ficha en Usuarios", async ({ page }) => {
+  test("al principal, el correo le remite a su propia ficha en Administradores", async ({ page }) => {
     await signInAsAdmin(page, MARTA);
     await page.goto("/admin/perfil");
 
     const main = page.getByRole("main");
     await expect(main.getByText("Administrador principal", { exact: true })).toBeVisible();
 
-    await main.getByRole("link", { name: "tu ficha en Usuarios" }).click();
+    await main.getByRole("link", { name: "tu ficha en Administradores" }).click();
     await page.waitForURL(/\/admin\/usuarios\/adm-malecon-1$/);
   });
 });

@@ -21,7 +21,7 @@ const DESTINOS = [
   "Cajas",
   "Equipos",
   "Trabajadores",
-  "Usuarios",
+  "Administradores",
   "Monedas",
   "Tasas",
   "Promociones",

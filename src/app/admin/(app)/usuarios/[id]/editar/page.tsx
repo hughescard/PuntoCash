@@ -11,7 +11,7 @@ import { redEnAlcance } from "@/features/network/scoped-reads";
 import { EditarUsuarioForm } from "./editar-usuario-form";
 
 export const metadata: Metadata = {
-  title: "Administración de sede · Editar usuario",
+  title: "Administración de sede · Editar administrador",
   robots: { index: false, follow: false },
 };
 
@@ -54,7 +54,7 @@ export default async function AdminEditarUsuarioPage({
     <>
       <PageHeader
         title={`Editar a ${usuario.fullName}`}
-        description={usuario.id === session.user.id ? "Tu usuario" : usuario.identifier}
+        description={usuario.id === session.user.id ? "Tú" : usuario.identifier}
         actions={
           <Button variant="secondary" asChild>
             <Link href={`/admin/usuarios/${usuario.id}` as Route}>

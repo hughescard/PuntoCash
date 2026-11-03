@@ -117,12 +117,12 @@ export const AREAS: readonly AreaDeEventos[] = [
     ],
   },
   {
-    area: "Usuarios administradores",
+    area: "Administradores",
     tipos: [
-      { tipo: "usuario-admin.alta", etiqueta: "Usuario administrador creado" },
-      { tipo: "usuario-admin.editado", etiqueta: "Usuario administrador modificado" },
-      { tipo: "usuario-admin.desactivado", etiqueta: "Usuario administrador desactivado" },
-      { tipo: "usuario-admin.reactivado", etiqueta: "Usuario administrador reactivado" },
+      { tipo: "usuario-admin.alta", etiqueta: "Administrador creado" },
+      { tipo: "usuario-admin.editado", etiqueta: "Administrador modificado" },
+      { tipo: "usuario-admin.desactivado", etiqueta: "Administrador desactivado" },
+      { tipo: "usuario-admin.reactivado", etiqueta: "Administrador reactivado" },
       { tipo: "usuario-admin.contrasena-cambiada", etiqueta: "Contraseña de un administrador cambiada" },
     ],
   },

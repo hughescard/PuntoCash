@@ -14,7 +14,7 @@ import { EstadoUsuario } from "../usuarios-list";
 import { AccionesUsuario } from "./acciones-usuario";
 
 export const metadata: Metadata = {
-  title: "Administración de sede · Ficha de usuario",
+  title: "Administración de sede · Ficha de administrador",
   robots: { index: false, follow: false },
 };
 
@@ -74,19 +74,19 @@ export default async function AdminUsuarioPage({
     <>
       <PageHeader
         title={usuario.fullName}
-        description={esYo ? `${usuario.identifier} · tu usuario` : usuario.identifier}
+        description={esYo ? `${usuario.identifier} · tú` : usuario.identifier}
         actions={
           <Button variant="secondary" asChild>
             <Link href="/admin/usuarios">
               <ArrowLeft aria-hidden="true" />
-              Volver a Usuarios
+              Volver a Administradores
             </Link>
           </Button>
         }
       />
 
       {usuario.status === "desactivado" ? (
-        <Alert variant="warning" title="Este usuario está desactivado" className="mb-12">
+        <Alert variant="warning" title="Este administrador está desactivado" className="mb-12">
           No puede entrar en la consola. Nada de lo que hizo se ha borrado ni alterado, y puede
           reactivarse desde aquí.
         </Alert>

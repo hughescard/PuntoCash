@@ -15,7 +15,7 @@ import { AvisoSoloTuya } from "./aviso-solo-tuya";
 import { UsuariosList, type UsuarioRow } from "./usuarios-list";
 
 export const metadata: Metadata = {
-  title: "Administración de sede · Usuarios",
+  title: "Administración de sede · Administradores",
   robots: { index: false, follow: false },
 };
 
@@ -78,7 +78,7 @@ export default async function AdminUsuariosPage({
   return (
     <>
       <PageHeader
-        title="Usuarios"
+        title="Administradores"
         description="Quién más de tu empresa puede entrar en esta consola."
         actions={
           <Button asChild>

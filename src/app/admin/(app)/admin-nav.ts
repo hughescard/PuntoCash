@@ -81,7 +81,7 @@ export function adminNavGroups(
         { href: "/admin/equipos", label: "Equipos", icon: MonitorSmartphone, badge: badges.equipos },
         { href: "/admin/trabajadores", label: "Trabajadores", icon: Users },
         ...(visibles.usuarios
-          ? [{ href: "/admin/usuarios" as const, label: "Usuarios", icon: ShieldCheck }]
+          ? [{ href: "/admin/usuarios" as const, label: "Administradores", icon: ShieldCheck }]
           : []),
       ],
     },

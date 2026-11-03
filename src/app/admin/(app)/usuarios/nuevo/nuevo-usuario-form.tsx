@@ -143,9 +143,9 @@ export function NuevoUsuarioForm(): React.JSX.Element {
               de confirmar y no después. Y la frontera, en la misma frase: lo
               único que no hereda es esta sección (**FR-AD-USR-11**). */}
           <Alert variant="warning" title="Podrá hacer todo lo que tú haces en la operación">
-            No hay perfiles ni usuarios limitados a una sede. Desde que entre, esta persona podrá
+            No hay perfiles ni administradores limitados a una sede. Desde que entre, esta persona podrá
             crear y desactivar trabajadores, vincular equipos, fijar tasas y aprobar solicitudes,
-            en todas tus sedes. Lo único que no podrá es administrar usuarios: esta pantalla es
+            en todas tus sedes. Lo único que no podrá es gestionar a otros administradores: esta pantalla es
             tuya mientras seas el administrador principal, y él no la verá.
           </Alert>
 

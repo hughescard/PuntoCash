@@ -7,7 +7,7 @@
 
 **Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
 
-**Control de cambios — v3.6 (2026-11-02).** **En Operadores, a los administradores se les llama «administradores», no «usuarios».** Los trabajadores también son usuarios del producto, y llamar «usuarios» solo a los administradores de una empresa confunde. La columna «Personas» del listado dice «N administradores» y «N trabajadores»; el bloque de la ficha se titula «Administradores»; **FR-SA-OPE-1**, **OPE-8**, **OPE-9** y **OPE-10** se redactan igual. Sin cambios de comportamiento. «Usuarios» queda para las cuentas de PuntoCash (el menú) y para el nombre de la sección de Admin; el resto de la consola y de los documentos que aún dicen «usuario administrador» (el formulario de alta del operador, los eventos de auditoría, el FRD de Admin) están por decidir.
+**Control de cambios — v3.6 (2026-11-02).** **A los administradores de una empresa se les llama «administradores», no «usuarios».** Los trabajadores también son usuarios del producto, y llamar «usuarios» solo a los administradores de una empresa confunde. La columna «Personas» del listado dice «N administradores» y «N trabajadores»; el bloque de la ficha se titula «Administradores»; **FR-SA-OPE-1**, **OPE-8**, **OPE-9** y **OPE-10** se redactan igual. Sin cambios de comportamiento. El cambio alcanza también al formulario de alta del operador (el bloque «Administrador principal» y su aviso), a los mensajes de rechazo del alta, a las etiquetas y el grupo de la auditoría («Administrador creado», «Administradores») y, en Admin, a la sección que antes se llamaba «Usuarios» (ahora «Administradores», FRD de Admin v8.3). «Usuarios» queda para las cuentas de PuntoCash, el menú de Super Admin.
 
 **Control de cambios — v3.5 (2026-11-02).** **Auditoría: lo que se pide ahora es lo que se construyó, y el registro se puede descargar.** §14 se reescribe. **FR-SA-AUD-1** fija las columnas (fecha y hora, evento con su objeto, quién y con qué rol, sede y operador, motivo) y que se lee por tandas de 50, sin ventana de fechas obligatoria: a diferencia de Operaciones, el registro de gobierno crece a decenas de actos por semana, y quien audita busca un acto, no un periodo. **FR-SA-AUD-2** distingue lo que se registra de lo que **ninguna pantalla produce hoy**: el alta y la retirada de monedas del catálogo (la tabla de Monedas y tasas no mantiene el catálogo) y la credencial inicial regenerada (la sustituyó el restablecimiento del acceso del principal) salen de la lista de obligatorios hasta que esas acciones existan, y se añade «auditoría exportada». **FR-SA-AUD-4** precisa que la búsqueda mira el motivo **y el objeto**, y que el tipo de evento se elige agrupado por lo que se gobierna. **FR-SA-AUD-5** se limita a lo que el registro sabe: enlaza a la **sede** y al **operador**, no a la persona o a la caja sobre la que se actuó. **FR-SA-AUD-9** (nuevo): **Excel** con lo que hay en pantalla; como este archivo —a diferencia de un reporte— **nombra personas**, la exportación misma queda en el registro con sus filtros. **FR-SA-AUD-10** (nuevo): quien consta como autor es siempre una persona de la consola, no el nombre de un área. §17 deja de decir «sin exportación de la auditoría». Un defecto corregido de paso: el registro vivía en el módulo y no en `globalThis`, de modo que en el servidor de desarrollo lo que registraba una exportación no lo veía la pantalla.
 
@@ -37,9 +37,9 @@
 
 PuntoCash es la propietaria de la red y de la plataforma; no es la administradora de ningún mostrador. Esa distinción es la que organiza todo este documento, y se resume en dos listas.
 
-**Lo que esta consola decide** son los términos de la relación y los límites de la red: crear una sede, editar sus datos maestros, suspenderla y cerrarla; dar de alta y de baja mercantes; asignar y revocar sedes; entregar a cada mercante su **primer** usuario administrador; fijar los **rangos de tasa** por par de monedas; habilitar los **servicios** de cada sede; y publicar **promociones de red**.
+**Lo que esta consola decide** son los términos de la relación y los límites de la red: crear una sede, editar sus datos maestros, suspenderla y cerrarla; dar de alta y de baja mercantes; asignar y revocar sedes; entregar a cada mercante su **primer** administrador; fijar los **rangos de tasa** por par de monedas; habilitar los **servicios** de cada sede; y publicar **promociones de red**.
 
-**Lo que esta consola solo mira** es todo lo que vive dentro de una sede: sus cajas, sus equipos vinculados, sus kioscos, sus trabajadores, sus usuarios administradores, las monedas que cambia, la tasa que aplica, sus jornadas y sus operaciones. Lo ve entero, con todo el detalle, y no crea, modifica ni da de baja nada de ello **[A14]**, **[RP-26]**.
+**Lo que esta consola solo mira** es todo lo que vive dentro de una sede: sus cajas, sus equipos vinculados, sus kioscos, sus trabajadores, sus administradores, las monedas que cambia, la tasa que aplica, sus jornadas y sus operaciones. Lo ve entero, con todo el detalle, y no crea, modifica ni da de baja nada de ello **[A14]**, **[RP-26]**.
 
 Cuando algo va mal dentro de una sede, PuntoCash no interviene pieza a pieza: **suspende al operador o suspende la sede** (§13). Es una acción sobre la relación, visible, reversible y auditada, que corta el acceso de todos a la vez sin quitarle al mercante la responsabilidad de lo suyo.
 
@@ -78,7 +78,7 @@ Y como el resto de la capa: no opera caja, no registra operaciones, no verifica 
 | `/super-admin/sedes/nueva` | Creación de una sede |
 | `/super-admin/sedes/[id]` | Ficha de una sede, con asignación e historial |
 | `/super-admin/operadores` | Listado de mercantes |
-| `/super-admin/operadores/nuevo` | Alta de un mercante y su usuario administrador inicial |
+| `/super-admin/operadores/nuevo` | Alta de un mercante y su administrador inicial |
 | `/super-admin/operadores/[id]` | Ficha de un mercante |
 | `/super-admin/servicios` | Servicios habilitados por sede |
 | `/super-admin/monedas-y-tasas` | Catálogo de monedas, rangos de red, y consulta por sede |
@@ -189,7 +189,7 @@ El panel que responde "¿cómo está la red ahora mismo?".
 
 **FR-SA-ASG-2** No es posible asignar una sede con asignación vigente. La interfaz exige revocar primero: "Esta sede ya está asignada a {operador}. Revoca esa asignación antes de asignarla a otro." **[A2]**.
 
-**FR-SA-ASG-3** Un operador **nunca está sin usuario administrador**, así que la asignación no tiene que encaminar a crear ninguno. Su alta crea en el mismo acto al **administrador principal** (**FR-SA-OPE-5**); a ese principal no lo desactiva nadie, ni él mismo (**FR-AD-USR-13**); y el papel solo se traspasa a otro usuario activo (**FR-AD-USR-12**). Ninguna pantalla de esta consola debe contemplar el caso contrario ni avisar de él. Si llegara a darse —solo por una escritura ajena a las dos consolas—, la respuesta es **FR-SA-OPE-11**.
+**FR-SA-ASG-3** Un operador **nunca está sin administrador**, así que la asignación no tiene que encaminar a crear ninguno. Su alta crea en el mismo acto al **administrador principal** (**FR-SA-OPE-5**); a ese principal no lo desactiva nadie, ni él mismo (**FR-AD-USR-13**); y el papel solo se traspasa a otro administrador activo (**FR-AD-USR-12**). Ninguna pantalla de esta consola debe contemplar el caso contrario ni avisar de él. Si llegara a darse —solo por una escritura ajena a las dos consolas—, la respuesta es **FR-SA-OPE-11**.
 
 **FR-SA-ASG-4** **Revocar** exige motivo escrito de al menos 10 caracteres y muestra una advertencia previa de lo que implica: el operador dejará de ver la sede de inmediato, sus trabajadores en esa sede dejarán de poder iniciar sesión, la sede quedará sin administrador responsable, **y nadie podrá crear cajas, vincular equipos ni fijar tasas en ella hasta que se asigne otro** **[A4]**, **[A10]**.
 
@@ -215,13 +215,13 @@ El panel que responde "¿cómo está la red ahora mismo?".
 
 **FR-SA-OPE-2** Filtros por estado y búsqueda por nombre. Un conmutador "sin sedes" identifica a los operadores dados de alta que aún no administran nada.
 
-**FR-SA-OPE-3** `/super-admin/operadores/nuevo` da de alta un mercante. Campos del operador: nombre o razón social, tipo y número de documento, persona de contacto, teléfono y correo. Campos del **usuario administrador inicial**: nombre, apellidos, correo e identificador de acceso.
+**FR-SA-OPE-3** `/super-admin/operadores/nuevo` da de alta un mercante. Campos del operador: nombre o razón social, tipo y número de documento, persona de contacto, teléfono y correo. Campos del **administrador inicial**: nombre, apellidos, correo e identificador de acceso.
 
 **FR-SA-OPE-4** El correo del usuario inicial es obligatorio: es el canal por el que recibirá su código de verificación en cada inicio de sesión **[R13]**.
 
-**FR-SA-OPE-5** El alta crea el operador y **un único** usuario administrador, y muestra su credencial inicial una sola vez, con el mismo tratamiento que **FR-AD-TRAB-8**. Es lo que se entrega a la empresa cuando se le da una sede en administración.
+**FR-SA-OPE-5** El alta crea el operador y **un único** administrador, y muestra su credencial inicial una sola vez, con el mismo tratamiento que **FR-AD-TRAB-8**. Es lo que se entrega a la empresa cuando se le da una sede en administración.
 
-**FR-SA-OPE-6** **Esta consola no crea usuarios administradores adicionales.** A partir del primero, los crea el propio mercante desde su panel (**FR-AD-USR-2**) **[A4]**, **[A14]**. El formulario debe decirlo, para que nadie espere volver aquí a dar de alta al segundo: "Este será el usuario con el que la empresa entra por primera vez. Desde su panel podrá crear los demás usuarios que necesite."
+**FR-SA-OPE-6** **Esta consola no crea administradores adicionales.** A partir del primero, los crea el propio mercante desde su panel (**FR-AD-USR-2**) **[A4]**, **[A14]**. El formulario debe decirlo, para que nadie espere volver aquí a dar de alta al segundo: "Esta será la persona con la que la empresa entra por primera vez. Desde su panel podrá crear los demás administradores que necesite."
 
 **FR-SA-OPE-7** El alta **no** asigna sedes. Asignar es un acto propio, desde la ficha de la sede o del operador **[A3]**.
 
@@ -437,9 +437,9 @@ La única palanca de esta consola sobre lo que ocurre dentro de una sede. No act
 
 **FR-SA-SUS-1** PuntoCash dispone de tres acciones de este tipo: **suspender una sede**, **suspender un operador** y **cerrar una sede**. Las dos primeras son reversibles; la tercera es el final del ciclo de vida de la sucursal.
 
-**FR-SA-SUS-2** **Suspender una sede** impide que cualquier trabajador de esa sede inicie sesión, y que se abra ninguna jornada nueva en sus cajas. Los usuarios administradores del mercante siguen entrando en su panel y siguen viendo esa sede, en estado suspendido **[FR-AD-SEDE-13]**.
+**FR-SA-SUS-2** **Suspender una sede** impide que cualquier trabajador de esa sede inicie sesión, y que se abra ninguna jornada nueva en sus cajas. Los administradores del mercante siguen entrando en su panel y siguen viendo esa sede, en estado suspendido **[FR-AD-SEDE-13]**.
 
-**FR-SA-SUS-3** **Suspender un operador** impide que sus usuarios administradores inicien sesión **y** que ningún trabajador de ninguna de sus sedes lo haga. Es la acción de mayor alcance de esta consola y su confirmación debe decir, con números concretos, a cuántas sedes, cuántos administradores y cuántos trabajadores afecta.
+**FR-SA-SUS-3** **Suspender un operador** impide que sus administradores inicien sesión **y** que ningún trabajador de ninguna de sus sedes lo haga. Es la acción de mayor alcance de esta consola y su confirmación debe decir, con números concretos, a cuántas sedes, cuántos administradores y cuántos trabajadores afecta.
 
 **FR-SA-SUS-4** Ambas exigen **motivo escrito** de al menos 10 caracteres y confirmación.
 
@@ -467,11 +467,11 @@ La pantalla que hace verificable todo lo anterior.
 
 **FR-SA-AUD-1** `/super-admin/auditoria` lista los eventos de gobierno de toda la red, del más reciente al más antiguo, con: fecha y hora (en Cuba), el evento y el objeto afectado, quién actuó (persona y rol; en un mercante, también su operador), la sede y el operador a los que se refiere, y el motivo declarado. Se enseñan **50 a la vez**, con «Mostrar más eventos»; no hay ventana de fechas obligatoria. Pulsar un evento abre su detalle.
 
-**FR-SA-AUD-2** Tipos de evento que deben quedar registrados, como mínimo. **De PuntoCash:** creación, edición, suspensión, reactivación y cierre de sede; alta, suspensión, reactivación y baja de operador; asignación y revocación de sede; alta del usuario administrador inicial y restablecimiento del acceso del administrador principal (**FR-SA-OPE-11**); habilitación y deshabilitación de servicio; definición, cambio y retirada de rango de tasas; fijación automática de tasa al límite; alta, edición y retirada de promoción de red; alta, edición, desactivación y reactivación de cuentas de PuntoCash, traspaso de la administración principal y cambio de contraseña; **reporte exportado** y **auditoría exportada**. **Del mercante:** alta, retirada y reactivación de caja; vinculación y desvinculación de equipo de caja; vinculación y desvinculación de kiosco; alta, edición, desactivación, reactivación y asistencia de acceso de trabajador; alta, edición, desactivación y reactivación de usuario administrador; alta y retirada de moneda en la lista de una sede; definición, cambio y retirada de la tasa de una sede; alta, edición y retirada de promoción de sede; resolución de solicitud de aprobación; cierre forzado de jornada. **Alta y retirada de moneda del catálogo de la plataforma** quedan fuera de esta lista mientras ninguna pantalla mantenga el catálogo (**FR-SA-MON-1** a **MON-6** no están construidos); cuando lo estén, vuelven a ser obligatorias.
+**FR-SA-AUD-2** Tipos de evento que deben quedar registrados, como mínimo. **De PuntoCash:** creación, edición, suspensión, reactivación y cierre de sede; alta, suspensión, reactivación y baja de operador; asignación y revocación de sede; alta del administrador inicial y restablecimiento del acceso del administrador principal (**FR-SA-OPE-11**); habilitación y deshabilitación de servicio; definición, cambio y retirada de rango de tasas; fijación automática de tasa al límite; alta, edición y retirada de promoción de red; alta, edición, desactivación y reactivación de cuentas de PuntoCash, traspaso de la administración principal y cambio de contraseña; **reporte exportado** y **auditoría exportada**. **Del mercante:** alta, retirada y reactivación de caja; vinculación y desvinculación de equipo de caja; vinculación y desvinculación de kiosco; alta, edición, desactivación, reactivación y asistencia de acceso de trabajador; alta, edición, desactivación y reactivación de administrador; alta y retirada de moneda en la lista de una sede; definición, cambio y retirada de la tasa de una sede; alta, edición y retirada de promoción de sede; resolución de solicitud de aprobación; cierre forzado de jornada. **Alta y retirada de moneda del catálogo de la plataforma** quedan fuera de esta lista mientras ninguna pantalla mantenga el catálogo (**FR-SA-MON-1** a **MON-6** no están construidos); cuando lo estén, vuelven a ser obligatorias.
 
 **FR-SA-AUD-3** La pantalla permite filtrar por **quién actuó** —PuntoCash, un mercante o ambos—, que es lo que separa los dos bloques de FR-SA-AUD-2: ver solo lo que hizo PuntoCash, o solo lo que hizo un mercante, es la consulta más frecuente cuando se revisa un incidente.
 
-**FR-SA-AUD-4** Filtros: rango de fechas (por día de Cuba, los dos extremos incluidos), tipo de evento, persona, quién actuó, operador y sede. El tipo se elige en una lista **agrupada por lo que se gobierna** (sedes, operadores, servicios, monedas y tasas, promociones, cajas y equipos, trabajadores, usuarios administradores, jornadas y aprobaciones, cuentas de PuntoCash, reportes y auditoría). La búsqueda libre mira el **motivo y el objeto**: buscar una sede o una persona por su nombre es lo primero que se intenta al revisar un incidente. Los filtros viajan en la dirección y sobreviven a recargar.
+**FR-SA-AUD-4** Filtros: rango de fechas (por día de Cuba, los dos extremos incluidos), tipo de evento, persona, quién actuó, operador y sede. El tipo se elige en una lista **agrupada por lo que se gobierna** (sedes, operadores, servicios, monedas y tasas, promociones, cajas y equipos, trabajadores, administradores, jornadas y aprobaciones, cuentas de PuntoCash, reportes y auditoría). La búsqueda libre mira el **motivo y el objeto**: buscar una sede o una persona por su nombre es lo primero que se intenta al revisar un incidente. Los filtros viajan en la dirección y sobreviven a recargar.
 
 **FR-SA-AUD-5** Cada evento enlaza a la **sede** y al **operador** a los que se refiere, cuando los tiene. El registro no guarda la identidad del trabajador, de la caja o del usuario sobre quien se actuó, solo cómo se llamaba: ese objeto se nombra pero no se enlaza.
 
@@ -483,7 +483,7 @@ La pantalla que hace verificable todo lo anterior.
 
 **FR-SA-AUD-9** «Exportar a Excel» descarga **lo que hay en pantalla** —la misma selección, en el mismo orden— en `/super-admin/auditoria/exportar`, con los filtros en la dirección. El archivo dice en su cabecera cuántos eventos trae y con qué filtros, y lleva la fecha como fecha. A diferencia de un reporte, **este archivo nombra personas** (los trabajadores y administradores sobre los que se actuó), y es por eso que **la exportación misma queda en el registro**, con el número de eventos y los filtros. Sin sesión de PuntoCash lleva al acceso.
 
-**FR-SA-AUD-10** Quien consta como autor de un evento es **una persona** —de las cuentas de PuntoCash o de los usuarios administradores de un mercante—, nunca el nombre de un área.
+**FR-SA-AUD-10** Quien consta como autor de un evento es **una persona** —de las cuentas de PuntoCash o de los administradores de un mercante—, nunca el nombre de un área.
 
 **Ver en la demo:** `/super-admin/auditoria` con `emarrero@puntocash.com`. «Solo mercantes» deja lo de Ana Barrios, Yuliet Pérez y Marta Sánchez; con Desde y Hasta el 30 de junio salen los dos eventos del traspaso de Miramar, y el detalle de uno muestra el antes y el después con enlace a la sede y al operador; «Exportar a Excel» descarga la selección y deja un evento «Auditoría exportada».
 
@@ -515,7 +515,7 @@ La pantalla que hace verificable todo lo anterior.
 
 **FR-SA-STATE-3** Toda acción de gobierno debe mostrar, antes de confirmar, un resumen de qué va a cambiar y a quién afecta, con los nombres concretos de las sedes, operadores, cajas o personas implicadas — nunca un recuento abstracto sin identificar.
 
-**FR-SA-STATE-4** Donde esta consola muestra algo que no puede cambiar, debe decir **de quién es** y **qué pedir**, no limitarse a mostrarlo sin controles **[A14]**. Aplica al menos a: cajas y equipos (**FR-SA-EQ-6**), trabajadores (**FR-SA-TRAB-6**), monedas y pares por sede (**FR-SA-TASA-13**, **FR-SA-TASA-15**) y usuarios administradores (**FR-SA-OPE-6**).
+**FR-SA-STATE-4** Donde esta consola muestra algo que no puede cambiar, debe decir **de quién es** y **qué pedir**, no limitarse a mostrarlo sin controles **[A14]**. Aplica al menos a: cajas y equipos (**FR-SA-EQ-6**), trabajadores (**FR-SA-TRAB-6**), monedas y pares por sede (**FR-SA-TASA-13**, **FR-SA-TASA-15**) y administradores (**FR-SA-OPE-6**).
 
 ---
 
@@ -524,7 +524,7 @@ La pantalla que hace verificable todo lo anterior.
 - **Nada de esto está implementado.** `/super-admin` contiene hoy un README de marcador de posición.
 - **Sin backend**, como el resto del producto.
 - **Sin sub-roles**: el Super Admin es un rol único e indivisible, lo que significa que cualquier persona con esta consola puede revocar una sede, suspender a un mercante o darlo de baja. Si el negocio quiere separar quien consulta de quien decide, es una decisión pendiente.
-- **Sin gestión de cajas, equipos, trabajadores, usuarios administradores, listas de monedas por sede ni pares de cotización.** Son ausencias deliberadas **[A14]**, especificadas en FR-SA-EQ-5, FR-SA-TRAB-4, FR-SA-OPE-6, FR-SA-TASA-8 y FR-SA-TASA-13, y explicadas al usuario en FR-SA-STATE-4. No son carencias por cubrir más adelante.
+- **Sin gestión de cajas, equipos, trabajadores, administradores, listas de monedas por sede ni pares de cotización.** Son ausencias deliberadas **[A14]**, especificadas en FR-SA-EQ-5, FR-SA-TRAB-4, FR-SA-OPE-6, FR-SA-TASA-8 y FR-SA-TASA-13, y explicadas al usuario en FR-SA-STATE-4. No son carencias por cubrir más adelante.
 - **Sin inventario de Pantallas informativas** **[FR-SA-EQ-9]**.
 - **Exportación:** los reportes (**FR-SA-REP-8**, solo totales) y la auditoría (**FR-SA-AUD-9**, que nombra personas y por eso deja huella) se exportan a Excel; el reporte también a PDF. Ninguna otra pantalla exporta **[R11]**.
 - **Sin notificaciones** fuera de la consola: un mercante suspendido se entera al intentar entrar, no por correo. Merece revisión del negocio.
@@ -549,7 +549,7 @@ Tabla de contraste, para consultar al implementar cualquier control. La columna 
 | **Vincular o desvincular un kiosco** | No | **Sí, en sus sedes** | **No (solo lo ve)** |
 | **Crear, editar o desactivar un trabajador** | No | **Sí, en sus sedes** | **No (solo lo ve)** |
 | **Asistir a un trabajador con su acceso** | No | **Sí, en sus sedes** | **No** |
-| **Crear otros usuarios administradores** | No | **Sí, de su empresa** | **Solo el primero de cada mercante** |
+| **Crear otros administradores** | No | **Sí, de su empresa** | **Solo el primero de cada mercante** |
 | **Declarar qué monedas maneja una sede** | No | **Sí, del catálogo de la plataforma** | **No (solo las ve)** |
 | **Definir los pares que cotiza una sede y su tasa** | No | **Sí, si tiene el servicio y hay rango** | **No (solo la fijación automática al mover el rango)** |
 | **Mantener el catálogo de monedas de la plataforma** | No | No | **Sí** |

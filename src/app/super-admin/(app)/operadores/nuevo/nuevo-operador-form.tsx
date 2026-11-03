@@ -84,7 +84,7 @@ export function NuevoOperadorForm(): React.JSX.Element {
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           <div>
-            <h2 className="text-section-title text-text-primary">Usuario administrador principal</h2>
+            <h2 className="text-section-title text-text-primary">Administrador principal</h2>
             <p className="mt-1 text-body-sm text-text-secondary">La persona con la que la empresa entra por primera vez.</p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -95,9 +95,9 @@ export function NuevoOperadorForm(): React.JSX.Element {
           </div>
           {texto(U_CORREO, "usuario-correo", { type: "email", inputMode: "email", placeholder: "nombre@empresa.cu" })}
           {texto(U_IDENT, "usuario-identificador")}
-          <Alert variant="info" title="Los demás usuarios los crea la empresa">
-            Este será el usuario con el que la empresa entra por primera vez. Desde su consola podrá crear los demás
-            usuarios que necesite.
+          <Alert variant="info" title="Los demás administradores los crea la empresa">
+            Esta será la persona con la que la empresa entra por primera vez. Desde su consola podrá crear los demás
+            administradores que necesite.
           </Alert>
         </CardContent>
       </Card>
