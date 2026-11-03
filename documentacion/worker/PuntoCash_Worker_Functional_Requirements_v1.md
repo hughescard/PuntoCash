@@ -1,8 +1,10 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos Funcionales (FRD) · v1.12
+## Documento de Requisitos Funcionales (FRD) · v1.13
 
 **Estado:** Línea base de entrega — especifica el comportamiento funcional de la aplicación Worker tal como está implementada actualmente.
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y de referencia para aceptación.
+**Control de cambios — v1.13 (03/11/2026).** **Toda moneda lleva su bandera.** **FR-FMT-4** pasa a exigir que cada moneda de la lista ISO traiga la suya, desde el mismo lugar que la lista; antes solo la tenían las once del arranque.
+
 **Control de cambios — v1.12 (03/11/2026).** **Las tasas admiten hasta cuatro decimales.** **FR-FMT-6** (que el texto citaba desde la v1.9 sin recogerlo) queda escrito: mínimo dos, máximo cuatro, sin ceros de más. Los importes siguen con dos decimales (**FR-FMT-1**).
 
 **Control de cambios — v1.11 (03/11/2026).** **Se dicen tres cosas que el código ya hacía y el documento no.** (1) **El identificador de acceso es un nombre de usuario**, no un correo: de 3 a 30 caracteres, letras, números, punto, guion o guion bajo, **sin «@»**, único en toda la red sin distinguir mayúsculas; el **correo es único entre los trabajadores** y sirve igual para entrar. Es la misma regla que fija **FR-AD-ACC-11** para la consola del mercante; **FR-AUTH-1** la recoge para quien inicia sesión. La unicidad del correo es **por padrón**: un trabajador y un administrador de sede pueden compartir correo, porque cada consola resuelve la cuenta en el suyo. (2) **«Añadir moneda» ofrece la lista de monedas de la sede de la caja**, no un catálogo propio de Worker (**FR-CAJA-13**, reescrito): es lo que el mercante declaró para su sede (**FR-AD-MON-2**), menos lo que la caja ya tiene. Si la caja ya las tiene todas, la pantalla lo dice y remite al administrador. (3) El nombre y el símbolo de cada moneda salen de la lista ISO 4217 compartida por toda la plataforma, y **todas las monedas llevan cuatro decimales** como regla del catálogo; los importes siguen mostrándose con dos y las tasas se escriben según **FR-FMT-6**.
@@ -79,7 +81,7 @@ Mientras el equipo no está vinculado a una caja, **cualquier** ruta de `/worker
 **FR-FMT-1** El dinero se muestra como `1.250,00 USD` (agrupación es-ES, dos decimales, código de moneda como sufijo). Los importes con signo usan un `+` explícito o el signo menos `−` (U+2212).
 **FR-FMT-2** Las marcas de tiempo de operación son `dd/MM/yyyy · HH:mm`.
 **FR-FMT-3** Los códigos de operación siguen `PC-yyMMdd-NNNNNN`; los identificadores de movimiento de caja siguen `CM-YYMMDD-NNNNNN`.
-**FR-FMT-4** La identidad de la moneda se acompaña de una bandera SVG decorativa junto al código — nunca un emoji. Las banderas se ocultan a las tecnologías de asistencia.
+**FR-FMT-4** La identidad de la moneda se acompaña de una bandera SVG decorativa junto al código — nunca un emoji. Las banderas se ocultan a las tecnologías de asistencia. **Toda moneda de la lista ISO 4217 trae su bandera** (archivo SVG, mismo lugar que la lista): una moneda nueva no queda nunca sin ella; las que no tienen bandera común (CFA, Caribe Oriental, CFP) llevan una neutra.
 **FR-FMT-5** Importes, códigos, documentos y teléfonos se representan con cifras tabulares y no deben partirse en varias líneas.
 **FR-FMT-6** La tasa se escribe siempre como la cotiza la sede —la divisa contra el peso cubano: `1 USD = 326,00 CUP`— con **hasta cuatro decimales y un mínimo de dos**: `326,00` · `326,50` · `326,525`. Una tasa no se redondea ni se completa con ceros de más. Es la misma cifra del tablero.
 

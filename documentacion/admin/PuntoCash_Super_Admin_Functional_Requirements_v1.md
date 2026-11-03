@@ -1,5 +1,5 @@
 # PuntoCash — Super Admin
-## Documento de Requisitos Funcionales (FRD) · v4.1
+## Documento de Requisitos Funcionales (FRD) · v4.2
 
 **Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/super-admin` contiene un README de marcador de posición.
 
@@ -8,6 +8,8 @@
 **Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
 
 **Control de cambios — v4.0 (2026-11-03).** **Auditoría: el objeto de un evento se enlaza a su ficha.** El registro pasa a guardar el identificador del trabajador o de la cuenta de PuntoCash sobre quien se actuó (hasta ahora solo guardaba cómo se llamaba), y **FR-SA-AUD-5** se amplía: el nombre se enlaza a la ficha del trabajador, y a la de la cuenta de PuntoCash cuando quien mira es el principal. Los eventos anteriores a este cambio que no llevan identificador siguen siendo texto, salvo el sembrado de Noelia Alonso.
+
+**Control de cambios — v4.2 (2026-11-03).** **La lista ISO trae también las banderas.** Las 159 monedas ISO llevan su bandera (FR-SA-MON-9), de modo que una moneda añadida al catálogo ya no sale sin ella. Desarrolladores: lista, nombres, símbolos y banderas están en un mismo sitio.
 
 **Control de cambios — v4.1 (2026-11-03).** **Los rangos admiten hasta cuatro decimales.** Un límite de rango (compra o venta, mínimo o máximo) se escribe con hasta 4 decimales; con más se rechaza con «Una tasa o un límite admite hasta 4 decimales». Las cifras se muestran con dos decimales como mínimo y cuatro como máximo, y sin decimales si son enteras.
 
@@ -341,7 +343,7 @@ Tres vistas, dos de ellas editables. Es el marco dentro del cual cada mercante d
 
 **FR-SA-MON-8** A una moneda retirada que **no tiene rango** no se le puede definir uno: no se abre a la red una moneda que ya no se ofrece. Si **ya lo tiene**, se puede seguir cambiando y retirando, porque las sedes que la cotizan lo siguen necesitando. Una moneda retirada no cuenta entre los Pendientes de Inicio como «moneda sin rango».
 
-**FR-SA-MON-9** El catálogo **se añade y se retira, no se edita**. Al añadir, PuntoCash **elige la moneda de la lista ISO 4217** y no escribe el código, el nombre ni el símbolo; los decimales son **siempre cuatro** y nadie los edita.
+**FR-SA-MON-9** El catálogo **se añade y se retira, no se edita**. Al añadir, PuntoCash **elige la moneda de la lista ISO 4217** y no escribe el código, el nombre ni el símbolo; los decimales son **siempre cuatro** y nadie los edita. **La bandera también viene de la lista**: cada moneda ISO trae la suya, y la moneda nueva se ve con ella desde el primer momento.
 
 ### 9.2 Rangos de la red
 

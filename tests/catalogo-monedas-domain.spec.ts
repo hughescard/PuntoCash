@@ -12,6 +12,10 @@ import {
   retirarMonedaDelCatalogo,
   usoDeMoneda,
 } from "../src/features/network/currencies";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
+import { BANDERA_DE_MONEDA, MONEDAS_ISO, rutaDeBandera } from "../src/features/network/iso-monedas";
 import { definirRango, retirarRango } from "../src/features/network/rates";
 
 /**
@@ -103,4 +107,16 @@ test("el uso cuenta sedes y cajas de la moneda real", () => {
   expect(usd.sedes).toBeGreaterThan(1);
   expect(usd.cajas).toBeGreaterThan(0);
   expect(usoDeMoneda("JPY")).toEqual({ sedes: 0, cajas: 0 });
+});
+
+test("toda moneda de la lista ISO trae su bandera, y el archivo existe", () => {
+  for (const [code] of MONEDAS_ISO) {
+    const ruta = rutaDeBandera(code);
+    expect(ruta, `${code} sin bandera`).not.toBeNull();
+    expect(existsSync(join(process.cwd(), "public", ruta!)), `${code}: falta ${ruta}`).toBe(true);
+  }
+  /* Ni sobran entradas: una moneda que sale de la lista no deja su bandera huérfana en la tabla. */
+  expect(Object.keys(BANDERA_DE_MONEDA).sort()).toEqual(MONEDAS_ISO.map((m) => m[0]).sort());
+  expect(rutaDeBandera("EUR")).toBe("/banderas/eu.svg");
+  expect(rutaDeBandera("XOF")).toBe("/banderas/multinacional.svg");
 });
