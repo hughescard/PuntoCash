@@ -108,6 +108,7 @@ interface Texto {
 function claveDePendiente(p: PendienteDePuntoCash): string {
   if (p.kind === "moneda-sin-rango") return `${p.kind}-${p.code}`;
   if (p.kind === "operador-sin-sedes") return `${p.kind}-${p.operador.id}`;
+  if (p.kind === "aprobaciones-sin-dueno") return p.kind;
   return `${p.kind}-${p.sede.id}`;
 }
 
@@ -136,6 +137,16 @@ function textoDePendiente(p: PendienteDePuntoCash): Texto {
         detail: `El ${p.nombre.toLowerCase()} no tiene rango de PuntoCash, y sin rango ninguna sede puede fijarle tasa${p.sedes.length > 1 ? `: ${p.sedes.map((s) => s.name).join(", ")}` : ""}.`,
         href: "/super-admin/monedas-y-tasas",
         action: "Definir el rango",
+      };
+    case "aprobaciones-sin-dueno":
+      return {
+        title:
+          p.total === 1
+            ? "Una diferencia de efectivo no tiene quien la resuelva"
+            : `${p.total} diferencias de efectivo no tienen quien las resuelva`,
+        detail: `Quedaron pendientes cuando la sede cambió de manos (${p.sedes.join(", ")}): la empresa de entonces ya no la tiene y la de ahora no ve lo anterior. Las resuelve PuntoCash.`,
+        href: "/super-admin/aprobaciones",
+        action: "Resolverlas",
       };
   }
 }

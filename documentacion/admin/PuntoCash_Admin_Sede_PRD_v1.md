@@ -225,7 +225,7 @@ Una caja **no empieza de cero cada día**: lo que deja un cierre es lo que encue
 
 Todo lo que esta consola muestra está acotado al **alcance vigente** de la sesión: las sedes que el operador administra en este momento. El selector de alcance filtra dentro de ese conjunto; no lo elige ni lo amplía **[A1]**.
 
-Y dentro de cada sede, **solo desde que es suya**. Cuando una sede cambia de manos, el mercante que la recibe no ve las jornadas, las aprobaciones ni las operaciones del anterior: no responde de ellas, y son actividad de otra empresa. Lo que hereda es la sucursal montada —cajas, equipos, trabajadores, monedas y tasas—, que sí ve completa. PuntoCash, en cambio, ve el historial entero de cada sede.
+Y dentro de cada sede, **solo desde que es suya**. Cuando una sede cambia de manos, el mercante que la recibe no ve las jornadas, las aprobaciones ni las operaciones del anterior: no responde de ellas, y son actividad de otra empresa. Lo que hereda es la sucursal montada —cajas, equipos, trabajadores, monedas y tasas—, que sí ve completa. PuntoCash, en cambio, ve el historial entero de cada sede, y es quien resuelve las diferencias de efectivo que el anterior dejó pendientes.
 
 ---
 

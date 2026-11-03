@@ -5,6 +5,7 @@ import { AppHeader, AppMain, AppShell } from "@/components/shell/app-shell";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import { SEDES } from "@/features/network/sedes";
 import { estadoDeSede } from "@/features/network/assignments";
+import { esHuerfana, solicitudesDePuntoCash } from "@/features/network/aprobaciones";
 import { SuperAdminBrand, SuperAdminIdentity } from "./sa-identity";
 import { SuperAdminMobileNav } from "./sa-mobile-nav";
 import { SuperAdminSidebar } from "./sa-sidebar";
@@ -24,7 +25,11 @@ export default async function SuperAdminAppLayout({ children }: { children: Reac
   if (!session) redirect("/super-admin/login");
 
   const sinAsignar = SEDES.filter((sede) => estadoDeSede(sede) === "sin-asignar").length;
-  const badges: SuperAdminNavBadges = { sedes: sinAsignar > 0 ? sinAsignar : undefined };
+  const huerfanas = solicitudesDePuntoCash().filter(esHuerfana).length;
+  const badges: SuperAdminNavBadges = {
+    sedes: sinAsignar > 0 ? sinAsignar : undefined,
+    aprobaciones: huerfanas > 0 ? huerfanas : undefined,
+  };
 
   return (
     <AppShell

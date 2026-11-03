@@ -566,7 +566,7 @@ function sembrarApertura(
  * la anterior y se descarta junto con lo que se deriva de él —operaciones y
  * solicitudes—, para no mezclar datos de dos siembras.
  */
-const VERSION_DE_SIEMBRA = "2026-11-03.1";
+const VERSION_DE_SIEMBRA = "2026-11-03.3";
 
 const ALMACEN = globalThis as typeof globalThis & {
   __puntocashJornadas?: Jornada[];
@@ -593,7 +593,7 @@ export const HISTORIAL_DE_MIRAMAR = { ultimoDia: "2026-06-29", operador: "op-atl
 function sembrarTodo(now: Date): Jornada[] {
   return [
     ...sembrar(now),
-    ...sembrar(now, { hoy: "2026-06-30", desde: -3, hasta: -1, sedes: ["sede-miramar"], semilla: 20260630, codigo: 6000 }),
+    ...sembrar(now, { hoy: "2026-06-30", desde: -3, hasta: -1, sedes: ["sede-miramar"], semilla: 20260631, codigo: 6000 }),
   ];
 }
 

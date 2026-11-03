@@ -12,6 +12,7 @@ import {
   Store,
   UserCog,
   Users,
+  ClipboardCheck,
 } from "lucide-react";
 
 import type { NavGroup, NavItem } from "@/components/shell/sidebar-nav";
@@ -34,6 +35,11 @@ export interface SuperAdminNavBadges {
    * asignándolas. Lo demás que conviene vigilar lo resuelve cada mercante.
    */
   sedes?: number | undefined;
+  /**
+   * Diferencias de efectivo que nadie de la sede puede resolver (la sede cambió
+   * de manos con ellas pendientes): las resuelve PuntoCash (**FR-SA-APR-1**).
+   */
+  aprobaciones?: number | undefined;
 }
 
 /**
@@ -67,6 +73,7 @@ export function superAdminNavGroups(
       label: "Actividad",
       items: [
         { href: "/super-admin/jornadas", label: "Jornadas", icon: CalendarClock },
+        { href: "/super-admin/aprobaciones", label: "Aprobaciones", icon: ClipboardCheck, badge: badges.aprobaciones },
         { href: "/super-admin/operaciones", label: "Operaciones", icon: List },
         { href: "/super-admin/reportes", label: "Reportes", icon: ChartColumn },
       ],

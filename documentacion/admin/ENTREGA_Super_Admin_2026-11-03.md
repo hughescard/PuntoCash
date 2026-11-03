@@ -11,11 +11,11 @@
 
 | Documento | Versión | Uso |
 | --- | --- | --- |
-| `PuntoCash_Super_Admin_Functional_Requirements_v1.md` | **5.0** | Especificación contra la que se implementa y se acepta. Una subsección por pantalla, con reglas, códigos de rechazo y «Ver en la demo». Mensajes de cada código: Apéndice C. Cuentas de la demostración: Apéndice B |
-| `PuntoCash_Super_Admin_PRD_v1.md` | **1.0** (nuevo) | Producto, conceptos y requisitos **RP-27 a RP-30** |
+| `PuntoCash_Super_Admin_Functional_Requirements_v1.md` | **5.2** | Especificación contra la que se implementa y se acepta. Una subsección por pantalla, con reglas, códigos de rechazo y «Ver en la demo». Mensajes de cada código: Apéndice C. Cuentas de la demostración: Apéndice B |
+| `PuntoCash_Super_Admin_PRD_v1.md` | **1.2** (nuevo) | Producto, conceptos y requisitos **RP-27 a RP-30** |
 | `PuntoCash_Administracion_PRD_v1.md` | 3.3 | Mapa de las dos consolas. Ya no especifica Super Admin |
-| `PuntoCash_Admin_Sede_Functional_Requirements_v1.md` | **8.6** (entregada: 8.0) | Recoge los cambios de §4 |
-| `PuntoCash_Admin_Sede_PRD_v1.md` | 1.18 | Sin cambios de contenido |
+| `PuntoCash_Admin_Sede_Functional_Requirements_v1.md` | **8.7** (entregada: 8.0) | Recoge los cambios de §4 |
+| `PuntoCash_Admin_Sede_PRD_v1.md` | **1.19** | Una sede se ve desde que es del mercante |
 | `../worker/PuntoCash_Worker_Functional_Requirements_v1.md` | **1.13** | Identificador de acceso, correo único, «Añadir moneda» con la lista de la sede, formato de tasas y banderas |
 
 - El FRD fija las reglas. **El diseño a implementar es el de la demostración**: disposición, componentes, textos y estados.
@@ -37,6 +37,7 @@
 | Monedas y tasas | `/super-admin/monedas-y-tasas` | §9 | Catálogo desde la lista ISO 4217; rangos por moneda; consulta de las tasas de cada sede |
 | Promociones | `/super-admin/promociones`, `/nueva`, `/[id]` | §10 | Publica, edita y retira promociones de red |
 | Jornadas | `/super-admin/jornadas`, `/[id]` | §11 | Solo consulta |
+| Aprobaciones | `/super-admin/aprobaciones`, `/[id]` | §11.3 | Resuelve solo las diferencias que quedaron sin dueño al traspasar una sede |
 | Operaciones | `/super-admin/operaciones`, `/[codigo]` | §12 | Solo consulta |
 | Reportes | `/super-admin/reportes` y exportación | §13 | Volumen de la red en cinco cortes; Excel y PDF |
 | Auditoría | `/super-admin/auditoria`, `/[id]` y exportación | §14 | Registro de toda la red; Excel de lo filtrado |
@@ -60,6 +61,7 @@
 | Rangos y tasas con **hasta 4 decimales**; cambiar un rango lleva al límite las tasas que queden fuera | **FR-SA-TASA-7**, **TASA-17** |
 | Una promoción de red llega a **toda sede marcada, preste o no el servicio**: la sede también es el escaparate de PuntoCash | **FR-SA-PROM-11** |
 | El autor de un evento es **siempre una persona**; el mercante ve «PuntoCash» | **FR-SA-AUD-10** |
+| Un mercante ve cada sede **solo desde que es suya**; las diferencias que el anterior dejó pendientes las resuelve PuntoCash | **FR-AD-SCOPE-7**, **FR-SA-APR-1** |
 
 ---
 
@@ -71,6 +73,7 @@
 | Admin | Tasas con hasta 4 decimales (`demasiados-decimales`) | Sí, si se escriben más de 2 |
 | Admin | Las listas de Operaciones y Jornadas no se desbordan a 1280px | Algún texto pasa a dos líneas |
 | Admin | Si PuntoCash cierra una de sus sedes, deja de contar como suya | Sí, en ese caso |
+| Admin | Una sede se ve solo desde que es del mercante: jornadas, aprobaciones y operaciones del anterior desaparecen | Sí, en sedes traspasadas |
 | Admin, Worker, Kiosco | Banderas de todas las monedas ISO desde un solo sitio (`public/banderas/`, `network/iso-monedas.ts`) | Las once de siempre cambian de dibujo |
 | Worker | «Añadir moneda» ofrece la lista de monedas de la sede, no un catálogo propio | Sí |
 | Worker | Formato de la tasa aplicada: hasta 4 decimales, mínimo 2 | Solo con tasas de más de 2 decimales |
@@ -92,7 +95,7 @@ Contraseña `puntocash`, código `123456`. Las situaciones sembradas (sede sin o
 
 **Arrancar.** `npm install`, `npm run build` y `npm start` (o `npm run dev`). La demostración trabaja en memoria: los cambios duran hasta reiniciar el servidor, y las jornadas y operaciones se siembran respecto al día de hoy.
 
-**Pruebas.** `npm run typecheck` y `npm run test:ui`. Suite completa del 3/11: **806 pasan y 1 se salta**. Algunas pruebas consumen un hecho sembrado de un solo uso (por ejemplo, forzar el cierre de la caja de Obispo): pasan con el servidor recién arrancado, no en una segunda pasada sobre el mismo. Con `next dev` la suite completa puede quedarse sin memoria; en producción (`build` + `start`, 4 trabajadores) es estable.
+**Pruebas.** `npm run typecheck` y `npm run test:ui`. Suite completa del 3/11: **813 pasan y 1 se salta**. Algunas pruebas consumen un hecho sembrado de un solo uso (por ejemplo, forzar el cierre de la caja de Obispo): pasan con el servidor recién arrancado, no en una segunda pasada sobre el mismo. Con `next dev` la suite completa puede quedarse sin memoria; en producción (`build` + `start`, 4 trabajadores) es estable.
 
 ---
 

@@ -1,5 +1,5 @@
 # PuntoCash — Super administración
-## Documento de Requisitos Funcionales (FRD) · v5.1
+## Documento de Requisitos Funcionales (FRD) · v5.2
 
 **Alcance:** la consola de PuntoCash sobre su red, `/super-admin`. No cubre la consola del mercante (`/admin`).
 
@@ -31,6 +31,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 5.2 | 03/11/2026 | **PuntoCash resuelve las diferencias de efectivo que quedan sin dueño al traspasar una sede** (§11.3, **FR-SA-APR-1 a APR-5**, nuevos): menú «Aprobaciones», pendiente en Inicio |
 | 5.1 | 03/11/2026 | Un mercante ve cada sede solo desde que es suya; PuntoCash, todo (**FR-SA-DOM-4**) |
 | 5.0 | 03/11/2026 | **Reescritura completa en el formato de la v8 del FRD de Admin.** El documento describe la consola construida, no un diseño previo: una subsección por pantalla y por acción, rechazos con código, auditoría en tablas y «Ver en la demo». Incorpora las decisiones del 03/11: cerrar una sede termina su administración (**FR-SA-ASG-13**); una sede suspendida sin operador se asigna y PuntoCash mantiene su contacto (**FR-SA-SEDE-24**, **FR-SA-ASG-12**); toda credencial entregada es la contraseña (**FR-SA-OPE-16**, **FR-SA-USR-6**); motivo al cambiar un rango ya definido, al retirar una promoción de red y al traspasar el principal (**FR-SA-TASA-16**, **FR-SA-PROM-12**, **FR-SA-USR-10**). Secciones nuevas: Jornadas (**FR-SA-JOR**), Usuarios (**FR-SA-USR**) y Perfil (**FR-SA-PERF**). Los códigos de la v4.2 se conservan donde el requisito sigue; los redefinidos y los retirados se listan abajo |
 | 4.2 | 03/11/2026 | Banderas de la lista ISO (FR-SA-MON-9) |
@@ -69,10 +70,10 @@
 | --- | --- |
 | Red | Inicio · Sedes · Operadores · Cajas y equipos · Trabajadores |
 | Oferta | Servicios · Monedas y tasas · Promociones |
-| Actividad | Jornadas · Operaciones · Reportes |
+| Actividad | Jornadas · Aprobaciones (**FR-SA-APR-1**) · Operaciones · Reportes |
 | Administración | Usuarios (**solo el principal**, **FR-SA-USR-1**) · Auditoría |
 
-- «Sedes» lleva un indicador con el número de sedes **sin asignar**; sin ninguna, no lleva indicador.
+- «Sedes» lleva un indicador con el número de sedes **sin asignar**, y «Aprobaciones» con el de diferencias sin quien las resuelva; sin ninguna, no llevan indicador.
 - Desde 1024px, la navegación es lateral y cabe entera a 900px de alto. Por debajo, una barra inferior con Inicio, Sedes, Operadores y «Más», que abre la navegación completa, el nombre de la persona, Perfil y Cerrar sesión.
 
 **Ver en la demo:** entrar con `emarrero@puntocash.com` (ve Usuarios) y con `jaguilera@puntocash.com` (no lo ve). Estrechar la ventana por debajo de 1024px para la barra inferior.
@@ -105,6 +106,7 @@
 | `/super-admin/monedas-y-tasas` (`?vista=sedes`) | Monedas y tasas (§9) |
 | `/super-admin/promociones` · `/nueva` · `/[id]` | Promociones (§10) |
 | `/super-admin/jornadas` · `/[id]` | Jornadas (§11) |
+| `/super-admin/aprobaciones` · `/[id]` | Aprobaciones sin quien las resuelva (§11.3) |
 | `/super-admin/operaciones` · `/[codigo]` | Operaciones (§12) |
 | `/super-admin/reportes` · `GET /super-admin/reportes/exportar/{pdf\|xlsx}` | Reportes (§13) |
 | `/super-admin/auditoria` · `/[id]` · `GET /super-admin/auditoria/exportar` | Auditoría (§14) |
@@ -175,6 +177,7 @@ Responde «¿cómo está la red hoy?». **No ejecuta nada**: orienta y enlaza.
 | Sede sin operador | Sede no cerrada sin asignar. Dice desde cuándo | Ficha de la sede |
 | Operador sin sedes | Operador activo sin ningún tramo vigente. Dice desde cuándo está de alta | Ficha del operador |
 | Moneda que no se puede cotizar | Moneda del catálogo, no retirada, sin rango, que tienen en su lista sedes no cerradas, con operador y con Cambio de moneda. Nombra esas sedes | Monedas y tasas |
+| Diferencias sin quien las resuelva | Hay alguna (**FR-SA-APR-1**). Dice cuántas y de qué sedes | Aprobaciones |
 
 **FR-SA-HOME-4 · Informativos.** Ningún pendiente ofrece una acción en el sitio: lleva a la pantalla donde se resuelve.
 
@@ -898,7 +901,28 @@ El formulario conserva lo escrito ante un rechazo e incluye la vista previa de l
 
 **FR-SA-JOR-3 · Contenido.** El mismo cuerpo que en Admin (**FR-AD-JOR-***): la jornada, la apertura con lo contado y lo dejado por el cierre anterior, los saldos, el cierre y los movimientos. La cabecera nombra la sede y **el operador de la fecha**. Si sigue abierta de un día anterior, lo señala y dice que forzar el cierre es de su administrador. Si tuvo cierre forzado, quién, cuándo, el motivo y si ya se contó.
 
-**FR-SA-JOR-4 · Sin acciones.** No se fuerza un cierre ni se resuelve una aprobación **[A6]**, **[A14]**.
+**FR-SA-JOR-4 · Sin acciones.** No se fuerza un cierre ni se resuelve una aprobación desde la jornada **[A6]**, **[A14]**. La única aprobación que resuelve PuntoCash es la que no tiene quien la resuelva (§11.3).
+
+### 11.3 Aprobaciones sin quien las resuelva — `/super-admin/aprobaciones`
+
+**FR-SA-APR-1 · Cuáles.** Una diferencia de efectivo (ajuste, cierre o apertura) **pendiente** cuya jornada se abrió cuando la sede era de un operador que **ya no la administra**. Nadie de la sede puede resolverla: la empresa de entonces perdió la sede, y la de ahora solo ve su propia etapa (**FR-AD-SCOPE-7**). Las resuelve **PuntoCash** (decisión del 03/11/2026). Las demás son de cada mercante y aquí no aparecen.
+
+**FR-SA-APR-2 · Lista.** «Pendientes», de la más antigua: tipo y diferencia con su signo y el motivo del trabajador; sede, caja y trabajador; operador de entonces y operador de hoy; fecha y antigüedad. Debajo, «Resueltas por PuntoCash», con la fecha y quién. Sin pendientes, la pantalla lo dice. Una diferencia que no es de esta lista responde como inexistente.
+
+**FR-SA-APR-3 · Resolver.** El detalle dice por qué la resuelve PuntoCash, muestra lo que registró el trabajador (referencia, contado, diferencia, motivo, observaciones, jornada) y ofrece **Aprobar** y **Rechazar**, con un motivo de al menos 10 caracteres que se añade al del trabajador. Como en Admin (**FR-AD-APR-***): resolver **deja constancia, no cambia la caja** ni el movimiento registrado; rechazar la marca para revisarla fuera del sistema.
+
+**FR-SA-APR-4 · Revalidación.** Al confirmar, el servidor comprueba que siga pendiente (`ya-resuelta`) y sin quien la resuelva (`no-es-huerfana`: por ejemplo, la sede volvió a la empresa de entonces). En los dos casos no se guarda nada y la pantalla lo explica.
+
+**FR-SA-APR-5 · Auditoría.** `solicitud.aprobada` o `solicitud.rechazada`, con la persona de PuntoCash como autor, la sede, el **operador de entonces** y el motivo. La resolución queda marcada como de PuntoCash.
+
+| Condición | Código |
+| --- | --- |
+| Motivo de menos de 10 caracteres | `motivo-corto` |
+| No existe | `no-encontrada` |
+| Ya resuelta | `ya-resuelta` |
+| Ya tiene quien la resuelva | `no-es-huerfana` |
+
+**Ver en la demo:** Aprobaciones: las diferencias de los últimos días de Atlántico en PuntoCash Miramar (27 a 29/06/2026). Con `rortega@caribecambios.cu`, en Admin, no aparecen.
 
 **Ver en la demo:** Jornadas (una caja de PuntoCash Obispo sigue abierta desde ayer). Jornadas con «Desde» 01/06/2026 y operador Atlántico Casas de Cambio: las jornadas de Miramar de junio.
 
@@ -983,7 +1007,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 | Cajas y equipos | `caja.*`, `equipo-caja.*`, `kiosco.*` (mercante) |
 | Trabajadores | `trabajador.*` (mercante) |
 | Administradores | `usuario-admin.*` (mercante) |
-| Jornadas y aprobaciones | `solicitud.*`, `jornada.cierre-forzado` (mercante) |
+| Jornadas y aprobaciones | `solicitud.aprobada` · `.rechazada` (mercante, o PuntoCash en las de **FR-SA-APR-1**), `jornada.cierre-forzado` (mercante) |
 | Cuentas de PuntoCash | `usuario-puntocash.alta` · `.editado` · `.credencial-regenerada` · `.desactivado` · `.reactivado` · `.principal-traspasado` · `.contrasena-cambiada` |
 | Reportes y auditoría | `reporte.exportado` · `auditoria.exportada` |
 
@@ -1120,6 +1144,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 | Retirar una moneda del catálogo | Añadir y reincorporar una moneda |
 | Retirar una promoción de red | Publicar y editar una promoción de red |
 | Desactivar, reactivar y traspasar una cuenta de PuntoCash | Dar de alta, editar, cambiar el correo y regenerar la credencial de una cuenta · cambiar la propia contraseña |
+| Aprobar o rechazar una diferencia sin quien la resuelva | — |
 
 **FR-SA-STATE-3 · Antes de confirmar.** Toda acción con consecuencias muestra antes qué va a cambiar y a quién afecta. Las que se bloquean (revocar o cerrar con jornadas abiertas, dar de baja con sedes, quitar el último servicio) lo dicen en el diálogo, con lo que hay que resolver, y no piden motivo.
 
@@ -1152,7 +1177,8 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 | Dar de alta, suspender y dar de baja operadores; restablecer su principal | Sí | Sí | No |
 | Servicios, catálogo de monedas, rangos, promociones de red | Sí | Sí | No |
 | Cajas, equipos, trabajadores, administradores, monedas y tasas de una sede | Solo ve | Solo ve | Sí, en sus sedes |
-| Forzar cierres y resolver aprobaciones | No | No | Sí |
+| Forzar cierres | No | No | Sí |
+| Resolver aprobaciones | Solo las que no tienen quien las resuelva | Ídem | Las de su etapa en sus sedes |
 | Jornadas, operaciones, reportes y auditoría de toda la red | Sí | Sí | Solo de sus sedes |
 | Cuentas de PuntoCash | No | Sí | No |
 
@@ -1180,6 +1206,7 @@ Todas las cuentas usan la contraseña `puntocash` (salvo las que reciban una cre
 | Sede sin Cambio de moneda | PuntoCash Matanzas |
 | Moneda sin rango que esperan sedes | CAD |
 | Caja abierta de un día anterior | PuntoCash Obispo |
+| Diferencias sin quien las resuelva | PuntoCash Miramar, 27 a 29/06/2026 (Aprobaciones) |
 
 La demostración trabaja **en memoria**: los cambios duran hasta reiniciar el servidor, y las jornadas y operaciones se siembran relativas al día de hoy (la última semana, más las de Miramar de junio).
 
@@ -1258,3 +1285,6 @@ La demostración trabaja **en memoria**: los cambios duran hasta reiniciar el se
 | `demasiado-corta` | La contraseña necesita al menos 8 caracteres. |
 | `igual-a-la-actual` | La contraseña nueva tiene que ser distinta de la actual. |
 | `no-coinciden` | Las dos contraseñas no son iguales. |
+| `motivo-corto` | Escribe el motivo, con al menos 10 caracteres. |
+| `ya-resuelta` | Esta solicitud ya fue resuelta. |
+| `no-es-huerfana` | Ya la puede resolver su mercante: la sede volvió a la empresa que la tenía ese día. |

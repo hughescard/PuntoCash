@@ -1,11 +1,13 @@
 # PuntoCash — Super administración
-## Documento de Requisitos de Producto (PRD) · v1.1
+## Documento de Requisitos de Producto (PRD) · v1.2
 
 **Estado:** Describe la consola de PuntoCash sobre su red **completa**, tal como se entrega. Lo que queda fuera se nombra en §6; no se da por hecho en ningún punto de este documento.
 
 **Destinatarios:** Producto, negocio, liderazgo técnico, jefatura de proyecto, desarrollo y QA.
 
 **Alcance:** Únicamente la consola **Super administración** (`/super-admin`), la que usa PuntoCash para gobernar su red. **No cubre la consola del mercante** (`/admin`), que tiene su propio PRD.
+
+**Control de cambios — v1.2 (03/11/2026).** PuntoCash resuelve las diferencias de efectivo que quedan sin dueño al traspasar una sede (§5.3, **Aprobaciones**).
 
 **Control de cambios — v1.1 (03/11/2026).** Un mercante ve cada sede solo desde que es suya (§4, **RP-27**); PuntoCash, el historial entero.
 
@@ -51,7 +53,7 @@ Hay una segunda tensión, de tiempo: **las sedes cambian de manos**. Si el siste
 
 El rol de esta consola es el **Super Admin**: una persona de PuntoCash con cuenta en la consola. Todas las cuentas tienen las mismas potestades sobre la red; no hay sub-roles. La única diferencia es quién gestiona las propias cuentas de la consola, y eso es de uno solo: el **principal** (§4).
 
-Lo que **no** hace, por diseño: no opera caja, no registra operaciones, no verifica identidades, no invoca proveedores externos **[A6]**, no corrige nada de lo que registró un trabajador **[A7]**, y no crea, modifica ni da de baja nada dentro de una sede **[A14]**.
+Lo que **no** hace, por diseño —con una excepción, las diferencias que se quedan sin dueño al traspasar una sede (§5.3)—: no opera caja, no registra operaciones, no verifica identidades, no invoca proveedores externos **[A6]**, no corrige nada de lo que registró un trabajador **[A7]**, y no crea, modifica ni da de baja nada dentro de una sede **[A14]**.
 
 El **mercante** no llega nunca a esta consola: tiene la suya. El **trabajador** y el **cliente**, tampoco.
 
@@ -114,6 +116,8 @@ Una segunda vista, **Tasas por sede**, enseña lo que publica cada sucursal: de 
 **Inicio** responde *¿cómo está la red hoy?*: cuántas sedes han operado, cuántas operaciones y cuántas personas; lo **pendiente que es de PuntoCash** —una sede sin operador, un operador sin sedes, una moneda que alguna sede tiene en su lista y no puede cotizar por falta de rango—; y una tabla de actividad por sede, ordenada por defecto con lo que pide atención primero. Inicio orienta y enlaza; no ejecuta nada.
 
 **Jornadas** responde *¿qué ha pasado en cada caja de la red?*: quién la abrió, cuánto movió y cómo cerró, con el mismo detalle que ve el mercante. Una caja que sigue abierta se ve siempre, aunque se abriera antes del periodo que se consulta. **Forzar un cierre es del mercante**: PuntoCash no cierra cajas ajenas.
+
+**Aprobaciones** existe por una consecuencia de lo anterior. Cuando una sede cambia de manos con diferencias de efectivo pendientes de aprobar, nadie de la sede puede resolverlas: la empresa de entonces ya no tiene la sede, y la de ahora no ve lo que pasó antes de recibirla. Esas —y solo esas— las resuelve **PuntoCash**, con el mismo acto que el mercante: aprobar o rechazar con motivo, dejando constancia y sin tocar la caja. Inicio y el menú avisan cuando hay alguna.
 
 **Operaciones** responde *¿qué ha hecho la red con cada cliente?*: todas, completadas o no, con su cliente, su importe, la sede y **el operador que la administraba ese día**. El detalle es el de Worker con el contexto que PuntoCash necesita. De solo lectura **[A6]**, **[A7]**.
 

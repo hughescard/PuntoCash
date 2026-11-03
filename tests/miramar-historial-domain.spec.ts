@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+import {
+  esHuerfana,
+  operadorDeLaSolicitud,
+  resolverSolicitud,
+  solicitudesDePuntoCash,
+  solicitudPorId,
+} from "../src/features/network/aprobaciones";
 import { operadorVigenteEn } from "../src/features/network/assignments";
 import { jornadasDeSede } from "../src/features/network/jornadas";
 import { operacionesDeSede } from "../src/features/network/operaciones";
@@ -45,4 +52,29 @@ test("Caribe ve Miramar solo desde que es suya; PuntoCash lo ve todo", () => {
   const opDeJunio = red.operaciones("sede-miramar").find((o) => o.fechaHora < traspaso)!;
   expect(caribe.operacion(opDeJunio.codigo)).toBeNull();
   expect(caribe.operaciones("sede-miramar").every((o) => o.fechaHora >= traspaso)).toBe(true);
+});
+
+test("las diferencias que quedaron pendientes al traspasar Miramar las resuelve PuntoCash, no Caribe", () => {
+  const huerfanas = solicitudesDePuntoCash().filter(esHuerfana);
+  expect(huerfanas.length).toBeGreaterThan(0);
+  expect(huerfanas.every((s) => s.sedeId === "sede-miramar")).toBe(true);
+  const s = huerfanas[0]!;
+  expect(operadorDeLaSolicitud(s)).toBe("op-atlantico");
+
+  /* Caribe no la ve ni la puede resolver. */
+  expect(redEnAlcance(operatorScope("op-caribe")).solicitud(s.id)).toBeNull();
+  expect(resolverSolicitud(operatorScope("op-caribe"), s.id, "aprobada", "Intento de Caribe sobre lo anterior", "X")).toMatchObject({ reason: "no-encontrada" });
+
+  /* PuntoCash, sí; y queda marcada como suya. */
+  expect(resolverSolicitud(GLOBAL_SCOPE, s.id, "aprobada", "corto", "Elena")).toMatchObject({ reason: "motivo-corto" });
+  const r = resolverSolicitud(GLOBAL_SCOPE, s.id, "aprobada", "Revisado con Atlántico antes del traspaso", "Elena Marrero Fonseca");
+  expect(r).toMatchObject({ ok: true });
+  expect(solicitudPorId(s.id)?.resolucion).toMatchObject({ puntoCash: true, por: "Elena Marrero Fonseca" });
+  expect(resolverSolicitud(GLOBAL_SCOPE, s.id, "rechazada", "Segundo intento sobre la misma", "Elena")).toMatchObject({ reason: "ya-resuelta" });
+
+  /* Una que su mercante sí ve no la resuelve PuntoCash. */
+  const deCaribe = redEnAlcance(operatorScope("op-caribe")).solicitudes("sede-miramar").find((x) => x.estado === "pendiente");
+  if (deCaribe) {
+    expect(resolverSolicitud(GLOBAL_SCOPE, deCaribe.id, "aprobada", "No le corresponde a PuntoCash", "Elena")).toMatchObject({ reason: "no-es-huerfana" });
+  }
 });

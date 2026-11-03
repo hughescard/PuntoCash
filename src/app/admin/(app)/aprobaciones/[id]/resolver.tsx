@@ -28,10 +28,22 @@ const MOTIVO: FieldSpec = { id: "resolver-motivo", label: "Tu motivo", required:
  * punto de decisión lo que resolver no hace: no cambia el saldo de la caja ni
  * el movimiento registrado.
  */
-export function Resolver({ id, motivoMin }: { id: string; motivoMin: number }): React.JSX.Element {
+export function Resolver({
+  id,
+  motivoMin,
+  accionDelServidor = resolverSolicitudAction,
+  quien = "la administración",
+}: {
+  id: string;
+  motivoMin: number;
+  /** Super administración la reutiliza con su propia acción (**FR-SA-APR-3**). */
+  accionDelServidor?: (previo: ResultadoResolver, formData: FormData) => Promise<ResultadoResolver>;
+  /** Quién deja constancia, en el texto del diálogo. */
+  quien?: string;
+}): React.JSX.Element {
   const hydrated = useHydrated();
   const [decision, setDecision] = React.useState<"aprobada" | "rechazada" | null>(null);
-  const [estado, accion, enviando] = React.useActionState<ResultadoResolver, FormData>(resolverSolicitudAction, null);
+  const [estado, accion, enviando] = React.useActionState<ResultadoResolver, FormData>(accionDelServidor, null);
   const [motivo, setMotivo] = React.useState("");
   const corto = motivo.trim().length < motivoMin;
   const error = estado && !estado.ok ? estado.error : undefined;
@@ -61,8 +73,8 @@ export function Resolver({ id, motivoMin }: { id: string; motivoMin: number }): 
             <DialogTitle>{aprobar ? "Aprobar la solicitud" : "Rechazar la solicitud"}</DialogTitle>
             <DialogDescription>
               {aprobar
-                ? "Dejas constancia de que la administración asume esta diferencia."
-                : "Dejas constancia de que la administración no asume esta diferencia, y queda marcada para revisarla fuera del sistema."}
+                ? `Dejas constancia de que ${quien} asume esta diferencia.`
+                : `Dejas constancia de que ${quien} no asume esta diferencia, y queda marcada para revisarla fuera del sistema.`}
             </DialogDescription>
           </DialogHeader>
           <form action={accion}>

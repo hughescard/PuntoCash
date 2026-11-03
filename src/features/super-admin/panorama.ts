@@ -17,6 +17,7 @@
  * tabla.
  */
 
+import { esHuerfana, solicitudesDePuntoCash } from "@/features/network/aprobaciones";
 import { GLOBAL_SCOPE } from "@/features/network/scope";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { SEDES, type Sede } from "@/features/network/sedes";
@@ -39,7 +40,9 @@ import { diaEnCuba } from "@/features/network/jornadas";
 export type PendienteDePuntoCash =
   | { kind: "sede-sin-asignar"; sede: Sede; desde: string }
   | { kind: "operador-sin-sedes"; operador: Operator }
-  | { kind: "moneda-sin-rango"; code: string; nombre: string; sedes: readonly Sede[] };
+  | { kind: "moneda-sin-rango"; code: string; nombre: string; sedes: readonly Sede[] }
+  /** Diferencias de efectivo que nadie de la sede puede resolver (**FR-SA-APR-1**). */
+  | { kind: "aprobaciones-sin-dueno"; total: number; sedes: readonly string[] };
 
 /* -------------------------------------------------------------------------
  * La actividad de cada sede
@@ -106,6 +109,11 @@ export function panoramaDeRed(ahora: Date = new Date()): PanoramaDeRed {
         monedasDeSede(s.id).some((x) => x.code === m.code),
     );
     if (sedes.length > 0) pendientes.push({ kind: "moneda-sin-rango", code: m.code, nombre: m.name, sedes });
+  }
+  const huerfanas = solicitudesDePuntoCash().filter(esHuerfana);
+  if (huerfanas.length > 0) {
+    const sedes = [...new Set(huerfanas.map((s) => SEDES.find((x) => x.id === s.sedeId)?.name ?? s.sedeId))];
+    pendientes.push({ kind: "aprobaciones-sin-dueno", total: huerfanas.length, sedes });
   }
 
   /* ---- Actividad por sede */

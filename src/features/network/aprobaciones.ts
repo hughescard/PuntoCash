@@ -23,10 +23,10 @@
  * recientes, pendientes. El almacén vive en `globalThis`.
  */
 
-import { estaEnAlcance, operadorVigente } from "./assignments";
-import { jornadasDeSede, type Jornada } from "./jornadas";
+import { estaEnAlcance, operadorVigente, operadorVigenteEn } from "./assignments";
+import { jornadaPorId, jornadasDeSede, type Jornada } from "./jornadas";
 import { adminUsersOf } from "./operators";
-import { requireOperatorScope, type Scope, type ScopeDenial } from "./scope";
+import { isGlobal, requireOperatorScope, type Scope, type ScopeDenial } from "./scope";
 import { SEDES } from "./sedes";
 
 export type TipoSolicitud = "ajuste" | "cierre" | "apertura";
@@ -64,7 +64,8 @@ export interface Solicitud {
   /** El movimiento que lo registró, si lo hay (una apertura no deja movimiento). */
   movimientoId?: string;
   estado: EstadoSolicitud;
-  resolucion?: { at: string; por: string; motivo: string };
+  /** `puntoCash`: la resolvió PuntoCash porque nadie de la sede podía (**FR-SA-APR**). */
+  resolucion?: { at: string; por: string; motivo: string; puntoCash?: true };
 }
 
 export const MOTIVO_RESOLUCION_MIN = 10;
@@ -154,7 +155,11 @@ function sembrar(now: Date): Solicitud[] {
   let n = 0;
   for (const s of todas) {
     if (new Date(s.fechaHora).getTime() >= hace3dias) continue;
-    const operador = operadorVigente(s.sedeId);
+    /* Las de los últimos días de Atlántico en Miramar quedaron sin resolver al
+       traspasar la sede: es el caso que resuelve PuntoCash (FR-SA-APR-1). */
+    if (s.sedeId === "sede-miramar" && s.fechaHora >= "2026-06-26" && s.fechaHora < "2026-06-30T17:00:00.000Z") continue;
+    /* Quien la resolvió es de la empresa que tenía la sede ese día. */
+    const operador = operadorDeLaSolicitud(s);
     const admins = operador ? adminUsersOf(operador) : [];
     const por = admins[n % Math.max(admins.length, 1)]?.fullName ?? "Administración";
     n += 1;
@@ -178,6 +183,29 @@ const solicitudes: Solicitud[] = (ALMACEN.__puntocashSolicitudes ??= sembrar(new
  * Lecturas
  * ---------------------------------------------------------------------- */
 
+/** El operador que administraba la sede cuando se abrió la jornada de la solicitud. */
+export function operadorDeLaSolicitud(s: Solicitud): string | null {
+  const j = jornadaPorId(s.jornadaId);
+  return operadorVigenteEn(s.sedeId, new Date(j?.openedAt ?? s.fechaHora));
+}
+
+/**
+ * Pendiente y sin nadie en la sede que pueda resolverla: la empresa que tenía
+ * la sede ese día ya no la tiene, y la que la tiene ahora no ve lo anterior
+ * (**FR-AD-SCOPE-7**). Las resuelve PuntoCash (decisión del 3/11/2026).
+ */
+export function esHuerfana(s: Solicitud): boolean {
+  return s.estado === "pendiente" && operadorDeLaSolicitud(s) !== operadorVigente(s.sedeId);
+}
+
+/** Las huérfanas pendientes y las que ya resolvió PuntoCash, de la más antigua a la más reciente. */
+export function solicitudesDePuntoCash(): readonly Solicitud[] {
+  return solicitudes
+    .filter((s) => esHuerfana(s) || s.resolucion?.puntoCash)
+    .slice()
+    .sort((a, b) => a.fechaHora.localeCompare(b.fechaHora));
+}
+
 export function solicitudesDeSede(sedeId: string): readonly Solicitud[] {
   return solicitudes.filter((s) => s.sedeId === sedeId);
 }
@@ -194,7 +222,7 @@ export function solicitudesDeJornada(jornadaId: string): readonly Solicitud[] {
  * Resolver — FR-AD-APR-7 a FR-AD-APR-12
  * ---------------------------------------------------------------------- */
 
-export type ResolverDenial = ScopeDenial | "no-encontrada" | "ya-resuelta" | "motivo-corto";
+export type ResolverDenial = ScopeDenial | "no-encontrada" | "ya-resuelta" | "motivo-corto" | "no-es-huerfana";
 
 export function resolverSolicitud(
   scope: Scope,
@@ -204,16 +232,31 @@ export function resolverSolicitud(
   autor: string,
   now = new Date(),
 ): { ok: true; value: Solicitud } | { ok: false; reason: ResolverDenial } {
-  const operator = requireOperatorScope(scope);
-  if (!operator.ok) return { ok: false, reason: operator.reason };
   const s = solicitudPorId(id);
-  if (!s || !estaEnAlcance(scope, s.sedeId)) return { ok: false, reason: "no-encontrada" };
-  /* FR-AD-APR-11: si otro administrador la resolvió entretanto, no se pisa. */
-  if (s.estado !== "pendiente") return { ok: false, reason: "ya-resuelta" };
+  if (isGlobal(scope)) {
+    /* PuntoCash solo resuelve las que no tienen quien las resuelva en la sede. */
+    if (!s) return { ok: false, reason: "no-encontrada" };
+    if (s.estado !== "pendiente") return { ok: false, reason: "ya-resuelta" };
+    if (!esHuerfana(s)) return { ok: false, reason: "no-es-huerfana" };
+  } else {
+    const operator = requireOperatorScope(scope);
+    if (!operator.ok) return { ok: false, reason: operator.reason };
+    /* Solo las de su propia etapa en la sede (FR-AD-SCOPE-7). */
+    if (!s || !estaEnAlcance(scope, s.sedeId) || operadorDeLaSolicitud(s) !== operator.value) {
+      return { ok: false, reason: "no-encontrada" };
+    }
+    /* FR-AD-APR-11: si otro administrador la resolvió entretanto, no se pisa. */
+    if (s.estado !== "pendiente") return { ok: false, reason: "ya-resuelta" };
+  }
   if (motivo.trim().length < MOTIVO_RESOLUCION_MIN) return { ok: false, reason: "motivo-corto" };
 
   /* FR-AD-APR-8 y 9: se añade la resolución; el hecho del trabajador no cambia. */
   s.estado = decision;
-  s.resolucion = { at: now.toISOString(), por: autor, motivo: motivo.trim() };
+  s.resolucion = {
+    at: now.toISOString(),
+    por: autor,
+    motivo: motivo.trim(),
+    ...(isGlobal(scope) ? { puntoCash: true as const } : {}),
+  };
   return { ok: true, value: s };
 }
