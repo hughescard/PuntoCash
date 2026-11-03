@@ -24,6 +24,7 @@
  */
 
 import { estaEnAlcance } from "./assignments";
+import { monedaIso } from "./iso-monedas";
 import { allRegistersOf, findRegisterById } from "./registers";
 import type { Register } from "./registers";
 import { findSedeById } from "./sedes";
@@ -38,24 +39,23 @@ export interface MonedaCatalogo {
   name: string;
   /** «US$», «€»: como se escribe junto a una cifra. */
   symbol: string;
-  /** Cifras decimales de la moneda: 2 para el dólar, 0 para el yen. */
-  decimals: number;
   /** Cuándo se retiró del catálogo, o `null` si sigue disponible (**FR-SA-MON-4**). */
   retiradaEl: string | null;
 }
 
-const MONEDA = (code: string, name: string, symbol: string, decimals = 2): MonedaCatalogo => ({
-  code,
-  name,
-  symbol,
-  decimals,
-  retiradaEl: null,
-});
+export { DECIMALES_DE_MONEDA } from "./decimales";
+
+/** Nombre y símbolo salen de la tabla ISO 4217: nadie los escribe. */
+const MONEDA = (code: string): MonedaCatalogo => {
+  const iso = monedaIso(code);
+  if (!iso) throw new Error(`Moneda sembrada fuera de la tabla ISO: ${code}`);
+  return { code, name: iso.name, symbol: iso.symbol, retiradaEl: null };
+};
 
 /**
- * Las once con que arranca, las mismas que ofrece hoy «Añadir moneda» en
- * Worker (`CAJA_CURRENCY_CATALOG`). Cuando el terminal se recablee contra este
- * dominio, aquella constante desaparece y la caja lee la lista de su sede.
+ * Las once con que arranca. Nombre y símbolo salen de la tabla ISO. «Añadir
+ * moneda» en Worker ya no tiene catálogo propio: ofrece la lista de la sede de
+ * la caja, que sale de aquí (recableado del 3/11).
  *
  * **Vive en `globalThis`** y se modifica en el sitio: lo leen páginas, acciones
  * y las dos consolas, y en desarrollo cada paquete trae su propia copia del
@@ -65,17 +65,17 @@ const MONEDA = (code: string, name: string, symbol: string, decimals = 2): Moned
 const ALMACEN_CATALOGO = globalThis as typeof globalThis & { __puntocashCatalogoMonedas?: MonedaCatalogo[] };
 
 export const CATALOGO_MONEDAS: MonedaCatalogo[] = (ALMACEN_CATALOGO.__puntocashCatalogoMonedas ??= [
-  MONEDA("CUP", "Peso cubano", "$"),
-  MONEDA("USD", "Dólar estadounidense", "US$"),
-  MONEDA("EUR", "Euro", "€"),
-  MONEDA("GBP", "Libra esterlina", "£"),
-  MONEDA("CAD", "Dólar canadiense", "CA$"),
-  MONEDA("CHF", "Franco suizo", "CHF"),
-  MONEDA("MXN", "Peso mexicano", "MX$"),
-  MONEDA("JPY", "Yen japonés", "¥", 0),
-  MONEDA("AUD", "Dólar australiano", "A$"),
-  MONEDA("COP", "Peso colombiano", "COL$"),
-  MONEDA("CLP", "Peso chileno", "CLP$", 0),
+  MONEDA("CUP"),
+  MONEDA("USD"),
+  MONEDA("EUR"),
+  MONEDA("GBP"),
+  MONEDA("CAD"),
+  MONEDA("CHF"),
+  MONEDA("MXN"),
+  MONEDA("JPY"),
+  MONEDA("AUD"),
+  MONEDA("COP"),
+  MONEDA("CLP"),
 ]);
 
 /** La moneda del catálogo, **también si está retirada**: sirve para mostrar su nombre. */
@@ -111,7 +111,7 @@ const lista = (...codes: string[]): MonedaDeSede[] =>
  * asignada y sin cajas, arranca con lo mínimo.
  */
 const listas = new Map<string, MonedaDeSede[]>([
-  ["sede-vedado", lista("CUP", "USD", "EUR", "GBP")],
+  ["sede-vedado", lista("CUP", "USD", "EUR", "GBP", "CHF", "MXN")],
   ["sede-habana-vieja", lista("CUP", "USD", "EUR", "CAD")],
   ["sede-cerro", lista("CUP", "USD")],
   ["sede-miramar", lista("CUP", "USD", "EUR")],
@@ -329,9 +329,6 @@ const MONEDA_LOCAL_DEL_CATALOGO = "CUP";
 export type CatalogoWriteDenial =
   | "alcance-insuficiente"
   | "codigo-invalido"
-  | "nombre-requerido"
-  | "simbolo-invalido"
-  | "decimales-invalidos"
   | "ya-existe"
   | "esta-retirada"
   | "no-existe"
@@ -359,32 +356,21 @@ export function usoDeMoneda(code: string): UsoDeMoneda {
   return { sedes, cajas };
 }
 
-const CODIGO_ISO = /^[A-Z]{3}$/;
-const MAX_DECIMALES = 4;
-
 /**
- * Añade una moneda al catálogo (**FR-SA-MON-3**). La pone a disposición de
- * toda la red y **no la activa en ninguna sede**: quien la incorpora a una
- * sucursal es su mercante **[A4]**.
+ * Añade una moneda al catálogo (**FR-SA-MON-3**). Se elige de la tabla ISO
+ * 4217: del código salen el nombre y el símbolo, y los decimales son siempre
+ * cuatro. La pone a disposición de toda la red y **no la activa en ninguna
+ * sede**: quien la incorpora a una sucursal es su mercante **[A4]**.
  */
-export function anadirMonedaAlCatalogo(
-  scope: Scope,
-  input: { code: string; name: string; symbol: string; decimals: number },
-): CatalogoWriteResult<MonedaCatalogo> {
+export function anadirMonedaAlCatalogo(scope: Scope, input: { code: string }): CatalogoWriteResult<MonedaCatalogo> {
   if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
   const code = input.code.trim().toUpperCase();
-  const name = input.name.trim();
-  const symbol = input.symbol.trim();
-  if (!CODIGO_ISO.test(code)) return { ok: false, reason: "codigo-invalido" };
-  if (name === "") return { ok: false, reason: "nombre-requerido" };
-  if (symbol === "" || symbol.length > 5) return { ok: false, reason: "simbolo-invalido" };
-  if (!Number.isInteger(input.decimals) || input.decimals < 0 || input.decimals > MAX_DECIMALES) {
-    return { ok: false, reason: "decimales-invalidos" };
-  }
+  const iso = monedaIso(code);
+  if (!iso) return { ok: false, reason: "codigo-invalido" };
   const existente = monedaDelCatalogo(code);
   if (existente) return { ok: false, reason: existente.retiradaEl ? "esta-retirada" : "ya-existe" };
 
-  const moneda: MonedaCatalogo = { code, name, symbol, decimals: input.decimals, retiradaEl: null };
+  const moneda: MonedaCatalogo = { code, name: iso.name, symbol: iso.symbol, retiradaEl: null };
   CATALOGO_MONEDAS.push(moneda);
   return { ok: true, value: moneda };
 }

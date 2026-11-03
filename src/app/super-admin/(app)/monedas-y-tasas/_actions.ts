@@ -6,6 +6,7 @@ import { registrarEvento } from "@/features/network/audit";
 import { asignacionVigente } from "@/features/network/assignments";
 import {
   anadirMonedaAlCatalogo,
+  DECIMALES_DE_MONEDA,
   monedaDelCatalogo,
   reincorporarMonedaAlCatalogo,
   retirarMonedaDelCatalogo,
@@ -123,10 +124,7 @@ export async function retirarRangoAction(_p: ResultadoRango, formData: FormData)
 
 const MENSAJE_CATALOGO: Record<CatalogoWriteDenial, string> = {
   "alcance-insuficiente": "Esta acción solo la puede hacer PuntoCash.",
-  "codigo-invalido": "El código son tres letras, como USD o EUR.",
-  "nombre-requerido": "Escribe el nombre de la moneda.",
-  "simbolo-invalido": "Escribe el símbolo: hasta 5 caracteres, como US$ o €.",
-  "decimales-invalidos": "Elige cuántos decimales usa la moneda.",
+  "codigo-invalido": "Elige una moneda de la lista.",
   "ya-existe": "Esa moneda ya está en el catálogo.",
   "esta-retirada": "Esa moneda está retirada del catálogo. Reincorpórala en lugar de añadirla de nuevo.",
   "no-existe": "Esa moneda no está en el catálogo.",
@@ -139,13 +137,7 @@ export async function anadirMonedaAlCatalogoAction(_p: ResultadoRango, formData:
   const session = await getSuperAdminSession();
   if (!session) return { ok: false, error: "Tu sesión ha terminado. Vuelve a entrar." };
 
-  const decimales = String(formData.get("decimales") ?? "").trim();
-  const r = anadirMonedaAlCatalogo(session.scope, {
-    code: String(formData.get("codigo") ?? ""),
-    name: String(formData.get("nombre") ?? ""),
-    symbol: String(formData.get("simbolo") ?? ""),
-    decimals: decimales === "" ? Number.NaN : Number(decimales),
-  });
+  const r = anadirMonedaAlCatalogo(session.scope, { code: String(formData.get("codigo") ?? "") });
   if (!r.ok) return { ok: false, error: MENSAJE_CATALOGO[r.reason] };
 
   const m = r.value;
@@ -156,7 +148,7 @@ export async function anadirMonedaAlCatalogoAction(_p: ResultadoRango, formData:
     type: "moneda-plataforma.alta",
     subject: `${m.code} · ${m.name}`,
     before: "No estaba en el catálogo",
-    after: `Disponible · símbolo ${m.symbol} · ${m.decimals} ${m.decimals === 1 ? "decimal" : "decimales"}`,
+    after: `Disponible · símbolo ${m.symbol} · ${DECIMALES_DE_MONEDA} decimales`,
   });
   revalidatePath("/super-admin", "layout");
   revalidatePath("/admin", "layout");

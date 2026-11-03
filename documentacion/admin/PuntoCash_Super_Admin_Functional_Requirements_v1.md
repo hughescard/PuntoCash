@@ -1,11 +1,13 @@
 # PuntoCash — Super Admin
-## Documento de Requisitos Funcionales (FRD) · v3.7
+## Documento de Requisitos Funcionales (FRD) · v3.8
 
 **Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/super-admin` contiene un README de marcador de posición.
 
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y como referencia de aceptación.
 
 **Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
+
+**Control de cambios — v3.8 (2026-11-03).** **Las monedas se eligen de la lista ISO 4217, y los decimales son cuatro, fijos.** (1) «Añadir moneda» ya no pide código, nombre, símbolo y decimales: PuntoCash **elige una moneda de la lista ISO 4217** (159 monedas, sin metales ni unidades de cuenta) y de ella salen el código, el nombre y el símbolo. Así no se puede registrar una moneda con un código o un símbolo equivocado, ni quedarse con uno que luego no se pueda corregir. La lista solo ofrece las que no están ya en el catálogo, retiradas incluidas (esas se reincorporan). (2) **Toda moneda se maneja con cuatro decimales**, sin excepción y sin que nadie lo pueda editar: es una regla del catálogo, no un dato de cada moneda, así que el alta no lo pregunta y la tabla ya no lo muestra por fila. Dicho: ninguna pantalla existente formatea importes con cuatro decimales todavía; la regla queda fijada en el catálogo y se aplica a medida que cada pantalla se revise. (3) En la tabla, las tres acciones de cada fila (rango, retirar rango, retirar o reincorporar moneda) pasan a un **menú «⋯» de acciones**, para no repetir los mismos tres botones en cada fila. (4) **Worker queda recableado**: «Añadir moneda» en la caja ofrece la lista de monedas de la sede de la caja (la que decide su mercante, **FR-AD-MON-2**) menos las que la caja ya tiene, y ya no tiene catálogo propio. Una moneda nueva del catálogo llega a la caja solo si el mercante la añade antes a su sede. Esto sustituye la salvedad del v3.7 sobre la lista fija de once monedas.
 
 **Control de cambios — v3.7 (2026-11-03).** **PuntoCash mantiene el catálogo de monedas de la plataforma.** Revierte la decisión del 28/10 de dejarlo fijo: la consola añade, retira y reincorpora monedas, y **FR-SA-MON-1 a MON-6** pasan de «sin construir» a construidos. Va en la **misma tabla que los rangos** (una fila por moneda, decisión del 27/10), no en una vista aparte: «Añadir moneda» arriba, y «Retirar moneda» o «Reincorporar» en cada fila. Tres precisiones: (1) el catálogo **se añade y se retira, no se edita**: el código, el nombre, el símbolo y los decimales no cambian después del alta, porque cambiar los decimales de una moneda con saldos movería cifras ya registradas; (2) una moneda retirada **no desaparece**: queda al final de la tabla, con su etiqueta, porque siguen existiendo sedes que la tienen y es desde ahí desde donde se reincorpora (**FR-SA-MON-7**, nuevo); (3) a una moneda retirada **no se le puede abrir un rango nuevo**, pero el que ya tiene se puede seguir cambiando y retirando, porque las sedes que la cotizan lo siguen necesitando (**FR-SA-MON-8**, nuevo). Los eventos de auditoría de estos cambios dejan de estar excluidos de **FR-SA-AUD-2**. Fuera de alcance, y dicho: el símbolo y los decimales se guardan y se muestran aquí, pero ninguna otra pantalla los usa todavía, y **Worker sigue con su lista fija de once monedas** hasta que se recablee contra este dominio (nota de entrega, §8.3): una moneda nueva aparece en Admin y en Super administración, no en la caja del trabajador.
 
@@ -317,7 +319,7 @@ Tres vistas, dos de ellas editables. Es el marco dentro del cual cada mercante d
 
 ### 9.1 Monedas de la plataforma
 
-**FR-SA-MON-1** La primera vista mantiene el **catálogo de monedas que la plataforma soporta**: código ISO, nombre, símbolo y número de decimales. Es de donde cada mercante elige las monedas de sus sedes (**FR-AD-MON-3**), y por tanto lo que acota, en último término, qué efectivo puede existir en una caja de la red.
+**FR-SA-MON-1** La primera vista mantiene el **catálogo de monedas que la plataforma soporta**: código ISO, nombre y símbolo, tomados de la lista ISO 4217, y cuatro decimales para todas. Es de donde cada mercante elige las monedas de sus sedes (**FR-AD-MON-3**), y por tanto lo que acota, en último término, qué efectivo puede existir en una caja de la red.
 
 **FR-SA-MON-2** Cada moneda del catálogo debe mostrar en cuántas sedes está en la lista y en cuántas cajas está habilitada hoy, para que retirarla no sea una decisión a ciegas. Cuentan las sedes que no están cerradas y las cajas activas. En la tabla, la fila dice sedes («en la lista de N») y la confirmación de retirar dice sedes y cajas.
 
@@ -333,7 +335,7 @@ Tres vistas, dos de ellas editables. Es el marco dentro del cual cada mercante d
 
 **FR-SA-MON-8** A una moneda retirada que **no tiene rango** no se le puede definir uno: no se abre a la red una moneda que ya no se ofrece. Si **ya lo tiene**, se puede seguir cambiando y retirando, porque las sedes que la cotizan lo siguen necesitando. Una moneda retirada no cuenta entre los Pendientes de Inicio como «moneda sin rango».
 
-**FR-SA-MON-9** El catálogo **se añade y se retira, no se edita**: ni el código, ni el nombre, ni el símbolo ni los decimales cambian después del alta.
+**FR-SA-MON-9** El catálogo **se añade y se retira, no se edita**. Al añadir, PuntoCash **elige la moneda de la lista ISO 4217** y no escribe el código, el nombre ni el símbolo; los decimales son **siempre cuatro** y nadie los edita.
 
 ### 9.2 Rangos de la red
 

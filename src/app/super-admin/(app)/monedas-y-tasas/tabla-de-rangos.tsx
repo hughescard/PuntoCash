@@ -21,6 +21,9 @@ import {
 } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { SELECT } from "../equipos/controles";
+import { ActionMenu, type AccionDeMenu } from "@/components/patterns/action-menu";
+import { DECIMALES_DE_MONEDA } from "@/features/network/decimales";
+import { MONEDAS_ISO } from "@/features/network/iso-monedas";
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { cifraDeTablero } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
@@ -50,7 +53,6 @@ export interface FilaDeRango {
   code: string;
   nombre: string;
   simbolo: string;
-  decimales: number;
   /** Fecha en que se retiró del catálogo, ya formateada, o `null` si sigue disponible. */
   retirada: string | null;
   /** Cajas activas que la tienen habilitada hoy (`enLista` son las sedes). */
@@ -145,68 +147,15 @@ export function TablaDeRangos({ filas }: { filas: readonly FilaDeRango[] }): Rea
       key: "acciones",
       header: <span className="sr-only">Acciones</span>,
       cell: (f) => (
-        <span className="flex flex-wrap items-start gap-x-2 gap-y-1 py-1.5">
-          {f.retirada && !f.rango ? null : (
-            <Button
-              size="sm"
-              /* Destacado solo donde alguna sede espera la moneda: es la única
-                 fila en la que definir el rango responde a algo que ya pasa. */
-              variant={!f.rango && f.esperando > 0 ? "primary" : "secondary"}
-              disabled={!hydrated}
-              onClick={() => {
-                setHecho(null);
-                setAbierto({ fila: f, accion: "editar" });
-              }}
-              aria-label={`${f.rango ? "Cambiar" : "Definir"} el rango del ${f.code}`}
-            >
-              {f.rango ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}
-              {f.rango ? "Cambiar" : "Definir rango"}
-            </Button>
-          )}
-          {f.rango ? (
-            <Button
-              size="sm"
-              variant="tertiary"
-              disabled={!hydrated}
-              onClick={() => {
-                setHecho(null);
-                setAbierto({ fila: f, accion: "retirar" });
-              }}
-              aria-label={`Retirar el rango del ${f.code}`}
-            >
-              <Trash2 aria-hidden="true" />
-              Retirar rango
-            </Button>
-          ) : null}
-          {f.retirada ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={!hydrated}
-              onClick={() => {
-                setHecho(null);
-                setAbierto({ fila: f, accion: "reincorporar" });
-              }}
-              aria-label={`Reincorporar el ${f.code} al catálogo`}
-            >
-              <RotateCcw aria-hidden="true" />
-              Reincorporar
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="tertiary"
-              disabled={!hydrated}
-              onClick={() => {
-                setHecho(null);
-                setAbierto({ fila: f, accion: "retirar-moneda" });
-              }}
-              aria-label={`Retirar el ${f.code} del catálogo`}
-            >
-              <Trash2 aria-hidden="true" />
-              Retirar moneda
-            </Button>
-          )}
+        <span className="flex justify-end py-1.5">
+          <ActionMenu
+            label={`Acciones de ${f.code}`}
+            disabled={!hydrated}
+            acciones={accionesDe(f, (accion) => {
+              setHecho(null);
+              setAbierto({ fila: f, accion });
+            })}
+          />
         </span>
       ),
     },
@@ -256,7 +205,7 @@ export function TablaDeRangos({ filas }: { filas: readonly FilaDeRango[] }): Rea
         }
         empty={null}
       />
-      {abierto?.accion === "anadir" ? <AnadirMonedaAlCatalogo onCerrar={cerrar} onHecho={terminar} /> : null}
+      {abierto?.accion === "anadir" ? <AnadirMonedaAlCatalogo enCatalogo={["CUP", ...filas.map((f) => f.code)]} onCerrar={cerrar} onHecho={terminar} /> : null}
       {abierto?.accion === "retirar-moneda" ? <RetirarMonedaDelCatalogo key={abierto.fila.code} fila={abierto.fila} onCerrar={cerrar} onHecho={terminar} /> : null}
       {abierto?.accion === "reincorporar" ? <ReincorporarMoneda key={abierto.fila.code} fila={abierto.fila} onCerrar={cerrar} onHecho={terminar} /> : null}
       {abierto?.accion === "editar" ? <EditorDeRango key={abierto.fila.code} fila={abierto.fila} onCerrar={cerrar} onHecho={terminar} /> : null}
@@ -276,7 +225,7 @@ function Moneda({ fila }: { fila: FilaDeRango }): React.JSX.Element {
         </span>
         <span className="whitespace-nowrap text-caption text-text-secondary">{fila.nombre}</span>
         <span className="whitespace-nowrap text-caption text-text-secondary">
-          {fila.simbolo} · {fila.decimales === 1 ? "1 decimal" : `${fila.decimales} decimales`}
+          {fila.simbolo}
         </span>
       </span>
     </span>
@@ -522,25 +471,76 @@ function RetirarRango({
   );
 }
 
+/** Las acciones de una fila, según su estado: rango, y alta o baja del catálogo. */
+function accionesDe(f: FilaDeRango, abrir: (a: "editar" | "retirar" | "retirar-moneda" | "reincorporar") => void): AccionDeMenu[] {
+  const acciones: AccionDeMenu[] = [];
+  if (!(f.retirada && !f.rango)) {
+    acciones.push({
+      key: "editar",
+      label: f.rango ? "Cambiar rango" : "Definir rango",
+      ariaLabel: `${f.rango ? "Cambiar" : "Definir"} el rango del ${f.code}`,
+      icon: f.rango ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />,
+      onSelect: () => abrir("editar"),
+    });
+  }
+  if (f.rango) {
+    acciones.push({
+      key: "retirar",
+      label: "Retirar rango",
+      ariaLabel: `Retirar el rango del ${f.code}`,
+      icon: <Trash2 aria-hidden="true" />,
+      destructiva: true,
+      onSelect: () => abrir("retirar"),
+    });
+  }
+  acciones.push(
+    f.retirada
+      ? {
+          key: "reincorporar",
+          label: "Reincorporar al catálogo",
+          ariaLabel: `Reincorporar el ${f.code} al catálogo`,
+          icon: <RotateCcw aria-hidden="true" />,
+          onSelect: () => abrir("reincorporar"),
+        }
+      : {
+          key: "retirar-moneda",
+          label: "Retirar del catálogo",
+          ariaLabel: `Retirar el ${f.code} del catálogo`,
+          icon: <Trash2 aria-hidden="true" />,
+          destructiva: true,
+          onSelect: () => abrir("retirar-moneda"),
+        },
+  );
+  return acciones;
+}
+
 /* -------------------------------------------------------------------------
  * El catálogo: añadir, retirar, reincorporar
  * ---------------------------------------------------------------------- */
 
-const CODIGO: FieldSpec = { id: "moneda-codigo", label: "Código", required: true, description: "Tres letras, como USD." };
-const NOMBRE: FieldSpec = { id: "moneda-nombre", label: "Nombre", required: true };
-const SIMBOLO: FieldSpec = { id: "moneda-simbolo", label: "Símbolo", required: true, description: "Como se escribe junto a una cifra." };
-const DECIMALES: FieldSpec = { id: "moneda-decimales", label: "Decimales", required: true };
+const CODIGO: FieldSpec = {
+  id: "moneda-codigo",
+  label: "Moneda",
+  required: true,
+  description: "De la lista ISO 4217: el código, el nombre y el símbolo vienen con ella y no se escriben.",
+};
 
-function AnadirMonedaAlCatalogo({ onCerrar, onHecho }: { onCerrar: () => void; onHecho: (m: string) => void }): React.JSX.Element {
+function AnadirMonedaAlCatalogo({
+  enCatalogo,
+  onCerrar,
+  onHecho,
+}: {
+  enCatalogo: readonly string[];
+  onCerrar: () => void;
+  onHecho: (m: string) => void;
+}): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(anadirMonedaAlCatalogoAction, null);
   React.useEffect(() => {
     if (estado?.ok) onHecho(estado.mensaje);
   }, [estado, onHecho]);
   const [codigo, setCodigo] = React.useState("");
-  const [nombre, setNombre] = React.useState("");
-  const [simbolo, setSimbolo] = React.useState("");
-  const [decimales, setDecimales] = React.useState("2");
-  const completo = /^[A-Za-z]{3}$/.test(codigo.trim()) && nombre.trim() !== "" && simbolo.trim() !== "";
+  const ofrecidas = MONEDAS_ISO.filter((m) => !enCatalogo.includes(m[0]));
+  const elegida = ofrecidas.find((m) => m[0] === codigo);
 
   return (
     <Dialog open onOpenChange={(o) => (o ? undefined : onCerrar())}>
@@ -558,50 +558,40 @@ function AnadirMonedaAlCatalogo({ onCerrar, onHecho }: { onCerrar: () => void; o
                 {estado.error}
               </Alert>
             ) : null}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field {...CODIGO}>
-                <Input
-                  {...fieldAria(CODIGO)}
-                  name="codigo"
-                  value={codigo}
-                  maxLength={3}
-                  disabled={enviando}
-                  autoFocus
-                  autoCapitalize="characters"
-                  onChange={(e) => setCodigo(e.currentTarget.value.toUpperCase())}
-                  className="pc-numeric"
-                />
-              </Field>
-              <Field {...SIMBOLO}>
-                <Input
-                  {...fieldAria(SIMBOLO)}
-                  name="simbolo"
-                  value={simbolo}
-                  maxLength={5}
-                  disabled={enviando}
-                  onChange={(e) => setSimbolo(e.currentTarget.value)}
-                />
-              </Field>
-            </div>
-            <Field {...NOMBRE}>
-              <Input {...fieldAria(NOMBRE)} name="nombre" value={nombre} disabled={enviando} onChange={(e) => setNombre(e.currentTarget.value)} />
-            </Field>
-            <Field {...DECIMALES}>
+            <Field {...CODIGO}>
               <select
-                {...fieldAria(DECIMALES)}
-                name="decimales"
-                value={decimales}
+                {...fieldAria(CODIGO)}
+                name="codigo"
+                value={codigo}
                 disabled={enviando}
-                onChange={(e) => setDecimales(e.currentTarget.value)}
+                autoFocus
+                onChange={(e) => setCodigo(e.currentTarget.value)}
                 className={SELECT}
               >
-                {[0, 1, 2, 3, 4].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
+                <option value="">Elige una moneda</option>
+                {ofrecidas.map((m) => (
+                  <option key={m[0]} value={m[0]}>
+                    {m[0]} · {m[1]}
                   </option>
                 ))}
               </select>
             </Field>
+            {elegida ? (
+              <dl className="grid grid-cols-3 gap-4 rounded-md border border-border bg-surface-subtle p-4 text-body-sm">
+                <div>
+                  <dt className="text-text-secondary">Código</dt>
+                  <dd className="pc-numeric font-medium text-text-primary">{elegida[0]}</dd>
+                </div>
+                <div>
+                  <dt className="text-text-secondary">Símbolo</dt>
+                  <dd className="font-medium text-text-primary">{elegida[2]}</dd>
+                </div>
+                <div>
+                  <dt className="text-text-secondary">Decimales</dt>
+                  <dd className="font-medium text-text-primary">{DECIMALES_DE_MONEDA}, fijos</dd>
+                </div>
+              </dl>
+            ) : null}
             <p className="text-body-sm text-text-secondary">
               Para que las sedes puedan cotizarla, define después su rango contra el peso cubano.
             </p>
@@ -610,7 +600,7 @@ function AnadirMonedaAlCatalogo({ onCerrar, onHecho }: { onCerrar: () => void; o
             <Button type="button" variant="secondary" onClick={onCerrar} disabled={enviando}>
               Cancelar
             </Button>
-            <Button type="submit" loading={enviando} disabled={!completo}>
+            <Button type="submit" loading={enviando} disabled={!elegida}>
               Añadir la moneda
             </Button>
           </DialogFooter>

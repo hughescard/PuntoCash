@@ -61,7 +61,6 @@ export default async function SuperAdminMonedasYTasasPage({
       code: m.code,
       nombre: m.name,
       simbolo: m.symbol,
-      decimales: m.decimals,
       retirada: m.retiradaEl ? fechaCorta(m.retiradaEl) : null,
       cajas: usoDeMoneda(m.code).cajas,
       rango: rango ? { compra: rango.compra, venta: rango.venta } : null,

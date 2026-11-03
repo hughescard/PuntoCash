@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v8.4
+## Documento de Requisitos Funcionales (FRD) · v8.5
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 8.5 | 03/11/2026 | **Worker queda recableado contra la lista de la sede (FR-AD-MON-2).** «Añadir moneda» en la caja ofrece las monedas de la lista de su sede que la caja aún no tiene habilitadas; Worker ya no tiene una lista propia. Si la caja ya tiene todas las de la sede, la pantalla lo dice y remite al administrador. Nombre y símbolo de cada moneda salen de la lista ISO 4217 compartida por toda la plataforma, y todas las monedas se manejan con cuatro decimales (decisión de PuntoCash, FRD de Super administración v3.8). |
 | 8.4 | 03/11/2026 | **Las monedas que PuntoCash retira del catálogo dejan de ofrecerse.** «Añadir moneda» solo lista las monedas disponibles, y el dominio rechaza con `moneda-retirada` añadir una retirada a una sede. Las sedes que ya la tienen **la conservan**, con su saldo y su historial, hasta que su mercante la quite (FR-AD-MON-6 y -7 no cambian). Código nuevo en el Apéndice C. Consecuencia del catálogo mantenido por PuntoCash (FRD de Super Admin v3.7). |
 | 8.3 | 02/11/2026 | **En la consola, a los administradores se les llama «administradores», no «usuarios».** Los trabajadores también son usuarios del producto, y llamar «usuarios» solo a los administradores de la empresa confundía. La entrada del menú y la sección §8 pasan a llamarse **Administradores**; los títulos, el buscador, la columna del listado, los avisos y los mensajes de la sección dicen «administrador». Las rutas (`/admin/usuarios`) y los códigos no cambian. El botón del traspaso pasa a «Traspasar la administración principal». Sin cambios de comportamiento. |
 | 8.2 | 02/11/2026 | **Se recoge lo que la consola ya hacía y el documento no decía, y se corrige una demo.** (1) **El identificador de acceso es un nombre de usuario**, no un correo: de 3 a 30 caracteres, sin «@»; el acceso y la recuperación aceptan el identificador **o** el correo, y el correo es **único**. Nuevo **FR-AD-ACC-11**; se completan la recuperación (**FR-AD-ACC-8**), el alta de trabajador y de usuario, y el cambio de correo, con los códigos `identificador-invalido` y `correo-duplicado` y sus mensajes (Apéndice C). (2) Dos defectos del acceso, ya corregidos, pasan a ser requisito: la contraseña pertenece a la cuenta y no a lo tecleado, y la verificación anuncia el correo real de la cuenta. (3) Nuevo **FR-AD-SHELL-17**: en el teléfono la acción de una sección baja debajo de su descripción. (4) **FR-AD-PROM-3**: una promoción de red dice «Publicada por PuntoCash». (5) La demo de **FR-AD-USR-4** usaba como identificador un correo, que desde ahora se rechaza. |

@@ -71,10 +71,10 @@ test.describe("añadir moneda — selection", () => {
 
   test("searches by currency name", async ({ page }) => {
     await openPicker(page);
-    await page.getByPlaceholder("Buscar por código o nombre").fill("canadiense");
+    await page.getByPlaceholder("Buscar por código o nombre").fill("suizo");
     const options = page.getByRole("option");
     await expect(options).toHaveCount(1);
-    await expect(options.first()).toContainText("CAD");
+    await expect(options.first()).toContainText("CHF");
   });
 
   test("already-enabled currencies are never offered", async ({ page }) => {
@@ -84,42 +84,51 @@ test.describe("añadir moneda — selection", () => {
     }
   });
 
-  test("CAD can be selected, collapses the picker, and shows code, name and symbol", async ({
+  test("ofrece solo lo que la lista de la sede permite, menos lo que la caja ya tiene", async ({ page }) => {
+    /* Vedado maneja CUP, USD, EUR, GBP, CHF y MXN; Caja 03 ya tiene las cuatro primeras. */
+    await openPicker(page);
+    await expect(page.getByRole("option")).toHaveText([/^CHF/, /^MXN/]);
+    for (const fuera of ["CAD", "JPY", "AUD", "COP", "CLP"]) {
+      await expect(page.getByRole("option", { name: new RegExp(`^${fuera}`) })).toHaveCount(0);
+    }
+  });
+
+  test("CHF can be selected, collapses the picker, and shows code, name and symbol", async ({
     page,
   }) => {
     await openPicker(page);
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
 
     // Selecting collapses the picker back to its compact, closed state.
     await expect(page.getByPlaceholder("Buscar por código o nombre")).toHaveCount(0);
     await expect(
-      page.getByRole("button", { name: "Moneda: CAD — Dólar canadiense" }),
+      page.getByRole("button", { name: "Moneda: CHF — Franco suizo" }),
     ).toBeVisible();
 
     await expect(page.getByText("Código")).toBeVisible();
     await expect(page.getByText("Nombre")).toBeVisible();
     await expect(page.getByText("Símbolo")).toBeVisible();
-    await expect(page.getByText("CAD", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("Dólar canadiense", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("CHF", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Franco suizo", { exact: true }).first()).toBeVisible();
 
     // "Resumen de incorporación" reflects the selection live.
-    await expect(page.locator("dd").filter({ hasText: "CAD" }).first()).toBeVisible();
+    await expect(page.locator("dd").filter({ hasText: "CHF" }).first()).toBeVisible();
   });
 
   test("selection is communicated by more than colour — text, border and a check icon", async ({
     page,
   }) => {
     await openPicker(page);
-    await expect(page.getByRole("option", { name: /^CAD/ })).toHaveAttribute(
+    await expect(page.getByRole("option", { name: /^CHF/ })).toHaveAttribute(
       "aria-selected",
       "false",
     );
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
 
     // Selecting collapses the picker (the option itself unmounts); reopening
     // it is what proves the choice was actually recorded, not just clicked.
     await openPicker(page);
-    await expect(page.getByRole("option", { name: /^CAD/ })).toHaveAttribute(
+    await expect(page.getByRole("option", { name: /^CHF/ })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -132,7 +141,7 @@ test.describe("añadir moneda — restrained content (no rejected rows)", () => 
   }) => {
     await page.goto("/worker/caja/anadir-moneda");
     await openPicker(page);
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
 
     await expect(page.getByText("Saldo inicial")).toHaveCount(0);
     await expect(page.getByText("Estado esperado")).toHaveCount(0);
@@ -145,22 +154,22 @@ test.describe("añadir moneda — restrained content (no rejected rows)", () => 
 });
 
 test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
-  test("enabling CAD adds it to Caja 03 at 0,00 with no movement", async ({ page }) => {
+  test("enabling CHF adds it to Caja 03 at 0,00 with no movement", async ({ page }) => {
     await page.goto("/worker/caja/anadir-moneda");
     await openPicker(page);
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("button", { name: "Añadir moneda" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja$/, { timeout: 3000 });
 
     const balancesTable = page.getByRole("table").first();
-    const cadRow = balancesTable.locator("tbody tr").filter({ hasText: "CAD" });
+    const cadRow = balancesTable.locator("tbody tr").filter({ hasText: "CHF" });
     await expect(cadRow.getByText("0,00", { exact: true })).toBeVisible();
     await expect(balancesTable.locator("tbody tr")).toHaveCount(5);
 
     const movementsTable = page.getByRole("table").nth(1);
     await expect(
-      movementsTable.locator("tbody tr").filter({ hasText: "CAD" }),
+      movementsTable.locator("tbody tr").filter({ hasText: "CHF" }),
     ).toHaveCount(0);
   });
 
@@ -169,39 +178,39 @@ test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
   }) => {
     await page.goto("/worker/caja/anadir-moneda");
     await openPicker(page);
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("button", { name: "Añadir moneda" }).click();
     await expect(page).toHaveURL(/\/worker\/caja$/, { timeout: 3000 });
 
-    // Same SPA session, fresh visit to Añadir moneda: CAD is now enabled and
+    // Same SPA session, fresh visit to Añadir moneda: CHF is now enabled and
     // must never be offered again, proving the domain — not just the prior
     // render — is what excludes it.
     await page.getByRole("link", { name: /Añadir moneda/ }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/anadir-moneda$/);
     await openPicker(page);
-    await expect(page.getByRole("option", { name: /^CAD/ })).toHaveCount(0);
+    await expect(page.getByRole("option", { name: /^CHF/ })).toHaveCount(0);
   });
 
   test("una moneda sin par de cotización se explica en Cambio de moneda", async ({ page }) => {
     /* La lista de monedas de una sede no depende del servicio de Cambio de
        moneda (Admin FRD **FR-AD-MON-5**): una remesa y un giro también se
-       pagan en una moneda. Así que habilitar CAD es correcto y aun así no se
+       pagan en una moneda. Así que habilitar CHF es correcto y aun así no se
        puede cambiar, porque PuntoCash no tiene par con tasa para él. Lo que no
        vale es que desaparezca del selector sin decir por qué. */
     /* La jornada primero: Cambio de moneda sin jornada abierta muestra su
        estado bloqueado y no el formulario (**FR-CM-16**).
 
        Y de aquí al final, **todo por enlace y ni una recarga**. Las dos cosas
-       que esta prueba necesita a la vez —la jornada abierta y CAD habilitado—
+       que esta prueba necesita a la vez —la jornada abierta y CHF habilitado—
        viven en el módulo en memoria del navegador, y un `goto` lo devuelve a
-       su estado inicial: sin jornada y sin CAD. La prueba lo hacía y afirmaba
+       su estado inicial: sin jornada y sin CHF. La prueba lo hacía y afirmaba
        un aviso que acababa de borrar ella misma. */
     await openJornada(page);
 
     await page.getByRole("link", { name: /Añadir moneda/ }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/anadir-moneda$/);
     await openPicker(page);
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("button", { name: "Añadir moneda" }).click();
     await expect(page).toHaveURL(/\/worker\/caja$/, { timeout: 3000 });
 
@@ -209,14 +218,14 @@ test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
     await page.getByRole("link", { name: /Cambio de moneda/ }).click();
     await expect(page.getByRole("heading", { name: "Cambio de moneda", level: 1 })).toBeVisible();
 
-    await expect(page.getByText("CAD no se puede cambiar en este servicio")).toBeVisible();
+    await expect(page.getByText("CHF no se puede cambiar en este servicio")).toBeVisible();
     await expect(page.getByText(/el administrador de tu sede tiene que definir el par/)).toBeVisible();
   });
 
   test("Cancelar returns to Caja without enabling anything", async ({ page }) => {
     await page.goto("/worker/caja/anadir-moneda");
     await openPicker(page);
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("link", { name: "Cancelar" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja$/);
@@ -226,7 +235,7 @@ test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
 });
 
 test.describe("añadir moneda — entry from Fondeo inicial", () => {
-  test("preserves the in-progress draft and shows CAD as a new fixed row on return", async ({
+  test("preserves the in-progress draft and shows CHF as a new fixed row on return", async ({
     page,
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
@@ -238,19 +247,19 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
     await expect(page).toHaveURL(/\/worker\/caja\/anadir-moneda\?returnTo=fondeo-inicial$/);
 
     await openPicker(page);
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("button", { name: "Añadir moneda" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/, { timeout: 3000 });
     await expect(page.getByLabel("Fondo inicial en CUP")).toHaveValue("200000");
     await expect(page.getByLabel("Fondo inicial en USD")).toHaveValue("4000");
 
-    const cadInput = page.getByLabel("Fondo inicial en CAD");
+    const cadInput = page.getByLabel("Fondo inicial en CHF");
     await expect(cadInput).toBeVisible();
     await expect(cadInput).toHaveValue("");
   });
 
-  test("Fondeo inicial can then accept and register an amount for CAD normally", async ({
+  test("Fondeo inicial can then accept and register an amount for CHF normally", async ({
     page,
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
@@ -258,22 +267,22 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
     await page.getByLabel("Fondo inicial en CUP").fill("200000");
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await openPicker(page);
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("button", { name: "Añadir moneda" }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/, { timeout: 3000 });
 
-    await page.getByLabel("Fondo inicial en CAD").fill("1000");
+    await page.getByLabel("Fondo inicial en CHF").fill("1000");
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
     await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
       timeout: 3000,
     });
-    await expect(page.getByText("1.000,00 CAD", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("1.000,00 CHF", { exact: true }).first()).toBeVisible();
 
     await page.getByRole("link", { name: "Ir a Caja" }).click();
     await expect(page).toHaveURL(/\/worker\/caja$/);
     const balancesTable = page.getByRole("table").first();
-    const cadRow = balancesTable.locator("tbody tr").filter({ hasText: "CAD" });
+    const cadRow = balancesTable.locator("tbody tr").filter({ hasText: "CHF" });
     await expect(cadRow.getByText("1.000,00", { exact: true })).toBeVisible();
   });
 
@@ -288,7 +297,7 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
 
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/);
     await expect(page.getByLabel("Fondo inicial en EUR")).toHaveValue("1500");
-    await expect(page.getByLabel("Fondo inicial en CAD")).toHaveCount(0);
+    await expect(page.getByLabel("Fondo inicial en CHF")).toHaveCount(0);
   });
 });
 
@@ -329,7 +338,7 @@ test.describe("añadir moneda — layout", () => {
 
     await page.goto("/worker/caja/anadir-moneda", { waitUntil: "networkidle" });
     await openPicker(page);
-    await page.getByRole("option", { name: /^CAD/ }).click();
+    await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("button", { name: "Añadir moneda" }).click();
     await expect(page).toHaveURL(/\/worker\/caja$/, { timeout: 3000 });
 

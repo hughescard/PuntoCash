@@ -1,4 +1,5 @@
 import type { Money } from "@/lib/format";
+import { monedaIso } from "@/features/network/iso-monedas";
 import { CASH_BALANCES } from "@/features/worker/home-data";
 import { OPERATIONS } from "@/features/operations/operations-history";
 import { normalizeForSearch } from "@/features/operations/services";
@@ -43,7 +44,7 @@ export const CAJA_BALANCES: readonly CajaBalance[] = mutableBalances;
  * ---------------------------------------------------------------------- */
 
 /**
- * Every currency PuntoCash's mock knows how to display — deliberately kept
+ * Una moneda tal como la muestra la caja — deliberately kept
  * separate from `CAJA_BALANCES`, which is only the subset actually enabled
  * for Caja 03. "Which currencies are enabled" and "what is each one's
  * balance" stay two independently answerable questions: enablement is this
@@ -55,31 +56,30 @@ export interface CajaCurrencyCatalogEntry {
   symbol: string;
 }
 
-export const CAJA_CURRENCY_CATALOG: readonly CajaCurrencyCatalogEntry[] = [
-  { code: "CUP", name: "Peso cubano", symbol: "$" },
-  { code: "USD", name: "Dólar estadounidense", symbol: "$" },
-  { code: "EUR", name: "Euro", symbol: "€" },
-  { code: "GBP", name: "Libra esterlina", symbol: "£" },
-  { code: "CAD", name: "Dólar canadiense", symbol: "$" },
-  { code: "CHF", name: "Franco suizo", symbol: "CHF" },
-  { code: "MXN", name: "Peso mexicano", symbol: "$" },
-  { code: "JPY", name: "Yen japonés", symbol: "¥" },
-  { code: "AUD", name: "Dólar australiano", symbol: "$" },
-  { code: "COP", name: "Peso colombiano", symbol: "$" },
-  { code: "CLP", name: "Peso chileno", symbol: "$" },
-];
-
+/**
+ * Nombre y símbolo de cualquier moneda, de la tabla ISO 4217 que comparte toda
+ * la plataforma. Worker ya no tiene catálogo propio.
+ */
 export function findCajaCurrency(code: string): CajaCurrencyCatalogEntry | undefined {
-  return CAJA_CURRENCY_CATALOG.find((entry) => entry.code === code);
+  return monedaIso(code) ?? undefined;
 }
 
 export function isCurrencyEnabled(currency: string): boolean {
   return mutableBalances.some((balance) => balance.currency === currency);
 }
 
-/** Catalog entries Caja 03 has not enabled yet — what "Añadir moneda" may offer. */
-export function getAvailableCurrenciesToAdd(): readonly CajaCurrencyCatalogEntry[] {
-  return CAJA_CURRENCY_CATALOG.filter((entry) => !isCurrencyEnabled(entry.code));
+/**
+ * Lo que «Añadir moneda» puede ofrecer: la lista de monedas de la sede de la
+ * caja (que decide su mercante) menos las que la caja ya tiene habilitadas.
+ * La lista llega del servidor; aquí solo se descuenta lo ya habilitado.
+ */
+export function monedasQueSePuedenAnadir(listaDeLaSede: readonly string[]): readonly CajaCurrencyCatalogEntry[] {
+  return listaDeLaSede
+    .filter((code) => !isCurrencyEnabled(code))
+    .flatMap((code) => {
+      const entry = findCajaCurrency(code);
+      return entry ? [entry] : [];
+    });
 }
 
 export type HabilitarMonedaResult =
