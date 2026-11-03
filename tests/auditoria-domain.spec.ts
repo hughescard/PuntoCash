@@ -31,8 +31,12 @@ test("todo evento se dice en lenguaje de negocio, sin el identificador del domin
   /* Y el filtro de tipo ofrece cada tipo una sola vez. */
   const tipos = AREAS.flatMap((a) => a.tipos.map((t) => t.tipo));
   expect(new Set(tipos).size).toBe(tipos.length);
-  expect(tipos).not.toContain("moneda-plataforma.alta");
-  expect(etiquetaDeEvento("moneda-plataforma.alta")).toMatch(/catálogo/);
+  /* El catálogo de monedas se gobierna desde la consola: sus tres actos se filtran. */
+  for (const t of ["moneda-plataforma.alta", "moneda-plataforma.retirada", "moneda-plataforma.reincorporada"] as const) {
+    expect(tipos).toContain(t);
+    expect(etiquetaDeEvento(t)).toMatch(/catálogo/);
+  }
+  expect(tipos).not.toContain("operador.credencial-inicial-regenerada");
 });
 
 test("quien consta como autor es una persona de la consola, no el nombre de un área", () => {

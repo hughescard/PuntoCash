@@ -66,7 +66,8 @@ export default async function SuperAdminOperadorPage({
   const pasados = historialDeOperador(operador.id).filter((t) => t.endedAt).slice().reverse();
   const baja = operador.status === "baja";
   const aviso = hecho ? AVISOS[hecho] : undefined;
-  const sinAsignar = SEDES.filter((s) => s.status !== "cerrada" && estadoDeSede(s) === "sin-asignar").map((s) => ({
+  /* Sin operador, aunque esté suspendida: la suspensión sigue hasta que PuntoCash la levante. */
+  const sinAsignar = SEDES.filter((s) => s.status !== "cerrada" && !asignacionVigente(s.id)).map((s) => ({
     id: s.id,
     nombre: s.name,
     codigo: s.code,

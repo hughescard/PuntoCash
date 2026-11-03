@@ -42,6 +42,8 @@ test.describe("monedas y rangos", () => {
     await dialogo.locator("#rango-cmax").fill("310");
     await dialogo.locator("#rango-vmin").fill("310");
     await dialogo.locator("#rango-vmax").fill("320");
+    /* Cambiar un rango que ya existe se explica. */
+    await expect(dialogo.getByLabel(/^Motivo del cambio/)).toBeVisible();
     await expect(dialogo.getByText(/sedes tienen hoy una tasa fuera del nuevo rango/)).toBeVisible();
     await expect(dialogo.getByRole("cell", { name: "PuntoCash Vedado" })).toBeVisible();
 
@@ -60,6 +62,8 @@ test.describe("monedas y rangos", () => {
     await dialogo.locator("#rango-cmax").fill("3");
     await dialogo.locator("#rango-vmin").fill("2,2");
     await dialogo.locator("#rango-vmax").fill("3,2");
+    /* El primer rango no pide motivo. */
+    await expect(dialogo.getByLabel(/^Motivo del cambio/)).toHaveCount(0);
     await dialogo.getByRole("button", { name: "Definir el rango" }).click();
     await expect(page.getByText(/Rango del JPY definido/)).toBeVisible();
 
@@ -136,8 +140,9 @@ test("añadir, retirar y reincorporar una moneda del catálogo, con su rastro en
 
   /* Cada cambio quedó en la auditoría, con quién y por qué. */
   await page.goto(`/super-admin/auditoria?texto=${codigo}`);
-  await expect(page.locator("main :visible", { hasText: "Moneda retirada del catálogo de la plataforma" }).first()).toBeVisible();
-  await expect(page.locator("main :visible", { hasText: "Moneda añadida al catálogo de la plataforma" }).first()).toBeVisible();
+  await expect(page.locator("main :visible", { hasText: "Moneda retirada del catálogo" }).first()).toBeVisible();
+  await expect(page.locator("main :visible", { hasText: "Moneda añadida al catálogo" }).first()).toBeVisible();
+  await expect(page.locator("main :visible", { hasText: "Moneda reincorporada al catálogo" }).first()).toBeVisible();
 });
 
 test("tasas por sede: lo que publica cada una, de solo lectura", async ({ page }) => {

@@ -10,6 +10,7 @@ import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cifraDeTablero } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
+import { sinTildes } from "@/lib/buscar";
 
 /**
  * Tasas por sede — de solo lectura y **sin capa de alertas** (decisión del
@@ -82,10 +83,10 @@ export function TasasPorSede({
     return [...m].sort((a, b) => a[0].localeCompare(b[0]));
   }, [sedes]);
 
-  const q = texto.trim().toLowerCase();
+  const q = sinTildes(texto.trim());
   const visibles = sedes.filter(
     (s) =>
-      (!q || s.nombre.toLowerCase().includes(q) || s.codigo.toLowerCase().includes(q)) &&
+      (!q || sinTildes(s.nombre).includes(q) || sinTildes(s.codigo).includes(q)) &&
       (operador === TODOS || s.operadorId === operador) &&
       (moneda === TODOS || s.monedas.some((m) => m.code === moneda)),
   );

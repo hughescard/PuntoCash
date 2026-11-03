@@ -10,6 +10,7 @@ import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/re
 import { useHydrated } from "@/lib/use-hydrated";
 import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 import { SELECT, TODAS } from "./controles";
+import { sinTildes } from "@/lib/buscar";
 
 /**
  * Los kioscos de autoservicio vinculados en la red.
@@ -68,13 +69,13 @@ export function KioscosDeRedList({
     [rows],
   );
 
-  const busqueda = texto.trim().toLowerCase();
+  const busqueda = sinTildes(texto.trim());
   const visibles = rows
     .filter(
       (r) =>
         (operador === TODAS || r.operadorId === operador) &&
         (provincia === TODAS || r.provincia === provincia) &&
-        (!busqueda || r.id.toLowerCase().includes(busqueda) || r.label.toLowerCase().includes(busqueda) || r.sede.toLowerCase().includes(busqueda)),
+        (!busqueda || sinTildes(r.id).includes(busqueda) || sinTildes(r.label).includes(busqueda) || sinTildes(r.sede).includes(busqueda)),
     )
     .slice()
     .sort((a, b) => a.sede.localeCompare(b.sede, "es") || a.label.localeCompare(b.label, "es"));

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { fijarCredencialDeAdministrador } from "@/features/admin/admin-auth";
+import { mensajeDeIdentificador, revisarIdentificador } from "@/features/auth/identificador";
 import { registrarEvento } from "@/features/network/audit";
 import { asignarSede, sedesDeOperador } from "@/features/network/assignments";
 import { telefonoValido } from "@/features/network/datos-de-sede";
@@ -34,6 +36,13 @@ import { getSuperAdminSession } from "@/features/super-admin/session-server";
  */
 
 const ALFABETO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+/** Genera la credencial y la deja como contraseña de esa cuenta: la anterior deja de servir. */
+function entregarCredencial(identifier: string): string {
+  const credencial = credencialInicial();
+  fijarCredencialDeAdministrador(identifier, credencial);
+  return credencial;
+}
 
 function credencialInicial(): string {
   let salida = "";
@@ -151,7 +160,10 @@ export async function crearOperadorAction(_p: ResultadoAltaOperador, formData: F
   });
   if (!r.ok) {
     const campo = CAMPO_DE_RECHAZO[r.reason];
-    return campo ? falla(MENSAJE[r.reason], campo) : falla(MENSAJE[r.reason]);
+    /* El identificador puede fallar por varias cosas: se dice cuál. */
+    const motivoId = r.reason === "identificador-invalido" ? revisarIdentificador(uIdent) : null;
+    const error = motivoId ? mensajeDeIdentificador(motivoId) : MENSAJE[r.reason];
+    return campo ? falla(error, campo) : falla(error);
   }
 
   registrarEvento({
@@ -171,7 +183,7 @@ export async function crearOperadorAction(_p: ResultadoAltaOperador, formData: F
     usuario: r.value.user.fullName,
     identificador: r.value.user.identifier,
     correo: r.value.user.email,
-    credencial: credencialInicial(),
+    credencial: entregarCredencial(r.value.user.identifier),
   };
 }
 
@@ -336,6 +348,6 @@ export async function restablecerAccesoAction(_p: ResultadoRestablecer, formData
     nombre: r.value.user.fullName,
     identificador: r.value.user.identifier,
     correo: r.value.user.email,
-    credencial: credencialInicial(),
+    credencial: entregarCredencial(r.value.user.identifier),
   };
 }

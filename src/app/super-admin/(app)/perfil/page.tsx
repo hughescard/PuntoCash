@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import { redirect } from "next/navigation";
 import { KeyRound } from "lucide-react";
 
@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * El perfil de quien tiene la sesión. Sus datos son de solo lectura: las
- * cuentas de PuntoCash las mantiene su área de sistemas, fuera del producto.
- * Lo único que la persona cambia aquí es su contraseña.
+ * El perfil de quien tiene la sesión. Sus datos son de solo lectura aquí: las
+ * cuentas de PuntoCash las mantiene el principal desde Usuarios —el principal,
+ * también la suya—. Lo único que la persona cambia aquí es su contraseña.
  */
 export default async function SuperAdminPerfilPage({
   searchParams,
@@ -40,7 +40,22 @@ export default async function SuperAdminPerfilPage({
         </Alert>
       ) : null}
 
-      <Section title="Tus datos" description="Para corregir alguno de estos datos, pídelo al área de sistemas de PuntoCash.">
+      <Section
+        title="Tus datos"
+        description={
+          user.isPrincipal ? (
+            <>
+              Los corriges desde{" "}
+              <Link href={`/super-admin/usuarios/${user.id}` as Route} className="font-semibold underline underline-offset-4">
+                tu ficha en Usuarios
+              </Link>
+              .
+            </>
+          ) : (
+            "Para corregir alguno de estos datos, pídelo a quien administra las cuentas de PuntoCash."
+          )
+        }
+      >
         <Card>
           <CardContent className="pt-6">
             <dl className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 wide:grid-cols-3">

@@ -530,6 +530,8 @@ export function restablecerAccesoDelPrincipal(
   if (email.length <= 3 || !email.includes("@") || email.includes(" ")) {
     return { ok: false, reason: "correo-invalido" };
   }
+  /* El correo sirve para entrar: no puede ser el de otra cuenta. */
+  if (correoTomado(email, principal.id)) return { ok: false, reason: "correo-duplicado" };
 
   const correoAnterior = principal.email;
   principal.email = email;

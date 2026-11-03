@@ -122,7 +122,7 @@ export default async function SuperAdminSedePage({
       <Section
         title="Datos de la sede"
         description={
-          estado === "sin-asignar"
+          !vigente
             ? "Son públicos: se ven en el kiosco y en la pantalla de la sucursal. Mientras no tenga operador, los mantiene PuntoCash."
             : "Son públicos: se ven en el kiosco y en la pantalla de la sucursal. El código y el nombre los mantiene PuntoCash; la dirección, el teléfono y el horario, su operador."
         }

@@ -28,7 +28,7 @@
 import { excedeDecimalesDeTasa } from "@/lib/format";
 import { estaEnAlcance } from "./assignments";
 import { monedaDelCatalogo, monedasDeSede, sedeManejaMoneda } from "./currencies";
-import { findSedeById, SEDES } from "./sedes";
+import { findSedeById, isMotivoValido, SEDES } from "./sedes";
 import { isGlobal, requireOperatorScope, type Scope } from "./scope";
 
 /** La moneda contra la que se cotiza todo. */
@@ -415,6 +415,8 @@ export type RangoWriteDenial =
   | "demasiados-decimales"
   | "minimo-mayor"
   | "rango-incoherente"
+  /** Cambiar un rango ya definido exige motivo. */
+  | "motivo-requerido"
   | "sin-rango";
 
 export type RangoWriteResult<T> = { ok: true; value: T } | { ok: false; reason: RangoWriteDenial };
@@ -456,6 +458,8 @@ export function validarRango(compra: Intervalo, venta: Intervalo): RangoWriteDen
 export function simularRango(code: string, compra: Intervalo, venta: Intervalo): readonly AjusteDeTasa[] {
   const ajustes: AjusteDeTasa[] = [];
   for (const [sedeId, lista] of tasas) {
+    /* Una sede cerrada ya no cotiza: su última tasa es historia y no se mueve. */
+    if (SEDES.find((s) => s.id === sedeId)?.status === "cerrada") continue;
     const t = lista.find((x) => x.code === code);
     if (!t) continue;
     const despues = { compra: limitar(t.compra, compra), venta: limitar(t.venta, venta) };
@@ -471,9 +475,11 @@ export function simularRango(code: string, compra: Intervalo, venta: Intervalo):
   return ajustes.sort((a, b) => a.sedeNombre.localeCompare(b.sedeNombre, "es"));
 }
 
-/** Las sedes que tienen definida una tasa de esta moneda. */
+/** Las sedes no cerradas que tienen definida una tasa de esta moneda. */
 export function sedesConTasa(code: string): readonly string[] {
-  return [...tasas].filter(([, lista]) => lista.some((t) => t.code === code)).map(([sedeId]) => sedeId);
+  return [...tasas]
+    .filter(([sedeId, lista]) => SEDES.find((s) => s.id === sedeId)?.status !== "cerrada" && lista.some((t) => t.code === code))
+    .map(([sedeId]) => sedeId);
 }
 
 /**
@@ -484,7 +490,7 @@ export function sedesConTasa(code: string): readonly string[] {
  */
 export function definirRango(
   scope: Scope,
-  input: { code: string; compra: Intervalo; venta: Intervalo; autor: string },
+  input: { code: string; compra: Intervalo; venta: Intervalo; autor: string; motivo?: string },
   now = new Date(),
 ): RangoWriteResult<{ rango: RangoDeTasa; anterior: RangoDeTasa | null; ajustes: readonly AjusteDeTasa[] }> {
   if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
@@ -496,6 +502,10 @@ export function definirRango(
   if (mal) return { ok: false, reason: mal };
 
   const anterior = rangos.get(input.code) ?? null;
+  /* Definir el primer rango abre una moneda a la red; cambiarlo mueve límites
+     que las sedes ya usan y puede llevar sus tasas al borde: eso se explica
+     (decisión del 3/11/2026). */
+  if (anterior && !isMotivoValido(input.motivo ?? "")) return { ok: false, reason: "motivo-requerido" };
   const ajustes = simularRango(input.code, input.compra, input.venta);
   const rango: RangoDeTasa = {
     code: input.code,

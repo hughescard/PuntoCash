@@ -7,7 +7,7 @@ import { registrarEvento } from "@/features/network/audit";
 import {
   asignacionVigente,
   asignarSede,
-  estadoDeSede,
+  cerrarSedeYSuAdministracion,
   revocarAsignacion,
   type AssignmentWriteDenial,
 } from "@/features/network/assignments";
@@ -17,7 +17,6 @@ import { telefonoValido } from "@/features/network/datos-de-sede";
 import { NOMBRE_DEL_DIA, horarioDesdeFormulario, validarHorario, type Dia } from "@/features/network/horario";
 import { findOperatorById } from "@/features/network/operators";
 import {
-  cerrarSede,
   crearSede,
   editarSede,
   findSedeByCode,
@@ -222,7 +221,8 @@ export async function editarSedeAction(_previo: ResultadoEdicionSede, formData: 
   if (otra && otra.id !== sede.id) return falla("Ya existe una sede con ese código.", "codigo");
   if (!valores.nombre) return falla("Escribe el nombre de la sede.", "nombre");
 
-  const contacto = estadoDeSede(sede) === "sin-asignar";
+  /* Sin operador —también si está suspendida—, el contacto lo mantiene PuntoCash. */
+  const contacto = !asignacionVigente(sede.id);
   let cambios: Parameters<typeof editarSede>[2] = { code: valores.codigo, name: valores.nombre };
   if (contacto) {
     if (!valores.direccion) return falla("Escribe la dirección.", "direccion");
@@ -341,6 +341,7 @@ export async function fijarServiciosAction(_p: ResultadoAccionSede, formData: Fo
       type: "servicio.habilitado",
       subject: `${sede.name} · ${nombre(id)}`,
       branchId: sede.id,
+      operatorId: asignacionVigente(sede.id)?.operatorId,
     });
   }
   for (const id of quitados) {
@@ -351,6 +352,7 @@ export async function fijarServiciosAction(_p: ResultadoAccionSede, formData: Fo
       type: "servicio.deshabilitado",
       subject: `${sede.name} · ${nombre(id)}`,
       branchId: sede.id,
+      operatorId: asignacionVigente(sede.id)?.operatorId,
       reason: motivo,
     });
   }
@@ -466,9 +468,13 @@ export async function cerrarSedeAction(_p: ResultadoAccionSede, formData: FormDa
   if (!session) return { ok: false, error: "Tu sesión ha terminado. Vuelve a entrar." };
   if (!sede) return { ok: false, error: MENSAJE_SEDE["sede-no-encontrada"] };
 
-  const r = cerrarSede(session.scope, sede.id, motivo, { hasOpenJornadas: hayJornadasAbiertas(sede.id) });
+  const r = cerrarSedeYSuAdministracion(session.scope, sede.id, motivo, {
+    hasOpenJornadas: hayJornadasAbiertas(sede.id),
+  });
   if (!r.ok) return { ok: false, error: MENSAJE_SEDE[r.reason] };
 
+  const tramo = r.value.tramoCerrado;
+  const operador = tramo ? findOperatorById(tramo.operatorId) : null;
   registrarEvento({
     actorId: session.user.id,
     actorName: session.user.fullName,
@@ -476,9 +482,25 @@ export async function cerrarSedeAction(_p: ResultadoAccionSede, formData: FormDa
     type: "sede.cerrada",
     subject: sede.name,
     branchId: sede.id,
-    operatorId: asignacionVigente(sede.id)?.operatorId,
+    operatorId: tramo?.operatorId,
     reason: motivo,
   });
+  /* El fin de la administración también es un hecho propio: es lo que se
+     busca en la auditoría del operador. */
+  if (tramo) {
+    registrarEvento({
+      actorId: session.user.id,
+      actorName: session.user.fullName,
+      actorRole: "super-admin",
+      type: "sede.revocada",
+      subject: sede.name,
+      branchId: sede.id,
+      operatorId: tramo.operatorId,
+      reason: tramo.endedReason ?? motivo,
+      before: operador?.name ?? "",
+      after: "Sin operador asignado",
+    });
+  }
   revalidatePath("/super-admin", "layout");
   redirect(`/super-admin/sedes/${sede.id}?hecho=cerrada`);
 }

@@ -38,6 +38,7 @@ export type AuditEventType =
   | "servicio.deshabilitado"
   | "moneda-plataforma.alta"
   | "moneda-plataforma.retirada"
+  | "moneda-plataforma.reincorporada"
   | "rango.definido"
   | "rango.cambiado"
   | "rango.retirado"
@@ -84,6 +85,7 @@ export type AuditEventType =
   | "usuario-puntocash.contrasena-cambiada"
   | "usuario-puntocash.alta"
   | "usuario-puntocash.editado"
+  | "usuario-puntocash.credencial-regenerada"
   | "usuario-puntocash.desactivado"
   | "usuario-puntocash.reactivado"
   | "usuario-puntocash.principal-traspasado";
@@ -350,6 +352,22 @@ const mutableEvents: AuditEvent[] = (ALMACEN.__puntocashAuditoria ??= [
     operatorId: "op-malecon",
     reason: "Segundo administrador para repartir la gestión diaria de las sedes",
     after: "Activo",
+  },
+  {
+    /* La suspensión de Trinidad que ya está en `sedes.ts`: sin este evento su
+       ficha la decía suspendida y, a la vez, «nunca ha estado suspendida». */
+    id: "aud-18",
+    at: "2026-10-17T14:00:00.000Z",
+    actorId: "sa-2",
+    actorName: "Jorge Aguilera Ruiz",
+    actorRole: "super-admin",
+    type: "sede.suspendida",
+    subject: "PuntoCash Trinidad",
+    branchId: "sede-trinidad",
+    operatorId: "op-bahia",
+    reason: "Revisión de la documentación de la licencia de la sucursal",
+    before: "Activa",
+    after: "Suspendida",
   },
 ]);
 

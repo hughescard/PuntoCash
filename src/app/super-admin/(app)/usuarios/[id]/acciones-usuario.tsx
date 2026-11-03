@@ -399,6 +399,9 @@ function TraspasarSA({
                   ))}
                 </select>
               </Field>
+              <Field {...MOTIVO}>
+                <Input {...fieldAria(MOTIVO)} name="motivo" disabled={enviando} />
+              </Field>
             </DialogBody>
             <DialogFooter>
               <Button type="button" variant="secondary" onClick={onCerrar} disabled={enviando}>

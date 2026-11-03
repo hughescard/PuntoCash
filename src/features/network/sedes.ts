@@ -248,7 +248,7 @@ const SEMILLA: Omit<Sede, "hours">[] = [
     suspension: {
       reason: "Revisión de la documentación de la licencia de la sucursal",
       at: "2026-10-17T14:00:00.000Z",
-      by: "PuntoCash",
+      by: "Jorge Aguilera Ruiz",
     },
   },
   {

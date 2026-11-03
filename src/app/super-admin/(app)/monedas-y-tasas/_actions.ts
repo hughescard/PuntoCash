@@ -35,6 +35,7 @@ const MENSAJE: Record<RangoWriteDenial, string> = {
   "minimo-mayor": "El mínimo debe ser menor que el máximo.",
   "rango-incoherente":
     "La compra no puede quedar por encima de la venta: la compra mínima tiene que ser menor o igual que la venta mínima, y la compra máxima, menor o igual que la venta máxima.",
+  "motivo-requerido": "Escribe el motivo del cambio: tiene que tener al menos 10 caracteres.",
   "sin-rango": "Esta moneda ya no tiene rango. Recarga para ver su estado.",
 };
 
@@ -55,7 +56,8 @@ export async function definirRangoAction(_p: ResultadoRango, formData: FormData)
   const compra = { min: cifra(formData.get("compra-min")), max: cifra(formData.get("compra-max")) };
   const venta = { min: cifra(formData.get("venta-min")), max: cifra(formData.get("venta-max")) };
 
-  const r = definirRango(session.scope, { code, compra, venta, autor: session.user.fullName });
+  const motivo = String(formData.get("motivo") ?? "").trim();
+  const r = definirRango(session.scope, { code, compra, venta, autor: session.user.fullName, motivo });
   if (!r.ok) return { ok: false, error: MENSAJE[r.reason] };
 
   const { anterior, ajustes } = r.value;
@@ -67,6 +69,7 @@ export async function definirRangoAction(_p: ResultadoRango, formData: FormData)
     subject: `${code} · ${moneda?.name ?? code}`,
     before: anterior ? `Compra ${intervalo(anterior.compra)} · Venta ${intervalo(anterior.venta)}` : "Sin rango",
     after: `Compra ${intervalo(compra)} · Venta ${intervalo(venta)}`,
+    ...(anterior ? { reason: motivo } : {}),
   });
   /* Cada tasa ajustada, su propio evento (FR-SA-TASA-7). */
   for (const a of ajustes) {
@@ -80,6 +83,7 @@ export async function definirRangoAction(_p: ResultadoRango, formData: FormData)
       operatorId: asignacionVigente(a.sedeId)?.operatorId,
       before: `Compra ${a.antes.compra} · Venta ${a.antes.venta}`,
       after: `Compra ${a.despues.compra} · Venta ${a.despues.venta}`,
+      ...(anterior ? { reason: motivo } : {}),
     });
   }
   revalidatePath("/super-admin", "layout");
@@ -203,7 +207,7 @@ export async function reincorporarMonedaAction(_p: ResultadoRango, formData: For
     actorId: session.user.id,
     actorName: session.user.fullName,
     actorRole: "super-admin",
-    type: "moneda-plataforma.alta",
+    type: "moneda-plataforma.reincorporada",
     subject: `${r.value.code} · ${r.value.name}`,
     before: "Retirada del catálogo",
     after: "Disponible",

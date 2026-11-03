@@ -13,7 +13,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Field,
+  Input,
+  fieldAria,
+  type FieldSpec,
 } from "@/components/ui";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { retirarPromocionRedAction, type ResultadoRetirarRed } from "../_actions";
 
 /**
@@ -35,6 +40,12 @@ export function RetirarPromocionRed({
   llegaA: string;
 }): React.JSX.Element {
   const [abierto, setAbierto] = React.useState(false);
+  const MOTIVO: FieldSpec = {
+    id: "promocion-red-retiro-motivo",
+    label: "Motivo",
+    required: true,
+    description: "Al menos 10 caracteres. Queda en la auditoría con tu nombre.",
+  };
   const [estado, accion, enviando] = React.useActionState<ResultadoRetirarRed, FormData>(retirarPromocionRedAction, null);
 
   return (
@@ -54,15 +65,18 @@ export function RetirarPromocionRed({
               Ningún administrador de sede podrá volver a ponerla. Queda en Vencidas, con la fecha en que se retiró.
             </DialogDescription>
           </DialogHeader>
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="id" value={id} />
-            {estado && !estado.ok ? (
-              <DialogBody>
+            <DialogBody className="flex flex-col gap-4">
+              {estado && !estado.ok ? (
                 <Alert variant="error" title="No se pudo retirar">
                   {estado.error}
                 </Alert>
-              </DialogBody>
-            ) : null}
+              ) : null}
+              <Field {...MOTIVO}>
+                <Input {...fieldAria(MOTIVO)} name="motivo" disabled={enviando} autoFocus />
+              </Field>
+            </DialogBody>
             <DialogFooter>
               <Button type="button" variant="secondary" onClick={() => setAbierto(false)} disabled={enviando}>
                 Cancelar

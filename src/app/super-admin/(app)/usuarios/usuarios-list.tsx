@@ -10,6 +10,7 @@ import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/re
 import type { PuntoCashUserStatus } from "@/features/super-admin/usuarios";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
+import { sinTildes } from "@/lib/buscar";
 
 /**
  * El listado de usuarios de la consola (FR-SA-USR). Se muestran todos, activos
@@ -46,12 +47,12 @@ export function UsuariosSuperAdminList({
   useFiltrosEnUrl({ texto }, {});
   const hydrated = useHydrated();
 
-  const busqueda = texto.trim().toLowerCase();
+  const busqueda = sinTildes(texto.trim());
   const visibles = rows.filter(
     (row) =>
       !busqueda ||
-      row.fullName.toLowerCase().includes(busqueda) ||
-      row.identifier.toLowerCase().includes(busqueda),
+      sinTildes(row.fullName).includes(busqueda) ||
+      sinTildes(row.identifier).includes(busqueda),
   );
 
   const columnas: readonly ResponsiveColumn<UsuarioSuperAdminRow>[] = [

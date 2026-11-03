@@ -58,6 +58,8 @@ test("filtrar por operador y por servicio acota el listado", async ({ page }) =>
 });
 
 test("una operación anterior al traspaso de Miramar muestra a Atlántico, no a Caribe", async ({ page }) => {
+  /* El traspaso fue el 30 de junio: el periodo tiene que llegar hasta antes. */
+  await page.goto("/super-admin/operaciones?desde=2026-06-01");
   await page.getByLabel("Operador").selectOption({ label: "Atlántico Casas de Cambio" });
   const tabla = page.getByRole("table");
   const filas = tabla.getByRole("row").filter({ hasText: "PuntoCash Miramar" });

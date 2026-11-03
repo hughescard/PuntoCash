@@ -153,7 +153,12 @@ async function retirar(page: Page, id: string): Promise<void> {
   await page.goto(`/super-admin/promociones/${id}`);
   const main = page.getByRole("main");
   await main.getByRole("button", { name: "Retirar" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Retirar la promoción" }).click();
+  const dialogo = page.getByRole("dialog");
+  /* Sin motivo no se retira. */
+  await dialogo.getByRole("button", { name: "Retirar la promoción" }).click();
+  await expect(dialogo.getByText(/Escribe el motivo/)).toBeVisible();
+  await dialogo.getByLabel(/^Motivo/).fill("Prueba automática: la campaña se suspende");
+  await dialogo.getByRole("button", { name: "Retirar la promoción" }).click();
   await expect(main.getByText("Promoción retirada")).toBeVisible();
 }
 

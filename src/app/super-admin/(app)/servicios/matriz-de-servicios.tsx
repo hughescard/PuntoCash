@@ -27,6 +27,7 @@ import { useHydrated } from "@/lib/use-hydrated";
 import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { cambiarServicioAction, type ResultadoServicio } from "./_actions";
+import { sinTildes } from "@/lib/buscar";
 
 /**
  * La matriz de sedes por servicios.
@@ -90,11 +91,11 @@ export function MatrizDeServicios({
   }, [filas]);
   const provincias = React.useMemo(() => [...new Set(filas.map((f) => f.provincia))].sort((a, b) => a.localeCompare(b, "es")), [filas]);
 
-  const q = texto.trim().toLowerCase();
+  const q = sinTildes(texto.trim());
   const visibles = filas
     .filter(
       (f) =>
-        (!q || f.nombre.toLowerCase().includes(q) || f.codigo.toLowerCase().includes(q)) &&
+        (!q || sinTildes(f.nombre).includes(q) || sinTildes(f.codigo).includes(q)) &&
         (operador === TODOS || (operador === SIN_OPERADOR ? f.operadorId === null : f.operadorId === operador)) &&
         (provincia === TODOS || f.provincia === provincia),
     )

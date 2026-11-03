@@ -10,7 +10,7 @@ import { GLOBAL_SCOPE } from "@/features/network/scope";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { conciliacionDe } from "@/features/network/jornadas";
 import { OPERATORS } from "@/features/network/operators";
-import { asignacionVigente } from "@/features/network/assignments";
+import { operadorVigenteEn } from "@/features/network/assignments";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import { diaEnCuba, fechaCorta, fechaYHora, nombreDeJornada } from "@/app/admin/(app)/jornadas/formato";
 import { CuerpoDeJornada } from "@/app/admin/(app)/jornadas/[id]/cuerpo-de-jornada";
@@ -42,8 +42,9 @@ export default async function SuperAdminJornadaPage({ params }: { params: Promis
   if (!j) notFound();
 
   const sede = red.sede(j.sedeId);
-  const tramo = asignacionVigente(j.sedeId);
-  const operador = tramo ? OPERATORS.find((o) => o.id === tramo.operatorId) ?? null : null;
+  /* El que administraba la sede al abrirse la jornada, no el de hoy. */
+  const operadorId = operadorVigenteEn(j.sedeId, new Date(j.openedAt));
+  const operador = operadorId ? OPERATORS.find((o) => o.id === operadorId) ?? null : null;
   const conciliacion = conciliacionDe(j);
   const deOtroDia = j.estado === "abierta" && diaEnCuba(j.openedAt) < diaEnCuba(new Date());
 

@@ -259,6 +259,13 @@ function EditorDeRango({
   onHecho: (mensaje: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(definirRangoAction, null);
+  /* Cambiar un rango ya definido se explica; definir el primero, no. */
+  const MOTIVO_DEL_CAMBIO: FieldSpec = {
+    id: "rango-cambio-motivo",
+    label: "Motivo del cambio",
+    required: true,
+    description: "Al menos 10 caracteres. Queda en la auditoría con tu nombre.",
+  };
   const [v, setV] = React.useState({
     cmin: fila.rango ? String(fila.rango.compra.min) : "",
     cmax: fila.rango ? String(fila.rango.compra.max) : "",
@@ -334,6 +341,12 @@ function EditorDeRango({
               <p role="alert" className="text-body-sm font-semibold text-error">
                 {mal}
               </p>
+            ) : null}
+
+            {fila.rango ? (
+              <Field {...MOTIVO_DEL_CAMBIO}>
+                <Input {...fieldAria(MOTIVO_DEL_CAMBIO)} name="motivo" disabled={enviando} />
+              </Field>
             ) : null}
 
             {fuera.length > 0 ? (

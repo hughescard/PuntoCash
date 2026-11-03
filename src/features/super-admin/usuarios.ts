@@ -126,7 +126,8 @@ export type PuntoCashUserDenial =
   | "destino-no-activo"
   | "motivo-requerido"
   | "correo-invalido"
-  | "ya-activo";
+  | "ya-activo"
+  | "ya-desactivado";
 
 export type PuntoCashUserResult<T> = { ok: true; value: T } | { ok: false; reason: PuntoCashUserDenial };
 
@@ -184,7 +185,7 @@ export function crearUsuarioPuntoCash(
 export function editarUsuarioPuntoCash(
   actingUserId: string,
   userId: string,
-  input: { fullName: string; phone: string },
+  input: { fullName: string; phone: string; area?: string },
 ): PuntoCashUserResult<PuntoCashUser> {
   if (!esSuperAdminPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
   const user = findPuntoCashUserById(userId);
@@ -192,6 +193,7 @@ export function editarUsuarioPuntoCash(
 
   user.fullName = input.fullName.trim();
   user.phone = input.phone.trim();
+  if (input.area !== undefined && input.area.trim()) user.area = input.area.trim();
   return { ok: true, value: user };
 }
 
@@ -230,7 +232,7 @@ export function desactivarUsuarioPuntoCash(
   if (!user) return { ok: false, reason: "usuario-no-encontrado" };
   if (user.isPrincipal) return { ok: false, reason: "es-el-principal" };
   if (!isMotivoValido(motivo)) return { ok: false, reason: "motivo-requerido" };
-  if (user.status !== "activo") return { ok: false, reason: "ya-activo" };
+  if (user.status !== "activo") return { ok: false, reason: "ya-desactivado" };
 
   user.status = "desactivado";
   return { ok: true, value: user };

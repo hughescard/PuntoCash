@@ -90,7 +90,7 @@ export default async function SuperAdminEquiposPage({
         description="El inventario de la red. Las cajas las crea el administrador de cada sede, y los equipos los vincula él, delante del equipo. Aquí solo se consultan."
       />
 
-      <EquiposTabs activa={activa} cuentaCajas={filasCajas.length} cuentaKioscos={filasKioscos.length} />
+      <EquiposTabs activa={activa} cuentaCajas={filasCajas.filter((c) => c.estado === "activa").length} cuentaKioscos={filasKioscos.length} />
 
       {activa === "cajas" ? (
         <>
@@ -99,8 +99,8 @@ export default async function SuperAdminEquiposPage({
               variant="info"
               title={
                 sinCajas.length === 1
-                  ? "Una sede no tiene ninguna caja y no aparece en esta tabla"
-                  : `${sinCajas.length} sedes no tienen ninguna caja y no aparecen en esta tabla`
+                  ? "Una sede no tiene ninguna caja activa"
+                  : `${sinCajas.length} sedes no tienen ninguna caja activa`
               }
               className="mb-8"
             >

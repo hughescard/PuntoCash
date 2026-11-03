@@ -44,7 +44,8 @@ const DEMO_PASSWORD = "puntocash";
 const LATENCY_MS = 900;
 
 /** Lo que alguien fijó al recuperar o cambiar su contraseña. Solo en la demostración. */
-const contrasenas = new Map<string, string>();
+const ALMACEN_CONTRASENAS = globalThis as unknown as { __puntocashContrasenasSuperAdmin?: Map<string, string> };
+const contrasenas = (ALMACEN_CONTRASENAS.__puntocashContrasenasSuperAdmin ??= new Map<string, string>());
 
 /**
  * La clave es **la cuenta, no lo tecleado**: desde que se entra con el
@@ -76,6 +77,11 @@ export async function verificarCredencialesSuperAdmin({
 
 export function registrarContrasenaRecuperadaSuperAdmin(identifier: string, password: string): void {
   contrasenas.set(claveDe(identifier), password);
+}
+
+/** La credencial que la consola entrega (alta o regeneración) pasa a ser la contraseña de esa cuenta. */
+export function fijarCredencialSuperAdmin(identifier: string, credencial: string): void {
+  contrasenas.set(claveDe(identifier), credencial);
 }
 
 export type CambioContrasenaSuperAdmin =

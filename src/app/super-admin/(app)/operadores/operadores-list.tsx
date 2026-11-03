@@ -11,6 +11,7 @@ import type { OperatorStatus } from "@/features/network/operators";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 import { ETIQUETA_DE_OPERADOR, EstadoDeOperadorBadge } from "../_compartido/estado-de-operador";
+import { sinTildes } from "@/lib/buscar";
 
 export interface OperadorRow {
   id: string;
@@ -53,11 +54,11 @@ export function OperadoresList({
   const [sinSedes, setSinSedes] = React.useState(inicial.sinSedes === "1");
   useFiltrosEnUrl({ texto, estado, sinSedes: sinSedes ? "1" : "" }, { estado: TODOS });
 
-  const busqueda = texto.trim().toLowerCase();
+  const busqueda = sinTildes(texto.trim());
   const visibles = rows
     .filter(
       (r) =>
-        (!busqueda || r.nombre.toLowerCase().includes(busqueda) || r.contacto.toLowerCase().includes(busqueda)) &&
+        (!busqueda || sinTildes(r.nombre).includes(busqueda) || sinTildes(r.contacto).includes(busqueda)) &&
         (estado === TODOS || r.estado === estado) &&
         (!sinSedes || r.sedes === 0),
     )

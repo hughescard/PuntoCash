@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { sinDesbordamientoHorizontal } from "./admin-helpers";
-import { ELENA, JORGE, signInAsSuperAdmin } from "./super-admin-helpers";
+import { ELENA, JORGE, signInAsSuperAdmin, submitSuperAdminCredentials } from "./super-admin-helpers";
 
 /**
  * Sección Usuarios de la consola (FR-SA-USR): solo el principal la ve.
@@ -94,3 +94,38 @@ test.describe("Usuarios de la consola · resto de super administradores", () => 
   });
 });
 
+
+test("la credencial que se entrega es la contraseña de la cuenta, y la de demostración deja de servir", async ({ page }) => {
+  await signInAsSuperAdmin(page, ELENA);
+  const id = `cred${Date.now().toString(36)}`;
+  await page.goto("/super-admin/usuarios/nuevo");
+  await page.getByLabel(/^Nombre\*?$/).fill("Prueba");
+  await page.getByLabel(/^Primer apellido\*?$/).fill("Credencial");
+  await page.getByLabel(/^Teléfono\*?$/).fill("+53 7 000 2222");
+  await page.getByLabel(/^Correo electrónico\*?$/).fill(`${id}@puntocash.com`);
+  await page.getByLabel(/^Identificador de acceso\*?$/).fill(id);
+  await page.getByLabel(/^Área\*?$/).fill("Control interno");
+  await page.getByRole("button", { name: "Dar de alta" }).click();
+  const credencial = (await page.getByText("Credencial inicial").locator("xpath=following-sibling::p[1]").innerText()).trim();
+  /* Se escribe tal como se ve, con su guion. */
+  expect(credencial).toMatch(/^[A-Z0-9]{5}-[A-Z0-9]{5}$/);
+
+  await page.context().clearCookies();
+  await page.goto("/super-admin/login");
+  await submitSuperAdminCredentials(page, id, "puntocash");
+  await expect(page.getByText("Credenciales incorrectas")).toBeVisible();
+  await submitSuperAdminCredentials(page, id, credencial);
+  await page.waitForURL(/\/super-admin\/verificacion$/);
+});
+
+test("traspasar la administración de cuentas pide motivo", async ({ page }) => {
+  await signInAsSuperAdmin(page, ELENA);
+  await page.goto("/super-admin/usuarios/sa-1");
+  await page.getByRole("button", { name: /Traspasar la administración/ }).click();
+  const dialogo = page.getByRole("dialog");
+  await dialogo.locator("select[name=destino]").selectOption({ label: "Jorge Aguilera Ruiz" });
+  await dialogo.getByRole("button", { name: "Traspasar" }).click();
+  await expect(dialogo.getByText(/Escribe el motivo/)).toBeVisible();
+  /* No se completa: el principal tiene que seguir siéndolo para las demás pruebas. */
+  await dialogo.getByRole("button", { name: "Cancelar" }).click();
+});

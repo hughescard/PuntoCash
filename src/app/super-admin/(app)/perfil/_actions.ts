@@ -28,7 +28,7 @@ export async function cambiarContrasenaSuperAdminAction(
   formData: FormData,
 ): Promise<ResultadoCambioContrasena> {
   const session = await getSuperAdminSession();
-  if (!session) return { ok: false, error: "Tu sesión terminó. Vuelve a iniciar sesión para continuar." };
+  if (!session) return { ok: false, error: "Tu sesión ha terminado. Vuelve a entrar." };
 
   const leer = (campo: string) => String(formData.get(campo) ?? "");
   const resultado = await cambiarContrasenaSuperAdmin(

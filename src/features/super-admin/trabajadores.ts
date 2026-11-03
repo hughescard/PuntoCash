@@ -23,8 +23,11 @@ import type { Jornada } from "@/features/network/jornadas";
 /**
  * Por qué no puede entrar, o `null` si puede.
  *
- * El orden importa: si su operador está suspendido da igual el estado de la
- * sede, porque la suspensión del operador alcanza a todas sus sedes.
+ * Se da el motivo más amplio, que es el que hay que levantar primero: una sede
+ * cerrada no vuelve; una sin operador no tiene a nadie que responda por ella;
+ * la suspensión del operador alcanza a todas sus sedes, así que pesa más que
+ * la de una sola; y solo con todo lo anterior en orden importa si la persona
+ * está desactivada.
  */
 export type MotivoSinAcceso = "operador-suspendido" | "sede-suspendida" | "sede-cerrada" | "sin-operador" | "desactivado";
 

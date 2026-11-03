@@ -1,4 +1,5 @@
 import type { AuditActorRole, AuditEventType } from "@/features/network/audit";
+import { sinTildes } from "@/lib/buscar";
 
 /**
  * Las filas de Auditoría y sus filtros — **FR-SA-AUD-3** y **FR-SA-AUD-4**.
@@ -86,7 +87,7 @@ export function filtroDeParametros(p: Record<string, string | undefined>): Filtr
  * nombre es lo primero que se intenta al revisar un incidente.
  */
 export function filtrarAuditoria(filas: readonly FilaDeAuditoria[], f: FiltroDeAuditoria): FilaDeAuditoria[] {
-  const aguja = f.texto.trim().toLowerCase();
+  const aguja = sinTildes(f.texto.trim());
   return filas.filter(
     (e) =>
       (!f.desde || e.dia >= f.desde) &&
@@ -96,7 +97,7 @@ export function filtrarAuditoria(filas: readonly FilaDeAuditoria[], f: FiltroDeA
       (f.actor === TODOS || e.actorId === f.actor) &&
       (f.operador === TODOS || e.operadorId === f.operador) &&
       (f.sede === TODOS || e.sedeId === f.sede) &&
-      (!aguja || `${e.objeto} ${e.motivo ?? ""}`.toLowerCase().includes(aguja)),
+      (!aguja || sinTildes(`${e.objeto} ${e.motivo ?? ""}`).includes(aguja)),
   );
 }
 

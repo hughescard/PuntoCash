@@ -12,7 +12,7 @@
  */
 
 import { findOperatorById } from "./operators";
-import { findSedeById, isMotivoValido, SEDES, type Sede } from "./sedes";
+import { cerrarSede, findSedeById, isMotivoValido, SEDES, type Sede, type SedeWriteResult } from "./sedes";
 import { isGlobal, type Scope } from "./scope";
 
 export interface Assignment {
@@ -271,6 +271,30 @@ export function revocarAsignacion(
      quedarse sin operador no lo es (decisión del 27/10/2026). */
 
   return { ok: true, value: vigente };
+}
+
+/**
+ * Cierra una sede y, con ella, su administración: el tramo vigente termina en
+ * el mismo instante y con el mismo motivo (decisión del 3/11/2026). Una sede
+ * cerrada no la administra nadie; si el tramo siguiera abierto, el operador
+ * la seguiría contando entre las suyas y nunca se le podría dar de baja.
+ * El tramo cerrado queda en el historial, como cualquier otro.
+ */
+export function cerrarSedeYSuAdministracion(
+  scope: Scope,
+  sedeId: string,
+  reason: string,
+  options: { hasOpenJornadas: boolean },
+  now = new Date(),
+): SedeWriteResult<{ sede: Sede; tramoCerrado: Assignment | null }> {
+  const r = cerrarSede(scope, sedeId, reason, options);
+  if (!r.ok) return r;
+  const vigente = asignacionVigente(sedeId);
+  if (vigente) {
+    vigente.endedAt = now.toISOString();
+    vigente.endedReason = `Cierre de la sede: ${reason.trim()}`;
+  }
+  return { ok: true, value: { sede: r.value, tramoCerrado: vigente } };
 }
 
 /* -------------------------------------------------------------------------

@@ -92,3 +92,16 @@ async function abrirUnaJornadaCerrada(page: Page): Promise<void> {
   const href = await enlace.getAttribute("href");
   await page.goto(href!);
 }
+
+test("una jornada de Miramar anterior al traspaso es de Atlántico, no de Caribe", async ({ page }) => {
+  await page.goto("/super-admin/jornadas?desde=2026-06-01&operador=op-atlantico");
+  const main = page.getByRole("main");
+  const enlace = main.getByRole("link", { name: /^Ver la jornada de / }).first();
+  await expect(enlace).toBeVisible();
+  await expect(main.getByText(/^\d+ jornadas? en el periodo$/)).not.toHaveText(/^0 /);
+  const href = await enlace.getAttribute("href");
+  await page.goto(href!);
+  const ficha = page.getByRole("main");
+  await expect(ficha.getByText("PuntoCash Miramar").first()).toBeVisible();
+  await expect(ficha.getByRole("link", { name: "Atlántico Casas de Cambio" }).first()).toBeVisible();
+});

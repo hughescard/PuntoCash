@@ -51,6 +51,7 @@ export default async function SuperAdminEditarUsuarioPage({ params }: { params: 
           primerApellido: partes[1] ?? "",
           segundoApellido: partes.slice(2).join(" "),
           telefono: usuario.phone,
+          area: usuario.area,
         }}
       />
     </>

@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shell/app-shell";
 import { Button } from "@/components/ui";
 import { findSedeById } from "@/features/network/sedes";
-import { asignacionVigente, estadoDeSede } from "@/features/network/assignments";
+import { asignacionVigente } from "@/features/network/assignments";
 import { findOperatorById } from "@/features/network/operators";
 import { municipioDeLocalidad, provinciaDeLocalidad } from "@/features/geography/provincias-de-cuba";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
@@ -29,7 +29,7 @@ export default async function SuperAdminEditarSedePage({ params }: { params: Pro
   const sede = findSedeById(id);
   if (!sede || sede.status === "cerrada") notFound();
 
-  const sinAsignar = estadoDeSede(sede) === "sin-asignar";
+  const sinAsignar = !asignacionVigente(sede.id);
   const tramo = asignacionVigente(sede.id);
   const operador = tramo ? findOperatorById(tramo.operatorId)?.name ?? null : null;
 

@@ -6,7 +6,7 @@ import { GLOBAL_SCOPE } from "@/features/network/scope";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { SEDES } from "@/features/network/sedes";
 import { OPERATORS } from "@/features/network/operators";
-import { asignacionVigente } from "@/features/network/assignments";
+import { operadorVigenteEn } from "@/features/network/assignments";
 import { conciliacionDe, operacionesDe } from "@/features/network/jornadas";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import { diaEnCuba, fechaCorta, hora } from "@/app/admin/(app)/jornadas/formato";
@@ -50,9 +50,12 @@ export default async function SuperAdminJornadasPage({
   const hace7 = diaEnCuba(new Date(ahora.getTime() - 6 * 24 * 3600 * 1000));
 
   const filas: JornadaDeRedRow[] = SEDES.flatMap((sede) => {
-    const tramo = asignacionVigente(sede.id);
-    const operador = tramo ? OPERATORS.find((o) => o.id === tramo.operatorId) ?? null : null;
-    return red.jornadas(sede.id).map((j) => ({
+    return red.jornadas(sede.id).map((j) => {
+      /* El operador de la jornada es el que administraba la sede cuando se
+         abrió, no el de hoy: es la misma regla que Operaciones y Reportes. */
+      const operadorId = operadorVigenteEn(sede.id, new Date(j.openedAt));
+      const operador = operadorId ? OPERATORS.find((o) => o.id === operadorId) ?? null : null;
+      return {
       id: j.id,
       sedeId: sede.id,
       sede: sede.name,
@@ -78,7 +81,8 @@ export default async function SuperAdminJornadasPage({
             .map((m) => ({ currency: m.currency, diferencia: m.diferencia }))
         : null,
       sinConciliar: conciliacionDe(j)?.estado === "pendiente",
-    }));
+      };
+    });
   });
 
   filas.sort((a, b) => {

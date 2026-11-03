@@ -12,6 +12,7 @@ import { SERVICIOS_DE_RED } from "@/features/network/operaciones";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 import { SELECT, TODAS } from "../equipos/controles";
+import { sinTildes } from "@/lib/buscar";
 
 /**
  * Las operaciones de toda la red.
@@ -102,7 +103,7 @@ export function OperacionesDeRedList({
     return [...vistos].sort((a, b) => a[1].localeCompare(b[1], "es"));
   }, [rows]);
 
-  const busqueda = texto.trim().toLowerCase();
+  const busqueda = sinTildes(texto.trim());
   const visibles = rows.filter(
     (r) =>
       r.dia >= desde &&
@@ -112,9 +113,9 @@ export function OperacionesDeRedList({
       (servicio === TODAS || r.servicio === servicio) &&
       (estado === TODAS || r.estado === estado) &&
       (!busqueda ||
-        r.codigo.toLowerCase().includes(busqueda) ||
-        r.cliente.toLowerCase().includes(busqueda) ||
-        r.documento.toLowerCase().includes(busqueda)),
+        sinTildes(r.codigo).includes(busqueda) ||
+        sinTildes(r.cliente).includes(busqueda) ||
+        sinTildes(r.documento).includes(busqueda)),
   );
 
   const columnas: readonly ResponsiveColumn<OperacionDeRedRow>[] = [

@@ -14,6 +14,7 @@ import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 import { cn } from "@/lib/utils";
 import { SELECT, TODAS } from "../equipos/controles";
 import { EstadoDeAcceso } from "./estado-de-acceso";
+import { sinTildes } from "@/lib/buscar";
 
 /**
  * Los trabajadores de toda la red, con los filtros del requisito —operador,
@@ -76,14 +77,14 @@ export function TrabajadoresDeRedList({
     return [...vistos].sort((a, b) => a[1].localeCompare(b[1], "es"));
   }, [rows]);
 
-  const busqueda = texto.trim().toLowerCase();
+  const busqueda = sinTildes(texto.trim());
   const visibles = rows.filter(
     (r) =>
       (operador === TODAS || r.operadorId === operador) &&
       (sede === TODAS || r.sedeId === sede) &&
       (estado === TODAS ||
         (estado === "activo" ? r.bloqueo === null : estado === "desactivado" ? r.estado === "desactivado" : r.bloqueo !== null)) &&
-      (!busqueda || r.nombre.toLowerCase().includes(busqueda) || r.identificador.toLowerCase().includes(busqueda)),
+      (!busqueda || sinTildes(r.nombre).includes(busqueda) || sinTildes(r.identificador).includes(busqueda)),
   );
 
   const columnas: readonly ResponsiveColumn<TrabajadorRow>[] = [

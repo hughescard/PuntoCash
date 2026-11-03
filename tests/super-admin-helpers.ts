@@ -8,7 +8,7 @@ export const JORGE = "jaguilera@puntocash.com";
 /** Cuenta desactivada: no entra, con el mismo mensaje que una contraseña equivocada. */
 export const RAUL = "rvaldes@puntocash.com";
 
-/** El acceso de PuntoCash pide el correo: sus cuentas no tienen otro identificador. */
+/** Se entra con el identificador o con el correo; las pruebas usan el correo. */
 export async function submitSuperAdminCredentials(page: Page, identifier: string, password: string): Promise<void> {
   const enviar = page.getByRole("button", { name: "Iniciar sesión" });
   await expect(enviar).toBeEnabled({ timeout: 20_000 });

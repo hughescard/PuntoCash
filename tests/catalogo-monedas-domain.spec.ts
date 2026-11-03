@@ -98,7 +98,11 @@ test("una moneda retirada sin rango no se abre a la red; con rango se puede segu
   expect(reincorporarMonedaAlCatalogo(GLOBAL_SCOPE, "NOK")).toMatchObject({ ok: true });
   expect(definirRango(GLOBAL_SCOPE, { code: "NOK", compra, venta, autor: "X" })).toMatchObject({ ok: true });
   expect(retirarMonedaDelCatalogo(GLOBAL_SCOPE, "NOK")).toMatchObject({ ok: true });
-  expect(definirRango(GLOBAL_SCOPE, { code: "NOK", compra: { min: 1, max: 3 }, venta: { min: 2, max: 4 }, autor: "X" })).toMatchObject({ ok: true });
+  /* Cambiar un rango que ya existe pide motivo. */
+  expect(definirRango(GLOBAL_SCOPE, { code: "NOK", compra: { min: 1, max: 3 }, venta: { min: 2, max: 4 }, autor: "X" })).toMatchObject({ reason: "motivo-requerido" });
+  expect(
+    definirRango(GLOBAL_SCOPE, { code: "NOK", compra: { min: 1, max: 3 }, venta: { min: 2, max: 4 }, autor: "X", motivo: "Ajuste de prueba del rango" }),
+  ).toMatchObject({ ok: true });
   expect(retirarRango(GLOBAL_SCOPE, "NOK")).toMatchObject({ ok: true });
 });
 

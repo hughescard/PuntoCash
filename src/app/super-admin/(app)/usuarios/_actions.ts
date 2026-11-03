@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { fijarCredencialSuperAdmin } from "@/features/super-admin/auth";
+import { mensajeDeIdentificador, revisarIdentificador } from "@/features/auth/identificador";
+import { isMotivoValido } from "@/features/network/sedes";
 import { registrarEvento } from "@/features/network/audit";
+import { telefonoValido } from "@/features/network/datos-de-sede";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import {
   cambiarCorreoUsuarioPuntoCash,
@@ -29,6 +33,15 @@ import {
 
 const ALFABETO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
+const TELEFONO_INVALIDO = "Escribe un teléfono válido, con su prefijo.";
+
+/** Genera la credencial y la deja como contraseña de esa cuenta: la anterior deja de servir. */
+function entregarCredencial(identifier: string): string {
+  const credencial = credencialInicial();
+  fijarCredencialSuperAdmin(identifier, credencial);
+  return credencial;
+}
+
 function credencialInicial(): string {
   let salida = "";
   for (let i = 0; i < 10; i += 1) {
@@ -50,6 +63,7 @@ const MENSAJES: Record<PuntoCashUserDenial, string> = {
   "motivo-requerido": "Escribe el motivo: tiene que tener al menos 10 caracteres.",
   "correo-invalido": "Escribe un correo electrónico válido.",
   "ya-activo": "Esta cuenta ya está activa.",
+  "ya-desactivado": "Esta cuenta ya está desactivada.",
 };
 
 const SESION_TERMINADA = "Tu sesión ha terminado. Vuelve a entrar.";
@@ -121,6 +135,9 @@ export async function crearUsuarioSuperAdminAction(
   if (!valores.correo.includes("@") || valores.correo.includes(" ")) {
     return { ok: false, error: MENSAJES["correo-invalido"], campo: "correo", valores };
   }
+  if (!telefonoValido(valores.telefono)) {
+    return { ok: false, error: TELEFONO_INVALIDO, campo: "telefono", valores };
+  }
 
   const resultado = crearUsuarioPuntoCash(session.user.id, {
     id: `sa-${Date.now().toString(36)}`,
@@ -133,9 +150,10 @@ export async function crearUsuarioSuperAdminAction(
 
   if (!resultado.ok) {
     const campo = CAMPO_DE_RECHAZO[resultado.reason];
-    return campo
-      ? { ok: false, error: MENSAJES[resultado.reason], campo, valores }
-      : { ok: false, error: MENSAJES[resultado.reason], valores };
+    /* El identificador puede fallar por varias cosas: se dice cuál. */
+    const motivoId = resultado.reason === "identificador-invalido" ? revisarIdentificador(valores.identificador) : null;
+    const error = motivoId ? mensajeDeIdentificador(motivoId) : MENSAJES[resultado.reason];
+    return campo ? { ok: false, error, campo, valores } : { ok: false, error, valores };
   }
 
   registrarEvento({
@@ -154,7 +172,7 @@ export async function crearUsuarioSuperAdminAction(
     usuarioId: resultado.value.id,
     nombre: resultado.value.fullName,
     identificador: resultado.value.identifier,
-    credencial: credencialInicial(),
+    credencial: entregarCredencial(resultado.value.identifier),
   };
 }
 
@@ -167,13 +185,14 @@ export interface ValoresEdicionSuperAdmin {
   primerApellido: string;
   segundoApellido: string;
   telefono: string;
+  area: string;
 }
 
 export type ResultadoEdicionSuperAdmin =
   | {
       ok: false;
       error: string;
-      campo?: "nombre" | "primer-apellido" | "telefono";
+      campo?: "nombre" | "primer-apellido" | "telefono" | "area";
       valores: ValoresEdicionSuperAdmin;
     }
   | null;
@@ -191,6 +210,7 @@ export async function editarUsuarioSuperAdminAction(
     primerApellido: leer("primer-apellido"),
     segundoApellido: leer("segundo-apellido"),
     telefono: leer("telefono"),
+    area: leer("area"),
   };
 
   if (!session) return { ok: false, error: SESION_TERMINADA, valores };
@@ -199,26 +219,40 @@ export async function editarUsuarioSuperAdminAction(
     { campo: "nombre", valor: valores.nombre },
     { campo: "primer-apellido", valor: valores.primerApellido },
     { campo: "telefono", valor: valores.telefono },
+    { campo: "area", valor: valores.area },
   ] as const;
   const vacio = obligatorios.find((c) => !c.valor);
   if (vacio) {
     return { ok: false, error: "Completa este campo para continuar.", campo: vacio.campo, valores };
   }
 
+  if (!telefonoValido(valores.telefono)) {
+    return { ok: false, error: TELEFONO_INVALIDO, campo: "telefono", valores };
+  }
+
+  const antes = findPuntoCashUserById(usuarioId);
+  const nombreNuevo = `${valores.nombre} ${valores.primerApellido} ${valores.segundoApellido}`.trim();
+  const sinCambios =
+    antes !== null && antes.fullName === nombreNuevo && antes.phone === valores.telefono && antes.area === valores.area;
+
   const resultado = editarUsuarioPuntoCash(session.user.id, usuarioId, {
     fullName: `${valores.nombre} ${valores.primerApellido} ${valores.segundoApellido}`.trim(),
     phone: valores.telefono,
+    area: valores.area,
   });
   if (!resultado.ok) return { ok: false, error: MENSAJES[resultado.reason], valores };
 
-  registrarEvento({
-    actorId: session.user.id,
-    actorName: session.user.fullName,
-    actorRole: "super-admin",
-    type: "usuario-puntocash.editado",
-    object: { kind: "usuario-puntocash", id: resultado.value.id },
-    subject: `${resultado.value.fullName} · datos personales`,
-  });
+  /* Guardar sin tocar nada no es un acto de gobierno: no deja evento. */
+  if (!sinCambios) {
+    registrarEvento({
+      actorId: session.user.id,
+      actorName: session.user.fullName,
+      actorRole: "super-admin",
+      type: "usuario-puntocash.editado",
+      object: { kind: "usuario-puntocash", id: resultado.value.id },
+      subject: `${resultado.value.fullName} · datos personales`,
+    });
+  }
 
   revalidatePath("/super-admin", "layout");
   redirect(`/super-admin/usuarios/${usuarioId}`);
@@ -354,16 +388,16 @@ export async function regenerarCredencialUsuarioSuperAdminAction(
     actorId: session.user.id,
     actorName: session.user.fullName,
     actorRole: "super-admin",
-    type: "usuario-puntocash.editado",
+    type: "usuario-puntocash.credencial-regenerada",
     object: { kind: "usuario-puntocash", id: usuario.id },
-    subject: `${usuario.fullName} · credencial regenerada`,
+    subject: usuario.fullName,
   });
 
   return {
     ok: true,
     nombre: usuario.fullName,
     identificador: usuario.identifier,
-    credencial: credencialInicial(),
+    credencial: entregarCredencial(usuario.identifier),
   };
 }
 
@@ -382,6 +416,10 @@ export async function transferirPrincipalSuperAdminAction(
   const destinoId = String(formData.get("destino") ?? "");
   if (!destinoId) return { ok: false, error: "Elige quién pasa a administrar las cuentas." };
 
+  /* Cambia quién gobierna las cuentas de la consola: se explica (decisión del 3/11/2026). */
+  const motivo = String(formData.get("motivo") ?? "").trim();
+  if (!isMotivoValido(motivo)) return { ok: false, error: MENSAJES["motivo-requerido"] };
+
   const resultado = transferirPrincipalPuntoCash(session.user.id, destinoId);
   if (!resultado.ok) return { ok: false, error: MENSAJES[resultado.reason] };
 
@@ -392,6 +430,7 @@ export async function transferirPrincipalSuperAdminAction(
     type: "usuario-puntocash.principal-traspasado",
     object: { kind: "usuario-puntocash", id: resultado.value.nuevo.id },
     subject: `Principal: ${resultado.value.anterior.fullName} → ${resultado.value.nuevo.fullName}`,
+    reason: motivo,
   });
 
   return {

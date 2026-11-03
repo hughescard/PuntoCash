@@ -92,7 +92,7 @@ export default async function AdminSedePage({
             <strong>{sede.suspension.reason}</strong>
           </p>
           <p className="mt-2">
-            Declarada el {formatDate(new Date(sede.suspension.at))} por {sede.suspension.by}.
+            Declarada el {formatDate(new Date(sede.suspension.at))} por PuntoCash.
             Mientras dure, ningún trabajador de esta sede puede iniciar sesión y no se abren
             jornadas nuevas. Reactivarla es cosa de PuntoCash.
           </p>

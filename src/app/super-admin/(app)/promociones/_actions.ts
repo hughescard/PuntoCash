@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { mensaje } from "@/app/admin/(app)/mensajes";
+import { isMotivoValido } from "@/features/network/sedes";
 import { registrarEvento } from "@/features/network/audit";
 import {
   crearPromocionDeRed,
@@ -100,7 +101,7 @@ function resumen(i: PromocionDeRedInput, nombreDeSede: (id: string) => string, c
   return `«${i.titulo}» · ${i.texto} · ${donde} · del ${i.desde} al ${i.hasta} · ${conImagen ? "con imagen" : "sin imagen"}`;
 }
 
-const SESION = "Tu sesión terminó. Vuelve a iniciar sesión.";
+const SESION = "Tu sesión ha terminado. Vuelve a entrar.";
 
 export async function crearPromocionRedAction(
   _previo: ResultadoPromocionRed,
@@ -167,6 +168,11 @@ export async function retirarPromocionRedAction(
   const session = await getSuperAdminSession();
   if (!session) return { ok: false, error: SESION };
 
+  /* Retirar quita de las pantallas algo que la red ya anuncia: se explica
+     (decisión del 3/11/2026). */
+  const motivo = String(formData.get("motivo") ?? "").trim();
+  if (!isMotivoValido(motivo)) return { ok: false, error: "Escribe el motivo: tiene que tener al menos 10 caracteres." };
+
   const r = retirarPromocionDeRed(session.scope, id, session.user.fullName);
   if (!r.ok) return { ok: false, error: r.reason === "vencida" ? "Esta promoción ya venció." : texto(r.reason) };
 
@@ -176,6 +182,7 @@ export async function retirarPromocionRedAction(
     actorRole: "super-admin",
     type: "promocion-red.retirada",
     subject: `Promoción de red «${r.value.promo.titulo}»${r.value.estabaVigente ? ", que estaba en pantalla" : ", antes de empezar"}`,
+    reason: motivo,
   });
 
   revalidatePath("/super-admin", "layout");

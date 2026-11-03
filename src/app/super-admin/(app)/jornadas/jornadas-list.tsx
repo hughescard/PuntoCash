@@ -95,7 +95,9 @@ export function JornadasDeRedList({
 
   const visibles = rows.filter(
     (r) =>
-      r.dia >= desde &&
+      /* Una jornada que sigue abierta se ve aunque empezara antes del periodo:
+         es una caja que nadie cerró, y la ventana de fechas no debe esconderla. */
+      (r.dia >= desde || r.estado === "abierta") &&
       r.dia <= hasta &&
       (operador === TODAS || r.operadorId === operador) &&
       (sede === TODAS || r.sedeId === sede) &&

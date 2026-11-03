@@ -12,6 +12,7 @@ import type { EstadoJornada } from "@/features/network/jornadas";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 import { Conmutador, SELECT, TODAS } from "./controles";
+import { sinTildes } from "@/lib/buscar";
 
 /**
  * Las cajas de toda la red.
@@ -78,7 +79,7 @@ export function CajasDeRedList({
     [rows],
   );
 
-  const busqueda = texto.trim().toLowerCase();
+  const busqueda = sinTildes(texto.trim());
   const visibles = rows
     .filter(
       (r) =>
@@ -88,9 +89,9 @@ export function CajasDeRedList({
         (provincia === TODAS || r.provincia === provincia) &&
         (vinculo === TODAS || (vinculo === "con" ? r.equipo !== null : r.equipo === null)) &&
         (!busqueda ||
-          r.nombre.toLowerCase().includes(busqueda) ||
-          r.sede.toLowerCase().includes(busqueda) ||
-          (r.equipo?.id.toLowerCase().includes(busqueda) ?? false)),
+          sinTildes(r.nombre).includes(busqueda) ||
+          sinTildes(r.sede).includes(busqueda) ||
+          sinTildes(r.equipo?.id).includes(busqueda)),
     )
     .slice()
     .sort((a, b) => a.sede.localeCompare(b.sede, "es") || a.nombre.localeCompare(b.nombre, "es"));

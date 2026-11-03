@@ -11,6 +11,7 @@ import type { EstadoDeSede } from "@/features/network/assignments";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 import { ETIQUETA_DE_ESTADO, EstadoDeSedeBadge } from "../_compartido/estado-de-sede";
+import { sinTildes } from "@/lib/buscar";
 
 /**
  * El listado de sedes con los filtros del requisito: estado, provincia,
@@ -86,11 +87,11 @@ export function SedesList({
     return [...vistos].sort((a, b) => a[1].localeCompare(b[1], "es"));
   }, [rows]);
 
-  const busqueda = texto.trim().toLowerCase();
+  const busqueda = sinTildes(texto.trim());
   const visibles = rows
     .filter(
       (r) =>
-        (!busqueda || r.nombre.toLowerCase().includes(busqueda) || r.codigo.toLowerCase().includes(busqueda)) &&
+        (!busqueda || sinTildes(r.nombre).includes(busqueda) || sinTildes(r.codigo).includes(busqueda)) &&
         (estado === TODAS || r.estado === estado) &&
         (provincia === TODAS || r.provincia === provincia) &&
         (operador === TODAS || (operador === SIN_OPERADOR ? r.operadorId === null : r.operadorId === operador)) &&

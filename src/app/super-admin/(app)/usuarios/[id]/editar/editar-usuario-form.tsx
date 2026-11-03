@@ -25,13 +25,14 @@ const NOMBRE = campo("nombre", "Nombre");
 const PRIMER = campo("primer-apellido", "Primer apellido");
 const SEGUNDO = campo("segundo-apellido", "Segundo apellido", { required: false });
 const TELEFONO = campo("telefono", "Teléfono");
+const AREA = campo("area", "Área");
 
-type Campo = "nombre" | "primer-apellido" | "telefono";
+type Campo = "nombre" | "primer-apellido" | "telefono" | "area";
 
 export function EditarUsuarioSuperAdminForm({
   usuario,
 }: {
-  usuario: { id: string; nombre: string; primerApellido: string; segundoApellido: string; telefono: string };
+  usuario: { id: string; nombre: string; primerApellido: string; segundoApellido: string; telefono: string; area: string };
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoEdicionSuperAdmin, FormData>(
     editarUsuarioSuperAdminAction,
@@ -91,6 +92,15 @@ export function EditarUsuarioSuperAdminForm({
                 invalid={Boolean(errorDe("telefono"))}
                 defaultValue={previo?.telefono ?? usuario.telefono}
                 className="pc-numeric"
+              />
+            </Field>
+            <Field {...AREA} error={errorDe("area")}>
+              <Input
+                {...fieldAria({ ...AREA, error: errorDe("area") })}
+                name="area"
+                disabled={enviando}
+                invalid={Boolean(errorDe("area"))}
+                defaultValue={previo?.area ?? usuario.area}
               />
             </Field>
           </div>

@@ -134,7 +134,11 @@ export async function verificarCredencialesAdmin({
  * la guarda el backend al terminar la recuperación, que es exactamente lo que
  * esta función simula.
  */
-const contrasenasRecuperadas = new Map<string, string>();
+/* En `globalThis` y no en el módulo: una acción de Super administración (la
+   credencial de un operador nuevo) y el acceso de `/admin` no comparten
+   módulo en el servidor de desarrollo. */
+const ALMACEN_CONTRASENAS = globalThis as unknown as { __puntocashContrasenasAdmin?: Map<string, string> };
+const contrasenasRecuperadas = (ALMACEN_CONTRASENAS.__puntocashContrasenasAdmin ??= new Map<string, string>());
 
 /**
  * La contraseña se guarda **por cuenta, no por lo que se tecleó**.
@@ -152,6 +156,16 @@ function claveDe(cuenta: string): string {
 
 export function registrarContrasenaRecuperada(identifier: string, password: string): void {
   contrasenasRecuperadas.set(claveDe(identifier), password);
+}
+
+/**
+ * La credencial que una consola acaba de entregar —el primer administrador de
+ * un operador, el acceso restablecido de su principal, un administrador nuevo
+ * o regenerado— **pasa a ser su contraseña**, y la anterior deja de servir.
+ * Es lo que dicen las pantallas al enseñarla, y lo que hará el backend.
+ */
+export function fijarCredencialDeAdministrador(identifier: string, credencial: string): void {
+  contrasenasRecuperadas.set(claveDe(identifier), credencial);
 }
 
 /* -------------------------------------------------------------------------

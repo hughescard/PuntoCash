@@ -24,16 +24,12 @@ export interface AreaDeEventos {
 }
 
 /**
- * Los tipos que **ninguna pantalla produce hoy**: alta y retirada del catálogo
- * de monedas (la tabla de Monedas y tasas tiene una fila por moneda del
- * catálogo y no lo mantiene) y la credencial inicial regenerada (la sustituyó
- * el restablecimiento del acceso del administrador principal). No se ofrecen
- * en el filtro —no habría nunca nada que encontrar—, pero conservan su
- * etiqueta por si un registro anterior los trae.
+ * El tipo que **ninguna pantalla produce hoy**: la credencial inicial
+ * regenerada (la sustituyó el restablecimiento del acceso del administrador
+ * principal). No se ofrece en el filtro —no habría nunca nada que
+ * encontrar—, pero conserva su etiqueta por si un registro anterior lo trae.
  */
 const RETIRADOS: Readonly<Partial<Record<AuditEventType, string>>> = {
-  "moneda-plataforma.alta": "Moneda añadida al catálogo de la plataforma",
-  "moneda-plataforma.retirada": "Moneda retirada del catálogo de la plataforma",
   "operador.credencial-inicial-regenerada": "Credencial inicial de un operador regenerada",
 };
 
@@ -70,6 +66,9 @@ export const AREAS: readonly AreaDeEventos[] = [
   {
     area: "Monedas y tasas",
     tipos: [
+      { tipo: "moneda-plataforma.alta", etiqueta: "Moneda añadida al catálogo" },
+      { tipo: "moneda-plataforma.retirada", etiqueta: "Moneda retirada del catálogo" },
+      { tipo: "moneda-plataforma.reincorporada", etiqueta: "Moneda reincorporada al catálogo" },
       { tipo: "rango.definido", etiqueta: "Rango de tasas definido" },
       { tipo: "rango.cambiado", etiqueta: "Rango de tasas modificado" },
       { tipo: "rango.retirado", etiqueta: "Rango de tasas retirado" },
@@ -139,6 +138,7 @@ export const AREAS: readonly AreaDeEventos[] = [
     tipos: [
       { tipo: "usuario-puntocash.alta", etiqueta: "Cuenta de PuntoCash creada" },
       { tipo: "usuario-puntocash.editado", etiqueta: "Cuenta de PuntoCash modificada" },
+      { tipo: "usuario-puntocash.credencial-regenerada", etiqueta: "Credencial de una cuenta de PuntoCash regenerada" },
       { tipo: "usuario-puntocash.desactivado", etiqueta: "Cuenta de PuntoCash desactivada" },
       { tipo: "usuario-puntocash.reactivado", etiqueta: "Cuenta de PuntoCash reactivada" },
       { tipo: "usuario-puntocash.principal-traspasado", etiqueta: "Administración principal de PuntoCash traspasada" },

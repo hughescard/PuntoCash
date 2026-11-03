@@ -29,7 +29,7 @@ test("la pestaña de cajas dice de qué sede y de qué operador es cada una", as
 });
 
 test("las sedes sin ninguna caja se anuncian aparte y llevan al listado de Sedes", async ({ page }) => {
-  const aviso = page.getByRole("main").locator("div").filter({ hasText: /no tienen? ninguna caja y no aparecen? en esta tabla/ }).first();
+  const aviso = page.getByRole("main").locator("div").filter({ hasText: /no tienen? ninguna caja activa/ }).first();
   await expect(aviso).toBeVisible();
   await page.getByRole("link", { name: "Verlas en Sedes" }).click();
   await page.waitForURL(/\/super-admin\/sedes\?.*sinCajas=1/);
