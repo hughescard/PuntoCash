@@ -12,7 +12,17 @@ import type { FilaDeAuditoria } from "./filtro";
  * registro y no tiene forma de escribir en él **[RP-21]**.
  */
 
-export function filaDeEvento(e: AuditEvent): FilaDeAuditoria {
+/**
+ * Adónde lleva el nombre del objeto. Las cuentas de PuntoCash solo las ve su
+ * principal: para el resto el enlace no existe (la ruta respondería 404).
+ */
+function hrefDelObjeto(e: AuditEvent, principal: boolean): string | null {
+  if (!e.object) return null;
+  if (e.object.kind === "trabajador") return `/super-admin/trabajadores/${e.object.id}`;
+  return principal ? `/super-admin/usuarios/${e.object.id}` : null;
+}
+
+export function filaDeEvento(e: AuditEvent, principal = false): FilaDeAuditoria {
   const sede = e.branchId ? SEDES.find((s) => s.id === e.branchId) ?? null : null;
   const operador = e.operatorId ? OPERATORS.find((o) => o.id === e.operatorId) ?? null : null;
   return {
@@ -24,6 +34,7 @@ export function filaDeEvento(e: AuditEvent): FilaDeAuditoria {
     evento: etiquetaDeEvento(e.type),
     area: areaDeEvento(e.type),
     objeto: e.subject,
+    objetoHref: hrefDelObjeto(e, principal),
     actorId: e.actorId,
     actor: e.actorName,
     rol: e.actorRole,
@@ -39,8 +50,8 @@ export function filaDeEvento(e: AuditEvent): FilaDeAuditoria {
 }
 
 /** Todos los eventos, del más reciente al más antiguo. */
-export function filasDeAuditoria(): FilaDeAuditoria[] {
+export function filasDeAuditoria(principal = false): FilaDeAuditoria[] {
   return AUDIT_EVENTS.slice()
     .sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id, "es", { numeric: true }))
-    .map(filaDeEvento);
+    .map((e) => filaDeEvento(e, principal));
 }

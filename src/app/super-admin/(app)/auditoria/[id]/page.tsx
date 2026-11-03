@@ -29,7 +29,7 @@ export default async function SuperAdminEventoPage({ params }: { params: Promise
   const { id } = await params;
   const evento = AUDIT_EVENTS.find((e) => e.id === decodeURIComponent(id));
   if (!evento) notFound();
-  const e = filaDeEvento(evento);
+  const e = filaDeEvento(evento, session.user.isPrincipal);
 
   return (
     <>
@@ -62,7 +62,18 @@ export default async function SuperAdminEventoPage({ params }: { params: Promise
                   </span>
                 }
               />
-              <Dato etiqueta="Sobre qué" valor={e.objeto} />
+              <Dato
+                etiqueta="Sobre qué"
+                valor={
+                  e.objetoHref ? (
+                    <Link href={e.objetoHref as Route} className="underline underline-offset-4 hover:text-primary">
+                      {e.objeto}
+                    </Link>
+                  ) : (
+                    e.objeto
+                  )
+                }
+              />
               <Dato
                 etiqueta="Sede"
                 valor={

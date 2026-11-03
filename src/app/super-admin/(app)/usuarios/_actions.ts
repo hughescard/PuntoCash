@@ -143,6 +143,7 @@ export async function crearUsuarioSuperAdminAction(
     actorName: session.user.fullName,
     actorRole: "super-admin",
     type: "usuario-puntocash.alta",
+    object: { kind: "usuario-puntocash", id: resultado.value.id },
     subject: resultado.value.fullName,
   });
 
@@ -215,6 +216,7 @@ export async function editarUsuarioSuperAdminAction(
     actorName: session.user.fullName,
     actorRole: "super-admin",
     type: "usuario-puntocash.editado",
+    object: { kind: "usuario-puntocash", id: resultado.value.id },
     subject: `${resultado.value.fullName} · datos personales`,
   });
 
@@ -246,6 +248,7 @@ export async function cambiarCorreoUsuarioSuperAdminAction(
     actorName: session.user.fullName,
     actorRole: "super-admin",
     type: "usuario-puntocash.editado",
+    object: { kind: "usuario-puntocash", id: resultado.value.user.id },
     subject: `${resultado.value.user.fullName} · correo ${resultado.value.anterior} → ${resultado.value.user.email}`,
   });
 
@@ -282,6 +285,7 @@ export async function desactivarUsuarioSuperAdminAction(
     actorName: session.user.fullName,
     actorRole: "super-admin",
     type: "usuario-puntocash.desactivado",
+    object: { kind: "usuario-puntocash", id: resultado.value.id },
     subject: resultado.value.fullName,
     reason: motivo.trim(),
   });
@@ -312,6 +316,7 @@ export async function reactivarUsuarioSuperAdminAction(
     actorName: session.user.fullName,
     actorRole: "super-admin",
     type: "usuario-puntocash.reactivado",
+    object: { kind: "usuario-puntocash", id: resultado.value.id },
     subject: resultado.value.fullName,
     reason: motivo.trim(),
   });
@@ -350,6 +355,7 @@ export async function regenerarCredencialUsuarioSuperAdminAction(
     actorName: session.user.fullName,
     actorRole: "super-admin",
     type: "usuario-puntocash.editado",
+    object: { kind: "usuario-puntocash", id: usuario.id },
     subject: `${usuario.fullName} · credencial regenerada`,
   });
 
@@ -384,6 +390,7 @@ export async function transferirPrincipalSuperAdminAction(
     actorName: session.user.fullName,
     actorRole: "super-admin",
     type: "usuario-puntocash.principal-traspasado",
+    object: { kind: "usuario-puntocash", id: resultado.value.nuevo.id },
     subject: `Principal: ${resultado.value.anterior.fullName} → ${resultado.value.nuevo.fullName}`,
   });
 

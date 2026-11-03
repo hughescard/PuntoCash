@@ -30,9 +30,12 @@ export interface NavItem {
 export function SidebarNav({
   items,
   className,
+  compacto = false,
 }: {
   items: readonly NavItem[];
   className?: string;
+  /** Destinos de 44 px en lugar de 48: para una barra con tantos que no cabrían a 900 px de alto. */
+  compacto?: boolean;
 }): React.JSX.Element {
   const pathname = usePathname();
 
@@ -42,7 +45,7 @@ export function SidebarNav({
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
           <li key={item.href}>
-            <SidebarNavLink item={item} active={active} />
+            <SidebarNavLink item={item} active={active} compacto={compacto} />
           </li>
         );
       })}
@@ -53,9 +56,11 @@ export function SidebarNav({
 export function SidebarNavLink({
   item,
   active,
+  compacto = false,
 }: {
   item: NavItem;
   active: boolean;
+  compacto?: boolean;
 }): React.JSX.Element {
   const { icon: Icon } = item;
 
@@ -66,7 +71,8 @@ export function SidebarNavLink({
       href={item.href as Route}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative flex h-control items-center gap-3 rounded-control px-3",
+        "relative flex items-center gap-3 rounded-control px-3",
+        compacto ? "h-control-sm" : "h-control",
         "text-label transition-colors duration-(--duration-fast) ease-(--ease-standard)",
         "outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-gold",
         // Gold marks the current selection (§3 "Dorado: selección"), paired
@@ -123,18 +129,21 @@ export interface NavGroup {
 export function SidebarNavGroups({
   groups,
   className,
+  compacto = false,
 }: {
   groups: readonly NavGroup[];
   className?: string;
+  /** Menos aire entre bloques y destinos de 44 px: lo usa la consola de PuntoCash, con 13 destinos. */
+  compacto?: boolean;
 }): React.JSX.Element {
   return (
-    <div className={cn("flex flex-col gap-6", className)}>
+    <div className={cn("flex flex-col", compacto ? "gap-4" : "gap-6", className)}>
       {groups.map((group) => (
         <div key={group.label}>
-          <p className="px-3 pb-2 text-overline uppercase text-text-on-primary-muted">
+          <p className={cn("px-3 text-overline uppercase text-text-on-primary-muted", compacto ? "pb-1" : "pb-2")}>
             {group.label}
           </p>
-          <SidebarNav items={group.items} />
+          <SidebarNav items={group.items} compacto={compacto} />
         </div>
       ))}
     </div>

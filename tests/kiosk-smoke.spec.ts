@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { sinDesbordamientoHorizontal } from "./admin-helpers";
 
 /**
  * Humo de las nueve rutas de `/kiosk` — que todas responden, que cada una
@@ -171,6 +172,17 @@ test.describe("un kiosco vinculado a su sede", () => {
        siempre una salida al inicio (§10 del manual, Autoservicio FRD §1.2). */
     await expect(cabecera.getByText("PuntoCash Vedado")).toBeVisible();
     await expect(cabecera.getByRole("link", { name: "Inicio" })).toBeVisible();
+  });
+
+  test("las pantallas del autoservicio no desbordan a 1280 ni a 1440", async ({ page }) => {
+    for (const ancho of [1280, 1440]) {
+      await page.setViewportSize({ width: ancho, height: 900 });
+      for (const pantalla of AUTOSERVICIO) {
+        await page.goto(pantalla.href);
+        await expect(page.getByRole("heading", { name: pantalla.titulo, level: 1 })).toBeVisible();
+        await sinDesbordamientoHorizontal(page, `${pantalla.href} a ${ancho}px`);
+      }
+    }
   });
 });
 

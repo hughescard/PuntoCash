@@ -1,11 +1,15 @@
 # PuntoCash — Super Admin
-## Documento de Requisitos Funcionales (FRD) · v3.9
+## Documento de Requisitos Funcionales (FRD) · v4.1
 
 **Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/super-admin` contiene un README de marcador de posición.
 
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y como referencia de aceptación.
 
 **Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
+
+**Control de cambios — v4.0 (2026-11-03).** **Auditoría: el objeto de un evento se enlaza a su ficha.** El registro pasa a guardar el identificador del trabajador o de la cuenta de PuntoCash sobre quien se actuó (hasta ahora solo guardaba cómo se llamaba), y **FR-SA-AUD-5** se amplía: el nombre se enlaza a la ficha del trabajador, y a la de la cuenta de PuntoCash cuando quien mira es el principal. Los eventos anteriores a este cambio que no llevan identificador siguen siendo texto, salvo el sembrado de Noelia Alonso.
+
+**Control de cambios — v4.1 (2026-11-03).** **Los rangos admiten hasta cuatro decimales.** Un límite de rango (compra o venta, mínimo o máximo) se escribe con hasta 4 decimales; con más se rechaza con «Una tasa o un límite admite hasta 4 decimales». Las cifras se muestran con dos decimales como mínimo y cuatro como máximo, y sin decimales si son enteras.
 
 **Control de cambios — v3.9 (2026-11-03).** **Una promoción de red llega a toda sede, ofrezca o no el servicio que anuncia (FR-SA-PROM-11, nuevo).** Una sede no solo presta servicios: también es el escaparate de PuntoCash, y por eso informa y promociona a sus clientes haya o no una operación detrás del aviso, y lo hace igual la administre PuntoCash o un mercante. Por eso la consola **no** cruza el destino de una promoción con los servicios habilitados de cada sede. Cierra la duda que quedaba abierta desde el tramo 5. Sin cambios de comportamiento.
 
@@ -487,7 +491,7 @@ La pantalla que hace verificable todo lo anterior.
 
 **FR-SA-AUD-4** Filtros: rango de fechas (por día de Cuba, los dos extremos incluidos), tipo de evento, persona, quién actuó, operador y sede. El tipo se elige en una lista **agrupada por lo que se gobierna** (sedes, operadores, servicios, monedas y tasas, promociones, cajas y equipos, trabajadores, administradores, jornadas y aprobaciones, cuentas de PuntoCash, reportes y auditoría). La búsqueda libre mira el **motivo y el objeto**: buscar una sede o una persona por su nombre es lo primero que se intenta al revisar un incidente. Los filtros viajan en la dirección y sobreviven a recargar.
 
-**FR-SA-AUD-5** Cada evento enlaza a la **sede** y al **operador** a los que se refiere, cuando los tiene. El registro no guarda la identidad del trabajador, de la caja o del usuario sobre quien se actuó, solo cómo se llamaba: ese objeto se nombra pero no se enlaza.
+**FR-SA-AUD-5** Cada evento enlaza a la **sede** y al **operador** a los que se refiere, cuando los tiene, y a **la persona sobre quien se actuó** cuando esa persona tiene ficha en esta consola: un **trabajador** (siempre) o una **cuenta de PuntoCash** (solo si quien mira es el principal, que es quien puede abrir esa sección). Para ello el registro guarda, junto al texto con que se nombraba, el identificador del objeto. Una **caja**, un equipo o un **administrador de sede** se nombran pero no se enlazan: esta consola no tiene ficha propia para ellos. El enlace aparece en el listado y en el detalle.
 
 **FR-SA-AUD-6** El registro es **de solo lectura desde toda superficie del producto**, incluida esta. No debe existir ningún control de edición ni de borrado, ni siquiera deshabilitado **[RP-21]**. El módulo del registro solo expone añadir y consultar.
 

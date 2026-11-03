@@ -141,9 +141,9 @@ export function OperacionesDeRedList({
       header: "Servicio",
       cell: (r) => (
         <span className="flex flex-col">
-          <span className="xl:whitespace-nowrap">{r.servicio}</span>
+          <span>{r.servicio}</span>
           {r.accion || r.desdeKiosco ? (
-            <span className="text-caption text-text-secondary xl:whitespace-nowrap">
+            <span className="text-caption text-text-secondary">
               {[r.accion, r.desdeKiosco ? "desde el kiosco" : null].filter(Boolean).join(" · ")}
             </span>
           ) : null}

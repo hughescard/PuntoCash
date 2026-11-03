@@ -148,7 +148,7 @@ test("tasas por sede: lo que publica cada una, de solo lectura", async ({ page }
   await expect(page.getByRole("main").getByRole("button", { name: /Cambiar|Definir|Retirar/ })).toHaveCount(0);
 });
 
-for (const ancho of [1024, 768, 390]) {
+for (const ancho of [1280, 1024, 768, 390]) {
   test.describe(`a ${ancho}px`, () => {
     test.use({ viewport: { width: ancho, height: 900 } });
 

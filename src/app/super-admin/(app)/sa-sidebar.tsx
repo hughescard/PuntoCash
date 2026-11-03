@@ -17,10 +17,11 @@ export function SuperAdminSidebar({
   return (
     <AppSidebar
       className="hidden lg:flex"
+      compacta
       label="Navegación principal"
       footer={<p className="px-3 text-caption text-text-on-primary-muted">PuntoCash · Super admin</p>}
     >
-      <SidebarNavGroups groups={superAdminNavGroups(badges, principal)} />
+      <SidebarNavGroups compacto groups={superAdminNavGroups(badges, principal)} />
     </AppSidebar>
   );
 }

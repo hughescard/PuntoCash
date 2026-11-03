@@ -8,7 +8,7 @@ import { PageHeader, Section } from "@/components/shell/app-shell";
 import { Alert, Badge, Button } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
-import { formatAmount } from "@/lib/format";
+import { formatTasa } from "@/lib/format";
 import { getAdminSession } from "@/features/admin/session-server";
 import { sedesVisibles } from "@/features/admin/session";
 import { monedaDelCatalogo } from "@/features/network/currencies";
@@ -99,7 +99,7 @@ function Comparativa({
           return [
             sede.id,
             {
-              cifras: `${formatAmount(t.compra, 2)} / ${formatAmount(t.venta, 2)}`,
+              cifras: `${formatTasa(t.compra)} / ${formatTasa(t.venta)}`,
               fijada: Boolean(t.fijadaAlLimite),
             },
           ];

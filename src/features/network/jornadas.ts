@@ -214,7 +214,13 @@ function sembrar(now: Date): Jornada[] {
            que cajas, la caja sobrante no abre ese día. */
         if (indiceCaja >= trabajadores.length) continue;
 
-        const abierta = instanteEnCuba(fecha, 8, 30 + Math.floor(rnd() * 20));
+        /* Hoy se abre a las 8:30 y pico, y antes de esa hora no habría ninguna
+           jornada abierta: ni la demostración ni las pruebas que necesitan una
+           caja abierta funcionarían de madrugada. Si todavía no es la hora, se
+           siembra abierta desde hace cinco minutos. El número de `rnd()` que se
+           consume es el mismo, así que el resto de la siembra no cambia. */
+        const apertura0 = instanteEnCuba(fecha, 8, 30 + Math.floor(rnd() * 20));
+        const abierta = dia === 0 && apertura0.getTime() > now.getTime() ? new Date(now.getTime() - 5 * 60_000) : apertura0;
         if (abierta.getTime() > now.getTime()) continue;
 
         /* Hoy, abierta. Y en Obispo la Caja 01 de ayer se quedó abierta: nadie

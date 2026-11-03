@@ -23,6 +23,8 @@ export interface FilaDeAuditoria {
   area: string;
   /** Sobre qué: lo que el registro dice del objeto. */
   objeto: string;
+  /** Ficha del objeto en esta consola, si la tiene y quien mira puede abrirla. */
+  objetoHref: string | null;
   actorId: string;
   actor: string;
   rol: AuditActorRole;

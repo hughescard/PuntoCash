@@ -45,6 +45,7 @@ export async function cambiarContrasenaSuperAdminAction(
     actorName: session.user.fullName,
     actorRole: "super-admin",
     type: "usuario-puntocash.contrasena-cambiada",
+    object: { kind: "usuario-puntocash", id: session.user.id },
     subject: session.user.fullName,
   });
 

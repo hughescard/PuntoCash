@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { cifraDeTablero, formatTasa } from "../src/lib/format";
 import { GLOBAL_SCOPE, operatorScope } from "../src/features/network/scope";
 import {
   definirRango,
@@ -29,6 +30,17 @@ test("un rango tiene que ser coherente", () => {
   /* Compra máxima por encima de la venta máxima. */
   expect(validarRango({ min: 10, max: 21 }, { min: 15, max: 20 })).toBe("rango-incoherente");
   expect(validarRango(compra, venta)).toBeNull();
+});
+
+test("una tasa o un límite admite hasta 4 decimales, y no más", () => {
+  expect(validarRango({ min: 200.1234, max: 220 }, venta)).toBeNull();
+  expect(validarRango({ min: 200.12345, max: 220 }, venta)).toBe("demasiados-decimales");
+  expect(formatTasa(318)).toBe("318,00");
+  expect(formatTasa(318.5)).toBe("318,50");
+  expect(formatTasa(318.525)).toBe("318,525");
+  expect(formatTasa(0.0031)).toBe("0,0031");
+  expect(cifraDeTablero(318)).toBe("318");
+  expect(cifraDeTablero(318.5)).toBe("318,50");
 });
 
 test("solo PuntoCash define rangos, y nunca el de la moneda local", () => {

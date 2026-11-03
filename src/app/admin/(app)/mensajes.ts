@@ -108,6 +108,7 @@ export const MENSAJES = {
     "fuera-de-la-lista": "{moneda} no está en la lista de esta sede. Añádela en Monedas antes de fijar su tasa.",
     "sin-moneda-local": "El peso cubano no está en la lista de esta sede. Añádelo en Monedas antes de fijar ninguna tasa.",
     "sin-rango": "PuntoCash todavía no ha definido un rango para {moneda}. Solicítaselo para poder cotizarla.",
+    "demasiados-decimales": "Una tasa admite hasta 4 decimales.",
     "compra-fuera-de-rango": "La tasa de compra está fuera del rango de PuntoCash.",
     "venta-fuera-de-rango": "La tasa de venta está fuera del rango de PuntoCash.",
     "compra-mayor-que-venta": "La compra no puede ser mayor que la venta.",

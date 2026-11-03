@@ -31,6 +31,7 @@ const MENSAJE: Record<RangoWriteDenial, string> = {
   "moneda-desconocida": "Esa moneda no está en el catálogo.",
   "moneda-retirada": "Esta moneda está retirada del catálogo: reincorpórala antes de definirle un rango.",
   "valor-invalido": "Introduce un valor válido.",
+  "demasiados-decimales": "Una tasa o un límite admite hasta 4 decimales.",
   "minimo-mayor": "El mínimo debe ser menor que el máximo.",
   "rango-incoherente":
     "La compra no puede quedar por encima de la venta: la compra mínima tiene que ser menor o igual que la venta mínima, y la compra máxima, menor o igual que la venta máxima.",

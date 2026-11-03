@@ -156,8 +156,10 @@ export function OperacionesList({
       header: "Caja y trabajador",
       cell: (r) => (
         <span className="flex flex-col">
-          <span className="lg:whitespace-nowrap">
-            {r.caja}
+          {/* Con varias sedes la sede acompaña a la caja: ahí el texto tiene que poder
+              partirse, o a 1280 la tabla se sale de lado (la sede va en su propia línea). */}
+          <span>
+            <span className="lg:whitespace-nowrap">{r.caja}</span>
             {varias ? <span className="text-text-secondary"> · {r.sede}</span> : null}
           </span>
           {r.trabajadorVisible ? (

@@ -100,7 +100,17 @@ export function AuditoriaList({
       cell: (e) => (
         <span className="flex min-w-0 flex-col xl:max-w-80 min-[1400px]:max-w-md">
           <span className="font-semibold text-text-primary">{e.evento}</span>
-          <span className="text-body-sm text-text-secondary">{e.objeto}</span>
+          {e.objetoHref ? (
+            <Link
+              href={e.objetoHref as Route}
+              title={e.objeto}
+              className="relative z-10 text-body-sm text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
+            >
+              {e.objeto}
+            </Link>
+          ) : (
+            <span className="text-body-sm text-text-secondary">{e.objeto}</span>
+          )}
         </span>
       ),
     },

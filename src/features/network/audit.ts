@@ -99,9 +99,20 @@ export interface AuditEvent {
   subject: string;
   branchId?: string;
   operatorId?: string;
+  /**
+   * La persona o cosa sobre la que se actuó, cuando tiene su propia ficha en
+   * la consola de PuntoCash: así el evento puede enlazarla. `subject` sigue
+   * siendo el texto que se lee; esto es solo el identificador.
+   */
+  object?: AuditObject;
   reason?: string;
   before?: string;
   after?: string;
+}
+
+export interface AuditObject {
+  kind: "trabajador" | "usuario-puntocash";
+  id: string;
 }
 
 /**
@@ -151,6 +162,7 @@ const mutableEvents: AuditEvent[] = (ALMACEN.__puntocashAuditoria ??= [
     actorRole: "admin-sede",
     type: "trabajador.desactivado",
     subject: "Noelia Alonso",
+    object: { kind: "trabajador", id: "trb-12" },
     branchId: "sede-holguin",
     operatorId: "op-oriente",
     reason: "Fin de contrato temporal acordado con la trabajadora",

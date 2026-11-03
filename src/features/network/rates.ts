@@ -25,6 +25,7 @@
  * de `motivoFueraDeVigor`.
  */
 
+import { excedeDecimalesDeTasa } from "@/lib/format";
 import { estaEnAlcance } from "./assignments";
 import { monedaDelCatalogo, monedasDeSede, sedeManejaMoneda } from "./currencies";
 import { findSedeById, SEDES } from "./sedes";
@@ -249,6 +250,7 @@ export type TasaWriteDenial =
   | "sede-no-encontrada"
   | "sede-cerrada"
   | MotivoSinCotizacion
+  | "demasiados-decimales"
   | "compra-fuera-de-rango"
   | "venta-fuera-de-rango"
   | "compra-mayor-que-venta"
@@ -293,6 +295,10 @@ export function fijarTasa(
 
   const motivo = motivoFueraDeVigor(input.sedeId, input.code);
   if (motivo) return { ok: false, reason: motivo };
+
+  if (excedeDecimalesDeTasa(input.compra) || excedeDecimalesDeTasa(input.venta)) {
+    return { ok: false, reason: "demasiados-decimales" };
+  }
 
   const rango = rangoDe(input.code)!;
   if (rango.version !== input.versionDelRango) return { ok: false, reason: "rango-cambiado" };
@@ -405,6 +411,8 @@ export type RangoWriteDenial =
   /** Retirada del catálogo y sin rango: no se abre a la red una moneda que ya no se ofrece. */
   | "moneda-retirada"
   | "valor-invalido"
+  /** Más de 4 decimales: una tasa no se escribe con más precisión que esa. */
+  | "demasiados-decimales"
   | "minimo-mayor"
   | "rango-incoherente"
   | "sin-rango";
@@ -433,6 +441,7 @@ const limitar = (v: number, i: Intervalo) => Math.min(Math.max(v, i.min), i.max)
 export function validarRango(compra: Intervalo, venta: Intervalo): RangoWriteDenial | null {
   const valores = [compra.min, compra.max, venta.min, venta.max];
   if (valores.some((v) => !Number.isFinite(v) || v <= 0)) return "valor-invalido";
+  if (valores.some(excedeDecimalesDeTasa)) return "demasiados-decimales";
   if (compra.min >= compra.max || venta.min >= venta.max) return "minimo-mayor";
   if (compra.min > venta.min || compra.max > venta.max) return "rango-incoherente";
   return null;

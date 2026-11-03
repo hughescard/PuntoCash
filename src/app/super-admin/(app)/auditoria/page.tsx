@@ -30,7 +30,7 @@ export default async function SuperAdminAuditoriaPage({
         title="Auditoría"
         description="Cada acto de gobierno de la red, el de PuntoCash y el de los mercantes, con quién lo hizo y por qué. Es un registro: no se puede modificar ni borrar."
       />
-      <AuditoriaList rows={filasDeAuditoria()} inicial={inicial} />
+      <AuditoriaList rows={filasDeAuditoria(session.user.isPrincipal)} inicial={inicial} />
     </>
   );
 }

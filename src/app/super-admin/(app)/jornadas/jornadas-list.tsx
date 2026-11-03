@@ -143,7 +143,7 @@ export function JornadasDeRedList({
           <Link
             href={`/super-admin/operadores/${r.operadorId}` as Route}
             title={r.operador ?? undefined}
-            className="relative z-10 block text-text-primary underline-offset-4 hover:underline xl:max-w-40 xl:truncate min-[1400px]:max-w-64"
+            className="relative z-10 block text-text-primary underline-offset-4 hover:underline xl:max-w-32 xl:truncate min-[1400px]:max-w-64"
           >
             {r.operador}
           </Link>

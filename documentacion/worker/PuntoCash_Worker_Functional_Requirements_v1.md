@@ -1,8 +1,12 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos Funcionales (FRD) · v1.10
+## Documento de Requisitos Funcionales (FRD) · v1.12
 
 **Estado:** Línea base de entrega — especifica el comportamiento funcional de la aplicación Worker tal como está implementada actualmente.
 **Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y de referencia para aceptación.
+**Control de cambios — v1.12 (03/11/2026).** **Las tasas admiten hasta cuatro decimales.** **FR-FMT-6** (que el texto citaba desde la v1.9 sin recogerlo) queda escrito: mínimo dos, máximo cuatro, sin ceros de más. Los importes siguen con dos decimales (**FR-FMT-1**).
+
+**Control de cambios — v1.11 (03/11/2026).** **Se dicen tres cosas que el código ya hacía y el documento no.** (1) **El identificador de acceso es un nombre de usuario**, no un correo: de 3 a 30 caracteres, letras, números, punto, guion o guion bajo, **sin «@»**, único en toda la red sin distinguir mayúsculas; el **correo es único entre los trabajadores** y sirve igual para entrar. Es la misma regla que fija **FR-AD-ACC-11** para la consola del mercante; **FR-AUTH-1** la recoge para quien inicia sesión. La unicidad del correo es **por padrón**: un trabajador y un administrador de sede pueden compartir correo, porque cada consola resuelve la cuenta en el suyo. (2) **«Añadir moneda» ofrece la lista de monedas de la sede de la caja**, no un catálogo propio de Worker (**FR-CAJA-13**, reescrito): es lo que el mercante declaró para su sede (**FR-AD-MON-2**), menos lo que la caja ya tiene. Si la caja ya las tiene todas, la pantalla lo dice y remite al administrador. (3) El nombre y el símbolo de cada moneda salen de la lista ISO 4217 compartida por toda la plataforma, y **todas las monedas llevan cuatro decimales** como regla del catálogo; los importes siguen mostrándose con dos y las tasas se escriben según **FR-FMT-6**.
+
 **Control de cambios — v1.10 (26/10/2026).** **Se dice que un saldo no puede ser negativo, que estaba sin decir.** El documento lo daba por hecho flujo a flujo —no se confirma una operación que pague más de lo disponible (**FR-CM-5**, **FR-RM-6**), un conteo negativo se rechaza (**FR-CAJA-23**)— pero en ningún sitio lo afirmaba, y un ajuste de efectivo podía fijar cualquier importe. Nuevo **FR-CAJA-30**: el saldo es el efectivo que hay en la caja, así que puede quedar en cero pero no en descubierto, y un saldo negativo en pantalla es un dato corrupto. Ningún otro requisito cambia.
 **Control de cambios — v1.9 (26/10/2026).** **Se dice cómo se escribe una tasa, que estaba sin decir.** El FRD pedía mostrar «la tasa aplicada» (**FR-CM-4**, **FR-CM-11**, **FR-OPD-11**) sin fijar su expresión, y la implementación la escribía en el sentido del cambio y con cuatro decimales: en un cambio de pesos a divisa salía `1 CUP = 0,0031 USD`, una cifra que, redondeada, no reproduce los importes de la propia operación. Nuevo **FR-FMT-6**: la tasa se escribe siempre como la cotiza la sede —la divisa contra el peso cubano, con dos decimales—, que es la misma cifra del tablero. Ningún otro requisito cambia.
 **Control de cambios — v1.8 (13/10/2026).** **Se dice qué es una «cuenta bloqueada», que estaba sin decir.** El desenlace existía en **FR-AUTH-3** y en el contrato del backend desde la línea base, pero ningún requisito decía **cuándo** se entra en él, y el FRD de Admin lo daba por especificado aquí. Nuevo **FR-AUTH-9**: significa **trabajador desactivado**, lo desactiva su administrador de sede y lo resuelve reactivándolo; **no hay bloqueo por contraseñas ni por códigos fallados**, y se explica por qué no debe haberlo. §16 deja de remitir a una capacidad sin nombre y nombra **FR-AD-TRAB-15**. Esto acompaña a la v4.13 del FRD de Admin, que por la misma razón retira de su asistencia de acceso el «liberar el bloqueo del reto»: un reto agotado no bloquea nada.
@@ -77,6 +81,7 @@ Mientras el equipo no está vinculado a una caja, **cualquier** ruta de `/worker
 **FR-FMT-3** Los códigos de operación siguen `PC-yyMMdd-NNNNNN`; los identificadores de movimiento de caja siguen `CM-YYMMDD-NNNNNN`.
 **FR-FMT-4** La identidad de la moneda se acompaña de una bandera SVG decorativa junto al código — nunca un emoji. Las banderas se ocultan a las tecnologías de asistencia.
 **FR-FMT-5** Importes, códigos, documentos y teléfonos se representan con cifras tabulares y no deben partirse en varias líneas.
+**FR-FMT-6** La tasa se escribe siempre como la cotiza la sede —la divisa contra el peso cubano: `1 USD = 326,00 CUP`— con **hasta cuatro decimales y un mínimo de dos**: `326,00` · `326,50` · `326,525`. Una tasa no se redondea ni se completa con ceros de más. Es la misma cifra del tablero.
 
 ### 1.4 Impresión
 
@@ -134,7 +139,7 @@ Acordadas con el equipo. Se enuncian porque el resto de esta sección es su cons
 
 ### 2.3 Paso 1 — Credenciales
 
-**FR-AUTH-1** La pantalla de inicio de sesión recoge un identificador (usuario o correo) y una contraseña, y se representa fuera del shell.
+**FR-AUTH-1** La pantalla de inicio de sesión recoge un identificador (usuario o correo) y una contraseña, y se representa fuera del shell. El **identificador** es un nombre de usuario de 3 a 30 caracteres —letras, números, punto, guion o guion bajo— **sin «@»**, único en toda la red sin distinguir mayúsculas; el **correo** es único entre los trabajadores. Cualquiera de los dos sirve para entrar.
 
 **FR-AUTH-2** Ambos campos se validan antes del envío. Cada campo ausente muestra su propio mensaje y el foco se mueve al primer campo que requiere atención.
 
@@ -619,7 +624,7 @@ No se intenta reintento automático ni asiento compensatorio **[R2]**.
 
 ### 8.4 Añadir moneda
 
-**FR-CAJA-13** Ofrece únicamente monedas del catálogo que **no** estén ya habilitadas; una moneda ya habilitada no puede ofrecerse ni habilitarse dos veces.
+**FR-CAJA-13** Ofrece únicamente las monedas de **la lista de la sede de la caja** (**FR-AD-MON-2**) que **no** estén ya habilitadas en ella: una caja no puede habilitar lo que su sede no maneja, y una moneda ya habilitada no puede ofrecerse ni habilitarse dos veces. Si la caja ya tiene todas las de su sede, el selector lo dice y remite al administrador, que es quien añade monedas a la sede.
 
 **FR-CAJA-14** Habilitar una moneda la incorpora a los saldos de la caja en 0 y devuelve al Worker a su punto de origen. Cancelar no habilita nada.
 

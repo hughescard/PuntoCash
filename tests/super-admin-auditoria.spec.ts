@@ -34,6 +34,21 @@ test("el listado enseña el registro, del más reciente al más antiguo, y no of
   await expect(main.getByRole("link", { name: /editar|borrar|eliminar|modificar|anular/i })).toHaveCount(0);
 });
 
+test("el objeto de un evento enlaza a la ficha del trabajador, en el listado y en el detalle", async ({ page }) => {
+  /* Evento sembrado: la desactivación de Noelia Alonso (trb-12). */
+  await page.goto("/super-admin/auditoria?texto=Noelia");
+  const enlace = filas(page).first().getByRole("link", { name: "Noelia Alonso" });
+  await expect(enlace).toHaveAttribute("href", "/super-admin/trabajadores/trb-12");
+  await enlace.click();
+  await expect(page).toHaveURL(/\/super-admin\/trabajadores\/trb-12$/);
+  await expect(page.getByRole("main").getByRole("heading", { name: "Noelia Alonso" })).toBeVisible();
+
+  /* Y en el detalle del evento. */
+  await page.goto("/super-admin/auditoria?texto=Noelia");
+  await filas(page).first().getByRole("link", { name: /Ver el detalle/ }).click();
+  await expect(page.getByRole("main").getByRole("link", { name: "Noelia Alonso" })).toHaveAttribute("href", "/super-admin/trabajadores/trb-12");
+});
+
 test("se separa lo que hizo PuntoCash de lo que hizo un mercante", async ({ page }) => {
   await page.goto("/super-admin/auditoria");
   const main = page.getByRole("main");

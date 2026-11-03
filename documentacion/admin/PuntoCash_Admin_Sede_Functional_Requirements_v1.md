@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v8.5
+## Documento de Requisitos Funcionales (FRD) · v8.6
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 8.6 | 03/11/2026 | **Las tasas admiten hasta 4 decimales** (código `demasiados-decimales`; cifras con mínimo 2 y máximo 4). FR-AD-STATE-7 se comprueba también a 1280 y 1440; la lista de Operaciones deja que el texto de la sede se parta, y la de Jornadas deja partirse la fecha y el horario, para no desbordar a 1280. |
 | 8.5 | 03/11/2026 | **Worker queda recableado contra la lista de la sede (FR-AD-MON-2).** «Añadir moneda» en la caja ofrece las monedas de la lista de su sede que la caja aún no tiene habilitadas; Worker ya no tiene una lista propia. Si la caja ya tiene todas las de la sede, la pantalla lo dice y remite al administrador. Nombre y símbolo de cada moneda salen de la lista ISO 4217 compartida por toda la plataforma, y todas las monedas se manejan con cuatro decimales (decisión de PuntoCash, FRD de Super administración v3.8). |
 | 8.4 | 03/11/2026 | **Las monedas que PuntoCash retira del catálogo dejan de ofrecerse.** «Añadir moneda» solo lista las monedas disponibles, y el dominio rechaza con `moneda-retirada` añadir una retirada a una sede. Las sedes que ya la tienen **la conservan**, con su saldo y su historial, hasta que su mercante la quite (FR-AD-MON-6 y -7 no cambian). Código nuevo en el Apéndice C. Consecuencia del catálogo mantenido por PuntoCash (FRD de Super Admin v3.7). |
 | 8.3 | 02/11/2026 | **En la consola, a los administradores se les llama «administradores», no «usuarios».** Los trabajadores también son usuarios del producto, y llamar «usuarios» solo a los administradores de la empresa confundía. La entrada del menú y la sección §8 pasan a llamarse **Administradores**; los títulos, el buscador, la columna del listado, los avisos y los mensajes de la sección dicen «administrador». Las rutas (`/admin/usuarios`) y los códigos no cambian. El botón del traspaso pasa a «Traspasar la administración principal». Sin cambios de comportamiento. |
@@ -1959,7 +1960,7 @@ Se inicia con «Fijar tasa» en una moneda sin tasa o con «Cambiar» en una tas
 
 | Campo | Obligatorio | Reglas |
 | --- | --- | --- |
-| Compra | Sí | Dentro del rango de compra de PuntoCash, límites incluidos. Admite decimales con coma o con punto. Al cambiar una tasa, viene con la cifra actual |
+| Compra | Sí | Dentro del rango de compra de PuntoCash, límites incluidos. Admite decimales con coma o con punto, **hasta 4**: con más, se rechaza con «Una tasa admite hasta 4 decimales» (`demasiados-decimales`). Al cambiar una tasa, viene con la cifra actual |
 | Venta | Sí | Dentro del rango de venta de PuntoCash, límites incluidos. Mismas reglas. **No puede ser menor que la compra** |
 
 - Junto a cada campo, en solo lectura, el rango de PuntoCash de ese lado **[A5]**.
@@ -1991,6 +1992,7 @@ Se inicia con «Fijar tasa» en una moneda sin tasa o con «Cambiar» en una tas
 | Compra vacía o fuera del rango | `compra-fuera-de-rango` |
 | Venta vacía o fuera del rango | `venta-fuera-de-rango` |
 | La compra es mayor que la venta **[A5]**, **[RP-22]** | `compra-mayor-que-venta` |
+| Una cifra trae más de 4 decimales | `demasiados-decimales` |
 | La sede está cerrada | `sede-cerrada` |
 | La sede no existe o está fuera del alcance | `no-encontrada` |
 
@@ -2077,7 +2079,7 @@ Mientras no se confirme o se cambie, la tasa aparece también en el panel de ate
 
 - la consulta de tasas del kiosco de autoservicio (`/kiosk/autoservicio/tasas`) y la diapositiva de tasas de la pantalla informativa (`/kiosk/pantalla`) muestran **solo las tasas en vigor de su sede**;
 - una sede sin ninguna tasa en vigor, o cerrada, no muestra un tablero vacío: el kiosco indica que la sucursal no publica tasas en ese momento y la pantalla informativa saca esa diapositiva de su rotación;
-- las cifras se muestran **sin decimales cuando no los tienen** («318») y con dos cuando los tienen («318,50»). Una cifra con decimales no se redondea.
+- las cifras se muestran **sin decimales cuando no los tienen** («318») y con **dos como mínimo y cuatro como máximo** cuando los tienen («318,50», «318,525»). Una cifra con decimales no se redondea.
 
 **Ver en la demo:**
 
@@ -3101,7 +3103,7 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 
 **Ver en la demo:** `abarrios@bahiacambios.cu`, Tasas → PuntoCash Trinidad (CAD sin rango; sede suspendida).
 
-**FR-AD-STATE-7 · Anchos de aceptación.** Toda pantalla se comprueba a **360px, 390px y 1440px** antes de aceptarse (**FR-AD-SHELL-6**).
+**FR-AD-STATE-7 · Anchos de aceptación.** Toda pantalla se comprueba a **360px, 390px, 1280px y 1440px** antes de aceptarse (1280 es el mínimo de escritorio, y el ancho donde una tabla con una columna de más empieza a desbordar) (**FR-AD-SHELL-6**).
 
 **FR-AD-STATE-8 · Sin desplazamiento horizontal.** Ninguna pantalla produce desplazamiento horizontal a 360px.
 
