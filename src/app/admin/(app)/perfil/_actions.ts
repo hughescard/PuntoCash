@@ -93,11 +93,10 @@ export async function editarPerfilAction(
  * Contraseña — FR-AD-PERF-5 a FR-AD-PERF-8
  * ---------------------------------------------------------------------- */
 
-export type CampoContrasena = "actual" | "nueva" | "repetida";
-
-export type ResultadoCambioContrasena =
-  | { ok: false; error: string; campo?: CampoContrasena }
-  | null;
+import type {
+  CampoContrasena,
+  ResultadoCambioContrasena,
+} from "@/components/patterns/cambiar-contrasena-form";
 
 const MENSAJES: Record<
   "actual-incorrecta" | "demasiado-corta" | "igual-a-la-actual" | "no-coinciden",

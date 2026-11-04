@@ -24,7 +24,7 @@
  */
 
 import { estaEnAlcance, operadorVigente } from "./assignments";
-import { requireOperatorScope, type Scope, type ScopeDenial } from "./scope";
+import { isGlobal, requireOperatorScope, type Scope, type ScopeDenial } from "./scope";
 import { findSedeById } from "./sedes";
 import { IMAGEN_GIROS_JPEG } from "./promotions-seed-image";
 
@@ -142,7 +142,7 @@ const promociones: Promocion[] = (ALMACEN.__puntocashPromociones ??= [
     desde: sumarDias(HOY, -20),
     hasta: sumarDias(HOY, 40),
     creadaAt: SEMBRADA,
-    creadaPor: "PuntoCash",
+    creadaPor: "Elena Marrero Fonseca",
   },
   {
     id: "promo-malecon-remesas",
@@ -181,6 +181,17 @@ const promociones: Promocion[] = (ALMACEN.__puntocashPromociones ??= [
     creadaPor: "Marta Sánchez",
   },
   {
+    id: "promo-red-oriente",
+    titulo: "Tu remesa llega a Oriente hoy",
+    texto: "Prepárala en caja y se acredita el mismo día en Santiago, Holguín y Camagüey.",
+    origen: "red",
+    sedes: ["sede-santiago", "sede-holguin", "sede-camaguey"],
+    desde: sumarDias(HOY, -5),
+    hasta: sumarDias(HOY, 25),
+    creadaAt: SEMBRADA,
+    creadaPor: "Elena Marrero Fonseca",
+  },
+  {
     id: "promo-red-aviso",
     titulo: "Nuevo horario de fin de año",
     texto: "Consulta en tu sucursal el horario del 31 de diciembre y el 1 de enero.",
@@ -189,7 +200,7 @@ const promociones: Promocion[] = (ALMACEN.__puntocashPromociones ??= [
     desde: sumarDias(HOY, 50),
     hasta: sumarDias(HOY, 80),
     creadaAt: SEMBRADA,
-    creadaPor: "PuntoCash",
+    creadaPor: "Jorge Aguilera Ruiz",
   },
   {
     id: "promo-caribe-miramar",
@@ -237,6 +248,8 @@ export type PromocionDenial =
   | ScopeDenial
   | "no-encontrada"
   | "de-red"
+  | "del-operador"
+  | "solo-puntocash"
   | "vencida"
   | "titulo-vacio"
   | "titulo-largo"
@@ -289,9 +302,12 @@ export function urlDeImagen(p: Promocion): string | null {
   return p.imagen ? `/kiosk/pantalla/promociones/${p.id}/imagen?v=${p.imagen.version}` : null;
 }
 
+/** Lo que se valida: igual para las dos consolas, salvo que las de red admiten `"red"`. */
+type EntradaValidable = Omit<PromocionInput, "sedes"> & { sedes: readonly string[] | "red" };
+
 function validar(
   scope: Scope,
-  input: PromocionInput,
+  input: EntradaValidable,
   hoy: string,
   desdeAnterior?: string,
   enPantalla = false,
@@ -302,10 +318,15 @@ function validar(
   if (titulo.length > TITULO_MAX) return "titulo-largo";
   if (!texto) return "texto-vacio";
   if (texto.length > TEXTO_MAX) return "texto-largo";
-  if (input.sedes.length === 0) return "sin-sedes";
-  if (input.sedes.some((s) => !estaEnAlcance(scope, s) || !findSedeById(s))) return "sede-fuera-de-alcance";
-  /* FR-AD-PROM-4 y §18: una sede cerrada no admite promociones. */
-  if (input.sedes.some((s) => findSedeById(s)?.status === "cerrada")) return "sede-cerrada";
+  /* «Toda la red» solo existe para PuntoCash, y no nombra sedes que comprobar. */
+  if (input.sedes === "red") {
+    if (!isGlobal(scope)) return "sede-fuera-de-alcance";
+  } else {
+    if (input.sedes.length === 0) return "sin-sedes";
+    if (input.sedes.some((s) => !estaEnAlcance(scope, s) || !findSedeById(s))) return "sede-fuera-de-alcance";
+    /* FR-AD-PROM-4 y §18: una sede cerrada no admite promociones. */
+    if (input.sedes.some((s) => findSedeById(s)?.status === "cerrada")) return "sede-cerrada";
+  }
   if (!FECHA.test(input.desde) || !FECHA.test(input.hasta)) return "fecha-invalida";
   /* FR-AD-PROM-4: en pantalla, su inicio ya no se cambia. */
   if (enPantalla && input.desde !== desdeAnterior) return "inicio-fijo";
@@ -407,6 +428,112 @@ export function retirarPromocion(
 ): PromocionResult<{ promo: Promocion; estabaVigente: boolean }> {
   const hoy = hoyEnCuba(now);
   const encontrada = propiaYViva(scope, id, hoy);
+  if (!encontrada.ok) return encontrada;
+  const promo = encontrada.value;
+  const estabaVigente = estadoDe(promo, hoy) === "vigente";
+  promo.retirada = { at: now.toISOString(), por: autor };
+  return { ok: true, value: { promo, estabaVigente } };
+}
+
+/* -------------------------------------------------------------------------
+ * Las de red — las publica PuntoCash (**FR-SA-PROM-1** a **FR-SA-PROM-8**)
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Una promoción de red llega a **toda la red** —incluidas las sedes que se
+ * creen después— o a las sedes que se elijan. Elegir «las de un operador» o
+ * «las de una provincia» es un atajo de la pantalla para marcar sedes: lo que
+ * se guarda son esas sedes, no la regla. Si una sede cambia de manos, sigue
+ * mostrando la promoción: el cliente de la sala ve PuntoCash, no al operador.
+ */
+export interface PromocionDeRedInput {
+  titulo: string;
+  texto: string;
+  sedes: readonly string[] | "red";
+  desde: string;
+  hasta: string;
+  /** Como en `PromocionInput`: al editar, `undefined` conserva y `null` quita. */
+  imagen?: string | null;
+}
+
+export function crearPromocionDeRed(
+  scope: Scope,
+  input: PromocionDeRedInput,
+  autor: string,
+  now = new Date(),
+): PromocionResult<Promocion> {
+  if (!isGlobal(scope)) return { ok: false, reason: "solo-puntocash" };
+  const denial = validar(scope, input, hoyEnCuba(now));
+  if (denial) return { ok: false, reason: denial };
+
+  const promo: Promocion = {
+    id: `promo-red-${now.getTime()}-${siguiente++}`,
+    titulo: input.titulo.trim(),
+    texto: input.texto.trim(),
+    origen: "red",
+    sedes: input.sedes === "red" ? "red" : [...input.sedes],
+    desde: input.desde,
+    hasta: input.hasta,
+    ...(typeof input.imagen === "string" ? { imagen: leerImagen(input.imagen) as ImagenDePromocion } : {}),
+    creadaAt: now.toISOString(),
+    creadaPor: autor,
+  };
+  promociones.push(promo);
+  return { ok: true, value: promo };
+}
+
+function deRedYViva(scope: Scope, id: string, hoy: string): PromocionResult<Promocion> {
+  if (!isGlobal(scope)) return { ok: false, reason: "solo-puntocash" };
+  const promo = promocionPorId(id);
+  if (!promo) return { ok: false, reason: "no-encontrada" };
+  /* PuntoCash ve las de los operadores, pero no las toca. */
+  if (promo.origen === "operador") return { ok: false, reason: "del-operador" };
+  if (estadoDe(promo, hoy) === "vencida") return { ok: false, reason: "vencida" };
+  return { ok: true, value: promo };
+}
+
+export function editarPromocionDeRed(
+  scope: Scope,
+  id: string,
+  input: PromocionDeRedInput,
+  autor: string,
+  now = new Date(),
+): PromocionResult<{ promo: Promocion; antes: PromocionDeRedInput; teniaImagen: boolean }> {
+  const hoy = hoyEnCuba(now);
+  const encontrada = deRedYViva(scope, id, hoy);
+  if (!encontrada.ok) return encontrada;
+  const promo = encontrada.value;
+  const denial = validar(scope, input, hoy, promo.desde, estadoDe(promo, hoy) === "vigente");
+  if (denial) return { ok: false, reason: denial };
+
+  const teniaImagen = Boolean(promo.imagen);
+  const antes: PromocionDeRedInput = {
+    titulo: promo.titulo,
+    texto: promo.texto,
+    sedes: promo.sedes === "red" ? "red" : [...promo.sedes],
+    desde: promo.desde,
+    hasta: promo.hasta,
+  };
+  promo.titulo = input.titulo.trim();
+  promo.texto = input.texto.trim();
+  promo.sedes = input.sedes === "red" ? "red" : [...input.sedes];
+  promo.desde = input.desde;
+  promo.hasta = input.hasta;
+  if (input.imagen === null) delete promo.imagen;
+  else if (typeof input.imagen === "string") promo.imagen = leerImagen(input.imagen) as ImagenDePromocion;
+  promo.actualizadaAt = now.toISOString();
+  promo.actualizadaPor = autor;
+  return { ok: true, value: { promo, antes, teniaImagen } };
+}
+
+export function retirarPromocionDeRed(
+  scope: Scope,
+  id: string,
+  autor: string,
+  now = new Date(),
+): PromocionResult<{ promo: Promocion; estabaVigente: boolean }> {
+  const hoy = hoyEnCuba(now);
+  const encontrada = deRedYViva(scope, id, hoy);
   if (!encontrada.ok) return encontrada;
   const promo = encontrada.value;
   const estabaVigente = estadoDe(promo, hoy) === "vigente";

@@ -64,7 +64,7 @@
   - «diferencias de hoy», que ya cuentan como aprobaciones pendientes.
 - Filtro de sede en Jornadas, Operaciones y Aprobaciones.
 - Pares de cotización cruzados.
-- El término «arqueo». Ahora se dice «cierre», «Cierre forzado» y «Sin contar».
+- El término «arqueo» **en esta consola**. Aquí se dice «cierre», «Cierre forzado» y «Sin contar». Worker conserva su «Arqueo y cierre» (ver §5).
 - Requisitos retirados, listados en «Versiones» del FRD. Sus códigos no se reutilizan.
 
 ---
@@ -77,10 +77,11 @@
 | Worker | Generar una solicitud de aprobación, por moneda, por cada ajuste de efectivo, cierre con diferencia y apertura con diferencia | §14.1, §18 |
 | Worker | Ofrecer la lista de monedas de su sede y cotizar con la tasa de su sede | §9.4, §18 |
 | Worker | Validar el acceso contra el registro de trabajadores: estado, sede y credencial | §7, §18 |
-| Worker | Decir «cierre» en lugar de «Arqueo y cierre» | Apéndice A |
 | Equipos de caja y kioscos | Consultar su vínculo en el servidor | FR-AD-DOM-4 |
 | Kiosco y pantalla informativa | Leer de este dominio tasas en vigor, datos de contacto, horario y promociones vigentes | FR-AD-DOM-7 |
 | Kiosco | Registrar sus solicitudes para toda la red, para que Equipos las cuente | FR-AD-EQ-12, §18 |
+
+**Retirado el 26/10/2026.** Esta nota pedía a Worker decir «cierre» en lugar de «Arqueo y cierre». La petición queda sin efecto: **Worker conserva «Arqueo y cierre»**, que es el nombre de su propia pantalla y el de su ruta. Lo que la segunda entrega elimina es la palabra «arqueo» **de esta consola** —aquí se dice «cierre», «Cierre forzado» y «Sin contar»—, y eso no alcanza al worker.
 
 **Pendiente de decidir, sin requisito:** quién puede pedir la imagen de una promoción. En la demostración se sirve a cualquiera que conozca su dirección.
 

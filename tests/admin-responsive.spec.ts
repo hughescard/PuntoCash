@@ -25,6 +25,8 @@ const ANCHOS = [
      640 de alto es un teléfono pequeño de verdad, no una ventana recortada. */
   { nombre: "360px", width: 360, height: 640 },
   { nombre: "390px", width: 390, height: 844 },
+  /* El mínimo de escritorio que fija CLAUDE.md: donde una tabla con una columna de más empieza a desbordar. */
+  { nombre: "1280px", width: 1280, height: 800 },
   /* El de referencia del manual (§10). Sigue siendo donde más se trabaja. */
   { nombre: "1440px", width: 1440, height: 900 },
 ] as const;

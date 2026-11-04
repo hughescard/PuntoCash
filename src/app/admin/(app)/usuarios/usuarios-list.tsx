@@ -47,7 +47,7 @@ export interface UsuarioRow {
 
 const BUSQUEDA: FieldSpec = {
   id: "usuarios-busqueda",
-  label: "Buscar usuario",
+  label: "Buscar administrador",
 };
 
 export function UsuariosList({
@@ -75,7 +75,7 @@ export function UsuariosList({
   const columnas: readonly ResponsiveColumn<UsuarioRow>[] = [
     {
       key: "nombre",
-      header: "Usuario",
+      header: "Administrador",
       cell: (row) => (
         <span className="flex flex-wrap items-center gap-2">
           <Link
@@ -159,7 +159,7 @@ export function UsuariosList({
         cardSubtitle={(row) => (row.esYo ? `${row.identifier} · tú` : row.identifier)}
         cardBadge={(row) => <EstadoUsuario status={row.status} />}
         empty={
-          <p className="text-body text-text-primary">Ningún usuario coincide con esa búsqueda.</p>
+          <p className="text-body text-text-primary">Ningún administrador coincide con esa búsqueda.</p>
         }
       />
     </>

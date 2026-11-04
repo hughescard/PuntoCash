@@ -4,7 +4,7 @@ import { CircleCheck, FileText, TriangleAlert, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
-import { formatMoney, formatRate } from "@/lib/format";
+import { formatAppliedRateLine, formatMoney } from "@/lib/format";
 import { findCurrency, type ExchangeQuote } from "@/features/exchange/quote";
 
 /**
@@ -102,9 +102,16 @@ export function ExchangeSummaryCard({
   );
 }
 
-/** "1 USD = 0,9200 EUR" — the only rate expression the worker ever sees. */
+/**
+ * «1 USD = 326,00 CUP» — la única expresión de tasa que el trabajador ve, y la
+ * misma en las dos direcciones del cambio: la que su sede cotiza.
+ */
 export function formatAppliedRate(quote: ExchangeQuote): string {
-  return `1 ${quote.sourceCurrency} = ${formatRate(quote.appliedRate)} ${quote.destinationCurrency}`;
+  return formatAppliedRateLine(
+    quote.sourceCurrency,
+    quote.destinationCurrency,
+    quote.appliedRate,
+  );
 }
 
 function currencyNameOf(code: string): string | undefined {

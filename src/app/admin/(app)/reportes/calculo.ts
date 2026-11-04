@@ -69,20 +69,32 @@ function fechaValida(d: string | undefined): d is string {
   return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === d;
 }
 
+/**
+ * El periodo que pide la dirección: **FR-AD-REP-2**. Los últimos siete días por
+ * defecto, los extremos en orden, y un año como mucho —365 días, los dos
+ * extremos incluidos—: más allá, el corte por día deja de leerse. Lo comparten
+ * las dos consolas, porque el periodo de un reporte se entiende igual en las dos.
+ */
+export function periodoDe(
+  params: { desde?: string | undefined; hasta?: string | undefined },
+  now = new Date(),
+): { hoy: string; desde: string; hasta: string; recortado: boolean } {
+  const hoy = hoyEnCuba(now);
+  let desde = fechaValida(params.desde) ? params.desde : sumarDias(hoy, -6);
+  let hasta = fechaValida(params.hasta) ? params.hasta : hoy;
+  if (desde > hasta) [desde, hasta] = [hasta, desde];
+  const recortado = desde < sumarDias(hasta, -364);
+  if (recortado) desde = sumarDias(hasta, -364);
+  return { hoy, desde, hasta, recortado };
+}
+
 export function calcularReporte(
   session: AdminSession,
   params: { corte?: string | undefined; desde?: string | undefined; hasta?: string | undefined; trabajador?: string | undefined },
   now = new Date(),
 ): Reporte {
   const corte: Corte = (CORTES_VALIDOS as readonly string[]).includes(params.corte ?? "") ? (params.corte as Corte) : "sede";
-  const hoy = hoyEnCuba(now);
-  let desde = fechaValida(params.desde) ? params.desde : sumarDias(hoy, -6);
-  let hasta = fechaValida(params.hasta) ? params.hasta : hoy;
-  if (desde > hasta) [desde, hasta] = [hasta, desde];
-  /* Un año como mucho —365 días, los dos extremos incluidos—: más allá, el
-     corte por día deja de leerse. */
-  const recortado = desde < sumarDias(hasta, -364);
-  if (recortado) desde = sumarDias(hasta, -364);
+  const { hoy, desde, hasta, recortado } = periodoDe(params, now);
 
   const sedes = sedesVisibles(session);
   const red = redEnAlcance(session.scope);
@@ -187,7 +199,7 @@ export function calcularReporte(
   };
 }
 
-function acumular(vs: readonly Volumen[]): { operaciones: number; volumen: Record<string, number> } {
+export function acumular(vs: readonly Volumen[]): { operaciones: number; volumen: Record<string, number> } {
   const volumen: Record<string, number> = {};
   for (const v of vs) volumen[v.currency] = (volumen[v.currency] ?? 0) + v.amount;
   return { operaciones: vs.length, volumen };

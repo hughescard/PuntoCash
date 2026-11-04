@@ -43,7 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ form
     actorName: session.user.fullName,
     actorRole: "admin-sede",
     type: "reporte.exportado",
-    subject: `Resumen de operaciones en ${formato === "pdf" ? "PDF" : "Excel"} · ${k.periodo} · ${k.sedes} · Trabajador: ${k.trabajador}`,
+    subject: `Resumen de operaciones en ${formato === "pdf" ? "PDF" : "Excel"} · ${k.periodo} · ${k.alcance}`,
     operatorId: session.operator.id,
     ...(session.selected ? { branchId: session.selected.id } : {}),
   });

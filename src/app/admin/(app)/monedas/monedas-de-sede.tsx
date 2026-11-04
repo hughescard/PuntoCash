@@ -22,6 +22,7 @@ import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/re
 import { useHydrated } from "@/lib/use-hydrated";
 import type { MonedaCatalogo } from "@/features/network/currencies";
 import { anadirMonedaAction, retirarMonedaAction, type ResultadoMoneda } from "./_actions";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 
 /**
  * La lista de monedas de una sede, con sus dos acciones.
@@ -225,7 +226,7 @@ function DialogoAnadir({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="sede" value={sede.id} />
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
@@ -333,7 +334,7 @@ function DialogoRetirar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="sede" value={sede.id} />
             <input type="hidden" name="moneda" value={fila.code} />
             {(estado && !estado.ok) || enCero.length > 0 || fila.tasas.length > 0 ? (

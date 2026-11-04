@@ -11,6 +11,11 @@
  * session only exists once that challenge is verified — see
  * `src/features/auth/two-factor.ts` [R13].
  *
+ * **Se entra con el identificador de acceso o con el correo**, indistintamente
+ * (decisión del 28/10/2026): el identificador es un nombre de usuario —`jperez`—
+ * y el correo es otro dato —`jperez@puntocash.com`—, y los dos llegan a la
+ * misma cuenta.
+ *
  * Demo accounts — the outcome is chosen by the identifier:
  *
  *   bloqueado@puntocash.com   → account-blocked
@@ -25,7 +30,8 @@
  */
 
 import { currentLinkedRegister } from "@/features/worker/register-device";
-import { openChallenge, type TwoFactorChallengeView } from "./two-factor";
+import { maskEmail, openChallenge, type TwoFactorChallengeView } from "./two-factor";
+import { findWorkerByCuenta } from "@/features/network/workers";
 import { contrasenaFijadaDe } from "./password-recovery";
 
 export interface Credentials {
@@ -67,16 +73,40 @@ export async function authenticate({ identifier, password }: Credentials): Promi
      dueño fijó y ya no la de demostración**, que es lo que hará el producto.
      Sin esto, cambiarla sería un trámite sin efecto y el recorrido se
      quedaría a medias (`password-recovery.ts`). */
-  const fijada = contrasenaFijadaDe(account);
-  const aceptada = fijada ?? DEMO_PASSWORD;
+  const aceptada = contrasenaVigenteDe(account) ?? DEMO_PASSWORD;
 
   if (password === aceptada) {
     // The Worker's sede is checked against the caja's, which the device
     // session knows (`register-device.ts`). In the demo every account belongs
     // to whatever sede this caja is linked to, except the one below.
     if (account === "otrasede@puntocash.com" || !currentLinkedRegister()) return { status: "other-branch" };
-    return { status: "challenge-required", challenge: openChallenge(account) };
+    /* El código va al correo **de esa cuenta**, no al que se deduciría de lo
+       tecleado: quien entra con su nombre de usuario tiene que ver su propio
+       correo enmascarado, no uno inventado a partir del usuario. */
+    const trabajador = findWorkerByCuenta(account);
+    return {
+      status: "challenge-required",
+      challenge: openChallenge(account, trabajador ? maskEmail(trabajador.email) : undefined),
+    };
   }
 
   return { status: "invalid-credentials" };
+}
+
+/**
+ * La contraseña que esta cuenta acepta hoy, venga de donde venga lo tecleado.
+ *
+ * La recuperación guarda lo fijado **por la cadena que se escribió** en su
+ * paso uno, y desde que se entra con el identificador o con el correo esa
+ * cadena puede ser una u otra. Si se buscara solo por lo tecleado ahora,
+ * recuperar la contraseña escribiendo el correo y volver a entrar escribiendo
+ * el identificador seguiría aceptando la contraseña vieja. Por eso se prueban
+ * los dos nombres de la misma persona.
+ */
+function contrasenaVigenteDe(cuenta: string): string | undefined {
+  const propia = contrasenaFijadaDe(cuenta);
+  if (propia) return propia;
+  const trabajador = findWorkerByCuenta(cuenta);
+  if (!trabajador) return undefined;
+  return contrasenaFijadaDe(trabajador.identifier) ?? contrasenaFijadaDe(trabajador.email);
 }

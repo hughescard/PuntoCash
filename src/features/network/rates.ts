@@ -25,10 +25,11 @@
  * de `motivoFueraDeVigor`.
  */
 
+import { excedeDecimalesDeTasa } from "@/lib/format";
 import { estaEnAlcance } from "./assignments";
 import { monedaDelCatalogo, monedasDeSede, sedeManejaMoneda } from "./currencies";
-import { findSedeById } from "./sedes";
-import { requireOperatorScope, type Scope } from "./scope";
+import { findSedeById, isMotivoValido, SEDES } from "./sedes";
+import { isGlobal, requireOperatorScope, type Scope } from "./scope";
 
 /** La moneda contra la que se cotiza todo. */
 export const MONEDA_LOCAL = "CUP";
@@ -51,6 +52,9 @@ export interface RangoDeTasa {
   venta: Intervalo;
   /** Cambia cada vez que PuntoCash lo mueve: es lo que permite FR-AD-TASA-11. */
   version: string;
+  /** Cuándo y quién lo fijó por última vez (FR-SA-TASA-1). */
+  updatedAt: string;
+  updatedBy: string;
 }
 
 /**
@@ -74,6 +78,8 @@ const rangos = new Map<string, RangoDeTasa>(
       compra: { min: compra[0], max: compra[1] },
       venta: { min: venta[0], max: venta[1] },
       version: "2026-10-01",
+      updatedAt: "2026-10-01T12:00:00.000Z",
+      updatedBy: "PuntoCash · Operaciones",
     },
   ]),
 );
@@ -244,6 +250,7 @@ export type TasaWriteDenial =
   | "sede-no-encontrada"
   | "sede-cerrada"
   | MotivoSinCotizacion
+  | "demasiados-decimales"
   | "compra-fuera-de-rango"
   | "venta-fuera-de-rango"
   | "compra-mayor-que-venta"
@@ -288,6 +295,10 @@ export function fijarTasa(
 
   const motivo = motivoFueraDeVigor(input.sedeId, input.code);
   if (motivo) return { ok: false, reason: motivo };
+
+  if (excedeDecimalesDeTasa(input.compra) || excedeDecimalesDeTasa(input.venta)) {
+    return { ok: false, reason: "demasiados-decimales" };
+  }
 
   const rango = rangoDe(input.code)!;
   if (rango.version !== input.versionDelRango) return { ok: false, reason: "rango-cambiado" };
@@ -388,3 +399,145 @@ export const EFECTOS_EN_TASAS = {
     );
   },
 };
+
+/* -------------------------------------------------------------------------
+ * Escrituras de PuntoCash sobre los rangos (regla A3)
+ * ---------------------------------------------------------------------- */
+
+export type RangoWriteDenial =
+  | "alcance-insuficiente"
+  | "moneda-local"
+  | "moneda-desconocida"
+  /** Retirada del catálogo y sin rango: no se abre a la red una moneda que ya no se ofrece. */
+  | "moneda-retirada"
+  | "valor-invalido"
+  /** Más de 4 decimales: una tasa no se escribe con más precisión que esa. */
+  | "demasiados-decimales"
+  | "minimo-mayor"
+  | "rango-incoherente"
+  /** Cambiar un rango ya definido exige motivo. */
+  | "motivo-requerido"
+  | "sin-rango";
+
+export type RangoWriteResult<T> = { ok: true; value: T } | { ok: false; reason: RangoWriteDenial };
+
+/** Una tasa que el rango nuevo deja fuera, y adónde la lleva. */
+export interface AjusteDeTasa {
+  sedeId: string;
+  sedeNombre: string;
+  antes: { compra: number; venta: number };
+  despues: { compra: number; venta: number };
+}
+
+const limitar = (v: number, i: Intervalo) => Math.min(Math.max(v, i.min), i.max);
+
+/**
+ * Por qué un rango no se puede guardar, o `null`.
+ *
+ * Además de lo de siempre —positivos, mínimo menor que máximo—, **compra
+ * mínima ≤ venta mínima y compra máxima ≤ venta máxima** (decisión del
+ * 27/10). Con esa coherencia, llevar compra y venta a sus límites por
+ * separado nunca deja una compra por encima de la venta: el ajuste automático
+ * siempre produce una tasa válida.
+ */
+export function validarRango(compra: Intervalo, venta: Intervalo): RangoWriteDenial | null {
+  const valores = [compra.min, compra.max, venta.min, venta.max];
+  if (valores.some((v) => !Number.isFinite(v) || v <= 0)) return "valor-invalido";
+  if (valores.some(excedeDecimalesDeTasa)) return "demasiados-decimales";
+  if (compra.min >= compra.max || venta.min >= venta.max) return "minimo-mayor";
+  if (compra.min > venta.min || compra.max > venta.max) return "rango-incoherente";
+  return null;
+}
+
+/**
+ * Las tasas que quedarían fuera del rango propuesto, sede por sede, con el
+ * valor al que se fijarían (FR-SA-TASA-5). Cuenta todas las tasas definidas
+ * de esa moneda, estén en vigor o no: una tasa guardada de una sede sin Cambio
+ * de moneda también tiene que ser válida el día que vuelva.
+ */
+export function simularRango(code: string, compra: Intervalo, venta: Intervalo): readonly AjusteDeTasa[] {
+  const ajustes: AjusteDeTasa[] = [];
+  for (const [sedeId, lista] of tasas) {
+    /* Una sede cerrada ya no cotiza: su última tasa es historia y no se mueve. */
+    if (SEDES.find((s) => s.id === sedeId)?.status === "cerrada") continue;
+    const t = lista.find((x) => x.code === code);
+    if (!t) continue;
+    const despues = { compra: limitar(t.compra, compra), venta: limitar(t.venta, venta) };
+    if (despues.compra !== t.compra || despues.venta !== t.venta) {
+      ajustes.push({
+        sedeId,
+        sedeNombre: SEDES.find((s) => s.id === sedeId)?.name ?? sedeId,
+        antes: { compra: t.compra, venta: t.venta },
+        despues,
+      });
+    }
+  }
+  return ajustes.sort((a, b) => a.sedeNombre.localeCompare(b.sedeNombre, "es"));
+}
+
+/** Las sedes no cerradas que tienen definida una tasa de esta moneda. */
+export function sedesConTasa(code: string): readonly string[] {
+  return [...tasas]
+    .filter(([sedeId, lista]) => SEDES.find((s) => s.id === sedeId)?.status !== "cerrada" && lista.some((t) => t.code === code))
+    .map(([sedeId]) => sedeId);
+}
+
+/**
+ * Define o cambia el rango de una moneda. Las tasas que queden fuera se fijan
+ * al límite más cercano y se marcan (`fijadaAlLimite`) para que su operador lo
+ * vea (FR-SA-TASA-7). Es la **única** escritura de PuntoCash sobre la tasa de
+ * una sede, y es una consecuencia mecánica de mover el rango (FR-SA-TASA-8).
+ */
+export function definirRango(
+  scope: Scope,
+  input: { code: string; compra: Intervalo; venta: Intervalo; autor: string; motivo?: string },
+  now = new Date(),
+): RangoWriteResult<{ rango: RangoDeTasa; anterior: RangoDeTasa | null; ajustes: readonly AjusteDeTasa[] }> {
+  if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
+  if (input.code === MONEDA_LOCAL) return { ok: false, reason: "moneda-local" };
+  const moneda = monedaDelCatalogo(input.code);
+  if (!moneda) return { ok: false, reason: "moneda-desconocida" };
+  if (moneda.retiradaEl && !rangos.has(input.code)) return { ok: false, reason: "moneda-retirada" };
+  const mal = validarRango(input.compra, input.venta);
+  if (mal) return { ok: false, reason: mal };
+
+  const anterior = rangos.get(input.code) ?? null;
+  /* Definir el primer rango abre una moneda a la red; cambiarlo mueve límites
+     que las sedes ya usan y puede llevar sus tasas al borde: eso se explica
+     (decisión del 3/11/2026). */
+  if (anterior && !isMotivoValido(input.motivo ?? "")) return { ok: false, reason: "motivo-requerido" };
+  const ajustes = simularRango(input.code, input.compra, input.venta);
+  const rango: RangoDeTasa = {
+    code: input.code,
+    compra: { ...input.compra },
+    venta: { ...input.venta },
+    version: now.toISOString(),
+    updatedAt: now.toISOString(),
+    updatedBy: input.autor,
+  };
+  rangos.set(input.code, rango);
+
+  for (const a of ajustes) {
+    const t = (tasas.get(a.sedeId) ?? []).find((x) => x.code === input.code);
+    if (!t) continue;
+    t.fijadaAlLimite = { at: now.toISOString(), anterior: { ...a.antes } };
+    t.compra = a.despues.compra;
+    t.venta = a.despues.venta;
+    t.updatedAt = now.toISOString();
+    t.updatedBy = "PuntoCash";
+  }
+  return { ok: true, value: { rango, anterior: anterior ? { ...anterior } : null, ajustes } };
+}
+
+/**
+ * Retira el rango de una moneda: ninguna sede puede cotizarla. Las tasas **no
+ * se borran**: dejan de estar en vigor (`sin-rango`) y vuelven, revalidadas
+ * por `definirRango`, si el rango se restablece (FR-SA-TASA-9).
+ */
+export function retirarRango(scope: Scope, code: string): RangoWriteResult<RangoDeTasa> {
+  if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
+  const actual = rangos.get(code);
+  if (!actual) return { ok: false, reason: "sin-rango" };
+  rangos.delete(code);
+  return { ok: true, value: actual };
+}

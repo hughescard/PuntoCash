@@ -59,7 +59,7 @@ test.describe("revisión de /admin", () => {
     await expect(page.getByRole("heading", { name: "Reportes" })).toBeVisible();
   });
 
-  test("el aviso de Usuarios se cierra y no vuelve", async ({ page }) => {
+  test("el aviso de Administradores se cierra y no vuelve", async ({ page }) => {
     await signInAsAdmin(page, MARTA);
     await page.goto("/admin/usuarios");
     const aviso = page.getByText("Esta pantalla es solo tuya");
@@ -67,7 +67,7 @@ test.describe("revisión de /admin", () => {
     await page.getByRole("button", { name: "Cerrar este aviso" }).click();
     await expect(aviso).toHaveCount(0);
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Usuarios" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Administradores" }).first()).toBeVisible();
     await expect(aviso).toHaveCount(0);
   });
 });

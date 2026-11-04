@@ -129,7 +129,8 @@ export default async function AdminPromocionPage({ params }: { params: Promise<{
           <Dato etiqueta="Texto" valor={v.promo.texto} />
           <Dato etiqueta="Sedes" valor={v.sedesEnAlcance.map(nombre).join(", ")} />
           <Dato etiqueta="Fechas" valor={vigencia(v.promo.desde, v.promo.hasta)} />
-          <Dato etiqueta="Publicada por" valor={v.promo.creadaPor} />
+          {/* De una promoción de red el mercante ve «PuntoCash», no a la persona que la publicó. */}
+          <Dato etiqueta="Publicada por" valor={v.propia ? v.promo.creadaPor : "PuntoCash"} />
           <div>
             <p className="flex items-center gap-2 text-caption uppercase tracking-wide text-text-secondary">
               <Info className="size-4" aria-hidden="true" />

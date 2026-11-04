@@ -24,10 +24,11 @@
  */
 
 import { estaEnAlcance } from "./assignments";
+import { monedaIso } from "./iso-monedas";
 import { allRegistersOf, findRegisterById } from "./registers";
 import type { Register } from "./registers";
 import { findSedeById } from "./sedes";
-import { requireOperatorScope, type Scope } from "./scope";
+import { isGlobal, requireOperatorScope, type Scope } from "./scope";
 
 /* -------------------------------------------------------------------------
  * Catálogo de la plataforma — de PuntoCash (regla A3)
@@ -36,29 +37,59 @@ import { requireOperatorScope, type Scope } from "./scope";
 export interface MonedaCatalogo {
   code: string;
   name: string;
+  /** «US$», «€»: como se escribe junto a una cifra. */
+  symbol: string;
+  /** Cuándo se retiró del catálogo, o `null` si sigue disponible (**FR-SA-MON-4**). */
+  retiradaEl: string | null;
 }
 
-/**
- * Las mismas once que ofrece hoy «Añadir moneda» en Worker
- * (`CAJA_CURRENCY_CATALOG`). Cuando el terminal se recablee contra este
- * dominio, aquella constante desaparece y la caja lee la lista de su sede.
- */
-export const CATALOGO_MONEDAS: readonly MonedaCatalogo[] = [
-  { code: "CUP", name: "Peso cubano" },
-  { code: "USD", name: "Dólar estadounidense" },
-  { code: "EUR", name: "Euro" },
-  { code: "GBP", name: "Libra esterlina" },
-  { code: "CAD", name: "Dólar canadiense" },
-  { code: "CHF", name: "Franco suizo" },
-  { code: "MXN", name: "Peso mexicano" },
-  { code: "JPY", name: "Yen japonés" },
-  { code: "AUD", name: "Dólar australiano" },
-  { code: "COP", name: "Peso colombiano" },
-  { code: "CLP", name: "Peso chileno" },
-];
+export { DECIMALES_DE_MONEDA } from "./decimales";
 
+/** Nombre y símbolo salen de la tabla ISO 4217: nadie los escribe. */
+const MONEDA = (code: string): MonedaCatalogo => {
+  const iso = monedaIso(code);
+  if (!iso) throw new Error(`Moneda sembrada fuera de la tabla ISO: ${code}`);
+  return { code, name: iso.name, symbol: iso.symbol, retiradaEl: null };
+};
+
+/**
+ * Las once con que arranca. Nombre y símbolo salen de la tabla ISO. «Añadir
+ * moneda» en Worker ya no tiene catálogo propio: ofrece la lista de la sede de
+ * la caja, que sale de aquí (recableado del 3/11).
+ *
+ * **Vive en `globalThis`** y se modifica en el sitio: lo leen páginas, acciones
+ * y las dos consolas, y en desarrollo cada paquete trae su propia copia del
+ * módulo. Una moneda **retirada no se borra**: sigue en la lista de las sedes
+ * que ya la tienen y su nombre tiene que poder mostrarse (**FR-SA-MON-4**).
+ */
+const ALMACEN_CATALOGO = globalThis as typeof globalThis & { __puntocashCatalogoMonedas?: MonedaCatalogo[] };
+
+export const CATALOGO_MONEDAS: MonedaCatalogo[] = (ALMACEN_CATALOGO.__puntocashCatalogoMonedas ??= [
+  MONEDA("CUP"),
+  MONEDA("USD"),
+  MONEDA("EUR"),
+  MONEDA("GBP"),
+  MONEDA("CAD"),
+  MONEDA("CHF"),
+  MONEDA("MXN"),
+  MONEDA("JPY"),
+  MONEDA("AUD"),
+  MONEDA("COP"),
+  MONEDA("CLP"),
+]);
+
+/** La moneda del catálogo, **también si está retirada**: sirve para mostrar su nombre. */
 export function monedaDelCatalogo(code: string): MonedaCatalogo | null {
   return CATALOGO_MONEDAS.find((m) => m.code === code) ?? null;
+}
+
+/** Las monedas que un mercante puede añadir hoy: las que no están retiradas. */
+export function monedasDisponibles(): readonly MonedaCatalogo[] {
+  return CATALOGO_MONEDAS.filter((m) => m.retiradaEl === null);
+}
+
+export function monedaEstaDisponible(code: string): boolean {
+  return monedaDelCatalogo(code)?.retiradaEl === null;
 }
 
 /* -------------------------------------------------------------------------
@@ -80,7 +111,7 @@ const lista = (...codes: string[]): MonedaDeSede[] =>
  * asignada y sin cajas, arranca con lo mínimo.
  */
 const listas = new Map<string, MonedaDeSede[]>([
-  ["sede-vedado", lista("CUP", "USD", "EUR", "GBP")],
+  ["sede-vedado", lista("CUP", "USD", "EUR", "GBP", "CHF", "MXN")],
   ["sede-habana-vieja", lista("CUP", "USD", "EUR", "CAD")],
   ["sede-cerro", lista("CUP", "USD")],
   ["sede-miramar", lista("CUP", "USD", "EUR")],
@@ -166,6 +197,8 @@ export type MonedaWriteDenial =
   | "sede-no-encontrada"
   | "sede-cerrada"
   | "moneda-desconocida"
+  /** PuntoCash la retiró del catálogo: no se puede añadir a más sedes (**FR-SA-MON-4**). */
+  | "moneda-retirada"
   | "ya-en-la-lista"
   | "no-en-la-lista"
   /** Alguna caja tiene saldo distinto de cero (**FR-AD-MON-7**). */
@@ -204,6 +237,7 @@ export function anadirMonedaASede(
   if (denial) return { ok: false, reason: denial };
   if (!monedaDelCatalogo(code)) return { ok: false, reason: "moneda-desconocida" };
   if (sedeManejaMoneda(sedeId, code)) return { ok: false, reason: "ya-en-la-lista" };
+  if (!monedaEstaDisponible(code)) return { ok: false, reason: "moneda-retirada" };
 
   const entrada: MonedaDeSede = { code, addedAt: now.toISOString() };
   const actual = listas.get(sedeId);
@@ -283,4 +317,90 @@ export function retirarMonedaDeSede(
     ok: true,
     value: { code, cajas: conMoneda.map((r) => r.name), tasas: arrastradas },
   };
+}
+
+/* -------------------------------------------------------------------------
+ * Escrituras sobre el catálogo — de PuntoCash, nunca del mercante (regla A3)
+ * ---------------------------------------------------------------------- */
+
+/** La moneda con la que se cotiza todo: la red no puede funcionar sin ella (**FR-SA-MON-5**). */
+const MONEDA_LOCAL_DEL_CATALOGO = "CUP";
+
+export type CatalogoWriteDenial =
+  | "alcance-insuficiente"
+  | "codigo-invalido"
+  | "ya-existe"
+  | "esta-retirada"
+  | "no-existe"
+  | "moneda-local"
+  | "ya-retirada"
+  | "no-esta-retirada";
+
+export type CatalogoWriteResult<T> = { ok: true; value: T } | { ok: false; reason: CatalogoWriteDenial };
+
+/** Dónde se usa una moneda hoy (**FR-SA-MON-2**): sedes vivas con ella en su lista, y cajas activas que la tienen habilitada. */
+export interface UsoDeMoneda {
+  sedes: number;
+  cajas: number;
+}
+
+export function usoDeMoneda(code: string): UsoDeMoneda {
+  let sedes = 0;
+  let cajas = 0;
+  for (const [sedeId, lista] of listas) {
+    if (!lista.some((m) => m.code === code)) continue;
+    if (findSedeById(sedeId)?.status === "cerrada") continue;
+    sedes += 1;
+    cajas += cajasConMoneda(sedeId, code).filter((c) => c.register.status === "activa").length;
+  }
+  return { sedes, cajas };
+}
+
+/**
+ * Añade una moneda al catálogo (**FR-SA-MON-3**). Se elige de la tabla ISO
+ * 4217: del código salen el nombre y el símbolo, y los decimales son siempre
+ * cuatro. La pone a disposición de toda la red y **no la activa en ninguna
+ * sede**: quien la incorpora a una sucursal es su mercante **[A4]**.
+ */
+export function anadirMonedaAlCatalogo(scope: Scope, input: { code: string }): CatalogoWriteResult<MonedaCatalogo> {
+  if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
+  const code = input.code.trim().toUpperCase();
+  const iso = monedaIso(code);
+  if (!iso) return { ok: false, reason: "codigo-invalido" };
+  const existente = monedaDelCatalogo(code);
+  if (existente) return { ok: false, reason: existente.retiradaEl ? "esta-retirada" : "ya-existe" };
+
+  const moneda: MonedaCatalogo = { code, name: iso.name, symbol: iso.symbol, retiradaEl: null };
+  CATALOGO_MONEDAS.push(moneda);
+  return { ok: true, value: moneda };
+}
+
+/**
+ * Retira una moneda del catálogo (**FR-SA-MON-4**). Solo tiene efecto hacia
+ * adelante: impide que un mercante la añada a nuevas sedes. **No la quita de
+ * las sedes que ya la tienen, no toca saldos y no altera ningún registro
+ * histórico** **[R9]**. Devuelve dónde seguirá presente.
+ */
+export function retirarMonedaDelCatalogo(
+  scope: Scope,
+  code: string,
+  now = new Date(),
+): CatalogoWriteResult<{ moneda: MonedaCatalogo; uso: UsoDeMoneda }> {
+  if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
+  const moneda = monedaDelCatalogo(code);
+  if (!moneda) return { ok: false, reason: "no-existe" };
+  if (code === MONEDA_LOCAL_DEL_CATALOGO) return { ok: false, reason: "moneda-local" };
+  if (moneda.retiradaEl) return { ok: false, reason: "ya-retirada" };
+  moneda.retiradaEl = now.toISOString();
+  return { ok: true, value: { moneda, uso: usoDeMoneda(code) } };
+}
+
+/** Vuelve a poner a disposición de la red una moneda retirada. */
+export function reincorporarMonedaAlCatalogo(scope: Scope, code: string): CatalogoWriteResult<MonedaCatalogo> {
+  if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
+  const moneda = monedaDelCatalogo(code);
+  if (!moneda) return { ok: false, reason: "no-existe" };
+  if (!moneda.retiradaEl) return { ok: false, reason: "no-esta-retirada" };
+  moneda.retiradaEl = null;
+  return { ok: true, value: moneda };
 }

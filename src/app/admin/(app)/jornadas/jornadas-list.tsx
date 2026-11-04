@@ -120,13 +120,14 @@ export function JornadasList({
   const columnas: readonly ResponsiveColumn<JornadaRow>[] = [
     { key: "caja", header: "Caja", cell: (r) => <Caja row={r} varias={varias} />, hiddenOnCard: true },
     { key: "trabajador", header: "Trabajador", cell: (r) => <Trabajador row={r} /> },
-    { key: "fecha", header: "Fecha", cell: (r) => <span className="whitespace-nowrap">{r.fecha}</span> },
+    { key: "fecha", header: "Fecha", cell: (r) => <span>{r.fecha}</span> },
     {
       key: "horario",
       header: "Apertura y cierre",
       cell: (r) => (
-        <span className="pc-numeric whitespace-nowrap text-text-secondary">
-          {r.apertura} – {r.cierre ?? "…"}
+        <span className="pc-numeric text-text-secondary">
+          <span className="whitespace-nowrap">{r.apertura}</span> –{" "}
+          <span className="whitespace-nowrap">{r.cierre ?? "…"}</span>
         </span>
       ),
     },

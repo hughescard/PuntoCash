@@ -39,6 +39,22 @@ test.describe("Promociones", () => {
     expect(respuesta?.status()).toBe(404);
   });
 
+  test("tras un rechazo, el formulario conserva las sedes marcadas", async ({ page }) => {
+    await signInAsAdmin(page, MARTA);
+    await page.goto("/admin/promociones/nueva");
+    const main = page.getByRole("main");
+    await main.getByLabel(/^Título/).fill("Sin texto");
+    await main.getByLabel("PuntoCash Cerro").check();
+    const hoy = await main.getByLabel(/^Desde/).inputValue();
+    await main.getByLabel(/^Hasta/).fill(hoy);
+    await main.getByRole("button", { name: "Publicar promoción" }).click();
+
+    /* **FR-AD-PROM-5**: el servidor rechaza, y nada de lo escrito se pierde. */
+    await expect(main.getByText("Escribe el texto.")).toBeVisible();
+    await expect(main.getByLabel(/^Título/)).toHaveValue("Sin texto");
+    await expect(main.getByLabel("PuntoCash Cerro")).toBeChecked();
+  });
+
   test("lo que se publica sale en la pantalla de la sucursal", async ({ page, browser }) => {
     test.setTimeout(90_000);
     await signInAsAdmin(page, MARTA);

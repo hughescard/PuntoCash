@@ -1,532 +1,1290 @@
-# PuntoCash — Super Admin
-## Documento de Requisitos Funcionales (FRD) · v3.0
+# PuntoCash — Super administración
+## Documento de Requisitos Funcionales (FRD) · v5.2
 
-**Estado:** **Especificación de implementación. La aplicación no está construida.** Hoy `/super-admin` contiene un README de marcador de posición.
+**Alcance:** la consola de PuntoCash sobre su red, `/super-admin`. No cubre la consola del mercante (`/admin`).
 
-**Destinatarios:** Personas desarrolladoras y QA. Utilizable como especificación de implementación y como referencia de aceptación.
+**Destinatarios:** desarrollo backend y frontend, y QA. Es la especificación contra la que se implementa y se acepta.
 
-**Alcance:** Únicamente la consola de PuntoCash sobre su red, `/super-admin`. La consola del mercante se especifica en `PuntoCash_Admin_Sede_Functional_Requirements_v1.md`, al que este documento se remite en todo lo que comparte.
+**Documentos relacionados:**
 
-**Control de cambios — v3.1 (2026-09-23).** **Separación de monedas y tasas, y catálogo de plataforma.** §9 pasa a llamarse **Monedas y tasas** y se organiza en tres vistas: **9.1 Monedas de la plataforma** (`FR-SA-MON-*`, nuevo), el catálogo del que cada mercante elige las monedas de sus sedes; **9.2 Rangos de la red** (`FR-SA-TASA-1..11`), donde definir el rango de un par es lo que lo pone a disposición de la red y retirarlo lo saca de circulación sin borrar nada; y **9.3 Monedas y pares por sede** (`FR-SA-TASA-12..15`), de solo lectura. Se ajustan la barra lateral, las alertas de §3, FR-SA-SERV-4, §15 y el Apéndice A.
+| Documento | Qué define |
+| --- | --- |
+| `PuntoCash_Super_Admin_PRD_v1.md` | El producto, sus conceptos y los requisitos **RP-27 a RP-30**, propios de esta consola |
+| `PuntoCash_Admin_Sede_PRD_v1.md` | Las reglas de la capa **A1–A14**, citadas aquí como **[A#]**, y **RP-17 a RP-26** |
+| `../PuntoCash_PRD_v2.md` | Las reglas de producto **R1–R13**, citadas como **[R#]** |
+| `PuntoCash_Admin_Sede_Functional_Requirements_v1.md` | La consola del mercante (**FR-AD-***): lo que esta consola observa y no toca, y las piezas que ambas comparten (detalle de jornada, cálculo y exportación de reportes, formulario de promoción) |
+| `../worker/PuntoCash_Worker_Functional_Requirements_v1.md` | El acceso en dos pasos y la recuperación de contraseña (**FR-AUTH-***, **FR-2FA-***, **FR-REC-***), y el detalle de las operaciones |
+| `../kiosko/…` | El kiosco de autoservicio y la pantalla informativa, que leen de la capa de administración lo que cada sede exhibe |
 
-**Control de cambios — v3.0 (2026-09-23).** **PuntoCash deja de intervenir dentro de las sedes.** La v2.0 le daba capacidades que no le corresponden. Cinco cambios. (1) **Desaparece la gestión de cajas**: una sede se crea sin cajas y las crea su mercante; §4.2 y §4.3 se reescriben. (2) **Desaparece la habilitación de monedas por sede** (la §8 de la v2.0), que pasa al mercante condicionada al servicio de Cambio de moneda; lo que queda aquí es el rango y la consulta. (3) **Desaparece la desactivación de trabajadores**: §6 queda enteramente en solo lectura. (4) **El alta de un operador entrega un único usuario administrador**, y ese usuario crea los demás; esta consola no crea usuarios adicionales. (5) Nueva **§13 Suspensión**, que documenta la única palanca de PuntoCash sobre lo que ocurre dentro de una sede: suspender al operador o a la sede corta el acceso de todos sus usuarios y trabajadores a la vez, se permite con jornadas abiertas y es reversible **[A14]**. §7 se amplía para cubrir también las cajas. El Apéndice A refleja el reparto nuevo.
+## Cómo leer este documento
 
-**Control de cambios — v2.0 (2026-09-23).** Incorpora lo que Worker y Kiosco delegaron en la capa de administración: §7 Equipos en solo lectura, promociones de red, acceso con verificación en dos pasos **[R13]** y el trabajador adscrito a una sede.
+- Cada requisito tiene un código `FR-SA-<área>-<n>`. «Debe» indica comportamiento obligatorio.
+- El documento fija las **reglas**: qué datos muestra cada pantalla, qué se permite, qué se rechaza y con qué código, qué se guarda y qué se audita.
+- Los **textos, avisos y la disposición** de cada pantalla están en la **demostración**, que es la referencia de diseño. Aquí solo se citan los textos que son regla de negocio.
+- Cada **«Ver en la demo»** dice qué pasos seguir. Las cuentas están en el **Apéndice B**; salvo que se diga otra cosa, se entra con `emarrero@puntocash.com`, contraseña `puntocash`, código `123456`.
+- Cada rechazo del servidor tiene un **código** (`jornadas-abiertas`). El mensaje que ve el usuario está en el **Apéndice C**.
+- **El servidor revalida toda regla al confirmar**, aunque la pantalla ya la haya comprobado: las condiciones pueden cambiar con la pantalla abierta **[R3]**.
+- Un identificador inexistente responde como un recurso inexistente (**FR-SA-NAV-3**).
+- **Motivo** significa siempre: obligatorio, de al menos 10 caracteres sin contar los espacios al principio y al final, y guardado en el evento de auditoría con el nombre de quien actuó (**FR-SA-STATE-2**).
 
-**Control de cambios — v1.0 (2026-09-22).** Primera versión.
+## Versiones
 
-**Documentos relacionados:** `PuntoCash_Administracion_PRD_v1.md` (v3.0) define el modelo de negocio, los conceptos y las reglas **A1–A14**. `PuntoCash_PRD_v2.md` (v2.5) define **R1–R13** y **RP-1 a RP-16**. `PuntoCash_Worker_Functional_Requirements_v1.md` (v1.5) §2 define el acceso que esta consola hereda y §2.1 la vinculación que esta consola observa. `PuntoCash_Kiosk_Pantalla_Functional_Requirements_v1.md` (v1.4) §7 define el origen único de datos que §9 y §11 enmarcan. `CLAUDE.md` y `PuntoCash_Manual_de_Marca_y_UI_v1.pdf` mandan sobre todo lo visual.
+| Versión | Fecha | Cambio |
+| --- | --- | --- |
+| 5.2 | 03/11/2026 | **PuntoCash resuelve las diferencias de efectivo que quedan sin dueño al traspasar una sede** (§11.3, **FR-SA-APR-1 a APR-5**, nuevos): menú «Aprobaciones», pendiente en Inicio |
+| 5.1 | 03/11/2026 | Un mercante ve cada sede solo desde que es suya; PuntoCash, todo (**FR-SA-DOM-4**) |
+| 5.0 | 03/11/2026 | **Reescritura completa en el formato de la v8 del FRD de Admin.** El documento describe la consola construida, no un diseño previo: una subsección por pantalla y por acción, rechazos con código, auditoría en tablas y «Ver en la demo». Incorpora las decisiones del 03/11: cerrar una sede termina su administración (**FR-SA-ASG-13**); una sede suspendida sin operador se asigna y PuntoCash mantiene su contacto (**FR-SA-SEDE-24**, **FR-SA-ASG-12**); toda credencial entregada es la contraseña (**FR-SA-OPE-16**, **FR-SA-USR-6**); motivo al cambiar un rango ya definido, al retirar una promoción de red y al traspasar el principal (**FR-SA-TASA-16**, **FR-SA-PROM-12**, **FR-SA-USR-10**). Secciones nuevas: Jornadas (**FR-SA-JOR**), Usuarios (**FR-SA-USR**) y Perfil (**FR-SA-PERF**). Los códigos de la v4.2 se conservan donde el requisito sigue; los redefinidos y los retirados se listan abajo |
+| 4.2 | 03/11/2026 | Banderas de la lista ISO (FR-SA-MON-9) |
+| 4.1 | 03/11/2026 | Rangos con hasta 4 decimales |
+| 4.0 | 03/11/2026 | Auditoría: el objeto de un evento enlaza a su ficha (FR-SA-AUD-5) |
+| 3.9 | 03/11/2026 | Una promoción de red llega a toda sede, ofrezca o no el servicio (FR-SA-PROM-11) |
+| 3.8 | 03/11/2026 | Monedas de la lista ISO 4217, cuatro decimales fijos, menú de acciones, Worker recableado |
+| 3.7 | 03/11/2026 | PuntoCash mantiene el catálogo de monedas |
+| 3.6 | 02/11/2026 | «Administradores» en lugar de «usuarios administradores» |
+| 3.5 | 02/11/2026 | Auditoría construida y exportable |
+| 3.4 | 02/11/2026 | Reportes construidos y exportables; cada operación al mercante de su fecha |
+| 3.3 | 02/11/2026 | Promociones de red: destino como sedes, saturación con autor, solo las de red |
+| 3.2 | 28/10/2026 | Un operador nunca se queda sin administrador; restablecer el acceso del principal |
+| 3.1 | 23/09/2026 | Monedas y tasas en tres vistas; catálogo de plataforma |
+| 3.0 | 23/09/2026 | PuntoCash deja de intervenir dentro de las sedes; suspensión como único recurso |
+| 2.0 | 23/09/2026 | Equipos, promociones de red, acceso en dos pasos, trabajador adscrito a sede |
+| 1.0 | 22/09/2026 | Primera versión |
 
-**Cómo leer este documento.** Los requisitos se numeran `FR-SA-<área>-<n>`. Donde una pantalla se comporta igual que su equivalente en la consola del mercante, este documento lo dice y remite en lugar de repetirlo.
+**Códigos redefinidos en la v5.0** (el código sigue, el contenido cambia): **FR-SA-ACC-5** (la recuperación de contraseña existe), **FR-SA-HOME-1 a HOME-7** (Inicio tal como se construyó), **FR-SA-SEDE-10** (una sede nace activa; «sin asignar» se deriva), **FR-SA-ASG-10** (revocar deja la sede sin asignar, no suspendida), **FR-SA-TASA-1** y **TASA-2** (rangos por moneda contra el peso cubano, no por par), **FR-SA-STATE-2** (qué actos piden motivo).
+
+**Códigos que pasan a una tabla** (siguen vigentes dentro de ella): **FR-SA-SEDE-5, 7, 8 y 9** → tabla de **FR-SA-SEDE-4**; **FR-SA-SEDE-15, 16, 19, 20 y 21** → tabla de **FR-SA-SEDE-13**; **FR-SA-TASA-3** → **FR-SA-MON-2**.
+
+**Códigos retirados:** **FR-SA-TASA-14** y **TASA-15** (la vista de tasas por sede no señala situaciones ni ofrece contacto: es de consulta), **FR-SA-DOM-5 a DOM-7** (detalles de la simulación, que ya no son requisitos), **FR-SA-SHELL-3** (su contenido pasa a FR-SA-SHELL-2).
 
 ---
 
-## 0. Qué es este módulo y qué no es
+## 1. Comportamiento global
 
-`/super-admin` es la consola con la que PuntoCash gobierna **su red**: qué sedes existen, a quién se las entrega, dentro de qué límites opera cada una, y qué está pasando en todas a la vez.
+### 1.1 Estructura
 
-PuntoCash es la propietaria de la red y de la plataforma; no es la administradora de ningún mostrador. Esa distinción es la que organiza todo este documento, y se resume en dos listas.
+**FR-SA-SHELL-1 · Estructura.** Misma composición que la consola del mercante: rutas de acceso sin estructura común (`(auth)`) y rutas de trabajo con cabecera, navegación y contenido (`(app)`). Sin sesión, toda ruta de trabajo lleva a `/super-admin/login`; `/super-admin` lleva a `/super-admin/inicio`.
 
-**Lo que esta consola decide** son los términos de la relación y los límites de la red: crear una sede, editar sus datos maestros, suspenderla y cerrarla; dar de alta y de baja mercantes; asignar y revocar sedes; entregar a cada mercante su **primer** usuario administrador; fijar los **rangos de tasa** por par de monedas; habilitar los **servicios** de cada sede; y publicar **promociones de red**.
+**FR-SA-SHELL-2 · Navegación.** Los destinos se agrupan en cuatro bloques, por lo que la persona viene a hacer:
 
-**Lo que esta consola solo mira** es todo lo que vive dentro de una sede: sus cajas, sus equipos vinculados, sus kioscos, sus trabajadores, sus usuarios administradores, las monedas que cambia, la tasa que aplica, sus jornadas y sus operaciones. Lo ve entero, con todo el detalle, y no crea, modifica ni da de baja nada de ello **[A14]**, **[RP-26]**.
+| Bloque | Destinos |
+| --- | --- |
+| Red | Inicio · Sedes · Operadores · Cajas y equipos · Trabajadores |
+| Oferta | Servicios · Monedas y tasas · Promociones |
+| Actividad | Jornadas · Aprobaciones (**FR-SA-APR-1**) · Operaciones · Reportes |
+| Administración | Usuarios (**solo el principal**, **FR-SA-USR-1**) · Auditoría |
 
-Cuando algo va mal dentro de una sede, PuntoCash no interviene pieza a pieza: **suspende al operador o suspende la sede** (§13). Es una acción sobre la relación, visible, reversible y auditada, que corta el acceso de todos a la vez sin quitarle al mercante la responsabilidad de lo suyo.
+- «Sedes» lleva un indicador con el número de sedes **sin asignar**, y «Aprobaciones» con el de diferencias sin quien las resuelva; sin ninguna, no llevan indicador.
+- Desde 1024px, la navegación es lateral y cabe entera a 900px de alto. Por debajo, una barra inferior con Inicio, Sedes, Operadores y «Más», que abre la navegación completa, el nombre de la persona, Perfil y Cerrar sesión.
 
-Y como el resto de la capa: no opera caja, no registra operaciones, no verifica identidades, no invoca proveedores externos y no corrige lo que un Worker registró **[A6]**, **[A7]**.
+**Ver en la demo:** entrar con `emarrero@puntocash.com` (ve Usuarios) y con `jaguilera@puntocash.com` (no lo ve). Estrechar la ventana por debajo de 1024px para la barra inferior.
 
----
+**FR-SA-SHELL-4 · Cabecera.** Marca PuntoCash; el distintivo **«Super administración»** («Super admin» en el teléfono); desde 1024px, el nombre de la persona y «PuntoCash · {área}», y «Cerrar sesión»; en todos los anchos, el círculo con las iniciales, que lleva al Perfil.
 
-## 1. Comportamiento global del módulo
+**FR-SA-SHELL-5 · Distintivo.** El distintivo es un requisito de seguridad operativa: ninguna pantalla de esta consola debe poder confundirse con una de la consola del mercante.
 
-### 1.1 Shell
+**FR-SA-SHELL-6 · Referencia de pantalla.** Escritorio a 1440×900 como referencia y 1280px como ancho mínimo de escritorio. Ninguna pantalla se desborda de lado a 1280, 1024, 768 ni 390px.
 
-**FR-SA-SHELL-1** Misma composición de shell que la consola del mercante, con grupos de rutas `(auth)` y `(app)` (equivale a **FR-AD-SHELL-1**).
+**FR-SA-SHELL-7 · Sin flujos por pasos.** Ninguna pantalla usa un asistente por pasos. Las altas son formularios por secciones.
 
-**FR-SA-SHELL-2** La barra lateral debe agrupar sus destinos en tres bloques que reflejen el reparto de §0: **Red** (Inicio, Sedes, Operadores), **Límites** (Servicios, Monedas y tasas, Promociones) y **Consulta** (Cajas y equipos, Trabajadores, Operaciones, Reportes, Auditoría).
+**FR-SA-SHELL-8 · Tablas y tarjetas.** Los listados son tablas desde 1280px y tarjetas por debajo (a dos columnas desde 768px). En la tabla, los nombres largos se recortan con el valor entero disponible al pasar por encima; en las tarjetas no se recorta nada. Ninguna tabla crece con su contenido hasta salirse de la pantalla.
 
-**FR-SA-SHELL-3** Esa agrupación es un requisito, no una preferencia de diseño: separar lo que PuntoCash decide de lo que solo consulta es la forma más directa de que nadie busque en esta consola un botón que no existe **[A14]**.
-
-**FR-SA-SHELL-4** La cabecera muestra la marca **PuntoCash**, un distintivo visible que identifica la consola como administración general de la red, el nombre de la persona con sesión iniciada, y los accesos de Perfil y Cerrar sesión.
-
-**FR-SA-SHELL-5** El distintivo de FR-SA-SHELL-4 es un requisito de seguridad operativa, no decorativo: debe ser imposible confundir de un vistazo una pantalla de esta consola con la del mercante, porque las acciones disponibles y su alcance son muy distintos.
-
-**FR-SA-SHELL-6** Referencia de pantalla y densidad: igual que la consola del mercante (**FR-AD-SHELL-6**). No le aplica la excepción de **FR-AD-SHELL-7**, porque esta consola nunca escanea un QR de vinculación.
-
-**FR-SA-SHELL-7** Ninguna pantalla debe contener flujos por pasos con stepper. La creación de una sede (§4.2) se resuelve en un formulario por secciones.
+**FR-SA-SHELL-9 · Acciones de fila.** Cuando una fila tiene más de una acción, van en un menú «⋯» accesible, que se abre hacia arriba si no cabe debajo y nunca queda fuera de la pantalla.
 
 ### 1.2 Rutas
 
-**FR-SA-NAV-1** Inventario de rutas:
+**FR-SA-NAV-1 · Inventario.**
 
-| Ruta | Función |
+| Ruta | Pantalla |
 | --- | --- |
-| `/super-admin/login` | Acceso, paso 1: credenciales (sin shell) |
-| `/super-admin/verificacion` | Acceso, paso 2: código de verificación (sin shell) |
-| `/super-admin/inicio` | Panel de salud de la red |
-| `/super-admin/sedes` | Listado de todas las sedes |
-| `/super-admin/sedes/nueva` | Creación de una sede |
-| `/super-admin/sedes/[id]` | Ficha de una sede, con asignación e historial |
-| `/super-admin/operadores` | Listado de mercantes |
-| `/super-admin/operadores/nuevo` | Alta de un mercante y su usuario administrador inicial |
-| `/super-admin/operadores/[id]` | Ficha de un mercante |
-| `/super-admin/servicios` | Servicios habilitados por sede |
-| `/super-admin/monedas-y-tasas` | Catálogo de monedas, rangos de red, y consulta por sede |
-| `/super-admin/promociones` | Promociones de red |
-| `/super-admin/equipos` | Inventario de cajas, equipos de caja y kioscos (solo lectura) |
-| `/super-admin/trabajadores` | Todos los trabajadores de la red (solo lectura) |
-| `/super-admin/trabajadores/[id]` | Ficha de un trabajador (solo lectura) |
-| `/super-admin/operaciones` | Historial de toda la red |
-| `/super-admin/operaciones/[codigo]` | Detalle de una operación, de solo lectura |
-| `/super-admin/reportes` | Consolidado de red y comparativas |
-| `/super-admin/auditoria` | Registro de eventos de gobierno |
+| `/super-admin/login` · `/super-admin/verificacion` · `/super-admin/recuperar-acceso` | Acceso (§2) |
+| `/super-admin/inicio` | Inicio (§3) |
+| `/super-admin/sedes` · `/nueva` · `/[id]` · `/[id]/editar` | Sedes (§4) |
+| `/super-admin/operadores` · `/nuevo` · `/[id]` | Operadores (§5) |
+| `/super-admin/equipos` (`?pestana=kioscos`) | Cajas y equipos (§6) |
+| `/super-admin/trabajadores` · `/[id]` | Trabajadores (§7) |
+| `/super-admin/servicios` | Servicios (§8) |
+| `/super-admin/monedas-y-tasas` (`?vista=sedes`) | Monedas y tasas (§9) |
+| `/super-admin/promociones` · `/nueva` · `/[id]` | Promociones (§10) |
+| `/super-admin/jornadas` · `/[id]` | Jornadas (§11) |
+| `/super-admin/aprobaciones` · `/[id]` | Aprobaciones sin quien las resuelva (§11.3) |
+| `/super-admin/operaciones` · `/[codigo]` | Operaciones (§12) |
+| `/super-admin/reportes` · `GET /super-admin/reportes/exportar/{pdf\|xlsx}` | Reportes (§13) |
+| `/super-admin/auditoria` · `/[id]` · `GET /super-admin/auditoria/exportar` | Auditoría (§14) |
+| `/super-admin/usuarios` · `/nuevo` · `/[id]` · `/[id]/editar` | Usuarios (§15), solo el principal |
+| `/super-admin/perfil` · `/perfil/contrasena` | Perfil (§16) |
 
-**FR-SA-NAV-2** Esta consola no tiene selector de alcance: su alcance es la red entera **[A1]**. Donde el filtrado por sede u operador es útil, se ofrece como filtro de la pantalla, nunca como alcance de la sesión.
+**FR-SA-NAV-2 · Sin selector de alcance.** El alcance de esta consola es la red entera **[A1]**. Donde filtrar por sede u operador es útil, es un filtro de la pantalla, nunca del alcance de la sesión.
 
-**FR-SA-NAV-3** Un identificador inexistente se trata con el mismo mensaje genérico que en la consola del mercante (**FR-AD-NAV-3**).
+**FR-SA-NAV-3 · Inexistente.** Un identificador que no existe —sede, operador, trabajador, jornada, operación, promoción, evento, cuenta— muestra dentro de la estructura común la pantalla de «no encontrado», con un enlace a Inicio. Una ruta desconocida, igual.
+
+**Filtros en la dirección.** Los filtros de todos los listados viven en la dirección de la página: una URL filtrada se puede compartir y volver a abrir. Las búsquedas de texto no distinguen mayúsculas ni tildes («camaguey» encuentra «Camagüey»).
+
+### 1.3 Formatos
+
+**FR-SA-FMT-1.**
+
+| Dato | Formato |
+| --- | --- |
+| Importe | `1.250,00 USD`, dos decimales |
+| Tasa y límite de rango | Hasta 4 decimales, mínimo 2 si no es entera: `318` · `318,50` · `318,525` |
+| Fecha y hora | Hora de Cuba (`America/Havana`). «12 oct 2026 · 14:20» |
+| Correo de una persona | **Enmascarado** en todo listado y ficha (`e•••@puntocash.com`), salvo donde se edita |
+| Credencial entregada | `XXXXX-XXXXX`, alfabeto sin caracteres ambiguos |
+| Moneda | Bandera SVG decorativa (de la lista ISO), código y nombre |
 
 ---
 
 ## 2. Acceso
 
-**FR-SA-ACC-1** El acceso es **el mismo flujo de dos pasos que Worker y que la consola del mercante**: credenciales y, después, un código de seis dígitos al correo registrado. Ninguna sesión existe hasta que se verifica **[R13]**.
+### 2.1 Credenciales y verificación — `/super-admin/login`, `/super-admin/verificacion`
 
-**FR-SA-ACC-2** Rigen, aplicados a `/super-admin/login` y `/super-admin/verificacion`, los requisitos **FR-AUTH-1 a FR-AUTH-7** y **FR-2FA-1 a FR-2FA-32** de `PuntoCash_Worker_Functional_Requirements_v1.md` §2.3 a §2.10, sin repetirlos aquí (equivale a **FR-AD-ACC-2**).
+**FR-SA-ACC-1 · Dos pasos.** Identificador **o** correo y contraseña; después, un código de seis dígitos al correo registrado. **Ninguna sesión existe hasta verificar el código [R13].** No hay «recordar este equipo».
 
-**FR-SA-ACC-3** Lo único que difiere es el destino posterior a la verificación, `/super-admin/inicio`, y el texto de contexto de la pantalla de credenciales.
+**FR-SA-ACC-2 · Herencia.** Rigen sin repetirlos **FR-AUTH-1 a FR-AUTH-7** y **FR-2FA-1 a FR-2FA-32** de Worker, aplicados a estas rutas.
 
-**FR-SA-ACC-4** Mensajes de error indistinguibles entre usuario inexistente, contraseña incorrecta y usuario desactivado (equivale a **FR-AD-ACC-5**).
+**FR-SA-ACC-3 · Diferencias.** Tras verificar, `/super-admin/inicio`. Los textos de ayuda remiten «al área de sistemas de PuntoCash». La sesión dura **12 horas** y se comprueba en cada petición: una cuenta desactivada con la sesión abierta vuelve al acceso en su siguiente petición. Las cookies de sesión y de verificación pendiente son propias de esta consola: un código pendiente de `/admin` no abre sesión aquí.
 
-**FR-SA-ACC-5** `/super-admin/recuperar-acceso` es un marcador de posición sin comportamiento.
+**FR-SA-ACC-4 · Rechazo único.** Cuenta inexistente, contraseña incorrecta y cuenta desactivada responden con el mismo rechazo (`credenciales-incorrectas`).
+
+**Ver en la demo:** `rvaldes@puntocash.com` (desactivada) y `emarrero@puntocash.com` con una contraseña equivocada dan el mismo mensaje.
+
+### 2.2 Recuperación — `/super-admin/recuperar-acceso`
+
+**FR-SA-ACC-5 · Recuperar la contraseña.** El mismo trámite de tres pasos que Worker y Admin (**FR-REC-***): identificador o correo, código al correo registrado, contraseña nueva. **Terminar no abre sesión**: vuelve a `/super-admin/login`.
 
 ---
 
 ## 3. Inicio
 
-El panel que responde "¿cómo está la red ahora mismo?".
+### 3.1 Inicio — `/super-admin/inicio`
 
-**FR-SA-HOME-1** Fila de métricas de red: **sedes activas** (sobre el total), **sedes con jornada abierta ahora**, **sedes sin ninguna caja**, **cajas sin equipo vinculado**, **operadores activos**, **trabajadores activos**, **operaciones del día** y **volumen del día por moneda**.
+Responde «¿cómo está la red hoy?». **No ejecuta nada**: orienta y enlaza.
 
-**FR-SA-HOME-2** El volumen se expresa por moneda, sin convertir a una moneda única (**FR-AD-HOME-1**).
+**FR-SA-HOME-1 · Resumen.** Bajo el saludo, una frase con las sedes dadas de alta **no cerradas** y cuántas están activas, sin asignar, suspendidas y con su operador suspendido, y cuántos operadores están activos.
 
-**FR-SA-HOME-3** **Panel de alertas de red**, con las situaciones que PuntoCash debe mirar aunque no sea quien las resuelve, en este orden: sedes sin operador asignado; **sedes asignadas hace más de N días y todavía sin ninguna caja**, que es una sucursal entregada y sin poner en marcha; sedes con cajas sin equipo vinculado; sedes activas sin jornada abierta dentro de su horario; jornadas abiertas fuera de horario; arqueos con diferencia por encima de un umbral; solicitudes de aprobación pendientes con más de 24 horas; tasas fijadas automáticamente al límite y aún no revisadas por su Admin **[A5]**; sedes con el servicio de Cambio de moneda habilitado y **ningún par definido**, que exhiben un tablero vacío **[A12]**; sedes **sin ninguna moneda en su lista**, que no pueden manejar efectivo de ningún tipo; y **pares que varias sedes podrían cotizar pero para los que PuntoCash no ha definido rango**, que es una petición pendiente de la red **[FR-SA-TASA-3]**.
+**FR-SA-HOME-2 · Hoy en la red.** Tres cifras del día (hora de Cuba):
 
-**FR-SA-HOME-4** **Toda alerta de este panel es informativa: ninguna ofrece una acción correctiva sobre la pieza afectada** **[A14]**. Cada una indica la sede y el operador responsable, enlaza a la pantalla donde se consulta, y ofrece el contacto del mercante, que es a quien hay que pedírselo. La única acción disponible desde aquí, y solo para casos graves, es la suspensión de §13.
+| Cifra | Cálculo |
+| --- | --- |
+| Sedes con operaciones | Sedes en estado **activa** con al menos una operación hoy, sobre el total de sedes activas |
+| Operaciones del día | Operaciones de hoy en sedes no cerradas, contadas como en el Inicio de Admin (**FR-AD-HOME-1**) |
+| Trabajadores que han operado | Personas distintas con alguna operación hoy |
 
-**FR-SA-HOME-5** La pantalla debe dejar clara esa naturaleza, para que la ausencia de botones se lea como una decisión: "PuntoCash observa la red. Lo que ocurre dentro de una sede lo resuelve su administrador."
+**FR-SA-HOME-3 · Pendientes.** Solo lo que resuelve PuntoCash, y solo si hay algo. Cada uno con su enlace:
 
-**FR-SA-HOME-6** **Tabla de estado de la red**, con una fila por sede activa: código y nombre, operador asignado, estado de la jornada, cajas activas y cuántas sin equipo, kioscos vinculados, operaciones del día y alertas activas. Admite ordenación por cualquier columna y filtro por operador.
+| Pendiente | Cuándo | Enlace |
+| --- | --- | --- |
+| Sede sin operador | Sede no cerrada sin asignar. Dice desde cuándo | Ficha de la sede |
+| Operador sin sedes | Operador activo sin ningún tramo vigente. Dice desde cuándo está de alta | Ficha del operador |
+| Moneda que no se puede cotizar | Moneda del catálogo, no retirada, sin rango, que tienen en su lista sedes no cerradas, con operador y con Cambio de moneda. Nombra esas sedes | Monedas y tasas |
+| Diferencias sin quien las resuelva | Hay alguna (**FR-SA-APR-1**). Dice cuántas y de qué sedes | Aprobaciones |
 
-**FR-SA-HOME-7** Una sede **sin operador asignado** se distingue visualmente, porque es la única anomalía del panel que solo PuntoCash puede resolver.
+**FR-SA-HOME-4 · Informativos.** Ningún pendiente ofrece una acción en el sitio: lleva a la pantalla donde se resuelve.
+
+**FR-SA-HOME-5 · Lo que no es pendiente.** Una suspensión no es un pendiente: es una decisión ya tomada, y se ve en el estado de cada sede.
+
+**FR-SA-HOME-6 · Actividad por sede.** Una fila por sede no cerrada:
+
+| Dato | Contenido |
+| --- | --- |
+| Sede | Nombre (enlace), código y municipio |
+| Operador | Enlace, o «Sin operador» |
+| Estado | Estado de la sede (**FR-SA-SEDE-2**) |
+| Operaciones hoy | Número y cuántos trabajadores |
+| Última operación | Fecha y hora, trabajador y servicio, o ninguna |
+
+- Filtro por operador, con la opción de sedes sin operador si las hay.
+- Todas las columnas se ordenan pulsando su cabecera; por debajo de 1280px, con un selector «Ordenar por». El orden no va a la dirección.
+
+**FR-SA-HOME-7 · Orden por defecto.** Por estado —sin asignar, suspendida, operador suspendido, activa— y después por nombre: lo que pide atención, primero.
+
+**Ver en la demo:** Inicio. PuntoCash Santiago aparece sin operador; Cienfuegos Cambio, sin sedes; el CAD, esperado por dos sedes que no pueden cotizarlo.
 
 ---
 
 ## 4. Sedes
 
-### 4.1 Listado
+### 4.1 Listado — `/super-admin/sedes`
 
-**FR-SA-SEDE-1** `/super-admin/sedes` lista todas las sedes con: código, nombre, municipio y provincia, estado, operador asignado, fecha de la asignación vigente, cajas activas, cajas con equipo y trabajadores activos.
+**FR-SA-SEDE-1 · Contenido.** Todas las sedes, también las cerradas.
 
-**FR-SA-SEDE-2** Filtros: estado, provincia, operador, y conmutadores "sin operador asignado", "sin cajas" y "con cajas sin equipo". Búsqueda por código o nombre.
+| Dato | Contenido |
+| --- | --- |
+| Sede | Nombre (enlace a la ficha), código, municipio y provincia |
+| Estado | **FR-SA-SEDE-2** |
+| Operador | El vigente (enlace) y desde cuándo, o «Sin operador» |
+| Cajas | Cajas activas y cuántas tienen equipo, señalado si alguna no lo tiene; «Sin cajas» si ninguna |
+| Trabajadores | Trabajadores activos de la sede |
 
-**FR-SA-SEDE-3** La lista ofrece la acción **Nueva sede**.
+Orden fijo por estado (sin asignar, suspendida, operador suspendido, activa, cerrada) y después por nombre. Ofrece **Nueva sede**.
 
-### 4.2 Creación
+**FR-SA-SEDE-2 · Estado de una sede.** Se guarda lo que PuntoCash decide y se deriva lo que es un hecho:
 
-**FR-SA-SEDE-4** `/super-admin/sedes/nueva` crea una sede con un formulario en tres secciones: **datos maestros**, **servicios habilitados** y **asignación inicial**. **No hay sección de cajas**: una sede se crea vacía y las cajas las da de alta su mercante **[A4]**.
+| Estado | Cómo se obtiene | Prioridad |
+| --- | --- | --- |
+| Cerrada | Guardado | 1 |
+| Suspendida | Guardado | 2 |
+| Sin asignar | No tiene tramo vigente | 3 |
+| Operador suspendido | Su operador vigente no está activo | 4 |
+| Activa | Ninguno de los anteriores | 5 |
 
-**FR-SA-SEDE-5** Datos maestros: código, nombre, dirección, provincia y municipio (del catálogo de `src/features/geography`), teléfono y horario de atención. Todos obligatorios salvo el teléfono.
+Una sede sin operador **no** es una sede suspendida: la suspensión es una sanción con motivo y fecha; quedarse sin operador, no.
 
-**FR-SA-SEDE-6** El formulario debe advertir que estos datos son los que la sucursal exhibirá en su kiosco y en su pantalla informativa, y los que aparecerán en el selector de sede de toda Pantalla que se instale en la red **[A12]**, **[FR-PANT-SEDE-2]**, **[FR-PANT-DATA-4]**. No son datos internos.
+**FR-SA-SEDE-3 · Filtros.** Búsqueda por código o nombre; estado; provincia; operador (con «Sin operador asignado»); conmutadores «Sin cajas» (ninguna caja activa) y «Con cajas sin equipo». Contador de sedes visibles sobre el total.
 
-**FR-SA-SEDE-7** El código de sede debe ser único en la red. Un código repetido se rechaza con "Ya existe una sede con ese código."
+**Ver en la demo:** Sedes. Marcar «Sin cajas» deja PuntoCash Cerro y Pinar del Río.
 
-**FR-SA-SEDE-8** Servicios habilitados: los que esa sede podrá ofrecer (§8). La sede debe crearse con al menos uno.
+### 4.2 Nueva sede — `/super-admin/sedes/nueva`
 
-**FR-SA-SEDE-9** Asignación inicial: elegir un operador activo, o dejar la sede **sin asignar**. Dejarla sin asignar es una opción válida y explícita: una sede puede existir antes de decidirse quién la administrará.
+**FR-SA-SEDE-4 · Formulario.** Tres secciones, sin pasos:
 
-**FR-SA-SEDE-10** Una sede nace **activa** si tiene operador asignado, y **suspendida** si no lo tiene — porque sin un administrador responsable no puede ponerse en marcha: nadie podría crearle cajas ni vincularle equipos **[A4]**, **[A10]**.
+| Sección | Campo | Obligatorio | Reglas |
+| --- | --- | --- | --- |
+| Datos | Código | Sí | 2 a 8 letras o números, sin espacios; se guarda en mayúsculas; **único en la red** (**FR-SA-SEDE-7**) |
+| Datos | Nombre | Sí | Viene con «PuntoCash » |
+| Datos | Dirección · Provincia · Municipio | Sí | Provincia de la lista de provincias de Cuba |
+| Datos | Teléfono | Sí | Dígitos, espacios, guiones y «+»; al menos 8 dígitos |
+| Datos | Horario | Sí | Por días: al menos uno abierto; cada día abierto con apertura y cierre, y el cierre después de la apertura. Viene lunes a sábado 09:00–18:00 |
+| Servicios | Servicios habilitados | Al menos uno | Los servicios disponibles del producto (hoy: Cambio de moneda, Remesas, Giros); vienen todos marcados |
+| Asignación inicial | Operador | No | Solo operadores activos, o «Sin asignar por ahora» |
+| Asignación inicial | Motivo de la asignación | Si hay operador | **Motivo** |
 
-**FR-SA-SEDE-11** El resultado de la creación debe decir con todas sus letras qué falta y quién lo hace, porque la sede queda inservible hasta entonces: "Esta sede todavía no tiene cajas ni equipos. Su administrador debe crearlas y vincular un equipo a cada una antes de que pueda operar."
+**FR-SA-SEDE-6 · Datos públicos.** El formulario advierte que los datos de la sede son públicos: se ven en el kiosco, en la pantalla de la sucursal y en el selector de sede de las pantallas.
 
-**FR-SA-SEDE-12** La creación genera un evento de auditoría **[RP-21]**.
+**FR-SA-SEDE-10 · Al crear.** La sede nace **activa**, **sin cajas** y con los servicios marcados. Si se eligió operador, se le asigna en el mismo acto (**FR-SA-ASG-1**); si no, queda **sin asignar** (estado derivado). Si la asignación fallara en ese instante, la sede queda creada sin asignar y la respuesta lo dice.
 
-### 4.3 Ficha
+**FR-SA-SEDE-11 · Resultado.** La confirmación se queda en la pantalla y dice qué falta y quién lo hace: con operador, que su administrador debe crear las cajas y vincular un equipo a cada una; sin operador, que no puede operar hasta que se le asigne uno. Ofrece crear otra sede y ver su ficha.
 
-**FR-SA-SEDE-13** `/super-admin/sedes/[id]` muestra siete bloques: **datos maestros** (editables), **servicios habilitados** (editables), **asignación vigente**, **historial de asignaciones**, **cajas y equipos**, **trabajadores** y **contenido público**.
+**Rechazos.**
 
-**FR-SA-SEDE-14** Los datos maestros son editables por el Super Admin y solo por él **[A3]**. Guardar exige confirmación, que debe advertir el efecto de **FR-SA-SEDE-6**. Genera evento de auditoría.
+| Condición | Código |
+| --- | --- |
+| Código vacío o mal formado | `codigo-invalido` |
+| Código ya usado | `codigo-duplicado` |
+| Nombre, dirección o municipio vacíos; provincia no válida | `campo-requerido` |
+| Teléfono no válido | `telefono-invalido` |
+| Horario sin días, con horas incompletas o cierre antes de apertura | `horario-invalido` (se señala el día) |
+| Ningún servicio | `sin-servicios` |
+| Operador inexistente o no activo | `operador-inactivo` |
+| Hay operador y el motivo no es válido | `motivo-requerido` |
 
-**FR-SA-SEDE-15** El bloque de **asignación vigente** muestra operador, fecha de inicio, motivo y tiempo transcurrido, y ofrece **Revocar**. Sin asignación vigente, muestra el estado sin asignar y ofrece **Asignar**.
+Ante un rechazo, el formulario conserva lo escrito y señala el campo.
 
-**FR-SA-SEDE-16** El **historial de asignaciones** lista todos los tramos pasados con operador, inicio, fin, motivo de inicio y motivo de fin. Es de solo lectura, sin excepción, incluso para el Super Admin **[A2]**, **[R9]**, **[RP-20]**.
+**Ver en la demo:** Sedes → Nueva sede, con código «VED» (`codigo-duplicado`).
 
-**FR-SA-SEDE-17** El bloque de **cajas y equipos** lista las cajas de la sede con identificador, estado, equipo vinculado o su ausencia, trabajador con sesión iniciada y estado de la jornada, y los kioscos vinculados. **Es enteramente de solo lectura** **[A14]**: no añade cajas, no las retira, no vincula ni desvincula equipos. No debe existir ningún control para ello, ni siquiera deshabilitado.
+### 4.3 Ficha de sede — `/super-admin/sedes/[id]`
 
-**FR-SA-SEDE-18** Cuando la sede no tiene ninguna caja, este bloque debe decir de quién es la tarea, no limitarse a estar vacío: "Esta sede todavía no tiene cajas. Las crea su administrador, {operador}."
+**FR-SA-SEDE-13 · Bloques.**
 
-**FR-SA-SEDE-19** El bloque de **trabajadores** lista los adscritos a la sede, en solo lectura. No muestra caja, porque un trabajador no tiene caja **[A13]**.
+| Bloque | Contenido | Acciones |
+| --- | --- | --- |
+| Estado | Estado (**FR-SA-SEDE-2**) y, según el estado, aviso: suspendida (motivo, fecha y quién), operador suspendido, sin operador, cerrada | — |
+| Datos de la sede | Código, nombre, dirección, municipio y provincia, teléfono, horario por días, alta en la red | «Editar datos» (no en cerradas) |
+| Servicios habilitados | Cambio de moneda, Remesas, Giros: habilitado o no | «Cambiar servicios» (no en cerradas) |
+| Asignación vigente | Operador, desde cuándo y cuánto tiempo, motivo; sus **administradores** (principal marcado, identificador, correo enmascarado, teléfono, estado, último acceso) | «Revocar» o «Asignar un operador» (no en cerradas) |
+| Historial de asignaciones | Tramos cerrados, del más reciente: operador, fechas, motivo de inicio y de fin | — |
+| Estado de la sede | Historial de suspensiones y reactivaciones (fecha, motivo, quién), leído del registro de auditoría | «Suspender la sede» o «Reactivar la sede», y «Cerrar la sede» (no en cerradas) |
+| Cajas y equipos | Cada caja —también retiradas— con su equipo y su jornada en curso (trabajador, si tiene la sesión iniciada, desde cuándo, saldos); cada kiosco con su última actividad | Ninguna |
+| Trabajadores | Nombre, identificador, estado | Ninguna |
+| Contenido público | Monedas de su lista; tasas que publica hoy; promociones en pantalla hoy, con quién las publica | Ninguna |
 
-**FR-SA-SEDE-20** El bloque de **contenido público** muestra, en solo lectura, lo que esa sucursal exhibe: las monedas de su lista, los pares que cotiza con su tasa vigente, y sus promociones. Permite verificar la coherencia entre lo que la sede anuncia y lo que cotiza **[A12]**, sin poder cambiar ninguna de las dos.
+**FR-SA-SEDE-17 · Lo que no se toca.** Cajas, equipos, kioscos, trabajadores, administradores y contenido público son de **solo lectura**, sin controles deshabilitados **[A14]**.
 
-**FR-SA-SEDE-21** La ficha permite **suspender** y **cerrar** la sede, con el comportamiento de §13.
+**FR-SA-SEDE-18 · Sede sin cajas.** El bloque dice de quién es la tarea: su administrador (con el nombre del operador), o el que tenga cuando se le asigne.
 
-**FR-SA-SEDE-22** Una sede nunca se elimina. Cerrarla es el final de su ciclo de vida, y todo su histórico permanece accesible **[R9]**.
+**FR-SA-SEDE-22 · Nunca se elimina.** Una sede no se borra en ningún caso: se cierra (**FR-SA-SUS-8**).
 
-### 4.4 Asignar y revocar
+**Ver en la demo:** Sedes → PuntoCash Trinidad (suspendida, con su historial), PuntoCash Santiago (sin operador), PuntoCash Camagüey (operador suspendido).
 
-**FR-SA-ASG-1** **Asignar** exige elegir un operador activo y escribir un motivo de al menos 10 caracteres, y muestra un resumen antes de confirmar: sede, operador, fecha de inicio.
+### 4.4 Editar datos — `/super-admin/sedes/[id]/editar`
 
-**FR-SA-ASG-2** No es posible asignar una sede con asignación vigente. La interfaz exige revocar primero: "Esta sede ya está asignada a {operador}. Revoca esa asignación antes de asignarla a otro." **[A2]**.
+**FR-SA-SEDE-14 · Qué edita PuntoCash.** Siempre, el **código** y el **nombre** **[A3]**.
 
-**FR-SA-ASG-3** Si el operador elegido **no tiene todavía ningún usuario administrador** —porque es su primera sede—, la asignación debe encaminar a crearlo, o hacerlo en el mismo acto (**FR-SA-OPE-5**). Una sede asignada a un mercante que no puede entrar en la consola es una sede que nadie puede poner en marcha.
+**FR-SA-SEDE-24 · Contacto sin operador.** La **dirección, provincia, municipio, teléfono y horario** los edita PuntoCash **solo mientras la sede no tiene operador vigente** —también si está suspendida—. Con operador los mantiene su mercante (**FR-AD-SEDE-***), y la pantalla lo dice nombrándolo.
 
-**FR-SA-ASG-4** **Revocar** exige motivo escrito de al menos 10 caracteres y muestra una advertencia previa de lo que implica: el operador dejará de ver la sede de inmediato, sus trabajadores en esa sede dejarán de poder iniciar sesión, la sede quedará sin administrador responsable, **y nadie podrá crear cajas, vincular equipos ni fijar tasas en ella hasta que se asigne otro** **[A4]**, **[A10]**.
+- Una sede cerrada no se edita: la ruta responde como inexistente.
+- Mismas reglas y rechazos que el alta (**4.2**), más `sede-cerrada`.
+- Guardar sin cambios no registra nada.
 
-**FR-SA-ASG-5** No es posible revocar una asignación con jornadas abiertas en esa sede: "Esta sede tiene jornadas abiertas. Deben cerrarse antes." con enlace a esas jornadas **[R6]**. A diferencia de suspender (§13), revocar no es una palanca de emergencia sino un cambio ordenado de administrador, y traspasar una sucursal con la caja abierta dejaría un descuadre sin dueño.
+**Ver en la demo:** PuntoCash Santiago → Editar datos (todo editable); PuntoCash Vedado → Editar datos (solo código y nombre).
 
-**FR-SA-ASG-6** Revocar **cierra** el tramo con fecha de fin y motivo; nunca lo borra ni lo edita **[A2]**, **[R9]**.
+### 4.5 Cambiar servicios (desde la ficha)
 
-**FR-SA-ASG-7** Revocar **no retira las cajas ni desvincula los equipos** de la sede: siguen ahí, y el operador entrante los encuentra tal cual **[A11]**, **[A14]**. La confirmación debe decirlo, porque es lo que evita que un cambio de mercante obligue a remontar la sucursal entera.
+**FR-SA-SERV-9.** El diálogo muestra los tres servicios. Quitar alguno exige **motivo** y avisa de que ningún trabajador podrá prestarlo; añadir no. Mismo efecto, rechazos y auditoría que la matriz (**§8**).
 
-**FR-SA-ASG-8** Revocar **tampoco desactiva a los trabajadores** de la sede: siguen adscritos a ella y vuelven a poder acceder en cuanto se asigne un operador nuevo. Si el mercante entrante no los quiere, es él quien los desactiva **[A14]**. La confirmación debe decirlo.
+### 4.6 Asignar un operador
 
-**FR-SA-ASG-9** Al confirmar asignar o revocar, el dominio revalida el estado de la asignación. Si otro Super Admin la cambió entretanto, la acción se rechaza y se muestra el estado real **[R3]**, **[R6]**.
+Desde la ficha de la sede («Asignar un operador») o desde la del operador («Asignar una sede», **FR-SA-ASG-12**).
 
-**FR-SA-ASG-10** Una sede que queda sin asignación vigente pasa automáticamente a **suspendida**, coherente con FR-SA-SEDE-10, y el hecho se comunica en la confirmación.
+**FR-SA-ASG-1 · Campos.** Operador (solo activos) y **motivo**. Si no hay ningún operador activo, el diálogo lo dice y no ofrece el formulario. Antes de confirmar, un resumen: sede, operador, desde hoy.
 
-**FR-SA-ASG-11** Asignar y revocar generan eventos de auditoría **[RP-21]**.
+**FR-SA-ASG-2 · Una sede, un operador.** No se asigna una sede con tramo vigente: hay que revocar antes **[A2]**.
+
+**FR-SA-ASG-3 · Siempre con administrador.** Todo operador tiene su administrador principal desde el alta (**FR-SA-OPE-5**), y a él no lo desactiva nadie: asignar nunca necesita crear un administrador, y ninguna pantalla avisa de ese caso.
+
+**Efecto.** Abre un tramo con la fecha y el motivo. **No cambia el estado guardado de la sede**: una sede suspendida sigue suspendida tras asignarla, hasta que se reactive. Los administradores del operador la ven en su consola en el acto.
+
+| Condición | Código |
+| --- | --- |
+| Motivo no válido | `motivo-requerido` |
+| La sede no existe | `sede-no-encontrada` |
+| La sede está cerrada | `sede-cerrada` |
+| El operador no existe | `operador-no-encontrado` |
+| El operador no está activo | `operador-inactivo` |
+| La sede ya tiene tramo vigente (otra persona la asignó) | `ya-asignada` |
+
+**Ver en la demo:** PuntoCash Santiago → Asignar un operador.
+
+### 4.7 Revocar
+
+**FR-SA-ASG-4 · Confirmación.** Muestra antes qué pasa: el operador deja de ver la sede en el acto; sus trabajadores dejan de poder entrar; nadie puede crear cajas, vincular equipos ni fijar tasas hasta que se asigne otro. Pide **motivo**.
+
+**FR-SA-ASG-5 · Bloqueo.** Con **jornadas abiertas** en la sede no se revoca: el diálogo no pide motivo, lista las jornadas (caja, trabajador, desde cuándo) y solo ofrece cerrarlo. Traspasar una caja abierta dejaría un descuadre sin dueño. Código `jornadas-abiertas`.
+
+**FR-SA-ASG-6 · Efecto.** Cierra el tramo con fecha y motivo; nunca lo borra ni lo edita **[A2]**, **[R9]**.
+
+**FR-SA-ASG-7 / FR-SA-ASG-8 · Lo que no hace.** No retira cajas, no desvincula equipos y no desactiva trabajadores: quien la reciba encuentra la sucursal montada.
+
+**FR-SA-ASG-10 · Estado.** La sede queda **sin asignar**. No pasa a suspendida.
+
+| Condición | Código |
+| --- | --- |
+| Motivo no válido | `motivo-requerido` |
+| La sede no existe | `sede-no-encontrada` |
+| Jornadas abiertas | `jornadas-abiertas` |
+| No tiene tramo vigente (otra persona la revocó) | `sin-asignacion-vigente` |
+
+**FR-SA-ASG-9 · Revalidación.** Asignar y revocar revalidan el estado del tramo al confirmar **[R3]**, **[R6]**.
+
+**Ver en la demo:** PuntoCash Obispo → Revocar (tiene una jornada abierta: bloqueo). PuntoCash Cerro → Revocar (sin jornadas: confirmación).
+
+### 4.8 Suspender y reactivar la sede
+
+**FR-SA-SUS-1 · El recurso de PuntoCash.** Ante un problema dentro de una sede, PuntoCash tiene tres acciones: suspender la sede, suspender al operador (**§5.6**) y cerrar la sede. Ninguna toca una pieza de la sede **[A14]**.
+
+**FR-SA-SUS-2 · Suspender una sede.** Impide que cualquier trabajador de la sede inicie sesión y que se abran jornadas nuevas. Sus administradores la siguen viendo, como suspendida.
+
+**FR-SA-SUS-4 · Motivo.** Suspender y reactivar piden **motivo**.
+
+**FR-SA-SUS-5 · Con cajas abiertas.** **Se permite con jornadas abiertas**: es la palanca de emergencia, y condicionarla la inutilizaría cuando hace falta.
+
+**FR-SA-SUS-6 · Aviso.** Con jornadas abiertas, el diálogo las lista y advierte que quedarán abiertas sin poder cerrarse mientras dure la suspensión.
+
+**FR-SA-SUS-7 · Lo que no hace.** No cierra jornadas, no desvincula equipos, no retira cajas y no desactiva a nadie.
+
+**FR-SA-SUS-10 · Reactivar.** Devuelve la sede a activa y restablece el acceso en el acto.
+
+**Efecto.** Suspender guarda motivo, fecha y la persona que suspendió. Reactivar los borra (quedan en la auditoría).
+
+| Condición | Código |
+| --- | --- |
+| Motivo no válido | `motivo-requerido` |
+| La sede no existe | `sede-no-encontrada` |
+| La sede está cerrada | `sede-cerrada` |
+| Ya estaba suspendida | `ya-suspendida` |
+| Reactivar una que no está suspendida | `no-suspendida` |
+
+**Ver en la demo:** PuntoCash Trinidad → Reactivar la sede. PuntoCash Obispo → Suspender la sede (avisa de su jornada abierta, no bloquea).
+
+### 4.9 Cerrar la sede
+
+**FR-SA-SUS-8 · Definitivo.** Cerrar es el final del ciclo de vida de la sucursal y no se deshace. **No se permite con jornadas abiertas**: el diálogo las lista y no pide motivo (`jornadas-abiertas`). Pide **motivo**.
+
+**FR-SA-ASG-13 · Termina su administración.** Si la sede tiene tramo vigente, se cierra **en el mismo instante**, con el motivo «Cierre de la sede: {motivo}». Una sede cerrada no la administra nadie: el operador deja de tenerla entre las suyas, y puede darse de baja si no le quedan otras **[RP-28]**. El tramo queda en el historial.
+
+**FR-SA-SUS-9 · Lo que no hace.** No retira cajas ni desvincula equipos: si quedan, el diálogo lo dice y pide que su operador los libere antes.
+
+**Después.** Una sede cerrada no se edita, no cambia de servicios, no se asigna, no se suspende y no recibe promociones. Sale de Inicio, Servicios, Monedas y tasas y del formulario de promociones; sigue en Sedes, Cajas y equipos, Trabajadores, Jornadas, Operaciones, Reportes (si operó en el periodo) y Auditoría.
+
+| Condición | Código |
+| --- | --- |
+| Motivo no válido | `motivo-requerido` |
+| La sede no existe | `sede-no-encontrada` |
+| Ya estaba cerrada | `sede-cerrada` |
+| Jornadas abiertas | `jornadas-abiertas` |
+
+**FR-SA-SUS-12 · No es rutina.** Ninguna de estas acciones se presenta como alternativa a lo que corresponde al mercante: la pantalla describe cada una como lo que es —medida de urgencia, cambio ordenado o final—.
+
+### 4.10 Auditoría
+
+**FR-SA-SEDE-12** **[RP-21]**
+
+| Acción | Evento | Datos |
+| --- | --- | --- |
+| Crear | `sede.creada` | Autor, sede; después: dirección, localidad, teléfono, horario |
+| Editar (si cambió algo) | `sede.editada` | Autor, sede; antes y después de código, nombre, dirección, teléfono y horario |
+| Cambiar servicios | `servicio.habilitado` · `servicio.deshabilitado` | Uno por servicio. Ver **FR-SA-SERV-3** |
+
+**FR-SA-ASG-11**
+
+| Acción | Evento | Datos |
+| --- | --- | --- |
+| Asignar | `sede.asignada` | Autor, sede, operador, motivo; antes «Sin operador asignado», después el operador |
+| Revocar | `sede.revocada` | Autor, sede, operador saliente, motivo; antes el operador, después «Sin operador asignado» |
+
+**FR-SA-SUS-11**
+
+| Acción | Evento | Datos |
+| --- | --- | --- |
+| Suspender | `sede.suspendida` | Autor, sede, operador vigente, motivo; después: jornadas abiertas al suspender |
+| Reactivar | `sede.reactivada` | Autor, sede, operador vigente, motivo |
+| Cerrar | `sede.cerrada` | Autor, sede, operador que tenía, motivo |
+| Cerrar con tramo vigente | además `sede.revocada` | Motivo «Cierre de la sede: …»; antes el operador, después «Sin operador asignado» |
 
 ---
 
 ## 5. Operadores
 
-**FR-SA-OPE-1** `/super-admin/operadores` lista los mercantes con: nombre, contacto, estado (activo / suspendido / dado de baja), sedes administradas, usuarios administradores activos, trabajadores activos, equipos vinculados, fecha de alta y volumen del periodo.
+### 5.1 Listado — `/super-admin/operadores`
 
-**FR-SA-OPE-2** Filtros por estado y búsqueda por nombre. Un conmutador "sin sedes" identifica a los operadores dados de alta que aún no administran nada.
+**FR-SA-OPE-1 · Contenido.** Todos los operadores: activos, suspendidos y dados de baja.
 
-**FR-SA-OPE-3** `/super-admin/operadores/nuevo` da de alta un mercante. Campos del operador: nombre o razón social, tipo y número de documento, persona de contacto, teléfono y correo. Campos del **usuario administrador inicial**: nombre, apellidos, correo e identificador de acceso.
+| Dato | Contenido |
+| --- | --- |
+| Operador | Nombre (enlace a la ficha) y fecha de alta |
+| Contacto | Persona de contacto y teléfono |
+| Estado | Activo · Suspendido · Dado de baja |
+| Sedes | Sedes con tramo vigente, o «Sin sedes» |
+| Personas | Administradores activos y trabajadores activos de sus sedes |
+| Equipos | Equipos de caja y kioscos de sus sedes |
+| Operaciones del mes | Operaciones del mes en curso **atribuidas al operador de la fecha** de cada una **[RP-27]**: cuentan las de sedes que ya no administra, si las hizo él. Sin importes: el volumen está en Reportes |
 
-**FR-SA-OPE-4** El correo del usuario inicial es obligatorio: es el canal por el que recibirá su código de verificación en cada inicio de sesión **[R13]**.
+Orden por estado (activo, suspendido, de baja) y nombre. Ofrece **Nuevo operador**.
 
-**FR-SA-OPE-5** El alta crea el operador y **un único** usuario administrador, y muestra su credencial inicial una sola vez, con el mismo tratamiento que **FR-AD-TRAB-8**. Es lo que se entrega a la empresa cuando se le da una sede en administración.
+**FR-SA-OPE-2 · Filtros.** Búsqueda por nombre o persona de contacto; estado; conmutador «Sin sedes».
 
-**FR-SA-OPE-6** **Esta consola no crea usuarios administradores adicionales.** A partir del primero, los crea el propio mercante desde su panel (**FR-AD-USR-2**) **[A4]**, **[A14]**. El formulario debe decirlo, para que nadie espere volver aquí a dar de alta al segundo: "Este será el usuario con el que la empresa entra por primera vez. Desde su panel podrá crear los demás usuarios que necesite."
+### 5.2 Nuevo operador — `/super-admin/operadores/nuevo`
 
-**FR-SA-OPE-7** El alta **no** asigna sedes. Asignar es un acto propio, desde la ficha de la sede o del operador **[A3]**.
+**FR-SA-OPE-3 · Campos.**
 
-**FR-SA-OPE-8** `/super-admin/operadores/[id]` muestra: datos del operador, **sus sedes vigentes**, **su historial de asignaciones**, **sus usuarios administradores**, **sus trabajadores**, **sus cajas y equipos**, **su volumen** y **sus solicitudes de aprobación pendientes**.
+| Sección | Campo | Obligatorio | Reglas |
+| --- | --- | --- | --- |
+| Operador | Nombre o razón social | Sí | Único entre operadores, sin distinguir mayúsculas |
+| Operador | Tipo de documento | Sí | NIT (empresa), carné de identidad o pasaporte; viene NIT |
+| Operador | Número de documento | Sí | 4 a 20 letras, números o guiones, sin espacios |
+| Operador | Persona de contacto · Teléfono · Correo | Sí | Teléfono y correo como en **FR-SA-SEDE-4** |
+| Administrador principal | Nombre · Primer apellido | Sí | — |
+| Administrador principal | Segundo apellido | No | — |
+| Administrador principal | Teléfono | Sí | — |
+| Administrador principal | Correo | Sí | **FR-SA-OPE-4**: es el canal de su código de verificación. Único entre los administradores de la red |
+| Administrador principal | Identificador de acceso | Sí | Nombre de usuario: 3 a 30 caracteres, letras, números, punto, guion o guion bajo, sin «@». Único entre los administradores de la red (**FR-AD-ACC-11**) |
 
-**FR-SA-OPE-9** Los bloques de usuarios administradores, trabajadores, cajas y equipos, y solicitudes pendientes son **de solo lectura** **[A14]**. Muestran lo que ese mercante tiene montado y lo que tiene sin resolver, sin ofrecer tocarlo ni resolverlo.
+**FR-SA-OPE-5 · Al guardar.** Crea el operador **activo** y **un único** administrador, que es su **principal** y su usuario inicial. **FR-SA-OPE-7:** el alta no asigna sedes; se asignan después, desde su ficha o la de la sede.
 
-**FR-SA-OPE-10** El bloque de usuarios administradores debe mostrar cuántos hay activos y cuándo accedió cada uno por última vez. Es el dato que permite detectar un mercante que se quedó sin acceso; la respuesta a eso es **FR-SA-OPE-11**, no crear un usuario por él.
+**FR-SA-OPE-16 · La credencial es la contraseña.** La confirmación se queda en la pantalla y muestra, **una sola vez**, el identificador y una **credencial** que desde ese instante **es la contraseña** de ese administrador **[RP-30]**: con ella entra en `/admin`. No se puede volver a consultar; si se pierde, se restablece el acceso (**FR-SA-OPE-11**).
 
-**FR-SA-OPE-11** Cuando un operador se queda **sin ningún usuario administrador activo**, situación que su propio panel impide provocar (**FR-AD-USR-8**) pero que podría llegar por otras vías, esta consola ofrece **regenerar la credencial del usuario administrador inicial** que PuntoCash creó. Es la única escritura de esta consola sobre un usuario del mercante, existe solo para ese caso, exige motivo escrito y genera evento de auditoría. No crea un usuario nuevo ni modifica ningún otro.
+**FR-SA-OPE-6 · Un solo administrador.** Esta consola no crea más administradores de una empresa: los crea su principal desde `/admin` **[A4]**.
 
-**FR-SA-OPE-12** La ficha permite **suspender**, **reactivar** y **dar de baja** al operador, con el comportamiento de §13. Dar de baja exige además que no tenga ninguna sede asignada.
+| Condición | Código |
+| --- | --- |
+| Nombre vacío | `campo-requerido` |
+| Ya existe un operador con ese nombre | `operador-duplicado` |
+| Documento mal formado | `documento-invalido` |
+| Contacto, nombre o apellido vacíos | `campo-requerido` |
+| Teléfono no válido | `telefono-invalido` |
+| Correo no válido | `correo-invalido` |
+| Identificador vacío o mal formado (se dice si es la longitud o los caracteres) | `identificador-invalido` |
+| Identificador ya usado por otro administrador | `identificador-duplicado` |
+| Correo ya usado por otro administrador | `correo-duplicado` |
 
-**FR-SA-OPE-13** Un intento de dar de baja con sedes asignadas se rechaza con "Este operador administra {n} sedes. Revoca esas asignaciones antes de darlo de baja." y enlace a esas sedes.
+**Ver en la demo:** Operadores → Nuevo operador. Con el identificador `msanchez`, `identificador-duplicado`. Al terminar, entrar en `/admin/login` con el identificador y la credencial mostrada.
 
-**FR-SA-OPE-14** Un operador nunca se elimina, y todo su historial permanece accesible tras la baja **[R9]**.
+### 5.3 Ficha del operador — `/super-admin/operadores/[id]`
 
-**FR-SA-OPE-15** Suspender, reactivar y dar de baja generan eventos de auditoría **[RP-21]**.
+**FR-SA-OPE-8 · Bloques.**
+
+| Bloque | Contenido | Acciones |
+| --- | --- | --- |
+| Estado | Si está suspendido: motivo, fecha y quién. Si está de baja, que ya no opera | — |
+| Datos | Nombre, documento, contacto (teléfono y correo enlazados), alta | Ninguna: los datos de un operador no se editan |
+| Sedes | Sus sedes vigentes, con desde cuándo y su estado | «Asignar una sede» (solo si está activo) |
+| Operaciones del mes | Total y por sede, atribuidas por fecha | — |
+| Historial de asignaciones | Tramos cerrados, con fechas y motivos | — |
+| Administradores | Activos sobre el total; cada uno con «Principal», identificador, correo enmascarado, último acceso y estado | «Restablecer el acceso del principal» (salvo de baja) |
+| Trabajadores | Por sede vigente | Ninguna |
+| Cajas y equipos | Por sede: cajas activas, con equipo, kioscos | Ninguna |
+| Estado del operador | Historial de suspensiones, reactivaciones y baja | «Suspender» o «Reactivar», y «Dar de baja» (salvo de baja) |
+
+**FR-SA-OPE-9 · Solo lectura.** Administradores, trabajadores, cajas y equipos no tienen controles, ni deshabilitados **[A14]**.
+
+**FR-SA-OPE-10 · Administradores.** El bloque dice que los gestiona su principal desde su consola.
+
+**Ver en la demo:** Operadores → Caribe Cambios S.A. (Miramar desde el 30 de junio); Oriente Divisas (suspendido); Atlántico Casas de Cambio (de baja, con su tramo de Miramar en el historial).
+
+### 5.4 Asignar una sede (desde el operador)
+
+**FR-SA-ASG-12.** Ofrece las sedes **no cerradas sin operador vigente**, estén o no suspendidas. Sin ninguna, el diálogo lo dice y ofrece crear una sede. Mismos campos, efecto, rechazos y auditoría que **FR-SA-ASG-1**.
+
+### 5.5 Restablecer el acceso del principal
+
+**FR-SA-OPE-11.** Es la única intervención de PuntoCash sobre las personas de una empresa, y existe para que un mercante no se quede nunca fuera de su consola.
+
+| Campo | Obligatorio | Reglas |
+| --- | --- | --- |
+| Correo de verificación | Sí | Viene el actual. Si se cambia, no puede ser el de otro administrador de la red |
+| Motivo | Sí | **Motivo** |
+
+**Efecto.** Fija el correo, deja al principal **activo** si estaba desactivado, y muestra **una sola vez** el identificador y una credencial nueva, que **es su contraseña desde ese instante; la anterior deja de servir** **[RP-30]**. No crea administradores ni cambia quién es el principal. Se permite con el operador suspendido.
+
+| Condición | Código |
+| --- | --- |
+| Motivo no válido | `motivo-requerido` |
+| El operador no existe | `operador-no-encontrado` |
+| Está dado de baja | `dado-de-baja` |
+| No tiene principal | `usuario-no-encontrado` |
+| Correo no válido | `correo-invalido` |
+| Correo de otro administrador | `correo-duplicado` |
+
+**Ver en la demo:** Operadores → Malecón Servicios Financieros S.R.L. → Restablecer el acceso del principal. Después, entrar en `/admin/login` como `msanchez` con la credencial nueva.
+
+### 5.6 Suspender, reactivar y dar de baja
+
+**FR-SA-SUS-3 · Suspender un operador.** Impide que sus administradores entren **y** que entre ningún trabajador de **ninguna** de sus sedes. Sus sedes pasan a mostrarse «operador suspendido». Se permite con jornadas abiertas, con el mismo aviso que **FR-SA-SUS-6**, y no desmonta nada (**FR-SA-SUS-7**). Pide **motivo**.
+
+**FR-SA-SUS-10 · Reactivar.** Restablece el acceso de todos en el acto. Pide **motivo**.
+
+**FR-SA-OPE-12 · Dar de baja.** Definitivo; pide **motivo**. Se permite desde activo o suspendido.
+
+**FR-SA-OPE-13 · Bloqueo.** Con sedes vigentes no se da de baja: el diálogo las lista con su enlace y no pide motivo. Una sede **cerrada** no cuenta, porque cerrarla terminó su tramo (**FR-SA-ASG-13**).
+
+**FR-SA-OPE-14 · Nunca se elimina.** Un operador de baja conserva todo su historial; no se le asignan sedes y sus administradores no vuelven a entrar.
+
+| Condición | Código |
+| --- | --- |
+| Motivo no válido | `motivo-requerido` |
+| El operador no existe | `operador-no-encontrado` |
+| Está dado de baja | `dado-de-baja` |
+| Suspender uno ya suspendido | `ya-suspendido` |
+| Reactivar uno que no está suspendido | `no-suspendido` |
+| Dar de baja con sedes vigentes | `tiene-sedes` |
+
+**Ver en la demo:** Oriente Divisas → Reactivar. Caribe Cambios S.A. → Dar de baja (bloqueado: administra tres sedes). Cienfuegos Cambio S.R.L. → Dar de baja (sin sedes: confirmación).
+
+### 5.7 Auditoría
+
+**FR-SA-OPE-15** **[RP-21]**
+
+| Acción | Evento | Datos |
+| --- | --- | --- |
+| Alta | `operador.alta` | Autor, operador y su administrador principal |
+| Restablecer el acceso | `operador.acceso-principal-restablecido` | Autor, operador y principal, motivo; antes y después del correo si cambió |
+| Suspender · Reactivar · Dar de baja | `operador.suspendido` · `operador.reactivado` · `operador.baja` | Autor, operador, motivo. Al suspender, después: sedes afectadas y jornadas abiertas |
 
 ---
 
-## 6. Trabajadores
+## 6. Cajas y equipos — `/super-admin/equipos`
 
-Enteramente de solo lectura **[A14]**.
+Inventario de la red, de **solo lectura**: las cajas las crea el mercante y los equipos los vincula él, delante del equipo **[A10]**, **[A14]**.
 
-**FR-SA-TRAB-1** `/super-admin/trabajadores` lista todos los trabajadores de la red con: nombre, identificador, **sede**, operador, correo enmascarado, estado, fecha de alta y última jornada operada. **No hay columna de caja** **[A13]**.
+**FR-SA-EQ-1 · Pestañas.** «Cajas» y «Kioscos de autoservicio» (`?pestana=kioscos`), cada una con su número: cajas **activas** y kioscos vinculados.
 
-**FR-SA-TRAB-2** Filtros por operador, sede y estado; búsqueda por nombre o identificador.
+**FR-SA-EQ-2 · Cajas.**
 
-**FR-SA-TRAB-3** `/super-admin/trabajadores/[id]` muestra la ficha en solo lectura, con sus datos, su sede, su operador, su actividad reciente —incluidas las cajas en que ha operado, que son consecuencia de los equipos en que inició sesión, no de una asignación— y el historial de sedes en las que ha trabajado.
+| Dato | Contenido |
+| --- | --- |
+| Caja | Nombre y sede (enlace) |
+| Operador | El vigente de la sede, o «Sin operador» |
+| Estado | Activa o retirada (con fecha y motivo de la retirada) |
+| Equipo | Identificador, rótulo, fecha y quién lo vinculó; o «Sin equipo», señalado |
+| Jornada | La más reciente: estado, trabajador y fecha, con enlace; o que nunca se abrió |
+| Última actividad | La más reciente entre la señal del equipo y la última jornada |
 
-**FR-SA-TRAB-4** **El Super Admin no crea, no edita, no desactiva y no reactiva trabajadores** **[A4]**, **[A14]**, **[RP-26]**. Ninguna de esas acciones debe existir en esta consola, ni siquiera deshabilitada.
+**FR-SA-EQ-8 · Retiradas.** Se ocultan por defecto y se muestran con «Mostrar también las retiradas».
 
-**FR-SA-TRAB-5** Tampoco presta asistencia de acceso (**FR-AD-TRAB-10**): esa ayuda la da el administrador de su sede, que es quien conoce a la persona.
+**FR-SA-EQ-3 · Kioscos.** Identificador y rótulo, sede, operador, fecha y autor de la vinculación, última actividad y **operaciones de los últimos 30 días** que se originaron en ese kiosco.
 
-**FR-SA-TRAB-6** La ficha debe explicar esa ausencia donde se nota, y decir cuál es el recurso real: "Los trabajadores los gestiona su administrador, {operador}. Si hay un problema con esta persona, el recurso de PuntoCash es suspender la sede o al operador." — con enlace a §13.
+**FR-SA-EQ-4 · Filtros.** Cajas: búsqueda (caja, sede o equipo), operador, sede, provincia, vínculo (con o sin equipo). Kioscos: búsqueda (identificador, rótulo o sede), operador, provincia.
 
-**FR-SA-TRAB-7** La ficha debe distinguir tres razones por las que un trabajador no puede acceder, porque se resuelven de forma distinta: **desactivado por su administrador**, **su sede está suspendida por PuntoCash** y **su operador está suspendido por PuntoCash**. Solo las dos últimas las revierte esta consola.
+**FR-SA-EQ-5 · Sin controles.** Ninguna pantalla de esta consola crea o retira una caja, ni vincula, desvincula o renombra un equipo.
 
----
+**FR-SA-EQ-6 · Explicar la ausencia.** La pantalla dice de quién es cada cosa: las cajas y los equipos son del administrador de cada sede.
 
-## 7. Cajas y equipos de la red
+**FR-SA-EQ-7 · Sedes sin cajas.** Encima de la tabla, las sedes no cerradas **sin ninguna caja activa**, con un enlace a Sedes filtradas por «Sin cajas».
 
-El inventario de todo lo que está montado. Enteramente de solo lectura.
+**FR-SA-EQ-9 · Pantallas informativas.** No se inventarían: no se vinculan ni tienen sesión. La pestaña de kioscos lo dice.
 
-**FR-SA-EQ-1** `/super-admin/equipos` presenta dos pestañas: **Cajas** y **Kioscos de autoservicio**, con el alcance de toda la red.
-
-**FR-SA-EQ-2** La pestaña **Cajas** lista todas las cajas de la red con: sede, operador, identificador de la caja, estado de la caja (activa / retirada), estado del vínculo, identificador del equipo (`CAJ-NNNN-NNNN`), fecha de vinculación, quién la vinculó, última actividad y estado de la jornada.
-
-**FR-SA-EQ-3** La pestaña **Kioscos** lista los kioscos vinculados con: sede, operador, identificador (`KIO-NNNN-NNNN`), fecha de vinculación, quién lo vinculó, última actividad y solicitudes generadas en el periodo.
-
-**FR-SA-EQ-4** Filtros en ambas: operador, sede, provincia y estado del vínculo. Conmutadores "sin equipo" y "sedes sin cajas" aíslan lo que impide operar.
-
-**FR-SA-EQ-5** **Ninguna pantalla de esta consola crea o retira una caja, ni vincula o desvincula un equipo** **[A4]**, **[A10]**, **[A14]**, **[RP-26]**. No debe existir ningún control que lo haga, ni siquiera deshabilitado, ni un formulario de código, ni un lector de QR.
-
-**FR-SA-EQ-6** La pantalla debe explicar esa ausencia donde se nota, no dejarla como un vacío inexplicable: "Las cajas las crea el administrador de cada sede, y los equipos los vincula él, delante del equipo." Sin esa frase, la primera reacción de quien usa esta consola será buscar el botón que falta.
-
-**FR-SA-EQ-7** Para cada caja sin equipo y cada sede sin cajas, la fila debe ofrecer el contacto del operador responsable, que es a quien hay que pedírselo.
-
-**FR-SA-EQ-8** La pestaña de cajas debe permitir ver también las **retiradas**, con la fecha y el motivo declarado por el mercante, porque su histórico de operaciones sigue siendo consultable **[R9]**.
-
-**FR-SA-EQ-9** Esta pantalla **no inventaría las Pantallas informativas**: no se vinculan, no tienen sesión y el producto no sabe cuántas hay ni dónde (FR-PANT-SEDE-1 a 7). Debe decirlo donde alguien lo buscaría, para que su ausencia se lea como una decisión y no como un fallo.
+**Ver en la demo:** Cajas y equipos (aviso de PuntoCash Cerro y Pinar del Río); marcar «Mostrar también las retiradas» para ver las dos cajas de Pinar.
 
 ---
 
-## 8. Servicios por sede
+## 7. Trabajadores
 
-Uno de los tres límites de red que PuntoCash fija **[A3]**.
+### 7.1 Listado — `/super-admin/trabajadores`
 
-**FR-SA-SERV-1** `/super-admin/servicios` presenta una matriz de sedes por servicios, donde cada celda indica si ese servicio está habilitado en esa sede.
+**FR-SA-TRAB-1 · Contenido.** Todos los trabajadores de la red, activos y desactivados, por sede y nombre.
 
-**FR-SA-SERV-2** La matriz distingue tres estados de celda: **habilitado**, **deshabilitado** y **no disponible en el producto** — este último para los servicios del catálogo que aún no tienen flujo implementado, que no pueden habilitarse en ninguna sede.
+| Dato | Contenido |
+| --- | --- |
+| Trabajador | Nombre (enlace) e identificador |
+| Sede y operador | Enlaces; o «Sin operador» |
+| Correo de verificación | Enmascarado |
+| Estado | **FR-SA-TRAB-7** |
+| Alta | Fecha |
+| Última jornada | Enlace: abierta ahora, o fecha y caja; o ninguna |
 
-**FR-SA-SERV-3** Habilitar o deshabilitar es potestad exclusiva del Super Admin, exige confirmación y genera un evento de auditoría **[RP-21]**.
+**FR-SA-TRAB-2 · Filtros.** Búsqueda por nombre o identificador; operador; sede; estado: pueden entrar, no pueden entrar (por cualquier motivo, incluida la desactivación), desactivados por su administrador.
 
-**FR-SA-SERV-4** El servicio de **Cambio de moneda** tiene una consecuencia propia que la confirmación debe nombrar: habilitarlo es lo que permite al mercante **definir pares de cotización** en esa sede y fijarles tasa (**FR-AD-TASA-2**); deshabilitarlo hace que sus pares dejen de exhibirse y de poder cotizarse de inmediato, sin que el mercante los retire uno a uno, y los conserva para cuando vuelva a habilitarse (**FR-AD-TASA-14**) **[A5]**. No afecta a la **lista de monedas** de la sede, que sus cajas necesitan para remesas y giros igualmente (**FR-AD-MON-5**).
+**FR-SA-TRAB-7 · Por qué no puede entrar.** Se muestra el motivo más amplio, que es el que hay que levantar primero:
 
-**FR-SA-SERV-5** Deshabilitar **no afecta a las operaciones ya registradas** de ese servicio en esa sede **[R9]**.
+| Orden | Motivo | Quién lo resuelve |
+| --- | --- | --- |
+| 1 | Sede cerrada | Nadie: es definitivo |
+| 2 | Sede sin operador | PuntoCash, asignándola |
+| 3 | Operador suspendido | PuntoCash, reactivándolo |
+| 4 | Sede suspendida | PuntoCash, reactivándola |
+| 5 | Desactivado | Su administrador, en `/admin` |
 
-**FR-SA-SERV-6** El efecto es hacia adelante: el servicio deja de aparecer en el catálogo de Worker de esa sede **y en el del kiosco de autoservicio de esa sede**, y deja de poder iniciarse. La confirmación debe mencionar las dos superficies.
+Si además está desactivado, el estado lo añade.
 
-**FR-SA-SERV-7** No es posible deshabilitar el **último servicio** de una sede activa: dejaría una sucursal abierta sin nada que ofrecer. El intento se rechaza con una explicación.
+### 7.2 Ficha — `/super-admin/trabajadores/[id]`
 
-**FR-SA-SERV-8** La matriz admite filtro por operador y por provincia, y búsqueda de sede.
+**FR-SA-TRAB-3 · Contenido.** Si no puede entrar, el motivo y quién lo resuelve. Datos (identificador, documento, teléfono, correo enmascarado, alta, estado en su consola); su sede y su operador con sus estados y el contacto del operador; su actividad reciente (las 8 jornadas más recientes, con enlace a Jornadas filtradas por esa persona si hay más); y las sedes en las que ha trabajado.
 
----
+**FR-SA-TRAB-4 · Solo lectura.** Esta consola no da de alta, no edita, no desactiva y no reactiva trabajadores **[A14]**.
 
-## 9. Monedas y tasas
+**FR-SA-TRAB-5 · Sin asistencia de acceso.** Tampoco ayuda con el acceso: lo hace su administrador (**FR-AD-TRAB-***).
 
-Tres vistas, dos de ellas editables. Es el marco dentro del cual cada mercante decide **[A3]**, **[A5]**.
+**FR-SA-TRAB-6 · El recurso real.** La ficha lo dice: los trabajadores los gestiona su administrador, y el recurso de PuntoCash ante un problema es suspender la sede o al operador.
 
-### 9.1 Monedas de la plataforma
-
-**FR-SA-MON-1** La primera vista mantiene el **catálogo de monedas que la plataforma soporta**: código ISO, nombre, símbolo y número de decimales. Es de donde cada mercante elige las monedas de sus sedes (**FR-AD-MON-3**), y por tanto lo que acota, en último término, qué efectivo puede existir en una caja de la red.
-
-**FR-SA-MON-2** Cada moneda del catálogo debe mostrar en cuántas sedes está en la lista y en cuántas cajas está habilitada hoy, para que retirarla no sea una decisión a ciegas.
-
-**FR-SA-MON-3** Añadir una moneda al catálogo la pone a disposición de toda la red; no la activa en ninguna sede. Quien la incorpora a una sucursal es su mercante **[A4]**.
-
-**FR-SA-MON-4** **Retirar** una moneda del catálogo exige motivo y solo tiene efecto hacia adelante: impide que un mercante la añada a nuevas sedes. **No la quita de las sedes que ya la tienen, no toca saldos y no altera ningún registro histórico** **[R9]**, **[A14]**. La confirmación debe decir en cuántas sedes seguirá presente y que quitarla de cada una es decisión de su mercante.
-
-**FR-SA-MON-5** No es posible retirar del catálogo la moneda local: es la que toda caja de la red necesita.
-
-**FR-SA-MON-6** Todo cambio en el catálogo genera un evento de auditoría **[RP-21]**.
-
-### 9.2 Rangos de la red
-
-**FR-SA-TASA-1** La segunda vista lista cada **par de monedas** con su rango permitido de compra y de venta, la fecha del último cambio, su autor y **cuántas sedes lo tienen definido**.
-
-**FR-SA-TASA-2** Un par **sin rango definido no puede ser cotizado por ninguna sede** **[FR-AD-TASA-2]**, **[RP-22]**. Definir un rango para un par es, por tanto, lo que lo pone a disposición de la red, y es una decisión que solo PuntoCash puede tomar.
-
-**FR-SA-TASA-3** La vista debe mostrar también los **pares posibles sin rango** —combinaciones del catálogo de §9.1 que ninguna sede puede cotizar todavía—, con cuántas sedes tienen ambas monedas en su lista y esperan poder cotizarlo. Es lo que convierte una petición de un mercante en una decisión informada.
-
-**FR-SA-TASA-4** Editar un rango exige que el mínimo sea menor que el máximo y que ambos sean positivos. Mensajes: "El mínimo debe ser menor que el máximo."; "Introduce un valor válido."
-
-**FR-SA-TASA-5** Antes de guardar, el sistema debe calcular y mostrar **qué sedes quedarían fuera de rango**, nombrándolas una por una con su tasa vigente y el valor al que quedarían fijadas.
-
-**FR-SA-TASA-6** La confirmación debe ser explícita sobre las consecuencias: "{n} sedes tienen hoy una tasa fuera del nuevo rango. Al guardar, su tasa se fijará automáticamente al límite más cercano, **su tablero público pasará a mostrar ese valor** y se avisará a sus administradores." **[A5]**, **[A12]**.
-
-**FR-SA-TASA-7** Al guardar, las tasas fuera del rango nuevo se fijan al límite más cercano, cada fijación genera su propio evento de auditoría, y cada sede afectada queda marcada para que su Admin lo vea (**FR-AD-TASA-12**) **[A5]**, **[RP-22]**.
-
-**FR-SA-TASA-8** Esa fijación automática es la **única** escritura que esta consola produce sobre la tasa de una sede, y es una consecuencia mecánica de mover el rango, no una decisión sobre esa sede. Fijar la tasa efectiva de una sede a voluntad no es posible desde aquí **[A5]**, **[A14]**, **[RP-26]**.
-
-**FR-SA-TASA-9** **Retirar el rango** de un par exige motivo y confirmación, y debe advertir de su efecto: las sedes que lo tengan definido dejan de cotizarlo y de exhibirlo. Sus pares **no se borran**: quedan marcados con la razón y vuelven con su última tasa, revalidada, si el rango se restablece (**FR-AD-TASA-15**). La confirmación debe nombrar cuántas sedes quedan afectadas.
-
-**FR-SA-TASA-10** El cambio o la retirada de un rango **no altera ninguna operación ya registrada**, y la confirmación debe decirlo **[R9]**.
-
-**FR-SA-TASA-11** Todo cambio de rango genera un evento de auditoría **[RP-21]**.
-
-### 9.3 Monedas y pares por sede
-
-**FR-SA-TASA-12** La tercera vista lista, para cada sede: las **monedas de su lista** (§12 del FRD de Admin), los **pares que tiene definidos** con su tasa vigente, el rango aplicable, la fecha del último cambio, quién lo hizo y si fue fijada automáticamente.
-
-**FR-SA-TASA-13** Es **de solo lectura**: las monedas y los pares los decide el mercante **[A4]**, **[A5]**, **[RP-26]**.
-
-**FR-SA-TASA-14** La vista debe permitir identificar de un vistazo cinco situaciones, todas ellas motivo de conversación con un mercante y ninguna resoluble desde aquí: sedes que cotizan pegadas a un límite; tasas fijadas automáticamente y aún sin revisar; sedes con el servicio de Cambio de moneda habilitado y **ningún par definido**; sedes con **monedas en su lista cuyos pares no tienen rango**, que es una petición implícita de **FR-SA-TASA-3**; y sedes **sin ninguna moneda en su lista**, que no pueden manejar efectivo de ningún tipo.
-
-**FR-SA-TASA-15** Para cada una de esas situaciones, la fila debe ofrecer el contacto del operador responsable **[FR-SA-STATE-4]**.
+**Ver en la demo:** Trabajadores, filtro «No pueden entrar»: hay de Trinidad (sede suspendida) y de Camagüey y Holguín (operador suspendido).
 
 ---
 
-## 10. Operaciones
+## 8. Servicios — `/super-admin/servicios`
 
-**FR-SA-OPS-1** `/super-admin/operaciones` se comporta igual que su equivalente en la consola del mercante (**FR-AD-OPS-1** a **FR-AD-OPS-7**), con dos diferencias: el alcance es la red entera, y los filtros incluyen **operador**.
+**FR-SA-SERV-1 · Matriz.** Sedes no cerradas por servicios disponibles (hoy: Cambio de moneda, Remesas, Giros). Cada servicio dice en cuántas de las sedes visibles está habilitado. Por debajo de 1024px, una tarjeta por sede. Los servicios que el producto aún no ofrece se nombran aparte y no se pueden habilitar.
 
-**FR-SA-OPS-2** El detalle reutiliza las vistas de Worker en solo lectura, y añade al contexto de sede, caja, equipo, trabajador y jornada también el **operador responsable en la fecha de la operación** — leído del historial de asignaciones vigente **en esa fecha**, no de la asignación actual **[RP-20]**, **[R9]**.
+**FR-SA-SERV-8 · Filtros.** Búsqueda de sede, operador (con «Sin operador asignado») y provincia.
 
-**FR-SA-OPS-3** FR-SA-OPS-2 es el requisito que da sentido al historial de asignaciones: una operación de marzo debe mostrar quién administraba la sede en marzo, aunque hoy la administre otro.
+**FR-SA-SERV-2 / FR-SA-SERV-3 · Cambiar.** Pulsar una celda abre la confirmación, que dice qué cambia: el servicio aparece o deja de aparecer en las cajas de la sede y en su kiosco desde ese momento. **Deshabilitar pide motivo**; habilitar no.
 
-**FR-SA-OPS-4** El detalle no ofrece ninguna acción **[A6]**, **[A7]**.
+**FR-SA-SERV-4 · Cambio de moneda.** Habilitarlo permite a su mercante fijar tasas. Deshabilitarlo saca sus tasas del tablero y de la cotización en el acto; las tasas se conservan y vuelven si se habilita de nuevo. La lista de monedas de la sede no cambia: la siguen necesitando remesas y giros.
 
----
+**FR-SA-SERV-5 / FR-SA-SERV-6 · Hacia adelante.** No cambia ninguna operación ya registrada **[R9]**.
 
-## 11. Promociones de red
+**FR-SA-SERV-7 · Último servicio.** Una sede activa no se queda sin servicios: el diálogo lo dice y no pide motivo.
 
-**FR-SA-PROM-1** `/super-admin/promociones` gestiona las promociones que PuntoCash publica sobre su red, distintas de las que cada mercante publica para sus sedes (**FR-AD-PROM-1**).
+| Condición | Código |
+| --- | --- |
+| Motivo no válido al deshabilitar | `motivo-requerido` |
+| La sede no existe | `sede-no-encontrada` |
+| La sede está cerrada | `sede-cerrada` |
+| Servicio que el producto no ofrece | `servicio-no-disponible` |
+| Otra persona acaba de cambiarlo | `servicio-cambiado` |
+| Último servicio de una sede activa | `ultimo-servicio` |
 
-**FR-SA-PROM-2** Cada promoción de red se dirige a **todas las sedes** o a **un subconjunto** elegido por operador, provincia o selección manual.
+**Auditoría.** `servicio.habilitado` o `servicio.deshabilitado`, uno por servicio: autor, sede, operador vigente y, al deshabilitar, el motivo. Igual desde la ficha de la sede (**FR-SA-SERV-9**).
 
-**FR-SA-PROM-3** Campos, validaciones, estados (programada / vigente / vencida), previsualización y retirada se comportan igual que en la consola del mercante (**FR-AD-PROM-4** a **FR-AD-PROM-9**).
-
-**FR-SA-PROM-4** Una promoción de red **no puede ser editada ni retirada por el Admin de sede**, que la ve en solo lectura **[FR-AD-PROM-3]**. Esta pantalla debe indicarlo al crearla, para que quien la publica sepa que el mercante no podrá quitarla de su sala de espera.
-
-**FR-SA-PROM-5** La pantalla debe mostrar, por sede, **cuántas promociones se exhibirían a la vez** sumando las de red y las del mercante, y advertir cuando el número supere lo que el carrusel puede rotar de forma legible. Una sucursal con nueve promociones en rotación no anuncia ninguna.
-
-**FR-SA-PROM-6** Solo se exhiben las vigentes en la fecha actual **[FR-PANT-DATA-5]**.
-
-**FR-SA-PROM-7** Nada de lo publicado aquí puede alimentar ni modificar una operación **[R10]**, **[FR-PANT-DATA-2]**.
-
-**FR-SA-PROM-8** Alta, edición y retirada generan eventos de auditoría **[RP-21]**.
+**Ver en la demo:** Servicios. PuntoCash Matanzas no tiene Cambio de moneda.
 
 ---
 
-## 12. Reportes
+## 9. Monedas y tasas — `/super-admin/monedas-y-tasas`
 
-**FR-SA-REP-1** `/super-admin/reportes` presenta el volumen de la red en cinco cortes: **por operador**, **por sede**, **por servicio**, **por provincia** y **por día**.
+Dos vistas: **Monedas y rangos** (por defecto) y **Tasas por sede** (`?vista=sedes`).
 
-**FR-SA-REP-2** Rango de fechas y accesos rápidos, igual que **FR-AD-REP-2**.
+### 9.1 Monedas y rangos
 
-**FR-SA-REP-3** Cifras por moneda, sin conversión a moneda única (**FR-AD-REP-3**).
+**FR-SA-MON-1 · Tabla.** Una fila por moneda del catálogo, salvo el peso cubano, que es la referencia: no lleva rango y no se retira (**FR-SA-MON-5**). Primero las disponibles; al final las retiradas (**FR-SA-MON-7**).
 
-**FR-SA-REP-4** El corte **por operador** permite comparar mercantes entre sí en número de operaciones y volumen por moneda, normalizado por número de sedes administradas para que la comparación sea legible.
+| Dato | Contenido |
+| --- | --- |
+| Moneda | Bandera, código, nombre, símbolo; «Retirada» si lo está |
+| Compra (CUP) · Venta (CUP) | Rango «mínimo – máximo», o «Sin rango» |
+| Sedes | **FR-SA-MON-2** |
+| Último cambio | Fecha y autor del rango |
+| Acciones | Menú «⋯» (**FR-SA-SHELL-9**) |
 
-**FR-SA-REP-5** El corte **por sede** permite identificar las sedes de mayor y menor actividad, con el operador de cada una a la vista.
+**FR-SA-MON-2 · Uso.** Con rango: cuántas sedes la **cotizan** (su tablero la publica) y en la lista de cuántas está. Sin rango: cuántas sedes **la esperan** —la tienen en su lista y tienen Cambio de moneda, y no pueden cotizarla—, señalado; o en la lista de cuántas está. Solo cuentan sedes no cerradas.
 
-**FR-SA-REP-6** Ninguna representación gráfica introduce una paleta propia ni elementos decorativos (**FR-AD-REP-5**).
+**Acciones de cada fila.**
 
-**FR-SA-REP-7** Los reportes no muestran comisiones, rentas, liquidaciones ni margen **[A8]**, y no incluyen exportación a archivo en esta versión **[R11]**.
+| Acción | Cuándo |
+| --- | --- |
+| Definir rango / Cambiar rango | Salvo moneda retirada sin rango (**FR-SA-MON-8**) |
+| Retirar rango | Si tiene rango |
+| Retirar del catálogo | Si está disponible |
+| Reincorporar al catálogo | Si está retirada |
+
+### 9.2 Definir o cambiar el rango
+
+**FR-SA-TASA-1 · Qué es.** El rango de una moneda son los límites de compra y de venta, **en pesos cubanos por unidad**, dentro de los cuales cualquier sede fija su tasa **[A5]**. Una tasa es siempre una moneda contra el peso cubano; no hay pares cruzados.
+
+**FR-SA-TASA-2 · Sin rango no se cotiza.** Ninguna sede publica ni aplica la tasa de una moneda sin rango **[RP-22]**.
+
+**FR-SA-TASA-4 · Campos.** Compra mínima y máxima, venta mínima y máxima, todos obligatorios, con coma o punto decimal. Vienen con el rango actual.
+
+| Regla | Código |
+| --- | --- |
+| Todos mayores que cero | `valor-invalido` |
+| **FR-SA-TASA-17** · Hasta 4 decimales | `demasiados-decimales` |
+| Mínimo menor que máximo, en compra y en venta | `minimo-mayor` |
+| Compra mínima ≤ venta mínima **y** compra máxima ≤ venta máxima | `rango-incoherente` |
+
+La coherencia garantiza que llevar compra y venta a sus límites por separado nunca deja una compra por encima de la venta.
+
+**FR-SA-TASA-16 · Motivo al cambiar.** **Definir** el primer rango no pide motivo. **Cambiar** un rango ya definido pide **motivo**, porque mueve límites que las sedes ya usan.
+
+**FR-SA-TASA-5 / FR-SA-TASA-6 · Antes de guardar.** La pantalla calcula y muestra qué sedes **no cerradas** tienen hoy una tasa fuera del rango nuevo, con su tasa actual y la que quedaría, y advierte de que al guardar se fijarán al límite, su tablero cambiará y se avisará a sus administradores. Si ninguna queda fuera, también lo dice.
+
+**FR-SA-TASA-7 · Al guardar.** Cada tasa de una sede no cerrada que queda fuera se **fija al límite más cercano**, compra y venta por separado, y se marca como ajustada por PuntoCash con su valor anterior: su mercante la ve señalada hasta que la confirma o elige otra (**FR-AD-TASA-***). Las tasas de sedes cerradas no se mueven.
+
+**FR-SA-TASA-8 · Única escritura.** Ese ajuste es la **única** escritura de esta consola sobre la tasa de una sede **[RP-26]**.
+
+**FR-SA-TASA-10 · Hacia adelante.** No cambia ninguna operación registrada **[R9]**.
+
+| Condición | Código |
+| --- | --- |
+| Reglas de la tabla anterior | (sus códigos) |
+| Cambiar sin motivo válido | `motivo-requerido` |
+| Peso cubano | `moneda-local` |
+| No está en el catálogo | `moneda-desconocida` |
+| Retirada y sin rango | `moneda-retirada` |
+
+**Ver en la demo:** Monedas y tasas → USD → Cambiar rango, compra 300–310 y venta 310–320: la pantalla nombra las sedes que quedarían fuera. JPY → Definir rango: no pide motivo.
+
+### 9.3 Retirar el rango
+
+**FR-SA-TASA-9.** Pide **motivo** y advierte qué sedes dejan de cotizar la moneda y de mostrarla en su tablero. **Las tasas no se borran**: vuelven, ajustadas al rango, si se define de nuevo.
+
+| Condición | Código |
+| --- | --- |
+| Motivo no válido | `motivo-requerido` |
+| Ya no tiene rango | `sin-rango` |
+
+### 9.4 Añadir una moneda al catálogo
+
+**FR-SA-MON-9 · De la lista ISO.** Se elige de la **lista ISO 4217** (159 monedas, sin metales ni unidades de cuenta); el código, el nombre, el símbolo y la **bandera** vienen con ella y no se escriben. La lista ofrece solo las que no están en el catálogo; las retiradas no se ofrecen: se reincorporan. **Toda moneda se maneja con 4 decimales**, fijos y no editables. El catálogo **se añade y se retira, no se edita**.
+
+**FR-SA-MON-10 · Banderas.** Toda moneda de la lista ISO trae su bandera, en el mismo sitio que la lista (`network/iso-monedas.ts` y `public/banderas/`). Las monedas de varios países sin bandera común (XAF, XOF, XCD, XPF) llevan una bandera neutra.
+
+**FR-SA-MON-3 · Efecto.** La moneda queda disponible para toda la red, **sin activarse en ninguna sede** y **sin rango**: cada mercante la añade a sus sedes, y para cotizarla hace falta definir su rango.
+
+| Condición | Código |
+| --- | --- |
+| No es de la lista ISO | `codigo-invalido` |
+| Ya está en el catálogo | `ya-existe` |
+| Está retirada | `esta-retirada` |
+
+### 9.5 Retirar y reincorporar
+
+**FR-SA-MON-4 · Retirar.** Pide **motivo** y advierte en cuántas sedes y cajas seguirá. **Solo cambia lo que viene**: ningún mercante puede añadirla a más sedes; las que la tienen la conservan, con saldos e historial, hasta que su mercante la quite. Su rango y sus tasas se mantienen.
+
+**FR-SA-MON-7 · No desaparece.** Una retirada sigue en la tabla, al final, con su etiqueta.
+
+**FR-SA-MON-8 · Sin rango nuevo.** A una retirada sin rango no se le define uno: no se abre a la red una moneda que ya no se ofrece. Con rango, se puede cambiar y retirar.
+
+**Reincorporar.** Sin motivo. Vuelve a estar disponible para añadirse a las sedes.
+
+| Condición | Código |
+| --- | --- |
+| Retirar sin motivo válido | `motivo-requerido` |
+| No está en el catálogo | `no-existe` |
+| Peso cubano | `moneda-local` |
+| Ya estaba retirada | `ya-retirada` |
+| Reincorporar una que no está retirada | `no-esta-retirada` |
+
+### 9.6 Tasas por sede — `?vista=sedes`
+
+**FR-SA-TASA-12 · Contenido.** Una tarjeta por sede no cerrada, con su operador y si no tiene Cambio de moneda. Por cada moneda de su lista: compra y venta (resaltadas si están en vigor), el rango, por qué no se publica si no se publica (sin rango, o sin Cambio de moneda) y el último cambio —quién y cuándo, o «fijada al límite por PuntoCash»—. El peso cubano figura como moneda de referencia.
+
+Filtros: búsqueda de sede, operador y moneda (con moneda, cada tarjeta muestra solo esa y el peso cubano).
+
+**FR-SA-TASA-13 · Solo lectura.** Las monedas de una sede y sus tasas las decide su mercante **[A4]**, **[A5]**.
+
+### 9.7 Auditoría
+
+**FR-SA-TASA-11 / FR-SA-MON-6** **[RP-21]**
+
+| Acción | Evento | Datos |
+| --- | --- | --- |
+| Definir · Cambiar rango | `rango.definido` · `rango.cambiado` | Autor, moneda; antes y después de compra y venta; al cambiar, motivo |
+| Cada tasa fijada al límite | `tasa.fijada-al-limite` | Autor, sede, operador vigente; antes y después de compra y venta; motivo del cambio |
+| Retirar rango | `rango.retirado` | Autor, moneda, motivo; antes el rango, después cuántas sedes dejan de cotizarla |
+| Añadir moneda | `moneda-plataforma.alta` | Autor, moneda; después: símbolo y 4 decimales |
+| Retirar moneda | `moneda-plataforma.retirada` | Autor, moneda, motivo; después: en cuántas sedes sigue |
+| Reincorporar | `moneda-plataforma.reincorporada` | Autor, moneda |
 
 ---
 
-## 13. Suspensión: el recurso de PuntoCash
+## 10. Promociones
 
-La única palanca de esta consola sobre lo que ocurre dentro de una sede. No actúa sobre la pieza afectada, sino sobre la relación entera **[A14]**.
+### 10.1 Reglas
 
-**FR-SA-SUS-1** PuntoCash dispone de tres acciones de este tipo: **suspender una sede**, **suspender un operador** y **cerrar una sede**. Las dos primeras son reversibles; la tercera es el final del ciclo de vida de la sucursal.
+**FR-SA-PROM-1 · Qué son.** Lo que PuntoCash anuncia en la pantalla informativa de sus sedes. Conviven con las promociones que cada mercante publica para las suyas.
 
-**FR-SA-SUS-2** **Suspender una sede** impide que cualquier trabajador de esa sede inicie sesión, y que se abra ninguna jornada nueva en sus cajas. Los usuarios administradores del mercante siguen entrando en su panel y siguen viendo esa sede, en estado suspendido **[FR-AD-SEDE-13]**.
+**FR-SA-PROM-2 · Destino.** «Toda la red» —todas las sedes no cerradas, **también las que se creen después**— o las sedes que se marquen. Lo que se guarda es «toda la red» o la lista de sedes: «por operador» y «por provincia» son atajos para marcar, no criterios. Una sede marcada sigue mostrándola aunque cambie de operador.
 
-**FR-SA-SUS-3** **Suspender un operador** impide que sus usuarios administradores inicien sesión **y** que ningún trabajador de ninguna de sus sedes lo haga. Es la acción de mayor alcance de esta consola y su confirmación debe decir, con números concretos, a cuántas sedes, cuántos administradores y cuántos trabajadores afecta.
+**FR-SA-PROM-11 · Escaparate.** El destino **no depende de los servicios de la sede**: una sede también es el escaparate de PuntoCash, y anuncia aunque no preste el servicio, la administre quien la administre. La consola no avisa ni bloquea.
 
-**FR-SA-SUS-4** Ambas exigen **motivo escrito** de al menos 10 caracteres y confirmación.
+**FR-SA-PROM-3 · Campos.**
 
-**FR-SA-SUS-5** **Suspender se permite con jornadas abiertas**, a diferencia de revocar (**FR-SA-ASG-5**) y de cerrar (**FR-SA-SUS-8**). Es deliberado: la suspensión es la palanca de emergencia, y condicionarla a que no haya caja abierta la inutilizaría justo cuando hace falta.
+| Campo | Obligatorio | Reglas |
+| --- | --- | --- |
+| Título | Sí | Hasta 40 caracteres |
+| Texto | Sí | Hasta 120 caracteres |
+| Imagen | No | JPG, PNG o WebP, hasta 2 MB; el navegador la reduce y recodifica |
+| Dónde se muestra | Sí | Toda la red, o al menos una sede no cerrada |
+| Desde · Hasta | Sí | Inicio no anterior a hoy; fin no anterior al inicio ni a hoy. Una promoción ya en pantalla no cambia su inicio |
 
-**FR-SA-SUS-6** Cuando hay jornadas abiertas, la confirmación debe advertir de la consecuencia exacta: esas jornadas **quedan abiertas y sin poder cerrarse** mientras dure la suspensión, porque nadie podrá iniciar sesión para arquearlas. Debe listar cuáles son.
+El formulario conserva lo escrito ante un rechazo e incluye la vista previa de la diapositiva.
 
-**FR-SA-SUS-7** Suspender **no cierra jornadas, no desvincula equipos, no retira cajas y no desactiva a nadie** **[A14]**, **[A11]**, **[R9]**. Todo queda como está y vuelve a estar disponible al reactivar. La confirmación debe decirlo, porque es lo que distingue una suspensión de una ruptura.
+**FR-SA-PROM-5 · Saturación.** En la pantalla, cada promoción es una diapositiva de 12 segundos; con más de **cuatro** a la vez, un cliente que espera no las ve todas. El formulario dice, por sede, con cuántas coincidiría a la vez en el periodo y de quién es cada una («1 de PuntoCash, 3 de {operador}»), y avisa si alguna pasaría de cuatro; **no bloquea**. El listado avisa de las sedes que **hoy** tienen más de cuatro. Cuentan las de red y las de los operadores.
 
-**FR-SA-SUS-8** **Cerrar una sede** es definitivo y **no** se permite con jornadas abiertas: "Esta sede tiene jornadas abiertas. Deben cerrarse antes." con enlace a esas jornadas **[R6]**. Una sucursal no se cierra dejando efectivo sin conciliar.
+**FR-SA-PROM-6 / FR-SA-PROM-7.** Solo se exhiben las vigentes en la fecha. Nada de lo publicado alimenta ni modifica una operación.
 
-**FR-SA-SUS-9** Cerrar una sede **no desvincula sus equipos ni retira sus cajas**: esas son acciones de su administrador **[A14]**. La confirmación debe advertirlo y decir cuántos equipos y cuántas cajas quedarán en una sede cerrada, para que PuntoCash pueda pedirle al mercante que los libere.
+**Estado.** Programada (aún no empieza), vigente, vencida (terminó o se retiró). Se calcula con la fecha de Cuba.
 
-**FR-SA-SUS-10** **Reactivar** una sede o un operador exige motivo escrito y restablece el acceso de inmediato. La ficha debe mostrar el historial de suspensiones con sus motivos y fechas, en solo lectura **[R9]**.
+### 10.2 Listado — `/super-admin/promociones`
 
-**FR-SA-SUS-11** Toda suspensión y toda reactivación genera un evento de auditoría, con el alcance afectado registrado en números **[RP-21]**, **[RP-26]**.
+**FR-SA-PROM-9 · Solo las de red.** Pestañas Vigentes (por defecto), Programadas y Vencidas, con su número. Columnas: título (enlace), dónde se muestra, fechas, quién la publicó (y la fecha de retirada si se retiró). Las de los operadores no están en la lista: cuentan para la saturación y se abren, en lectura, desde la ficha de su sede. Ofrece **Nueva promoción**.
 
-**FR-SA-SUS-12** Ninguna de estas acciones debe presentarse como una alternativa rutinaria a lo que corresponde al mercante. Donde la consola las ofrece —en las alertas de §3, en la ficha de un trabajador (**FR-SA-TRAB-6**)— debe indicar primero el camino normal, que es pedírselo al administrador de la sede.
+### 10.3 Nueva promoción y edición
+
+`/super-admin/promociones/nueva` para crear. Una promoción de red **no vencida** se edita en su propia ficha, `/super-admin/promociones/[id]`, que ofrece además **Retirar**. Una de red vencida o retirada, o una de un operador, se abre en **solo lectura**.
+
+**FR-SA-PROM-4 / FR-SA-PROM-10 · Solo PuntoCash.** El administrador de sede la ve en su lista como «Publicada por PuntoCash» —nunca con el nombre de la persona— y no puede editarla ni retirarla.
+
+| Condición | Código |
+| --- | --- |
+| Título vacío · largo | `titulo-vacio` · `titulo-largo` |
+| Texto vacío · largo | `texto-vacio` · `texto-largo` |
+| Ninguna sede y no es toda la red | `sin-sedes` |
+| Sede inexistente | `no-encontrada` |
+| Sede cerrada | `sede-cerrada` |
+| Fechas vacías o mal formadas | `fecha-invalida` |
+| Inicio anterior a hoy | `inicio-pasado` |
+| Cambiar el inicio de una ya en pantalla | `inicio-fijo` |
+| Fin anterior al inicio | `fin-antes-de-inicio` |
+| Fin anterior a hoy | `fin-pasado` |
+| Imagen de otro formato · demasiado pesada | `imagen-invalida` · `imagen-pesada` |
+| Editar una de un operador | `del-operador` |
+| Editar o retirar una vencida | `vencida` |
+
+### 10.4 Retirar
+
+**FR-SA-PROM-12 · Con motivo.** Retirar pide **motivo**. La quita de las pantallas **en el acto** (o impide que llegue a verse, si estaba programada). No se borra: pasa a Vencidas con la fecha y quién la retiró.
+
+**Ver en la demo:** Promociones → abrir una vigente → Retirar.
+
+### 10.5 Auditoría
+
+**FR-SA-PROM-8** **[RP-21]**
+
+| Acción | Evento | Datos |
+| --- | --- | --- |
+| Publicar | `promocion-red.alta` | Autor; después: título, texto, destino, fechas, si lleva imagen |
+| Editar | `promocion-red.editada` | Autor; antes y después de lo mismo |
+| Retirar | `promocion-red.retirada` | Autor, título, si estaba en pantalla o aún no había empezado, motivo |
+
+---
+
+## 11. Jornadas
+
+### 11.1 Listado — `/super-admin/jornadas`
+
+**FR-SA-JOR-1 · Contenido.** Todas las jornadas de la red, de todas las sedes. Primero las abiertas; después por día de apertura, de la más reciente; después por sede.
+
+| Dato | Contenido |
+| --- | --- |
+| Caja y sede | Caja (enlace a la jornada) y sede (enlace) |
+| Operador | **El que administraba la sede cuando se abrió** **[RP-27]** |
+| Trabajador | Enlace a su ficha |
+| Jornada | Fecha, apertura y cierre (con la fecha si cerró otro día), o abierta |
+| Estado | Abierta · Cerrada · Cierre forzado |
+| Operaciones | Número |
+| Cierre | Cuadrada; las diferencias por moneda con su signo; sin contar —pendiente de conciliar o contada al abrir la siguiente—; o nada si está abierta |
+
+**FR-SA-JOR-2 · Filtros.** Desde y hasta (por defecto, los últimos 7 días), operador, sede y estado. **Una jornada abierta se muestra siempre**, aunque se abriera antes del periodo: es una caja que nadie cerró. Desde la ficha de un trabajador se llega filtrado por esa persona, con la opción de quitar el filtro.
+
+### 11.2 Detalle — `/super-admin/jornadas/[id]`
+
+**FR-SA-JOR-3 · Contenido.** El mismo cuerpo que en Admin (**FR-AD-JOR-***): la jornada, la apertura con lo contado y lo dejado por el cierre anterior, los saldos, el cierre y los movimientos. La cabecera nombra la sede y **el operador de la fecha**. Si sigue abierta de un día anterior, lo señala y dice que forzar el cierre es de su administrador. Si tuvo cierre forzado, quién, cuándo, el motivo y si ya se contó.
+
+**FR-SA-JOR-4 · Sin acciones.** No se fuerza un cierre ni se resuelve una aprobación desde la jornada **[A6]**, **[A14]**. La única aprobación que resuelve PuntoCash es la que no tiene quien la resuelva (§11.3).
+
+### 11.3 Aprobaciones sin quien las resuelva — `/super-admin/aprobaciones`
+
+**FR-SA-APR-1 · Cuáles.** Una diferencia de efectivo (ajuste, cierre o apertura) **pendiente** cuya jornada se abrió cuando la sede era de un operador que **ya no la administra**. Nadie de la sede puede resolverla: la empresa de entonces perdió la sede, y la de ahora solo ve su propia etapa (**FR-AD-SCOPE-7**). Las resuelve **PuntoCash** (decisión del 03/11/2026). Las demás son de cada mercante y aquí no aparecen.
+
+**FR-SA-APR-2 · Lista.** «Pendientes», de la más antigua: tipo y diferencia con su signo y el motivo del trabajador; sede, caja y trabajador; operador de entonces y operador de hoy; fecha y antigüedad. Debajo, «Resueltas por PuntoCash», con la fecha y quién. Sin pendientes, la pantalla lo dice. Una diferencia que no es de esta lista responde como inexistente.
+
+**FR-SA-APR-3 · Resolver.** El detalle dice por qué la resuelve PuntoCash, muestra lo que registró el trabajador (referencia, contado, diferencia, motivo, observaciones, jornada) y ofrece **Aprobar** y **Rechazar**, con un motivo de al menos 10 caracteres que se añade al del trabajador. Como en Admin (**FR-AD-APR-***): resolver **deja constancia, no cambia la caja** ni el movimiento registrado; rechazar la marca para revisarla fuera del sistema.
+
+**FR-SA-APR-4 · Revalidación.** Al confirmar, el servidor comprueba que siga pendiente (`ya-resuelta`) y sin quien la resuelva (`no-es-huerfana`: por ejemplo, la sede volvió a la empresa de entonces). En los dos casos no se guarda nada y la pantalla lo explica.
+
+**FR-SA-APR-5 · Auditoría.** `solicitud.aprobada` o `solicitud.rechazada`, con la persona de PuntoCash como autor, la sede, el **operador de entonces** y el motivo. La resolución queda marcada como de PuntoCash.
+
+| Condición | Código |
+| --- | --- |
+| Motivo de menos de 10 caracteres | `motivo-corto` |
+| No existe | `no-encontrada` |
+| Ya resuelta | `ya-resuelta` |
+| Ya tiene quien la resuelva | `no-es-huerfana` |
+
+**Ver en la demo:** Aprobaciones: las diferencias de los últimos días de Atlántico en PuntoCash Miramar (27 a 29/06/2026). Con `rortega@caribecambios.cu`, en Admin, no aparecen.
+
+**Ver en la demo:** Jornadas (una caja de PuntoCash Obispo sigue abierta desde ayer). Jornadas con «Desde» 01/06/2026 y operador Atlántico Casas de Cambio: las jornadas de Miramar de junio.
+
+---
+
+## 12. Operaciones
+
+### 12.1 Listado — `/super-admin/operaciones`
+
+**FR-SA-OPS-1 · Contenido.** Todas las operaciones de la red —completadas, en proceso, rechazadas, fallidas y canceladas—, de la más reciente.
+
+| Dato | Contenido |
+| --- | --- |
+| Operación | Código, fecha y hora, estado |
+| Servicio | Servicio y, en un giro, enviado o pagado; si vino del kiosco, lo dice |
+| Cliente | Nombre y documento |
+| Importe | En un cambio, lo que entrega y lo que recibe; en lo demás, el importe |
+| Sede y operador | Sede y **el operador de ese día**, o «Sin operador ese día» |
+| Trabajador | Enlace a su ficha |
+
+Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, los últimos 7 días), operador, sede, servicio y estado.
+
+### 12.2 Detalle — `/super-admin/operaciones/[codigo]`
+
+**FR-SA-OPS-2 · Contexto.** Sede, **operador responsable** —el de ese día, y si hoy la administra otro, quién—, caja y equipo, trabajador, jornada y origen (mostrador o solicitud de kiosco). Debajo, el detalle de Worker según el servicio.
+
+**FR-SA-OPS-3 · Por qué.** Es lo que da sentido al historial de asignaciones: una operación de junio en Miramar es de Atlántico, aunque hoy la sede sea de Caribe **[RP-20]**, **[RP-27]**.
+
+**FR-SA-OPS-4 · Sin acciones.** No se reimprime, no se anula ni se corrige **[A6]**, **[A7]**.
+
+**Ver en la demo:** Operaciones con «Desde» 01/06/2026 y operador Atlántico Casas de Cambio; abrir una: «El que administraba la sede ese día. Hoy la administra Caribe Cambios S.A.».
+
+---
+
+## 13. Reportes — `/super-admin/reportes`
+
+**FR-SA-REP-1 · Cortes.** El volumen de un periodo por **operador** (por defecto), **sede**, **servicio**, **provincia** o **día**. El corte por día lleva un gráfico; el corte por servicio, si hubo cambio de moneda, la tabla de lo comprado, lo vendido, el volumen y la **posición neta** de cada divisa (que no es volumen).
+
+**FR-SA-REP-2 · Periodo.** Por defecto los últimos 7 días. Atajos: hoy, últimos 7 días, últimos 30 días, mes en curso; o desde y hasta. Máximo **un año**: si se pasa, se recorta y se dice.
+
+**FR-SA-REP-3 · Volumen.** Solo operaciones **completadas**, cada una una vez, por moneda y **sin convertir**. En un cambio, la divisa negociada (compra o venta); en una remesa, lo pagado; en un giro, su importe, enviado o pagado (**FR-AD-REP-***). Sin operaciones, la pantalla lo dice.
+
+**FR-SA-REP-5 · De quién es cada operación.** Del operador que administraba la sede **el día en que se hizo** **[RP-27]**. Una fila «Sin operador» aparece solo si hay operaciones sin dueño, para que las filas sumen el total.
+
+**FR-SA-REP-4 · Comparar operadores.** El corte por operador incluye a quien tuvo algún tramo en el periodo o alguna operación atribuida, con la columna **Sedes** (las que administró en el periodo). Con «Por sede administrada», cada cifra se divide entre esas sedes, para comparar mercantes de distinto tamaño.
+
+**FR-SA-REP-6 · Por sede.** Las sedes no cerradas y las cerradas que operaron en el periodo, cada una con su operador o sus operadores del periodo.
+
+**FR-SA-REP-7 · Sin economía.** Ni comisiones, ni rentas, ni márgenes **[A8]**.
+
+**FR-SA-REP-8 · Exportar.** «Exportar a Excel» y «Exportar a PDF» descargan el periodo de la pantalla con **todos** los cortes, el de operador por sede administrada y el de cambio por divisa. Solo totales: ninguna fila nombra a un cliente. Cada exportación se registra como `reporte.exportado`, con formato y periodo.
+
+**Ver en la demo:** Reportes → «Por operador» con el periodo de junio de 2026: Atlántico aparece con las operaciones de Miramar.
 
 ---
 
 ## 14. Auditoría
 
-La pantalla que hace verificable todo lo anterior.
+### 14.1 Registro — `/super-admin/auditoria`
 
-**FR-SA-AUD-1** `/super-admin/auditoria` lista los eventos de gobierno de toda la red, del más reciente al más antiguo, con: fecha y hora, actor (persona y rol), tipo de evento, objeto afectado y motivo declarado.
+**FR-SA-AUD-1 · Contenido.** Todo acto de gobierno de la red —de PuntoCash y de los mercantes—, del más reciente al más antiguo, **50 a la vez** con «Mostrar más eventos». Sin ventana de fechas obligatoria: quien audita busca un acto, no un periodo.
 
-**FR-SA-AUD-2** Tipos de evento que deben quedar registrados, como mínimo. **De PuntoCash:** creación, edición, suspensión, reactivación y cierre de sede; alta, suspensión, reactivación y baja de operador; asignación y revocación de sede; alta del usuario administrador inicial y regeneración de su credencial (**FR-SA-OPE-11**); habilitación y deshabilitación de servicio; alta y retirada de moneda del catálogo de la plataforma; definición, cambio y retirada de rango de tasas; fijación automática de tasa al límite; alta, edición y retirada de promoción de red. **Del mercante:** alta, retirada y reactivación de caja; vinculación y desvinculación de equipo de caja; vinculación y desvinculación de kiosco; alta, edición, desactivación, reactivación y asistencia de acceso de trabajador; alta, edición, desactivación y reactivación de usuario administrador; alta y retirada de moneda en la lista de una sede; definición, cambio y retirada de un par de cotización; alta, edición y retirada de promoción de sede; resolución de solicitud de aprobación; cierre forzado de jornada.
+| Dato | Contenido |
+| --- | --- |
+| Fecha y hora | Hora de Cuba |
+| Evento | El acto en lenguaje de negocio y su objeto |
+| Quién | Persona y rol: PuntoCash, o mercante con su operador |
+| Sede y operador | Enlaces, si los tiene |
+| Motivo declarado | El motivo, si lo tiene |
 
-**FR-SA-AUD-3** La pantalla debe permitir filtrar por **rol del actor**, que es lo que separa los dos bloques de FR-SA-AUD-2: ver solo lo que hizo PuntoCash, o solo lo que hizo un mercante, es la consulta más frecuente cuando se revisa un incidente.
+**FR-SA-AUD-3 / FR-SA-AUD-4 · Filtros.** Quién actuó (PuntoCash, mercantes o ambos); tipo de evento, agrupado por lo que se gobierna; persona; operador; sede; desde y hasta (por día de Cuba, ambos incluidos); búsqueda en el **objeto y el motivo**. Cambiar un filtro vuelve a los 50 primeros.
 
-**FR-SA-AUD-4** Filtros: rango de fechas, tipo de evento, actor, rol del actor, operador y sede. Búsqueda libre sobre el motivo declarado.
+**FR-SA-AUD-2 · Qué se registra.** Como mínimo, todos los actos de este documento y de la consola del mercante. Los tipos, por área:
 
-**FR-SA-AUD-5** Cada evento enlaza al objeto afectado, cuando ese objeto siga siendo alcanzable.
+| Área | Tipos |
+| --- | --- |
+| Sedes | `sede.creada` · `.editada` · `.asignada` · `.revocada` · `.suspendida` · `.reactivada` · `.cerrada` |
+| Operadores | `operador.alta` · `.suspendido` · `.reactivado` · `.baja` · `.acceso-principal-restablecido` |
+| Servicios | `servicio.habilitado` · `.deshabilitado` |
+| Monedas y tasas | `moneda-plataforma.alta` · `.retirada` · `.reincorporada` · `rango.definido` · `.cambiado` · `.retirado` · `tasa.fijada-al-limite` · y los del mercante: `moneda-sede.*`, `par.*` |
+| Promociones | `promocion-red.alta` · `.editada` · `.retirada` · y `promocion-sede.*` |
+| Cajas y equipos | `caja.*`, `equipo-caja.*`, `kiosco.*` (mercante) |
+| Trabajadores | `trabajador.*` (mercante) |
+| Administradores | `usuario-admin.*` (mercante) |
+| Jornadas y aprobaciones | `solicitud.aprobada` · `.rechazada` (mercante, o PuntoCash en las de **FR-SA-APR-1**), `jornada.cierre-forzado` (mercante) |
+| Cuentas de PuntoCash | `usuario-puntocash.alta` · `.editado` · `.credencial-regenerada` · `.desactivado` · `.reactivado` · `.principal-traspasado` · `.contrasena-cambiada` |
+| Reportes y auditoría | `reporte.exportado` · `auditoria.exportada` |
 
-**FR-SA-AUD-6** El registro es **de solo lectura desde toda superficie del producto**, incluida esta. No debe existir ningún control de edición ni de borrado, ni siquiera deshabilitado **[RP-21]**.
+**FR-SA-AUD-8 · Lenguaje de negocio.** Ningún evento se muestra con su identificador interno ni con un valor en bruto **[R10]**.
 
-**FR-SA-AUD-7** El detalle de un evento muestra, cuando aplique, el **valor anterior y el valor nuevo** — una tasa que pasó de un valor a otro, una sede que pasó de un operador a otro, una caja que pasó de un equipo a ninguno — para que el registro sea legible sin reconstruirlo mentalmente.
+### 14.2 Detalle — `/super-admin/auditoria/[id]`
 
-**FR-SA-AUD-8** Los eventos se muestran con lenguaje de negocio, nunca con nombres de campo del dominio ni enums en bruto **[R10]**.
+**FR-SA-AUD-7.** Fecha y hora, quién actuó, sobre qué, sede, operador, motivo declarado y, si lo hay, **antes y después**.
+
+**FR-SA-AUD-5 · Enlaces.** Desde la lista y el detalle se llega a la **sede** y al **operador** del evento, y a su **objeto** cuando el evento lo guarda: un **trabajador** (a su ficha) o una **cuenta de PuntoCash** (a su ficha en Usuarios, **solo para el principal**; para los demás es texto).
+
+### 14.3 Reglas
+
+**FR-SA-AUD-6 · Inalterable.** Nadie edita ni borra un evento desde ninguna superficie del producto, tampoco esta **[RP-21]**. No hay controles, ni deshabilitados.
+
+**FR-SA-AUD-10 · Autor.** El autor es siempre una **persona** —una cuenta de PuntoCash o un administrador de un mercante—, nunca el nombre de un área **[RP-29]**. En la consola del mercante, un acto de PuntoCash se muestra como «PuntoCash».
+
+**FR-SA-AUD-9 · Exportar.** «Exportar a Excel» descarga **todos** los eventos que cumplen los filtros de la pantalla (no solo los 50 visibles), con los filtros escritos en la cabecera y quién lo generó. Como ese archivo **nombra a personas**, la exportación deja su propio evento, `auditoria.exportada`, con el número de eventos y los filtros.
+
+**Ver en la demo:** Auditoría → filtro «Solo PuntoCash»; abrir «Sede suspendida» de PuntoCash Trinidad (Jorge Aguilera Ruiz).
 
 ---
 
-## 15. Modelo de dominio y datos simulados
+## 15. Usuarios — cuentas de PuntoCash
 
-**FR-SA-DOM-1** Esta consola se apoya en el mismo módulo `src/features/network` que la del mercante (**FR-AD-DOM-1** a **FR-AD-DOM-4**), consumiendo las mismas entidades con alcance global.
+### 15.1 Quién la ve
 
-**FR-SA-DOM-2** Las consultas del dominio reciben el alcance como parámetro explícito, y el alcance global es un valor de ese parámetro, no la ausencia de él: así una llamada sin alcance es un error visible y no una fuga silenciosa **[A1]**, **[RP-19]**.
+**FR-SA-USR-1 · Solo el principal.** La sección solo existe para el **principal**: para el resto no está en la navegación, y todas sus rutas responden como inexistentes (**FR-SA-NAV-3**), no como prohibidas. El servidor comprueba que quien actúa es el principal en cada escritura (`no-es-el-principal`).
 
-**FR-SA-DOM-3** Las **escrituras** sobre `Caja`, `Trabajador`, `UsuarioAdmin` (salvo la regeneración de **FR-SA-OPE-11**), `MonedasSede`, `ParSede` (salvo la fijación automática de **FR-SA-TASA-7**) y los vínculos de equipo deben **rechazar el alcance global** en el propio dominio **[A14]**, **[RP-26]**, **[FR-AD-DOM-6]**. La imposibilidad no puede depender de que esta consola no dibuje el botón.
+**FR-SA-USR-2 · El principal.** Hay exactamente uno. El primero viene dado; después solo cambia por **traspaso** (**FR-SA-USR-10**). A su titular no lo desactiva nadie, ni él mismo.
 
-**FR-SA-DOM-4** El dominio debe exponer una consulta de **operador vigente en una fecha dada** para una sede, que resuelve FR-SA-OPS-2 leyendo el historial de asignaciones **[RP-20]**.
+**Ver en la demo:** con `jaguilera@puntocash.com`, `/super-admin/usuarios` responde «no encontrado».
 
-**FR-SA-DOM-5** El inventario de §7 debe leerse del mismo mecanismo `src/features/devices/device-link.ts` que la consola del mercante escribe **[FR-AD-DOM-4]**, sin una copia propia.
+### 15.2 Listado — `/super-admin/usuarios`
 
-**FR-SA-DOM-6** Los datos simulados amplían los de **FR-AD-DOM-8** con lo que solo esta consola necesita: al menos una sede **sin operador asignado**; una sede **asignada y todavía sin cajas**; una asignación **cerrada** (una sede que cambió de mercante); un operador **dado de baja**; un operador **suspendido** con sedes y trabajadores, para verificar §13; un par **con rango definido y sin ninguna sede que lo cotice**; un par **sin rango que dos sedes podrían cotizar**, para verificar FR-SA-TASA-3; una sede **con monedas en su lista y ningún par definido**; promociones de red y de mercante conviviendo en una misma sede; y un registro de auditoría poblado con eventos de los dos roles y de varias fechas.
+**FR-SA-USR-3.** Todas las cuentas, activas y desactivadas: el principal primero, después las activas, después por nombre. Datos: nombre (con «Tú» en la propia), identificador, correo enmascarado, estado, alta, último acceso, papel (principal o super administrador). Búsqueda por nombre o identificador. Ofrece **Dar de alta**.
 
-**FR-SA-DOM-7** La asignación cerrada debe tener operaciones registradas **dentro de su tramo**, para que FR-SA-OPS-2 sea verificable: esas operaciones deben mostrar el operador antiguo, no el actual.
+### 15.3 Dar de alta — `/super-admin/usuarios/nuevo`
+
+**FR-SA-USR-4 · Campos.**
+
+| Campo | Obligatorio | Reglas |
+| --- | --- | --- |
+| Nombre · Primer apellido | Sí | — |
+| Segundo apellido | No | — |
+| Teléfono | Sí | Como en **FR-SA-SEDE-4** |
+| Área | Sí | Texto libre |
+| Correo | Sí | Único entre las cuentas de PuntoCash |
+| Identificador de acceso | Sí | Como en **FR-SA-OPE-3**; único entre las cuentas de PuntoCash |
+
+**FR-SA-USR-5 · Aviso.** El alta advierte que la cuenta verá y gobernará toda la red, pero no esta sección.
+
+**FR-SA-USR-6 · Credencial.** La confirmación muestra **una sola vez** el identificador y una credencial que **es su contraseña** desde ese instante **[RP-30]**.
+
+### 15.4 Ficha y acciones — `/super-admin/usuarios/[id]`
+
+**FR-SA-USR-7 · Ficha.** Estado, identificador, área, teléfono, correo enmascarado, alta, último acceso y papel. Si está desactivada, lo dice.
+
+| Acción | Campos | Efecto |
+| --- | --- | --- |
+| **Editar datos** (`/editar`) | Nombre, apellidos, teléfono, área | Guarda. Sin cambios, no registra nada |
+| **Cambiar correo** | Correo (único) | Los próximos códigos van ahí. Si es el propio, avisa de que un error lo dejaría sin poder entrar |
+| **Regenerar credencial** | — | **FR-SA-USR-8**: muestra una sola vez una credencial nueva, que es la contraseña; **la anterior deja de servir** |
+| **Desactivar** | **Motivo** | No puede entrar; lo que hizo no se borra. Una sesión abierta se corta en su siguiente petición. No se ofrece sobre el principal |
+| **Reactivar** | **Motivo** | Vuelve a poder entrar |
+| **Traspasar la administración de cuentas** | Cuenta activa de destino y **motivo** | **FR-SA-USR-10**: solo en la ficha del propio principal, si hay otra cuenta activa |
+
+**FR-SA-USR-9 · Al principal no lo desactiva nadie.** Su ficha lo dice, y cómo dejar el puesto: traspasar primero.
+
+**FR-SA-USR-10 · Traspaso.** Inmediato y en un solo acto: el destino pasa a ser el principal y quien traspasa deja de serlo, pierde la sección y conserva todo lo demás. Pide **motivo**, porque cambia quién gobierna las cuentas de la consola.
+
+| Condición | Código |
+| --- | --- |
+| Quien actúa no es el principal | `no-es-el-principal` |
+| La cuenta no existe | `usuario-no-encontrado` |
+| Campo obligatorio vacío | `campo-requerido` |
+| Teléfono no válido | `telefono-invalido` |
+| Correo no válido | `correo-invalido` |
+| Correo de otra cuenta | `correo-duplicado` |
+| Identificador mal formado · de otra cuenta | `identificador-invalido` · `identificador-duplicado` |
+| Desactivar al principal | `es-el-principal` |
+| Motivo no válido | `motivo-requerido` |
+| Desactivar una ya desactivada | `ya-desactivado` |
+| Reactivar una activa | `ya-activo` |
+| Traspasar sin elegir destino | `destino-requerido` |
+| Traspasarse a sí mismo | `es-uno-mismo` |
+| Traspasar a una cuenta no activa | `destino-no-activo` |
+
+**Ver en la demo:** Usuarios → Dar de alta; con la credencial mostrada, entrar en `/super-admin/login` con esa cuenta (la contraseña `puntocash` ya no le sirve).
+
+### 15.5 Auditoría
+
+**FR-SA-USR-11** **[RP-21]**
+
+| Acción | Evento | Datos |
+| --- | --- | --- |
+| Dar de alta | `usuario-puntocash.alta` | Autor, cuenta |
+| Editar (si cambió algo) · Cambiar correo | `usuario-puntocash.editado` | Autor, cuenta; el correo anterior y el nuevo |
+| Regenerar credencial | `usuario-puntocash.credencial-regenerada` | Autor, cuenta. Nunca la credencial |
+| Desactivar · Reactivar | `usuario-puntocash.desactivado` · `.reactivado` | Autor, cuenta, motivo |
+| Traspasar | `usuario-puntocash.principal-traspasado` | Autor, principal anterior y nuevo, motivo |
 
 ---
 
-## 16. Comportamiento transversal
+## 16. Perfil
 
-**FR-SA-STATE-1** Rigen sin cambios los requisitos transversales de la consola del mercante: estados de tabla, estados de envío, confirmación de acciones irreversibles, ausencia de jerga en errores y usabilidad por teclado (**FR-AD-STATE-1** a **FR-AD-STATE-5**).
+**FR-SA-PERF-1 · Perfil — `/super-admin/perfil`.** Cualquier sesión. Nombre, identificador, correo enmascarado, teléfono y área, en lectura. El principal ve un enlace a su ficha en Usuarios, donde los corrige; los demás, a quién pedírselo.
 
-**FR-SA-STATE-2** Toda acción de gobierno de esta consola —sin excepción— exige **motivo escrito** de al menos 10 caracteres, sin valor predefinido y sin lista de opciones.
+**FR-SA-PERF-2 · Cambiar la contraseña — `/super-admin/perfil/contrasena`.**
 
-**FR-SA-STATE-3** Toda acción de gobierno debe mostrar, antes de confirmar, un resumen de qué va a cambiar y a quién afecta, con los nombres concretos de las sedes, operadores, cajas o personas implicadas — nunca un recuento abstracto sin identificar.
+| Regla, en orden | Código |
+| --- | --- |
+| La actual es correcta | `actual-incorrecta` |
+| La nueva tiene al menos 8 caracteres | `demasiado-corta` |
+| La nueva es distinta de la actual | `igual-a-la-actual` |
+| La repetida coincide | `no-coinciden` |
 
-**FR-SA-STATE-4** Donde esta consola muestra algo que no puede cambiar, debe decir **de quién es** y **qué pedir**, no limitarse a mostrarlo sin controles **[A14]**. Aplica al menos a: cajas y equipos (**FR-SA-EQ-6**), trabajadores (**FR-SA-TRAB-6**), monedas y pares por sede (**FR-SA-TASA-13**, **FR-SA-TASA-15**) y usuarios administradores (**FR-SA-OPE-6**).
+**FR-SA-PERF-3 · Efecto.** Guarda la nueva; **la sesión desde la que se cambia sigue abierta**. Se registra `usuario-puntocash.contrasena-cambiada` con la cuenta, nunca la contraseña.
 
 ---
 
-## 17. Condiciones conocidas y fuera de alcance
+## 17. Comportamiento transversal
 
-- **Nada de esto está implementado.** `/super-admin` contiene hoy un README de marcador de posición.
-- **Sin backend**, como el resto del producto.
-- **Sin sub-roles**: el Super Admin es un rol único e indivisible, lo que significa que cualquier persona con esta consola puede revocar una sede, suspender a un mercante o darlo de baja. Si el negocio quiere separar quien consulta de quien decide, es una decisión pendiente.
-- **Sin gestión de cajas, equipos, trabajadores, usuarios administradores, listas de monedas por sede ni pares de cotización.** Son ausencias deliberadas **[A14]**, especificadas en FR-SA-EQ-5, FR-SA-TRAB-4, FR-SA-OPE-6, FR-SA-TASA-8 y FR-SA-TASA-13, y explicadas al usuario en FR-SA-STATE-4. No son carencias por cubrir más adelante.
-- **Sin inventario de Pantallas informativas** **[FR-SA-EQ-9]**.
-- **Sin exportación de reportes ni de auditoría** **[R11]**. La auditoría es el caso donde esa carencia más probablemente se note.
-- **Sin notificaciones** fuera de la consola: un mercante suspendido se entera al intentar entrar, no por correo. Merece revisión del negocio.
-- **Sin recuperación de acceso** funcional.
-- **Sin nada económico** **[A8]**.
-- **Revisión visual obligatoria** a 1440×900 antes de dar por terminada cualquier pantalla, conforme a `CLAUDE.md`.
+**FR-SA-STATE-1 · Estados de pantalla.** Rigen los de la consola del mercante (**FR-AD-STATE-***): vacío con texto propio por listado y por «sin resultados con estos filtros», error de carga con «Volver a intentarlo», formularios que conservan lo escrito ante un rechazo.
+
+**FR-SA-STATE-2 · Motivo.** Piden **motivo** los actos que quitan o sancionan algo, o cambian un límite de la red en vigor **[RP-29]**:
+
+| Pide motivo | No pide motivo |
+| --- | --- |
+| Asignar una sede (también al crearla con operador) · revocar · suspender, reactivar y cerrar una sede | Crear y editar una sede |
+| Suspender, reactivar y dar de baja un operador · restablecer el acceso de su principal | Dar de alta un operador |
+| Deshabilitar un servicio | Habilitar un servicio |
+| Cambiar un rango ya definido · retirar un rango | Definir el primer rango |
+| Retirar una moneda del catálogo | Añadir y reincorporar una moneda |
+| Retirar una promoción de red | Publicar y editar una promoción de red |
+| Desactivar, reactivar y traspasar una cuenta de PuntoCash | Dar de alta, editar, cambiar el correo y regenerar la credencial de una cuenta · cambiar la propia contraseña |
+| Aprobar o rechazar una diferencia sin quien la resuelva | — |
+
+**FR-SA-STATE-3 · Antes de confirmar.** Toda acción con consecuencias muestra antes qué va a cambiar y a quién afecta. Las que se bloquean (revocar o cerrar con jornadas abiertas, dar de baja con sedes, quitar el último servicio) lo dicen en el diálogo, con lo que hay que resolver, y no piden motivo.
+
+**FR-SA-STATE-4 · Lo que no se puede cambiar.** Donde esta consola muestra algo que no puede cambiar, dice de quién es y, si sirve, ofrece el contacto del operador.
+
+**FR-SA-DOM-1 · Dominio compartido.** Esta consola usa el mismo dominio que la del mercante (`src/features/network`).
+
+**FR-SA-DOM-2 · Alcance explícito.** Toda lectura y escritura recibe el alcance como parámetro, y el alcance global es un valor explícito, nunca la ausencia del parámetro. Toda escritura de gobierno rechaza un alcance que no sea global (`alcance-insuficiente`, o `solo-puntocash` en promociones).
+
+**FR-SA-DOM-3 · Lo que el dominio no expone a esta consola.** Ninguna escritura sobre cajas, equipos, trabajadores, administradores de un mercante (salvo el restablecimiento del principal), monedas de una sede ni tasas de una sede (salvo el ajuste al límite, **FR-SA-TASA-8**) acepta el alcance global **[RP-26]**.
+
+**FR-SA-DOM-4 · Operador en una fecha.** El dominio responde quién administraba una sede en cualquier instante **[RP-20]**, y Jornadas, Operaciones, Reportes y los recuentos de Operadores lo usan **[RP-27]**. Con el alcance de un operador, las lecturas de jornadas, solicitudes y operaciones devuelven solo lo ocurrido en sus tramos (**FR-AD-SCOPE-7**); con el alcance global, todo.
+
+---
+
+## 18. Fuera de alcance
+
+- **Comisión por operación** y todo lo económico entre PuntoCash y sus mercantes **[A8]**: dominio aparte, para más adelante.
+- **Dominio de clientes**: dominio aparte, para más adelante. Hoy el cliente vive dentro de cada operación.
+- Sub-roles en la consola; exportación de otros listados; administración de las pantallas informativas; notificaciones.
+- Backend y persistencia reales: la demostración trabaja contra un dominio en memoria (**Apéndice B**).
 
 ---
 
 ## Apéndice A · Qué puede cada rol
 
-Tabla de contraste, para consultar al implementar cualquier control. La columna del Super Admin es deliberadamente corta.
-
-| Acto | Worker | Admin de sede | Super Admin |
+| | Super Admin | Principal de PuntoCash | Admin de sede |
 | --- | --- | --- | --- |
-| Registrar una operación | Sí | No | No |
-| Mover efectivo, arquear, cerrar por arqueo | Sí | No | No |
-| Forzar cierre de jornada | No | Sí, en sus sedes | No |
-| Resolver una solicitud de aprobación | No | Sí, en sus sedes | No (solo la consulta) |
-| **Crear o retirar una caja** | No | **Sí, en sus sedes** | **No (solo la ve)** |
-| **Vincular o desvincular el equipo de una caja** | No | **Sí, en sus sedes** | **No (solo lo ve)** |
-| **Vincular o desvincular un kiosco** | No | **Sí, en sus sedes** | **No (solo lo ve)** |
-| **Crear, editar o desactivar un trabajador** | No | **Sí, en sus sedes** | **No (solo lo ve)** |
-| **Asistir a un trabajador con su acceso** | No | **Sí, en sus sedes** | **No** |
-| **Crear otros usuarios administradores** | No | **Sí, de su empresa** | **Solo el primero de cada mercante** |
-| **Declarar qué monedas maneja una sede** | No | **Sí, del catálogo de la plataforma** | **No (solo las ve)** |
-| **Definir los pares que cotiza una sede y su tasa** | No | **Sí, si tiene el servicio y hay rango** | **No (solo la fijación automática al mover el rango)** |
-| **Mantener el catálogo de monedas de la plataforma** | No | No | **Sí** |
-| Publicar una promoción de sede | No | Sí, en sus sedes | No |
-| Fijar o retirar el rango permitido de un par | No | No | Sí |
-| Habilitar servicios en una sede | No | No | Sí |
-| Publicar una promoción de red | No | No | Sí |
-| Crear una sede o editar sus datos maestros | No | No | Sí |
-| Asignar o revocar una sede | No | No | Sí |
-| Alta o baja de un operador | No | No | Sí |
-| **Suspender una sede o un operador** | No | No | **Sí — su único recurso sobre lo que pasa dentro** |
-| Ver el historial de asignaciones de una sede | No | Solo el tramo propio | Sí, completo |
-| Consultar el registro de auditoría | No | No | Sí, en solo lectura |
-| Modificar algo ya registrado por un Worker | No | No | No |
+| Crear, editar, asignar, revocar, suspender y cerrar sedes | Sí | Sí | No (edita contacto de las suyas) |
+| Dar de alta, suspender y dar de baja operadores; restablecer su principal | Sí | Sí | No |
+| Servicios, catálogo de monedas, rangos, promociones de red | Sí | Sí | No |
+| Cajas, equipos, trabajadores, administradores, monedas y tasas de una sede | Solo ve | Solo ve | Sí, en sus sedes |
+| Forzar cierres | No | No | Sí |
+| Resolver aprobaciones | Solo las que no tienen quien las resuelva | Ídem | Las de su etapa en sus sedes |
+| Jornadas, operaciones, reportes y auditoría de toda la red | Sí | Sí | Solo de sus sedes |
+| Cuentas de PuntoCash | No | Sí | No |
+
+---
+
+## Apéndice B · Demostración
+
+Todas las cuentas usan la contraseña `puntocash` (salvo las que reciban una credencial en la demostración) y el código `123456`. Se entra con el correo o con el identificador.
+
+| Cuenta | Papel |
+| --- | --- |
+| `emarrero@puntocash.com` · Elena Marrero Fonseca | Principal: ve Usuarios |
+| `jaguilera@puntocash.com` · Jorge Aguilera Ruiz | Super administrador |
+| `rvaldes@puntocash.com` · Raúl Valdés Pino | Desactivada: no entra |
+
+| Situación de la red | Dónde |
+| --- | --- |
+| Sede sin operador | PuntoCash Santiago |
+| Sede suspendida | PuntoCash Trinidad (Bahía Cambios) |
+| Operador suspendido | Oriente Divisas: PuntoCash Camagüey y Holguín |
+| Operador de baja, con historial | Atlántico Casas de Cambio: Miramar hasta el 30/06/2026 |
+| Sede traspasada | PuntoCash Miramar: Atlántico hasta el 30/06, Caribe después. Hay jornadas y operaciones del 27 al 29 de junio |
+| Operador sin sedes | Cienfuegos Cambio S.R.L. |
+| Sede sin cajas | PuntoCash Cerro; Pinar del Río (solo cajas retiradas) |
+| Sede sin Cambio de moneda | PuntoCash Matanzas |
+| Moneda sin rango que esperan sedes | CAD |
+| Caja abierta de un día anterior | PuntoCash Obispo |
+| Diferencias sin quien las resuelva | PuntoCash Miramar, 27 a 29/06/2026 (Aprobaciones) |
+
+La demostración trabaja **en memoria**: los cambios duran hasta reiniciar el servidor, y las jornadas y operaciones se siembran relativas al día de hoy (la última semana, más las de Miramar de junio).
+
+---
+
+## Apéndice C · Códigos de rechazo y mensajes
+
+| Código | Mensaje |
+| --- | --- |
+| `alcance-insuficiente` | Esta acción solo la puede hacer PuntoCash. |
+| `solo-puntocash` | Esta acción es de PuntoCash. |
+| `credenciales-incorrectas` | Revisa el usuario y la contraseña e intenta nuevamente. |
+| `sesion-terminada` | Tu sesión ha terminado. Vuelve a entrar. |
+| `motivo-requerido` | Escribe el motivo: al menos 10 caracteres. |
+| `campo-requerido` | Completa este campo para continuar. (o el texto del campo: «Escribe el nombre de la sede.», «Escribe la dirección.»…) |
+| `codigo-invalido` (sede) | Usa de 2 a 8 letras o números, sin espacios. |
+| `codigo-duplicado` | Ya existe una sede con ese código. |
+| `telefono-invalido` | Escribe un teléfono válido, con su prefijo. |
+| `horario-invalido` | Marca al menos un día en que abra. · Completa las horas del {día}. · El {día} cierra antes de abrir. |
+| `sin-servicios` | Habilita al menos un servicio. |
+| `sede-no-encontrada` | No encontramos esa sede. |
+| `sede-cerrada` | La sede está cerrada. |
+| `jornadas-abiertas` | Esta sede tiene jornadas abiertas. Deben cerrarse antes. |
+| `ya-suspendida` | La sede ya estaba suspendida. Recarga para ver su estado. |
+| `no-suspendida` | La sede no está suspendida. Recarga para ver su estado. |
+| `ultimo-servicio` | Una sede activa necesita al menos un servicio. |
+| `servicio-no-disponible` | Ese servicio no está disponible en el producto. |
+| `servicio-cambiado` | Otra persona acaba de habilitarlo (deshabilitarlo). Recarga para ver el estado. |
+| `operador-no-encontrado` | No encontramos ese operador. |
+| `operador-inactivo` | Ese operador no está activo. |
+| `ya-asignada` | Esta sede ya tiene operador. Otra persona la acaba de asignar: recarga para ver su estado. |
+| `sin-asignacion-vigente` | Esta sede ya no tiene operador. Otra persona acaba de revocarla: recarga para ver su estado. |
+| `operador-duplicado` | Ya existe un operador con ese nombre. |
+| `documento-invalido` | Escribe el número del documento, sin espacios. |
+| `identificador-invalido` | El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo. (Si falla la longitud: de 3 a 30 caracteres.) |
+| `identificador-duplicado` | Ya hay un administrador (una cuenta) con ese identificador de acceso. |
+| `correo-invalido` | Escribe un correo electrónico válido. |
+| `correo-duplicado` | Ya hay un administrador (una cuenta) con ese correo. Con el correo también se entra, así que no puede repetirse. |
+| `ya-suspendido` | El operador ya estaba suspendido. Recarga para ver su estado. |
+| `no-suspendido` | El operador no está suspendido. Recarga para ver su estado. |
+| `dado-de-baja` | El operador está dado de baja. |
+| `tiene-sedes` | Este operador administra {n} sedes. Revoca esas asignaciones antes de darlo de baja. |
+| `usuario-no-encontrado` | Este operador no tiene administrador principal. · No encontramos esa cuenta. Puede que ya no exista. |
+| `moneda-local` | El peso cubano es la moneda contra la que se cotiza todo: no lleva rango (no se puede retirar). |
+| `moneda-desconocida` · `no-existe` | Esa moneda no está en el catálogo. |
+| `moneda-retirada` | Esta moneda está retirada del catálogo: reincorpórala antes de definirle un rango. |
+| `valor-invalido` | Introduce un valor válido. |
+| `demasiados-decimales` | Una tasa o un límite admite hasta 4 decimales. |
+| `minimo-mayor` | El mínimo debe ser menor que el máximo. |
+| `rango-incoherente` | La compra no puede quedar por encima de la venta: la compra mínima tiene que ser menor o igual que la venta mínima, y la compra máxima, menor o igual que la venta máxima. |
+| `sin-rango` | Esta moneda ya no tiene rango. Recarga para ver su estado. |
+| `codigo-invalido` (moneda) | Elige una moneda de la lista. |
+| `ya-existe` | Esa moneda ya está en el catálogo. |
+| `esta-retirada` | Esa moneda está retirada del catálogo. Reincorpórala en lugar de añadirla de nuevo. |
+| `ya-retirada` | Esa moneda ya estaba retirada. Recarga para ver su estado. |
+| `no-esta-retirada` | Esa moneda no está retirada. Recarga para ver su estado. |
+| `titulo-vacio` · `titulo-largo` | Escribe el título. · El título no puede pasar de 40 caracteres. |
+| `texto-vacio` · `texto-largo` | Escribe el texto. · El texto no puede pasar de 120 caracteres. |
+| `sin-sedes` | Elige al menos una sede, o marca toda la red. |
+| `no-encontrada` | No encontramos lo que buscabas. |
+| `fecha-invalida` | Elige la fecha de inicio y la de fin. |
+| `inicio-pasado` | La fecha de inicio no puede ser anterior a hoy. |
+| `inicio-fijo` | Esta promoción ya está en pantalla: su fecha de inicio no se cambia. |
+| `fin-pasado` | La fecha de fin no puede ser anterior a hoy. Para terminarla ya, retírala. |
+| `fin-antes-de-inicio` | La fecha de fin no puede ser anterior a la de inicio. |
+| `imagen-invalida` · `imagen-pesada` | La imagen tiene que ser JPG, PNG o WebP. · La imagen pesa demasiado. Prueba con una más pequeña. |
+| `del-operador` | Esta promoción la publica un operador: PuntoCash la ve, pero no la cambia. |
+| `vencida` | Esta promoción ya venció (y no se puede cambiar). |
+| `no-es-el-principal` | Solo el principal puede administrar las cuentas de la consola. |
+| `es-el-principal` | El principal no se desactiva: sin él no habría quien diera de alta a otro. |
+| `ya-activo` · `ya-desactivado` | Esta cuenta ya está activa. · Esta cuenta ya está desactivada. |
+| `destino-requerido` | Elige quién pasa a administrar las cuentas. |
+| `es-uno-mismo` | No puedes traspasarte el papel a ti mismo. |
+| `destino-no-activo` | Solo se puede traspasar a una cuenta activa. |
+| `actual-incorrecta` | La contraseña actual no es correcta. |
+| `demasiado-corta` | La contraseña necesita al menos 8 caracteres. |
+| `igual-a-la-actual` | La contraseña nueva tiene que ser distinta de la actual. |
+| `no-coinciden` | Las dos contraseñas no son iguales. |
+| `motivo-corto` | Escribe el motivo, con al menos 10 caracteres. |
+| `ya-resuelta` | Esta solicitud ya fue resuelta. |
+| `no-es-huerfana` | Ya la puede resolver su mercante: la sede volvió a la empresa que la tenía ese día. |

@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v8.0
+## Documento de Requisitos Funcionales (FRD) · v8.7
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -20,7 +20,7 @@
 - Cada requisito tiene un código `FR-AD-<área>-<n>`. «Debe» indica comportamiento obligatorio.
 - El documento fija las **reglas**: qué datos muestra cada pantalla, qué se permite, qué se rechaza y con qué código, qué se guarda y qué se audita.
 - Los **textos, avisos y la disposición** de cada pantalla están en la **demostración**, que es la referencia de diseño.
-- Cada **«Ver en la demo»** dice con qué cuenta entrar y qué pasos seguir para ver ese caso. Todas las cuentas usan la contraseña `puntocash` y el código de verificación `123456`.
+- Cada **«Ver en la demo»** dice con qué cuenta entrar y qué pasos seguir para ver ese caso. Todas las cuentas usan la contraseña `puntocash` y el código de verificación `123456`. En cada cuenta se entra con el correo que se indica o con su nombre de usuario, indistintamente (**FR-AD-ACC-11**): `marta@malecon-sf.cu` es `msanchez`, `dcastro@malecon-sf.cu` es `dcastro`, `rortega@caribecambios.cu` es `rortega`, `ibetancourt@centrodivisas.cu` es `ibetancourt`, `lperez@cienfuegoscambio.cu` es `lperez`, `abarrios@bahiacambios.cu` es `abarrios` y `yperez@orientedivisas.cu` es `yperez`.
 - Cada rechazo del servidor tiene un **código** (`ultima-caja`). El mensaje que ve el usuario para cada código está en el **Apéndice C**.
 - **El servidor revalida toda regla al confirmar**, aunque la pantalla ya la haya comprobado: las condiciones pueden cambiar con la pantalla abierta **[R3]**.
 - Todo «no existe o está fuera del alcance de la sesión» se rechaza con el mismo código, `no-encontrada`, y responde igual que un recurso inexistente (**FR-AD-NAV-3**).
@@ -29,6 +29,13 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 8.7 | 03/11/2026 | **Una sede se ve desde que es del operador (FR-AD-SCOPE-7, nuevo).** Las jornadas, solicitudes y operaciones del operador anterior dejan de verse; sus aprobaciones pendientes las resuelve PuntoCash. |
+| 8.6 | 03/11/2026 | **Las tasas admiten hasta 4 decimales** (código `demasiados-decimales`; cifras con mínimo 2 y máximo 4). FR-AD-STATE-7 se comprueba también a 1280 y 1440; la lista de Operaciones deja que el texto de la sede se parta, y la de Jornadas deja partirse la fecha y el horario, para no desbordar a 1280. |
+| 8.5 | 03/11/2026 | **Worker queda recableado contra la lista de la sede (FR-AD-MON-2).** «Añadir moneda» en la caja ofrece las monedas de la lista de su sede que la caja aún no tiene habilitadas; Worker ya no tiene una lista propia. Si la caja ya tiene todas las de la sede, la pantalla lo dice y remite al administrador. Nombre y símbolo de cada moneda salen de la lista ISO 4217 compartida por toda la plataforma, y todas las monedas se manejan con cuatro decimales (decisión de PuntoCash, FRD de Super administración v3.8). |
+| 8.4 | 03/11/2026 | **Las monedas que PuntoCash retira del catálogo dejan de ofrecerse.** «Añadir moneda» solo lista las monedas disponibles, y el dominio rechaza con `moneda-retirada` añadir una retirada a una sede. Las sedes que ya la tienen **la conservan**, con su saldo y su historial, hasta que su mercante la quite (FR-AD-MON-6 y -7 no cambian). Código nuevo en el Apéndice C. Consecuencia del catálogo mantenido por PuntoCash (FRD de Super Admin v3.7). |
+| 8.3 | 02/11/2026 | **En la consola, a los administradores se les llama «administradores», no «usuarios».** Los trabajadores también son usuarios del producto, y llamar «usuarios» solo a los administradores de la empresa confundía. La entrada del menú y la sección §8 pasan a llamarse **Administradores**; los títulos, el buscador, la columna del listado, los avisos y los mensajes de la sección dicen «administrador». Las rutas (`/admin/usuarios`) y los códigos no cambian. El botón del traspaso pasa a «Traspasar la administración principal». Sin cambios de comportamiento. |
+| 8.2 | 02/11/2026 | **Se recoge lo que la consola ya hacía y el documento no decía, y se corrige una demo.** (1) **El identificador de acceso es un nombre de usuario**, no un correo: de 3 a 30 caracteres, sin «@»; el acceso y la recuperación aceptan el identificador **o** el correo, y el correo es **único**. Nuevo **FR-AD-ACC-11**; se completan la recuperación (**FR-AD-ACC-8**), el alta de trabajador y de usuario, y el cambio de correo, con los códigos `identificador-invalido` y `correo-duplicado` y sus mensajes (Apéndice C). (2) Dos defectos del acceso, ya corregidos, pasan a ser requisito: la contraseña pertenece a la cuenta y no a lo tecleado, y la verificación anuncia el correo real de la cuenta. (3) Nuevo **FR-AD-SHELL-17**: en el teléfono la acción de una sección baja debajo de su descripción. (4) **FR-AD-PROM-3**: una promoción de red dice «Publicada por PuntoCash». (5) La demo de **FR-AD-USR-4** usaba como identificador un correo, que desde ahora se rechaza. |
+| 8.1 | 26/10/2026 | **Se dice quién pone el rótulo de un equipo, que estaba sin decir.** El rótulo se mostraba en Equipos, en la ficha de sede, en la jornada y en el diálogo de forzar cierre, pero ningún requisito decía de dónde salía ni dónde se cambia, y el formulario de vincular no lo pedía. Nuevo **FR-AD-EQ-30**: lo pone el administrador de la sede al vincular —opcional en una caja, obligatorio en un kiosco— y puede cambiarlo después desde Equipos. **FR-AD-EQ-7 / 8 / 13 / 14** añaden el campo, y **FR-AD-EQ-5** y **FR-AD-EQ-12** la acción. Ninguna otra regla cambia |
 | 8.0 | 21/10/2026 | Documento reescrito para desarrollo: una subsección por pantalla, reglas y códigos de rechazo en lugar de textos de interfaz, referencias a la demostración y catálogo de mensajes (Apéndice C). Ninguna regla de la 7.16 se pierde; se escriben las que la consola ya cumplía y el documento no decía (cierre de sesión, revalidación de la sesión en cada petición, sedes cerradas fuera de los selectores, sedes cerradas fuera del panel de atención). Salen las secciones «Qué es este módulo» y «No especificado». Los códigos de requisito se conservan |
 | 7.16 | 21/10/2026 | Revisión completa antes de la segunda entrega: filtros al cambiar de sede, 404 de rutas inexistentes, pantalla de error, motivos sin largo mínimo en Trabajadores, aviso de Usuarios que se cierra, exportación sin el corte por trabajador si hay uno elegido |
 | 7.15 | 20/10/2026 | Exportación de reportes a Excel y PDF |
@@ -74,6 +81,10 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 
 **Ver en la demo:** `marta@malecon-sf.cu`, cualquier sección, estrechando la ventana por debajo de 1024px. Filtros agrupados: **Operaciones**. Diálogo: **Equipos** → «Desvincular» a 360px.
 
+**FR-AD-SHELL-17 · Cabecera de sección.** Cuando una sección lleva título, descripción y una acción (un botón como «Dar de alta» o «Cambiar horario»), por debajo de **640px** la acción baja debajo de la descripción, a todo lo ancho disponible; desde 640px va a la derecha, alineada con el pie del título. En la misma fila el texto quedaba comprimido en media columna.
+
+**Ver en la demo:** `marta@malecon-sf.cu`, **Sedes** → cualquier sede, estrechando la ventana por debajo de 640px.
+
 ---
 
 ### 1.2 Cabecera
@@ -103,13 +114,13 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 | Bloque | Destinos |
 | --- | --- |
 | Operación | Inicio, Jornadas, Aprobaciones, Operaciones |
-| Sucursal | Sedes, Cajas, Equipos, Trabajadores, Usuarios |
+| Sucursal | Sedes, Cajas, Equipos, Trabajadores, Administradores |
 | Configuración | Monedas, Tasas, Promociones, Reportes |
 
-- **Usuarios** solo existe para el administrador principal (**FR-AD-USR-11**): trece destinos para él, doce para los demás.
-- El servidor decide si incluye Usuarios al armar el menú. La entrada no llega al navegador de quien no es principal.
+- **Administradores** solo existe para el administrador principal (**FR-AD-USR-11**): trece destinos para él, doce para los demás.
+- El servidor decide si incluye Administradores al armar el menú. La entrada no llega al navegador de quien no es principal.
 
-**Ver en la demo:** `marta@malecon-sf.cu` (trece destinos) y `dcastro@malecon-sf.cu` (doce, sin Usuarios).
+**Ver en la demo:** `marta@malecon-sf.cu` (trece destinos) y `dcastro@malecon-sf.cu` (doce, sin Administradores).
 
 **FR-AD-SHELL-3 · Indicadores.** Tres destinos llevan un número cuando es mayor que cero:
 
@@ -167,7 +178,7 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 
 | Filtran por la sede elegida | Muestran siempre todo el alcance |
 | --- | --- |
-| Inicio, Cajas, Equipos, Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Promociones, Reportes, y los indicadores del menú (**FR-AD-SHELL-3**) | Sedes, Trabajadores y Usuarios, con la sede como columna cuando aplica |
+| Inicio, Cajas, Equipos, Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Promociones, Reportes, y los indicadores del menú (**FR-AD-SHELL-3**) | Sedes, Trabajadores y Administradores, con la sede como columna cuando aplica |
 
 - La selección se conserva durante la navegación.
 - Una sesión nueva empieza en «Todas mis sedes».
@@ -185,6 +196,10 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 - La selección se olvida en ese momento. Si la sede vuelve a asignarse más tarde, la consola no se filtra a ella sin que nadie la elija.
 
 No se puede ver en la demo.
+
+**FR-AD-SCOPE-7 · Desde que es suya.** Dentro de cada sede, la consola muestra solo lo ocurrido **mientras la administra el operador de la sesión**: jornadas (por su apertura), sus movimientos y solicitudes, y operaciones (por su fecha). Lo que hizo el operador anterior no aparece en ningún listado, detalle, recuento ni reporte, y su dirección directa responde como inexistente (`no-encontrada`). Tampoco se resuelven sus aprobaciones pendientes: las resuelve PuntoCash (**FR-SA-APR-1**). Si una sede vuelve a un operador que ya la tuvo, ve también sus tramos anteriores. Cajas, equipos, trabajadores, monedas y tasas son los de hoy y se ven completos **[A1]**.
+
+**Ver en la demo:** `rortega@caribecambios.cu` (Caribe, que tiene PuntoCash Miramar desde el 30/06/2026), Jornadas con «Desde» 01/06/2026: no aparece ninguna de junio. En Super administración, las mismas fechas muestran las de Atlántico.
 
 ---
 
@@ -211,9 +226,9 @@ No se puede ver en la demo.
 | `/admin/trabajadores/[id]` | Ficha de un trabajador |
 | `/admin/trabajadores/[id]/editar` | Edición de sus datos personales |
 | `/admin/trabajadores/[id]/acceso` | Ayudar con el acceso |
-| `/admin/usuarios` | Usuarios administradores de la empresa. **Solo para el administrador principal** |
-| `/admin/usuarios/nuevo` | Alta de un usuario administrador. **Solo para el administrador principal** |
-| `/admin/usuarios/[id]` | Ficha de un usuario administrador. **Solo para el administrador principal** |
+| `/admin/usuarios` | Administradores de la empresa. **Solo para el administrador principal** |
+| `/admin/usuarios/nuevo` | Alta de un administrador. **Solo para el administrador principal** |
+| `/admin/usuarios/[id]` | Ficha de un administrador. **Solo para el administrador principal** |
 | `/admin/usuarios/[id]/editar` | Edición de sus datos personales. **Solo para el administrador principal** |
 | `/admin/perfil` | Datos de la persona con sesión iniciada |
 | `/admin/perfil/editar` | Edición de sus propios datos personales |
@@ -269,12 +284,12 @@ Rigen **FR-FMT-1 a FR-FMT-5** de `PuntoCash_Worker_Functional_Requirements_v1.md
 | Kiosco | `KIO-NNNN-NNNN` |
 | Código del reto de vinculación | Seis cifras. Se muestra y se admite agrupado de tres en tres («482 913»); al leerlo se ignoran los espacios |
 
-**FR-AD-FMT-3 · Correo de verificación.** El correo de verificación de un trabajador o de un usuario administrador se muestra **enmascarado** en todo listado y en toda ficha. Excepciones, que lo muestran entero: la asistencia de acceso de un trabajador (**FR-AD-TRAB-10**) y el diálogo «Cambiar correo» de un usuario administrador (**FR-AD-USR-6**).
+**FR-AD-FMT-3 · Correo de verificación.** El correo de verificación de un trabajador o de un administrador se muestra **enmascarado** en todo listado y en toda ficha. Excepciones, que lo muestran entero: la asistencia de acceso de un trabajador (**FR-AD-TRAB-10**) y el diálogo «Cambiar correo» de un administrador (**FR-AD-USR-6**).
 
 **FR-AD-FMT-4 · Credenciales.**
 
 - Ninguna pantalla muestra, copia ni exporta una credencial de dispositivo **[A10]**, **FR-AD-EQ-25**.
-- La credencial inicial de una persona (trabajador o usuario administrador) se muestra **una sola vez**, en el resultado del alta o de la regeneración, y no vuelve a ser consultable.
+- La credencial inicial de una persona (trabajador o administrador) se muestra **una sola vez**, en el resultado del alta o de la regeneración, y no vuelve a ser consultable.
 
 **Ver en la demo:** `marta@malecon-sf.cu`. Identificadores: **Equipos**. Correo enmascarado: **Trabajadores**, cualquier ficha. Credencial una sola vez: **Trabajadores** → alta de un trabajador.
 
@@ -296,7 +311,7 @@ Rigen **FR-A11Y-1 a FR-A11Y-3** de `PuntoCash_Worker_Functional_Requirements_v1.
 
 **FR-AD-ACC-1 · Flujo.** El mismo flujo de dos pasos que Worker, sin variación:
 
-1. Credenciales: usuario o correo, y contraseña.
+1. Credenciales: identificador de acceso o correo, indistintamente, y contraseña (**FR-AD-ACC-11**).
 2. Código de seis dígitos enviado al correo registrado: cinco minutos de vigencia, tres intentos y hasta tres envíos.
 
 - La sesión solo existe cuando el código se verifica **[R13]**.
@@ -329,7 +344,17 @@ Rigen **FR-A11Y-1 a FR-A11Y-3** de `PuntoCash_Worker_Functional_Requirements_v1.
 - Contraseña incorrecta: `marta@malecon-sf.cu` con cualquier otra contraseña.
 - Usuario inexistente: cualquier correo no listado.
 - Operador suspendido: `yperez@orientedivisas.cu`.
-- Usuario desactivado: con `marta@malecon-sf.cu`, **Usuarios** → desactivar a Daniel Castro; cerrar sesión y entrar con `dcastro@malecon-sf.cu`.
+- Usuario desactivado: con `marta@malecon-sf.cu`, **Administradores** → desactivar a Daniel Castro; cerrar sesión y entrar con `dcastro@malecon-sf.cu`.
+
+**FR-AD-ACC-11 · Identificador y correo.** Cada cuenta tiene un **identificador de acceso** y un **correo**, y con cualquiera de los dos se entra y se recupera la contraseña.
+
+- **El identificador es un nombre de usuario**, no un correo: de 3 a 30 caracteres, solo letras, números, punto, guion y guion bajo, y **sin «@»**. Así lo tecleado nunca puede ser a la vez el identificador de una persona y el correo de otra, y no hace falta decidir cuál gana.
+- **El correo es único** entre los administradores, porque con él se entra. Lo mismo rige entre los trabajadores (**FR-AD-TRAB-6**). Mayúsculas y espacios en los extremos no distinguen una cuenta de otra.
+- **La contraseña pertenece a la cuenta, no a lo tecleado.** Quien recupera su contraseña escribiendo el correo y después entra con el identificador entra con la contraseña nueva, y la vieja deja de valer.
+- **La verificación anuncia el correo real de la cuenta**, enmascarado (**FR-AD-FMT-3**), escriba la persona su identificador o su correo. Nunca uno deducido de lo tecleado.
+- El rechazo sigue siendo único (**FR-AD-ACC-5**): una cuenta que no existe se dice igual con el identificador que con el correo.
+
+**Ver en la demo:** entrar con `msanchez` y con `marta@malecon-sf.cu`: los dos llevan a la verificación, que anuncia `m•••a@malecon-sf.cu`.
 
 **FR-AD-ACC-7 · Sin sedes.** Un usuario válido de un operador activo sin ninguna sede asignada **sí** inicia sesión y llega a Inicio en estado vacío (**FR-AD-HOME-8**).
 
@@ -341,7 +366,7 @@ Rigen **FR-A11Y-1 a FR-A11Y-3** de `PuntoCash_Worker_Functional_Requirements_v1.
 
 **FR-AD-ACC-8.** El mismo flujo de tres pasos que Worker, con sus mismas reglas (Worker FRD §2.13, **FR-REC-1** a **FR-REC-12**):
 
-1. Identificador.
+1. Identificador o correo (**FR-AD-ACC-11**).
 2. Código.
 3. Contraseña nueva.
 
@@ -385,7 +410,7 @@ Lo propio de esta consola: la ayuda, cuando el correo registrado ya no sirve, re
 | Vinculado | Fecha de vinculación y quién la vinculó |
 | Última actividad | Fecha y hora de la última señal del equipo |
 | Jornada | Como en Cajas (**FR-AD-CAJA-1**): si tiene una abierta, trabajador, desde cuándo, si está en sesión y enlace a `/admin/jornadas/{id}`; si no, cerrada |
-| Acción | «Desvincular» si tiene equipo; «Vincular un equipo» → `/admin/equipos/vincular` si no |
+| Acción | Si tiene equipo, «Editar etiqueta» (**FR-AD-EQ-30**) y «Desvincular»; si no, «Vincular un equipo» → `/admin/equipos/vincular` |
 
 **FR-AD-EQ-6 · Cajas sin equipo.**
 
@@ -404,7 +429,7 @@ Lo propio de esta consola: la ayuda, cuando el correo registrado ya no sirve, re
 | Vinculado | Fecha de vinculación y quién lo vinculó |
 | Última actividad | Fecha y hora de la última señal del kiosco |
 | Solicitudes | Solicitudes generadas en el periodo (pendiente de dependencia, §18) |
-| Acción | «Desvincular» |
+| Acción | «Editar etiqueta» (**FR-AD-EQ-30**) y «Desvincular» |
 
 **Ver en la demo:** `marta@malecon-sf.cu`, **Equipos** → Kioscos de autoservicio (dos en PuntoCash Vedado). Sin kioscos: `rortega@caribecambios.cu`. La columna de solicitudes no se puede ver en la demo.
 
@@ -502,6 +527,7 @@ Se inicia con «Desvincular» en un kiosco y se confirma en un diálogo, sin mot
 | --- | --- | --- |
 | Sede | Sí | Solo sedes del alcance que no están cerradas; una suspendida se admite y se marca como tal **[A1]**, **[FR-AS-LINK-4]**. Si el usuario tiene una sola, no se elige: se usa esa |
 | Caja | Solo para un equipo de caja | Solo cajas activas de la sede elegida. Una caja admite **un equipo como máximo** **[A11]**, **[FR-DEV-3]**: las que ya tienen equipo aparecen no disponibles, con el identificador del equipo que la ocupa. Para sustituir el equipo de una caja hay que desvincular el anterior primero. Si la sede no tiene ninguna caja activa sin equipo, la pantalla lo indica y ofrece crear una caja → `/admin/cajas/nueva?sede={sedeId}` |
+| Etiqueta | Solo para un kiosco | El rótulo con el que la consola nombra al equipo (**FR-AD-EQ-30**). En una caja es **opcional**: vacía, se usa el nombre de la caja, que ya la identifica. En un kiosco es **obligatoria**, porque una sede puede tener varios y el identificador no distingue el de la entrada del de la sala de espera. Código de rechazo si falta en un kiosco: `etiqueta-requerida` |
 
 - Un kiosco no lleva caja: pertenece a la sede.
 - Una sede puede tener **varios kioscos** vinculados a la vez.
@@ -1039,8 +1065,8 @@ Por debajo de 1024px cada trabajador es una tarjeta (**FR-AD-SHELL-13**). Un usu
 | Tipo de documento | Sí | Del catálogo de tipos de documento. Por defecto, CI |
 | Número de documento | Sí | Único entre todos los trabajadores de la red |
 | Teléfono | Sí | Texto libre |
-| Correo | Sí | Formato de correo válido. Recibe el código de verificación de cada inicio de sesión **[R13]** |
-| Identificador de acceso | Sí | Único en toda la red, sin distinguir mayúsculas de minúsculas |
+| Correo | Sí | Formato de correo válido, **único entre los trabajadores de la red**: con él también se entra (**FR-AD-ACC-11**). Recibe el código de verificación de cada inicio de sesión **[R13]** |
+| Identificador de acceso | Sí | Nombre de usuario de 3 a 30 caracteres, letras, números, punto, guion o guion bajo, **sin «@»** (**FR-AD-ACC-11**). Único en toda la red, sin distinguir mayúsculas de minúsculas |
 | Sede | Sí | Solo sedes del alcance vigente que no estén cerradas. Una suspendida se admite y se marca «· suspendida» (**FR-AD-TRAB-14**). Si el usuario tiene una sola sede elegible, no se elige: se usa esa |
 
 - **El alta elige sede, nunca caja** **[A13]**: el formulario no tiene campo de caja.
@@ -1060,6 +1086,8 @@ Por debajo de 1024px cada trabajador es una tarjeta (**FR-AD-SHELL-13**). Un usu
 | --- | --- |
 | Un campo obligatorio vacío (el primero que falte) | `campo-obligatorio` |
 | Correo con formato inválido | `correo-invalido` |
+| Ya existe un trabajador con ese correo | `correo-duplicado` |
+| Identificador que no es un nombre de usuario válido (con «@», demasiado corto o largo, o con caracteres no admitidos) | `identificador-invalido` |
 | Ya existe un trabajador con ese identificador en la red | `identificador-duplicado` |
 | Ya existe un trabajador con ese documento | `documento-duplicado` |
 | La sede está cerrada | `sede-cerrada` |
@@ -1068,8 +1096,10 @@ Por debajo de 1024px cada trabajador es una tarjeta (**FR-AD-SHELL-13**). Un usu
 **Ver en la demo** (`marta@malecon-sf.cu`, Dar de alta, resto de campos rellenos):
 
 - Identificador duplicado: identificador `jperez`.
+- Identificador inválido: identificador `ana@correo.cu`.
 - Documento duplicado: número `88041203211`.
 - Correo inválido: correo `abc`.
+- Correo duplicado: correo `jperez@puntocash.com`.
 
 **FR-AD-TRAB-8 · Al guardar: credencial inicial.**
 
@@ -1178,6 +1208,7 @@ Responde al caso en que el trabajador dice que no le llega el código de verific
 | Condición | Código |
 | --- | --- |
 | Correo vacío o con formato inválido | `correo-invalido` |
+| Otro trabajador ya tiene ese correo | `correo-duplicado` |
 | Motivo vacío | `motivo-requerido` |
 | El trabajador no existe o está fuera del alcance | `no-encontrada` |
 
@@ -1308,11 +1339,11 @@ Se inicia con «Desactivar» en la ficha de un trabajador activo y se confirma e
 
 ---
 
-## 8. Usuarios administradores
+## 8. Administradores
 
-Los usuarios administradores de la empresa (el operador de la sesión) **[A4]**, **[A3]**. Pertenecen al operador, no a una sede.
+Los administradores de la empresa (el operador de la sesión) **[A4]**, **[A3]**. Pertenecen al operador, no a una sede.
 
-### 8.1 Usuarios administradores — sección del administrador principal
+### 8.1 Administradores — sección del administrador principal
 
 #### 8.1.1 Acceso y papeles
 
@@ -1321,15 +1352,15 @@ Los usuarios administradores de la empresa (el operador de la sesión) **[A4]**,
 - Toda la sección (`/admin/usuarios`, `/admin/usuarios/nuevo`, `/admin/usuarios/[id]`, `/admin/usuarios/[id]/editar`) pertenece a **un único usuario por empresa: el administrador principal**.
 - Solo él da de alta, edita, cambia el correo, regenera la credencial, desactiva, reactiva y traspasa el papel.
 - Para cualquier otro usuario **la sección no existe**:
-  - la entrada «Usuarios» no está en el menú, y se omite **en el servidor**, al construir el menú; el HTML entregado no la contiene (**FR-AD-SHELL-2**);
+  - la entrada «Administradores» no está en el menú, y se omite **en el servidor**, al construir el menú; el HTML entregado no la contiene (**FR-AD-SHELL-2**);
   - sus rutas responden como inexistentes, con 404 (**FR-AD-NAV-3**), no como prohibidas.
 - Toda escritura de la sección comprueba en el servidor que quien actúa es el principal.
 
-**Ver en la demo:** `dcastro@malecon-sf.cu`: el menú no tiene Usuarios, y entrar en `/admin/usuarios` responde 404. `marta@malecon-sf.cu`: el menú tiene Usuarios.
+**Ver en la demo:** `dcastro@malecon-sf.cu`: el menú no tiene Administradores, y entrar en `/admin/usuarios` responde 404. `marta@malecon-sf.cu`: el menú tiene Administradores.
 
 **FR-AD-USR-4 · Un único nivel de permisos sobre la operación.**
 
-- Todos los usuarios administradores de un operador pueden exactamente lo mismo en la operación, en **todas** sus sedes: sedes, cajas, equipos, trabajadores, monedas, tasas, promociones, aprobaciones y reportes.
+- Todos los administradores de un operador pueden exactamente lo mismo en la operación, en **todas** sus sedes: sedes, cajas, equipos, trabajadores, monedas, tasas, promociones, aprobaciones y reportes.
 - La única diferencia entre usuarios es esta sección, que es del principal.
 - El modelo tiene una sola marca, «es el principal». Sin roles, sub-roles, permisos por capacidad ni usuarios limitados a una sede.
 
@@ -1349,7 +1380,7 @@ Los usuarios administradores de la empresa (el operador de la sesión) **[A4]**,
 
 **FR-AD-USR-1 · Contenido.**
 
-- Muestra todos los usuarios administradores del operador de la sesión, activos y desactivados.
+- Muestra todos los administradores del operador de la sesión, activos y desactivados.
 - Orden: el principal primero; después los activos; dentro de cada grupo, por nombre.
 - Búsqueda por nombre o identificador, en la dirección (`texto`).
 - Ofrece «Dar de alta» → `/admin/usuarios/nuevo`.
@@ -1371,7 +1402,7 @@ Datos de cada usuario:
 
 Por debajo de 1024px cada usuario es una tarjeta (**FR-AD-SHELL-13**).
 
-**Ver en la demo:** `marta@malecon-sf.cu`, **Usuarios**. Para cerrar el aviso, su control de cierre; al volver a entrar ya no aparece.
+**Ver en la demo:** `marta@malecon-sf.cu`, **Administradores**. Para cerrar el aviso, su control de cierre; al volver a entrar ya no aparece.
 
 ---
 
@@ -1385,13 +1416,13 @@ Por debajo de 1024px cada usuario es una tarjeta (**FR-AD-SHELL-13**).
 | Primer apellido | Sí | Ídem |
 | Segundo apellido | No | Ídem |
 | Teléfono | Sí | Texto libre |
-| Correo | Sí | Formato de correo válido. Es el canal del segundo factor **[R13]** |
-| Identificador de acceso | Sí | Único entre todos los usuarios administradores, sin distinguir mayúsculas de minúsculas |
+| Correo | Sí | Formato de correo válido, **único entre los administradores**: con él también se entra (**FR-AD-ACC-11**). Es el canal del segundo factor **[R13]** |
+| Identificador de acceso | Sí | Nombre de usuario de 3 a 30 caracteres, letras, números, punto, guion o guion bajo, **sin «@»** (**FR-AD-ACC-11**). Único entre todos los administradores, sin distinguir mayúsculas de minúsculas |
 
 - El usuario nace en la empresa de quien lo crea, con potestad sobre todas sus sedes. No se elige sede.
 - **FR-AD-USR-4:** antes de confirmar, la pantalla advierte que el usuario nuevo podrá hacer todo lo que hace quien lo crea en la operación, en todas sus sedes, salvo esta sección.
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Dar de alta.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Dar de alta.
 
 **Rechazos.** Cada rechazo de campo se muestra junto a su campo. El formulario conserva lo escrito.
 
@@ -1399,10 +1430,16 @@ Por debajo de 1024px cada usuario es una tarjeta (**FR-AD-SHELL-13**).
 | --- | --- |
 | Un campo obligatorio vacío (el primero que falte) | `campo-obligatorio` |
 | Correo con formato inválido | `correo-invalido` |
-| Ya existe un usuario administrador con ese identificador | `identificador-duplicado` |
+| Ya existe un administrador con ese correo | `correo-duplicado` |
+| Identificador que no es un nombre de usuario válido (con «@», demasiado corto o largo, o con caracteres no admitidos) | `identificador-invalido` |
+| Ya existe un administrador con ese identificador | `identificador-duplicado` |
 | Quien actúa no es el principal | `no-es-el-principal` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Dar de alta, identificador `dcastro@malecon-sf.cu`.
+**Ver en la demo** (`marta@malecon-sf.cu`, Dar de alta, resto de campos rellenos):
+
+- Identificador duplicado: identificador `dcastro`.
+- Identificador inválido: identificador `ana@correo.cu`.
+- Correo duplicado: correo `dcastro@malecon-sf.cu`.
 
 **FR-AD-USR-5 · Al guardar.**
 
@@ -1424,11 +1461,11 @@ Un usuario que no existe o es de otra empresa responde `no-encontrada`, con 404 
 | Cabecera | Nombre completo e identificador; si es el propio usuario, lo indica |
 | Aviso | Si está desactivado: que no puede entrar y que puede reactivarse desde aquí |
 | Datos | Estado, identificador de acceso, teléfono, correo de verificación **enmascarado** (**FR-AD-FMT-3**), fecha de alta, último acceso o que nunca ha entrado |
-| Acciones | «Editar datos» → `/admin/usuarios/{id}/editar`; «Cambiar correo»; «Regenerar credencial»; «Traspasar la administración de usuarios» (8.1.6); «Desactivar» si está activo y no es el principal; «Reactivar» si está desactivado |
+| Acciones | «Editar datos» → `/admin/usuarios/{id}/editar`; «Cambiar correo»; «Regenerar credencial»; «Traspasar la administración principal» (8.1.6); «Desactivar» si está activo y no es el principal; «Reactivar» si está desactivado |
 
 La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-13**).
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro.
 
 **FR-AD-USR-13 · Al principal no lo desactiva nadie, ni él mismo.**
 
@@ -1437,7 +1474,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 - El servidor rechaza la desactivación del principal con `es-el-principal`.
 - Garantiza que la empresa siempre tiene un administrador capaz de dar de alta a otro.
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Marta Sánchez. Sin otro usuario activo: `rortega@caribecambios.cu`, Usuarios → Reinaldo Ortega.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Marta Sánchez. Sin otro usuario activo: `rortega@caribecambios.cu`, Administradores → Reinaldo Ortega.
 
 ---
 
@@ -1462,7 +1499,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 | Quien actúa no es el principal | `no-es-el-principal` |
 | El usuario no existe o es de otra empresa | `no-encontrada` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro → «Editar datos».
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro → «Editar datos».
 
 **FR-AD-USR-6 · Cambiar correo.** Se inicia con «Cambiar correo» y se hace en un diálogo, sin motivo.
 
@@ -1476,10 +1513,11 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 | Condición | Código |
 | --- | --- |
 | Correo vacío o con formato inválido | `correo-invalido` |
+| Otro administrador ya tiene ese correo | `correo-duplicado` |
 | Quien actúa no es el principal | `no-es-el-principal` |
 | El usuario no existe o es de otra empresa | `no-encontrada` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro → «Cambiar correo». El aviso propio: en la ficha de Marta Sánchez.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro → «Cambiar correo». El aviso propio: en la ficha de Marta Sánchez.
 
 **FR-AD-USR-5 · Regenerar credencial.** Igual que 7.6: se confirma en un diálogo sin motivo, es un restablecimiento que sustituye la contraseña vigente, y la credencial nueva se muestra una sola vez. El principal puede regenerar la suya.
 
@@ -1488,7 +1526,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 | Quien actúa no es el principal | `no-es-el-principal` |
 | El usuario no existe o es de otra empresa | `no-encontrada` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro → «Regenerar credencial».
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro → «Regenerar credencial».
 
 **Desactivar.** Se inicia con «Desactivar» en un usuario activo que no es el principal, y se confirma en un diálogo, sin motivo (**FR-AD-STATE-3**).
 
@@ -1501,7 +1539,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 | Quien actúa no es el principal | `no-es-el-principal` |
 | El usuario no existe o es de otra empresa | `no-encontrada` |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Daniel Castro → «Desactivar».
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Daniel Castro → «Desactivar».
 
 **FR-AD-USR-9 · Reactivar.** Se inicia con «Reactivar» en un usuario desactivado, desde la misma ficha, y se confirma en un diálogo, sin motivo.
 
@@ -1518,7 +1556,7 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 
 #### 8.1.6 Traspasar el papel de principal
 
-**FR-AD-USR-12.** El principal traspasa el papel **desde su propia ficha**, con «Traspasar la administración de usuarios», y lo confirma en un diálogo.
+**FR-AD-USR-12.** El principal traspasa el papel **desde su propia ficha**, con «Traspasar la administración principal», y lo confirma en un diálogo.
 
 - El control solo aparece en la ficha del principal y solo si hay al menos otro usuario activo en la empresa.
 - El diálogo advierte que quien traspasa deja de ver esta sección.
@@ -1541,10 +1579,10 @@ La única explicación de la pantalla es la de un control ausente (**FR-AD-USR-1
 
 - **Inmediato y en un solo acto**: al confirmar hay exactamente un principal, el destinatario. En ningún momento hay dos principales ni ninguno.
 - Quien traspasó pasa a «Administrador»: **deja de ver esta sección** y conserva todo lo demás.
-- La confirmación lleva a `/admin/inicio` con una carga completa del shell, que llega ya sin la entrada «Usuarios».
+- La confirmación lleva a `/admin/inicio` con una carga completa del shell, que llega ya sin la entrada «Administradores».
 - El usuario inicial no cambia (**FR-AD-USR-14**).
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Usuarios → Marta Sánchez → «Traspasar la administración de usuarios», destinatario Daniel Castro. Después, el menú de Marta no tiene Usuarios.
+**Ver en la demo:** `marta@malecon-sf.cu`, Administradores → Marta Sánchez → «Traspasar la administración principal», destinatario Daniel Castro. Después, el menú de Marta no tiene Administradores.
 
 ---
 
@@ -1586,7 +1624,7 @@ Lo que cada persona con sesión ve y cambia de sí misma, sea o no el principal.
 | Quien mira | Indicación |
 | --- | --- |
 | No es el principal | Que se lo pida al administrador principal, por su nombre |
-| Es el principal | Que se cambia desde su ficha en Usuarios, con enlace a `/admin/usuarios/{su id}` |
+| Es el principal | Que se cambia desde su ficha en Administradores, con enlace a `/admin/usuarios/{su id}` |
 
 **Ver en la demo:** `dcastro@malecon-sf.cu`, Perfil (remite a Marta Sánchez). `marta@malecon-sf.cu`, Perfil (enlace a su ficha).
 
@@ -1719,7 +1757,7 @@ Se inicia con «Añadir moneda» en el bloque de una sede y se hace en un diálo
 
 | Campo | Obligatorio | Reglas |
 | --- | --- | --- |
-| Moneda | Sí | Solo las monedas del catálogo que la sede todavía no tiene |
+| Moneda | Sí | Solo las monedas del catálogo que la sede todavía no tiene y que PuntoCash no ha retirado del catálogo |
 
 **FR-AD-MON-4 · Efecto.**
 
@@ -1734,6 +1772,7 @@ Se inicia con «Añadir moneda» en el bloque de una sede y se hace en un diálo
 | Moneda sin elegir | `moneda-requerida` |
 | La moneda no está en el catálogo | `moneda-desconocida` |
 | La moneda ya está en la lista de la sede | `ya-en-la-lista` |
+| PuntoCash retiró la moneda del catálogo | `moneda-retirada` |
 | La sede está cerrada | `sede-cerrada` |
 | La sede no existe o está fuera del alcance | `no-encontrada` |
 
@@ -1926,7 +1965,7 @@ Se inicia con «Fijar tasa» en una moneda sin tasa o con «Cambiar» en una tas
 
 | Campo | Obligatorio | Reglas |
 | --- | --- | --- |
-| Compra | Sí | Dentro del rango de compra de PuntoCash, límites incluidos. Admite decimales con coma o con punto. Al cambiar una tasa, viene con la cifra actual |
+| Compra | Sí | Dentro del rango de compra de PuntoCash, límites incluidos. Admite decimales con coma o con punto, **hasta 4**: con más, se rechaza con «Una tasa admite hasta 4 decimales» (`demasiados-decimales`). Al cambiar una tasa, viene con la cifra actual |
 | Venta | Sí | Dentro del rango de venta de PuntoCash, límites incluidos. Mismas reglas. **No puede ser menor que la compra** |
 
 - Junto a cada campo, en solo lectura, el rango de PuntoCash de ese lado **[A5]**.
@@ -1958,6 +1997,7 @@ Se inicia con «Fijar tasa» en una moneda sin tasa o con «Cambiar» en una tas
 | Compra vacía o fuera del rango | `compra-fuera-de-rango` |
 | Venta vacía o fuera del rango | `venta-fuera-de-rango` |
 | La compra es mayor que la venta **[A5]**, **[RP-22]** | `compra-mayor-que-venta` |
+| Una cifra trae más de 4 decimales | `demasiados-decimales` |
 | La sede está cerrada | `sede-cerrada` |
 | La sede no existe o está fuera del alcance | `no-encontrada` |
 
@@ -2044,7 +2084,7 @@ Mientras no se confirme o se cambie, la tasa aparece también en el panel de ate
 
 - la consulta de tasas del kiosco de autoservicio (`/kiosk/autoservicio/tasas`) y la diapositiva de tasas de la pantalla informativa (`/kiosk/pantalla`) muestran **solo las tasas en vigor de su sede**;
 - una sede sin ninguna tasa en vigor, o cerrada, no muestra un tablero vacío: el kiosco indica que la sucursal no publica tasas en ese momento y la pantalla informativa saca esa diapositiva de su rotación;
-- las cifras se muestran **sin decimales cuando no los tienen** («318») y con dos cuando los tienen («318,50»). Una cifra con decimales no se redondea.
+- las cifras se muestran **sin decimales cuando no los tienen** («318») y con **dos como mínimo y cuatro como máximo** cuando los tienen («318,50», «318,525»). Una cifra con decimales no se redondea.
 
 **Ver en la demo:**
 
@@ -2181,7 +2221,7 @@ Por debajo de 1024px cada promoción es una tarjeta (**FR-AD-SHELL-13**).
 | --- | --- |
 | De la empresa, programada o vigente | **Edición**: el formulario de 11.2 con los datos puestos (sedes: las del alcance donde se muestra), «Guardar cambios» y, en la cabecera, «Retirar». Si es vigente, **Desde no se puede cambiar** |
 | De la empresa, vencida o retirada | **Lectura**: texto, sedes, fechas, quién la publicó y la vista previa, sin controles. Un aviso indica que terminó, o quién la retiró y cuándo, y que para volver a anunciarla hay que crear una nueva |
-| De red | **Lectura** igual, sin controles. Un aviso indica que la publica PuntoCash y que no se puede cambiar ni retirar |
+| De red | **Lectura** igual, sin controles. Un aviso indica que la publica PuntoCash y que no se puede cambiar ni retirar. «Publicada por» dice **PuntoCash**, nunca el nombre de la persona que la publicó |
 | De otra empresa, o inexistente | `no-encontrada` (**FR-AD-NAV-3**) |
 
 **Rechazos del servidor al editar.** Los de 11.2, y además:
@@ -2983,7 +3023,7 @@ El volumen de lo operado por las sedes en un periodo. **Solo lectura.**
 **FR-AD-DOM-1 · Dominio de red.** La consola trabaja sobre un dominio de red compartido con la consola de PuntoCash y con las superficies que leen el contenido público de cada sede. Incluye:
 
 - operadores, sedes, asignaciones, cajas, equipos y trabajadores;
-- usuarios administradores, monedas, tasas y promociones;
+- administradores, monedas, tasas y promociones;
 - solicitudes de aprobación y auditoría.
 
 **FR-AD-DOM-2 · Entidades.**
@@ -2991,7 +3031,7 @@ El volumen de lo operado por las sedes en un periodo. **Solo lectura.**
 | Entidad | Contenido |
 | --- | --- |
 | `Operador` | La empresa mercante: nombre, identificación legal, contacto, estado (activo, suspendido, baja) |
-| `UsuarioAdmin` | Una persona del operador en esta consola: identificador de acceso, nombre, teléfono, correo de verificación, estado, si es el **usuario inicial** y si es el **administrador principal**, fecha de alta y último acceso |
+| `UsuarioAdmin` | Una persona del operador en esta consola: identificador de acceso (nombre de usuario, sin «@»), nombre, teléfono, correo de verificación, estado, si es el **usuario inicial** y si es el **administrador principal**, fecha de alta y último acceso |
 | `Sede` | Código, nombre, dirección, municipio y provincia, teléfono, horario por días, estado (activa, suspendida, cerrada) con los datos de la suspensión, fecha de alta |
 | `ServiciosSede` | Los servicios que PuntoCash habilitó en la sede: cambio de moneda, remesas, giros |
 | `Asignacion` | Sede ↔ Operador por periodos: inicio, fin y motivo de cada uno |
@@ -3068,7 +3108,7 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 
 **Ver en la demo:** `abarrios@bahiacambios.cu`, Tasas → PuntoCash Trinidad (CAD sin rango; sede suspendida).
 
-**FR-AD-STATE-7 · Anchos de aceptación.** Toda pantalla se comprueba a **360px, 390px y 1440px** antes de aceptarse (**FR-AD-SHELL-6**).
+**FR-AD-STATE-7 · Anchos de aceptación.** Toda pantalla se comprueba a **360px, 390px, 1280px y 1440px** antes de aceptarse (1280 es el mínimo de escritorio, y el ancho donde una tabla con una columna de más empieza a desbordar) (**FR-AD-SHELL-6**).
 
 **FR-AD-STATE-8 · Sin desplazamiento horizontal.** Ninguna pantalla produce desplazamiento horizontal a 360px.
 
@@ -3081,19 +3121,19 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 | Cualquier pantalla del shell | Un segundo factor verificado **[R13]** |
 | Cualquier pantalla del shell | Un usuario activo, de un operador activo **[A14]** |
 | Que una pantalla muestre algo | Al menos una sede en el alcance; sin ninguna, las pantallas se muestran vacías por ausencia, no por filtro (**FR-AD-ACC-7**, **FR-AD-HOME-8**) |
-| Ver la sección de Usuarios (§8) | Ser el **administrador principal** del operador de la sesión (**FR-AD-USR-11**) |
+| Ver la sección de Administradores (§8) | Ser el **administrador principal** del operador de la sesión (**FR-AD-USR-11**) |
 | Vincular un equipo de caja | Una sede del alcance **con al menos una caja activa y sin equipo vinculado**, y un reto vigente y no usado |
 | Vincular un kiosco | Una sede del alcance y un reto vigente y no usado |
 | Desvincular un equipo | Nada más que el vínculo. No exige que la jornada esté cerrada **[A11]**, **[FR-DEV-7]** |
 | Crear una caja | Una sede del alcance, y un identificador libre dentro de esa sede |
 | Retirar una caja | Sin jornada abierta, sin equipo vinculado, y que no sea la última activa de una sede activa |
 | Reactivar una caja | Nada. No restaura ningún vínculo de equipo |
-| Dar de alta un trabajador | Una sede del alcance; un identificador libre en toda la red; un documento no registrado; un correo válido |
+| Dar de alta un trabajador | Una sede del alcance; un identificador libre en toda la red y que sea un nombre de usuario válido; un documento no registrado; un correo válido y no usado por otro trabajador |
 | Desactivar o reasignar un trabajador | Sin jornada abierta **[R6]** |
 | Reactivar un trabajador | Nada: vuelve a su sede de siempre. **Siempre es posible**: PuntoCash no desactiva personas **[A14]** |
 | Que un trabajador pueda iniciar sesión | Estar activo; su sede y su operador no suspendidos; y un equipo vinculado a una caja **de su sede** (**FR-DEV-1**, **FR-AUTH-8**) |
-| Dar de alta, editar, cambiar el correo, regenerar la credencial, desactivar o reactivar un usuario administrador | Ser el administrador principal (**FR-AD-USR-11**) |
-| Desactivar un usuario administrador | Que no sea el principal (**FR-AD-USR-13**) |
+| Dar de alta, editar, cambiar el correo, regenerar la credencial, desactivar o reactivar un administrador | Ser el administrador principal (**FR-AD-USR-11**) |
+| Desactivar un administrador | Que no sea el principal (**FR-AD-USR-13**) |
 | Traspasar el papel de principal | Ser su titular, y un destinatario **activo** distinto de uno mismo (**FR-AD-USR-12**) |
 | Recuperar la contraseña | Nada: se llega sin sesión y la respuesta es idéntica exista la cuenta o no (**FR-REC-4**) |
 | Añadir una moneda a una sede | Una sede del alcance no cerrada, y una moneda del catálogo que la sede no tenga. **No** depende del servicio de Cambio de moneda (**FR-AD-MON-5**) |
@@ -3268,17 +3308,21 @@ El mensaje que ve el usuario para cada código de rechazo. Un código se busca p
 | `tipo-documento-requerido` | Elige un tipo de documento. |
 | `sede-cerrada` | Esa sede está cerrada y no admite trabajadores nuevos. |
 | `identificador-duplicado` | Ese identificador ya está en uso. |
+| `identificador-invalido` | El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo. |
+| `correo-duplicado` | Ese correo ya está en uso. Con el correo también se entra, así que no puede repetirse. |
 | `documento-duplicado` | Ya existe un trabajador con ese documento. |
 | `jornada-abierta` | Tiene una jornada abierta. Hasta que se haga su cierre, o lo fuerces desde la jornada, no se puede. |
 | `motivo-requerido` | Escribe el motivo. |
 | `error-inesperado` | No se pudo completar la acción. Vuelve a intentarlo. |
 
-### Usuarios administradores — §8.1
+### Administradores — §8.1
 
 | Código | Mensaje |
 | --- | --- |
 | `alcance-insuficiente` | Esta acción pertenece al administrador de la empresa. |
 | `identificador-duplicado` | Ese identificador ya está en uso. |
+| `identificador-invalido` | El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo. |
+| `correo-duplicado` | Ese correo ya está en uso. Con el correo también se entra, así que no puede repetirse. |
 | `no-es-el-principal` | Esta sección pertenece al administrador principal de tu empresa. |
 | `es-el-principal` | Al administrador principal no lo desactiva nadie. Traspasa el papel antes, si hace falta. |
 | `es-uno-mismo` | No puedes traspasarte el papel a ti mismo. |
@@ -3303,6 +3347,7 @@ El mensaje que ve el usuario para cada código de rechazo. Un código se busca p
 | `moneda-requerida` | Elige la moneda que quieres añadir. |
 | `sede-cerrada` | Esa sede está cerrada, así que no admite cambios en sus monedas. |
 | `moneda-desconocida` | Esa moneda no está en el catálogo de PuntoCash. |
+| `moneda-retirada` | PuntoCash retiró {moneda} del catálogo: ya no se puede añadir a más sedes. |
 | `ya-en-la-lista` | {moneda} ya está en la lista de esta sede. |
 | `no-en-la-lista` | {moneda} ya no estaba en la lista de esta sede. |
 | `con-saldo` | {moneda} tiene saldo en {cajas}. Debe quedar en cero antes de retirarla de la lista. |

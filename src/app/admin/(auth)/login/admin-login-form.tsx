@@ -110,7 +110,7 @@ export function AdminLoginForm(): React.JSX.Element {
          con el identificador que se acaba de escribir: es la experiencia del
          segundo factor y vive en el navegador. El reto que **decide** lo tiene
          el servidor, y la sesión solo se abre contra él (ver `_actions.ts`). */
-      openChallenge(identifier);
+      openChallenge(identifier, result.correoEnmascarado);
 
       /* Queda cerrado mientras carga el destino: un segundo envío abriría un
          reto nuevo e invalidaría el código recién enviado. */

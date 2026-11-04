@@ -100,8 +100,10 @@ export type CampoDelAlta = "nombre" | "primer-apellido" | "documento" | "telefon
 /** Qué campo señalar cuando el rechazo pertenece a uno concreto. */
 const CAMPO: Partial<Record<WorkerWriteDenial, CampoDelAlta>> = {
   "identificador-duplicado": "identificador",
+  "identificador-invalido": "identificador",
   "documento-duplicado": "documento",
   "correo-invalido": "correo",
+  "correo-duplicado": "correo",
 };
 
 const VACIO: ValoresDelAlta = {
@@ -199,6 +201,7 @@ export async function crearTrabajadorAction(
     actorName: session.user.fullName,
     actorRole: "admin-sede",
     type: "trabajador.alta",
+    object: { kind: "trabajador", id: resultado.value.id },
     subject: `${resultado.value.fullName} · ${sede?.name ?? ""}`.trim(),
     branchId,
     operatorId: session.operator.id,
@@ -264,6 +267,7 @@ export async function desactivarTrabajadorAction(
     actorName: session.user.fullName,
     actorRole: "admin-sede",
     type: "trabajador.desactivado",
+    object: { kind: "trabajador", id: resultado.value.id },
     subject: resultado.value.fullName,
     branchId: resultado.value.branchId,
     operatorId: session.operator.id,
@@ -297,6 +301,7 @@ export async function reactivarTrabajadorAction(
     actorName: session.user.fullName,
     actorRole: "admin-sede",
     type: "trabajador.reactivado",
+    object: { kind: "trabajador", id: resultado.value.id },
     subject: resultado.value.fullName,
     branchId: resultado.value.branchId,
     operatorId: session.operator.id,
@@ -332,6 +337,7 @@ export async function reasignarTrabajadorAction(
     actorName: session.user.fullName,
     actorRole: "admin-sede",
     type: "trabajador.editado",
+    object: { kind: "trabajador", id: resultado.value.id },
     subject: `${resultado.value.fullName} · reasignado a ${sede?.name ?? branchId}`,
     branchId: resultado.value.branchId,
     operatorId: session.operator.id,
@@ -440,6 +446,7 @@ export async function editarTrabajadorAction(
     actorName: session.user.fullName,
     actorRole: "admin-sede",
     type: "trabajador.editado",
+    object: { kind: "trabajador", id: resultado.value.id },
     subject: `${resultado.value.fullName} · datos personales`,
     branchId: resultado.value.branchId,
     operatorId: session.operator.id,
@@ -499,6 +506,7 @@ export async function regenerarCredencialAction(
     actorName: session.user.fullName,
     actorRole: "admin-sede",
     type: "trabajador.editado",
+    object: { kind: "trabajador", id: trabajador.id },
     subject: `${trabajador.fullName} · credencial regenerada`,
     branchId: trabajador.branchId,
     operatorId: session.operator.id,
@@ -568,6 +576,7 @@ export async function cambiarCorreoAction(
     /* El tipo propio de la asistencia, no el genérico de edición: quien
        audite «quién tocó el acceso de alguien» busca exactamente esto. */
     type: "trabajador.asistencia-acceso",
+    object: { kind: "trabajador", id: resultado.value.worker.id },
     subject: `${resultado.value.worker.fullName} · correo ${resultado.value.anterior} → ${resultado.value.worker.email} · ${motivo}`,
     branchId: resultado.value.worker.branchId,
     operatorId: session.operator.id,

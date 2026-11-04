@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getAdminSession } from "@/features/admin/session-server";
+import { fijarCredencialDeAdministrador } from "@/features/admin/admin-auth";
 import { registrarEvento } from "@/features/network/audit";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import {
@@ -14,6 +15,7 @@ import {
   esAdministradorPrincipal,
   reactivarUsuarioAdmin,
   transferirAdministradorPrincipal,
+  type OperatorWriteDenial,
 } from "@/features/network/operators";
 import { mensaje } from "../mensajes";
 
@@ -35,6 +37,13 @@ import { mensaje } from "../mensajes";
 
 /** La credencial inicial, idéntica en forma y en garantía a la de §7. */
 const ALFABETO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+/** Genera la credencial y la deja como contraseña de esa cuenta: la anterior deja de servir. */
+function entregarCredencial(identifier: string): string {
+  const credencial = credencialInicial();
+  fijarCredencialDeAdministrador(identifier, credencial);
+  return credencial;
+}
 
 function credencialInicial(): string {
   let salida = "";
@@ -58,6 +67,13 @@ export interface ValoresDelAltaUsuario {
   identificador: string;
   telefono: string;
 }
+
+/** Qué campo señalar cuando el rechazo del dominio pertenece a uno concreto. */
+const CAMPO_DE_RECHAZO: Partial<Record<OperatorWriteDenial, "identificador" | "correo">> = {
+  "identificador-duplicado": "identificador",
+  "identificador-invalido": "identificador",
+  "correo-duplicado": "correo",
+};
 
 export type ResultadoAltaUsuario =
   | { ok: true; usuarioId: string; nombre: string; identificador: string; credencial: string }
@@ -117,7 +133,7 @@ export async function crearUsuarioAction(
   });
 
   if (!resultado.ok) {
-    const campo = resultado.reason === "identificador-duplicado" ? "identificador" : undefined;
+    const campo = CAMPO_DE_RECHAZO[resultado.reason];
     return campo
       ? { ok: false, error: mensaje("usuarios", resultado.reason), campo, valores }
       : { ok: false, error: mensaje("usuarios", resultado.reason), valores };
@@ -141,7 +157,7 @@ export async function crearUsuarioAction(
     usuarioId: resultado.value.id,
     nombre: resultado.value.fullName,
     identificador: resultado.value.identifier,
-    credencial: credencialInicial(),
+    credencial: entregarCredencial(resultado.value.identifier),
   };
 }
 
@@ -359,7 +375,7 @@ export async function regenerarCredencialUsuarioAction(
     ok: true,
     nombre: usuario.fullName,
     identificador: usuario.identifier,
-    credencial: credencialInicial(),
+    credencial: entregarCredencial(usuario.identifier),
   };
 }
 

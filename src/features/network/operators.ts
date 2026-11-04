@@ -18,6 +18,7 @@
  * credencial del inicial que creó. No crea uno nuevo ni toca ningún otro.
  */
 
+import { esIdentificadorValido, normalizarCuenta } from "@/features/auth/identificador";
 import { isGlobal, requireOperatorScope, type Scope } from "./scope";
 import { isMotivoValido } from "./sedes";
 
@@ -33,6 +34,12 @@ export interface Operator {
   id: string;
   /** Nombre o razón social. Aparece como dato, nunca como marca (regla A9). */
   name: string;
+  /**
+   * Documento, guardado como «TIPO-número»: `NIT`, `CI` o `PASAPORTE`.
+   * Un mercante es casi siempre una persona jurídica y entonces lleva **NIT**;
+   * CI y pasaporte quedan para quien opere como persona natural. Todos los
+   * sembrados son sociedades, así que todos llevan NIT.
+   */
   legalId: string;
   contactName: string;
   phone: string;
@@ -79,7 +86,7 @@ const mutableOperators: Operator[] = [
   {
     id: "op-malecon",
     name: "Malecón Servicios Financieros S.R.L.",
-    legalId: "CI-8804120321",
+    legalId: "NIT-23014578061",
     contactName: "Marta Sánchez",
     phone: "+53 5 234 1190",
     email: "marta@malecon-sf.cu",
@@ -89,7 +96,7 @@ const mutableOperators: Operator[] = [
   {
     id: "op-caribe",
     name: "Caribe Cambios S.A.",
-    legalId: "CI-9107235544",
+    legalId: "NIT-23019930447",
     contactName: "Reinaldo Ortega",
     phone: "+53 5 812 7733",
     email: "rortega@caribecambios.cu",
@@ -101,7 +108,7 @@ const mutableOperators: Operator[] = [
        FR-SA-OPE-11 y que suspender no desmonta nada (FR-SA-SUS-7). */
     id: "op-oriente",
     name: "Oriente Divisas",
-    legalId: "CI-8511048876",
+    legalId: "NIT-23025671208",
     contactName: "Yuliet Pérez",
     phone: "+53 5 445 0021",
     email: "yperez@orientedivisas.cu",
@@ -121,7 +128,7 @@ const mutableOperators: Operator[] = [
        recorrerlo en la demostración. */
     id: "op-cienfuegos",
     name: "Cienfuegos Cambio S.R.L.",
-    legalId: "CI-9312076610",
+    legalId: "NIT-23031184905",
     contactName: "Liudmila Pérez",
     phone: "+53 5 677 4412",
     email: "lperez@cienfuegoscambio.cu",
@@ -134,7 +141,7 @@ const mutableOperators: Operator[] = [
        nombre de su única sede como texto fijo. */
     id: "op-centro",
     name: "Centro Divisas S.R.L.",
-    legalId: "CI-8604092117",
+    legalId: "NIT-23046702153",
     contactName: "Idalmis Betancourt",
     phone: "+53 5 304 6618",
     email: "ibetancourt@centrodivisas.cu",
@@ -146,7 +153,7 @@ const mutableOperators: Operator[] = [
        suspendida dentro de su alcance y otra solo con cajas retiradas. */
     id: "op-bahia",
     name: "Bahía Cambios S.R.L.",
-    legalId: "CI-8807150933",
+    legalId: "NIT-23052398674",
     contactName: "Ana Barrios",
     phone: "+53 5 702 4418",
     email: "abarrios@bahiacambios.cu",
@@ -157,7 +164,7 @@ const mutableOperators: Operator[] = [
     /* Dado de baja y sin sedes: su historial sigue accesible [R9]. */
     id: "op-atlantico",
     name: "Atlántico Casas de Cambio",
-    legalId: "CI-7903118820",
+    legalId: "NIT-23067415920",
     contactName: "Osmany Vega",
     phone: "+53 5 118 9902",
     email: "ovega@atlanticocc.cu",
@@ -172,7 +179,7 @@ const mutableAdminUsers: AdminUser[] = [
   {
     id: "adm-malecon-1",
     operatorId: "op-malecon",
-    identifier: "marta@malecon-sf.cu",
+    identifier: "msanchez",
     fullName: "Marta Sánchez",
     email: "marta@malecon-sf.cu",
     phone: "+53 5 234 1190",
@@ -186,7 +193,7 @@ const mutableAdminUsers: AdminUser[] = [
     /* Creado por Marta, no por PuntoCash: es el caso de FR-AD-USR-2. */
     id: "adm-malecon-2",
     operatorId: "op-malecon",
-    identifier: "dcastro@malecon-sf.cu",
+    identifier: "dcastro",
     fullName: "Daniel Castro",
     email: "dcastro@malecon-sf.cu",
     phone: "+53 5 234 1204",
@@ -199,7 +206,7 @@ const mutableAdminUsers: AdminUser[] = [
   {
     id: "adm-caribe-1",
     operatorId: "op-caribe",
-    identifier: "rortega@caribecambios.cu",
+    identifier: "rortega",
     fullName: "Reinaldo Ortega",
     email: "rortega@caribecambios.cu",
     phone: "+53 5 611 7788",
@@ -214,7 +221,7 @@ const mutableAdminUsers: AdminUser[] = [
        código y el nombre fijos, no un selector (**FR-AD-SCOPE-3**). */
     id: "adm-centro-1",
     operatorId: "op-centro",
-    identifier: "ibetancourt@centrodivisas.cu",
+    identifier: "ibetancourt",
     fullName: "Idalmis Betancourt",
     email: "ibetancourt@centrodivisas.cu",
     phone: "+53 5 442 3310",
@@ -229,7 +236,7 @@ const mutableAdminUsers: AdminUser[] = [
        sede. Entra con normalidad; lo que ve es un Inicio vacío explicado. */
     id: "adm-cienfuegos-1",
     operatorId: "op-cienfuegos",
-    identifier: "lperez@cienfuegoscambio.cu",
+    identifier: "lperez",
     fullName: "Liudmila Pérez",
     email: "lperez@cienfuegoscambio.cu",
     phone: "+53 5 330 9025",
@@ -241,7 +248,7 @@ const mutableAdminUsers: AdminUser[] = [
   {
     id: "adm-bahia-1",
     operatorId: "op-bahia",
-    identifier: "abarrios@bahiacambios.cu",
+    identifier: "abarrios",
     fullName: "Ana Barrios",
     email: "abarrios@bahiacambios.cu",
     phone: "+53 5 702 4418",
@@ -254,7 +261,7 @@ const mutableAdminUsers: AdminUser[] = [
   {
     id: "adm-oriente-1",
     operatorId: "op-oriente",
-    identifier: "yperez@orientedivisas.cu",
+    identifier: "yperez",
     fullName: "Yuliet Pérez",
     email: "yperez@orientedivisas.cu",
     phone: "+53 5 228 4471",
@@ -315,6 +322,11 @@ export type OperatorWriteDenial =
   | "operador-no-encontrado"
   | "operador-duplicado"
   | "identificador-duplicado"
+  /* El identificador es un nombre de usuario: ni vacío, ni con «@», ni con
+     caracteres raros (`features/auth/identificador.ts`). */
+  | "identificador-invalido"
+  /* Dos cuentas con el mismo correo harían ambiguo entrar con el correo. */
+  | "correo-duplicado"
   | "motivo-requerido"
   | "ya-suspendido"
   | "no-suspendido"
@@ -337,9 +349,19 @@ export type OperatorWriteDenial =
 
 export type OperatorWriteResult<T> = { ok: true; value: T } | { ok: false; reason: OperatorWriteDenial };
 
-function identifierTaken(identifier: string): boolean {
-  const needle = identifier.trim().toLowerCase();
-  return mutableAdminUsers.some((u) => u.identifier.toLowerCase() === needle);
+function identifierTaken(identifier: string, exceptoId?: string): boolean {
+  const needle = normalizarCuenta(identifier);
+  return mutableAdminUsers.some((u) => u.id !== exceptoId && u.identifier.toLowerCase() === needle);
+}
+
+/**
+ * El correo también es único, y no por pulcritud: con él se entra
+ * (decisión del 28/10/2026), así que dos cuentas con el mismo correo dejarían
+ * sin respuesta a quién pertenece lo que se teclea.
+ */
+function correoTomado(email: string, exceptoId?: string): boolean {
+  const needle = normalizarCuenta(email);
+  return mutableAdminUsers.some((u) => u.id !== exceptoId && u.email.toLowerCase() === needle);
 }
 
 export interface CrearOperadorInput {
@@ -364,7 +386,9 @@ export function crearOperador(
 ): OperatorWriteResult<{ operator: Operator; user: AdminUser }> {
   if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
   if (findOperatorById(input.id)) return { ok: false, reason: "operador-duplicado" };
+  if (!esIdentificadorValido(input.initialUser.identifier)) return { ok: false, reason: "identificador-invalido" };
   if (identifierTaken(input.initialUser.identifier)) return { ok: false, reason: "identificador-duplicado" };
+  if (correoTomado(input.initialUser.email)) return { ok: false, reason: "correo-duplicado" };
 
   const operator: Operator = {
     id: input.id,
@@ -475,6 +499,46 @@ export function regenerarCredencialUsuarioInicial(
   return { ok: true, value: initial };
 }
 
+/**
+ * **Restablecer el acceso del administrador principal** (decisión de Claudia
+ * del 27/10, ampliada el 28/10: disponible siempre, con motivo).
+ *
+ * Desde el modelo del principal, una empresa solo se queda fuera de su propia
+ * gestión de usuarios si **el principal** pierde el acceso: es el único que
+ * puede cambiar correos o dar de alta a otros, así que nadie de su empresa
+ * puede arreglarle un correo perdido. PuntoCash puede cambiarle el correo de
+ * verificación y darle una credencial nueva (la credencial la genera y la
+ * muestra quien llama, una sola vez; aquí no se guarda).
+ *
+ * No crea usuarios ni toca a ningún otro, y no cambia quién es el principal.
+ */
+export function restablecerAccesoDelPrincipal(
+  scope: Scope,
+  operatorId: string,
+  input: { email: string; reason: string },
+): OperatorWriteResult<{ user: AdminUser; correoAnterior: string }> {
+  if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
+  if (!isMotivoValido(input.reason)) return { ok: false, reason: "motivo-requerido" };
+  const operator = findOperatorById(operatorId);
+  if (!operator) return { ok: false, reason: "operador-no-encontrado" };
+  if (operator.status === "baja") return { ok: false, reason: "dado-de-baja" };
+
+  const principal = administradorPrincipalDe(operatorId);
+  if (!principal) return { ok: false, reason: "usuario-no-encontrado" };
+
+  const email = input.email.trim();
+  if (email.length <= 3 || !email.includes("@") || email.includes(" ")) {
+    return { ok: false, reason: "correo-invalido" };
+  }
+  /* El correo sirve para entrar: no puede ser el de otra cuenta. */
+  if (correoTomado(email, principal.id)) return { ok: false, reason: "correo-duplicado" };
+
+  const correoAnterior = principal.email;
+  principal.email = email;
+  principal.status = "activo";
+  return { ok: true, value: { user: principal, correoAnterior } };
+}
+
 /* -------------------------------------------------------------------------
  * Escrituras del mercante sobre sus propios usuarios (regla A4)
  * ---------------------------------------------------------------------- */
@@ -498,7 +562,9 @@ export function crearUsuarioAdmin(
   if (!esAdministradorPrincipal(actingUserId)) return { ok: false, reason: "no-es-el-principal" };
   const operator = findOperatorById(operatorScope.value);
   if (!operator) return { ok: false, reason: "operador-no-encontrado" };
+  if (!esIdentificadorValido(input.identifier)) return { ok: false, reason: "identificador-invalido" };
   if (identifierTaken(input.identifier)) return { ok: false, reason: "identificador-duplicado" };
+  if (correoTomado(input.email)) return { ok: false, reason: "correo-duplicado" };
 
   const user: AdminUser = {
     id: input.id,
@@ -697,6 +763,8 @@ export function cambiarCorreoUsuarioAdmin(
   if (valor.length <= 3 || !valor.includes("@") || valor.includes(" ")) {
     return { ok: false, reason: "correo-invalido" };
   }
+  /* Con el correo se entra, así que no puede quedarse con el de otro. */
+  if (correoTomado(valor, user.id)) return { ok: false, reason: "correo-duplicado" };
 
   const anterior = user.email;
   user.email = valor;

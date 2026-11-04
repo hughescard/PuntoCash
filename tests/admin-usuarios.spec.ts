@@ -30,11 +30,11 @@ const DANIEL = "dcastro@malecon-sf.cu";
  * cancela.
  */
 
-test.describe("§8 Usuarios — el administrador principal", () => {
+test.describe("§8 Administradores — el administrador principal", () => {
   test("el principal ve la sección, y lleva a sus pantallas", async ({ page }) => {
     await signInAsAdmin(page, MARTA);
     await page.goto("/admin/usuarios");
-    await expect(page.getByRole("heading", { name: "Usuarios", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Administradores", level: 1 })).toBeVisible();
 
     /* **FR-AD-USR-1**: el papel se dice con palabras completas en su columna,
        no como etiqueta junto al nombre. */
@@ -43,7 +43,7 @@ test.describe("§8 Usuarios — el administrador principal", () => {
     /* **FR-AD-USR-2**: el alta es su propia ruta. */
     await page.getByRole("link", { name: "Dar de alta" }).click();
     await page.waitForURL(/\/admin\/usuarios\/nuevo$/);
-    await expect(page.getByRole("heading", { name: "Dar de alta un usuario" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dar de alta un administrador" })).toBeVisible();
 
     /* **FR-AD-USR-4**: la consecuencia que más sorprende, dicha antes de
        confirmar. Si algún día se quitara, el requisito tendría que cambiar
@@ -78,7 +78,7 @@ test.describe("§8 Usuarios — el administrador principal", () => {
     await traspasar.click();
 
     const dialogo = page.getByRole("dialog");
-    await expect(dialogo.getByText(/Dejarás de ver la sección de Usuarios/)).toBeVisible();
+    await expect(dialogo.getByText(/Dejarás de ver la sección de Administradores/)).toBeVisible();
     /* Solo activos, y nunca uno mismo. */
     await expect(dialogo.getByRole("option", { name: "Marta Sánchez" })).toHaveCount(0);
 

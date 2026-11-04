@@ -9,7 +9,7 @@ import { getAdminSession } from "@/features/admin/session-server";
 import { NuevoUsuarioForm } from "./nuevo-usuario-form";
 
 export const metadata: Metadata = {
-  title: "Administración de sede · Dar de alta un usuario",
+  title: "Administración de sede · Dar de alta un administrador",
   robots: { index: false, follow: false },
 };
 
@@ -35,13 +35,13 @@ export default async function AdminNuevoUsuarioPage() {
   return (
     <>
       <PageHeader
-        title="Dar de alta un usuario"
+        title="Dar de alta un administrador"
         description={`Otra persona de ${session.operator.name} con acceso a esta consola.`}
         actions={
           <Button variant="secondary" asChild>
             <Link href="/admin/usuarios">
               <ArrowLeft aria-hidden="true" />
-              Volver a Usuarios
+              Volver a Administradores
             </Link>
           </Button>
         }

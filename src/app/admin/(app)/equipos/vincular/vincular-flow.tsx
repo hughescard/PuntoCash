@@ -85,6 +85,17 @@ const CAJA: FieldSpec = {
   required: true,
 };
 
+/**
+ * El rótulo con el que la consola nombrará al equipo (**FR-AD-EQ-30**). En una
+ * caja es opcional —si se deja vacío se usa el nombre de la caja, que ya la
+ * identifica—, pero un kiosco lo necesita: una sede puede tener varios y el
+ * identificador no distingue el de la entrada del de la sala de espera.
+ */
+const ETIQUETA: FieldSpec = {
+  id: "vincular-etiqueta",
+  label: "Etiqueta",
+};
+
 const CLASE: Record<TerminalKind, string> = {
   caja: "Equipo de caja",
   kiosco: "Kiosco de autoservicio",
@@ -159,6 +170,7 @@ export function VincularFlow({
     const data = new FormData(event.currentTarget);
     const branchId = String(data.get("sede") ?? "");
     const registerId = String(data.get("caja") ?? "");
+    const etiqueta = String(data.get("etiqueta") ?? "");
 
     if (!branchId) {
       setError("Elige la sede a la que pertenece este equipo.");
@@ -168,6 +180,10 @@ export function VincularFlow({
       setError("Elige la caja a la que pertenece este equipo.");
       return;
     }
+    if (paso.kind === "kiosco" && !etiqueta.trim()) {
+      setError("Los kioscos necesitan una etiqueta.");
+      return;
+    }
 
     setError(null);
     setEnviando(true);
@@ -175,6 +191,7 @@ export function VincularFlow({
       reto: paso.reto,
       branchId,
       ...(paso.kind === "caja" ? { registerId } : {}),
+      etiqueta,
     });
     setEnviando(false);
 
@@ -573,6 +590,25 @@ function ElegirObjeto({
               la vez.
             </p>
           )}
+
+          <Field
+            {...ETIQUETA}
+            required={paso.kind === "kiosco"}
+            description={
+              paso.kind === "caja"
+                ? "Opcional. Si la dejas vacía se usa el nombre de la caja."
+                : "Cómo se llama este kiosco en la sede, p. ej. Kiosco entrada."
+            }
+          >
+            <input
+              {...fieldAria({ ...ETIQUETA, required: paso.kind === "kiosco" })}
+              type="text"
+              name="etiqueta"
+              maxLength={60}
+              disabled={enviando}
+              className="h-control w-full rounded-control border border-border bg-surface px-4 text-body text-text-primary outline-none hover:border-border-strong focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:bg-surface-subtle"
+            />
+          </Field>
         </CardContent>
       </Card>
 

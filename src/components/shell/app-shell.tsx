@@ -104,11 +104,14 @@ export function AppSidebar({
   footer,
   className,
   label = "Navegación principal",
+  compacta = false,
 }: {
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
   label?: string;
+  /** Menos relleno arriba y abajo de la lista (consola con muchos destinos). */
+  compacta?: boolean;
 }): React.JSX.Element {
   return (
     <nav
@@ -125,7 +128,7 @@ export function AppSidebar({
           bloque navy: sin ella el navegador pinta su banda clara con flechas y
           la columna parece cortarse justo encima del pie. Solo aparece cuando
           los destinos no caben — la consola de administración tiene trece. */}
-      <div className="pc-scroll-y pc-scroll-dark min-h-0 flex-1 px-3 py-6">{children}</div>
+      <div className={cn("pc-scroll-y pc-scroll-dark min-h-0 flex-1 px-3", compacta ? "py-4" : "py-6")}>{children}</div>
       {footer ? <div className="border-t border-white/10 px-3 py-4">{footer}</div> : null}
     </nav>
   );
@@ -196,8 +199,10 @@ export function Section({
   return (
     <section className={cn("mb-12 last:mb-0", className)}>
       {title ? (
-        <div className="mb-4 flex items-end justify-between gap-4">
-          <div>
+        /* En el teléfono, la acción baja debajo de la descripción: en la misma
+           fila, el texto quedaba comprimido en media columna. */
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div className="min-w-0">
             <h2 className="text-section-title text-text-primary">{title}</h2>
             {description ? (
               <p className="mt-1 text-body-sm text-text-secondary">{description}</p>

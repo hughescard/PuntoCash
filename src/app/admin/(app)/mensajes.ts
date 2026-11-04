@@ -27,6 +27,8 @@ export const MENSAJES = {
     "caja-requerida": "Elige la caja a la que pertenece este equipo.",
     "caja-retirada": "Esa caja está retirada y no admite un equipo.",
     "sede-cerrada": "Esa sede está cerrada y no admite equipos nuevos.",
+    "etiqueta-requerida": "Escribe la etiqueta del equipo.",
+    "etiqueta-kiosco-requerida": "Los kioscos necesitan una etiqueta.",
     "error-inesperado": "No se pudo desvincular. Vuelve a intentarlo.",
   },
   cajas: {
@@ -58,6 +60,9 @@ export const MENSAJES = {
     "tipo-documento-requerido": "Elige un tipo de documento.",
     "sede-cerrada": "Esa sede está cerrada y no admite trabajadores nuevos.",
     "identificador-duplicado": "Ese identificador ya está en uso.",
+    "identificador-invalido":
+      "El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo.",
+    "correo-duplicado": "Ese correo ya está en uso. Con el correo también se entra, así que no puede repetirse.",
     "documento-duplicado": "Ya existe un trabajador con ese documento.",
     "jornada-abierta":
       "Tiene una jornada abierta. Hasta que se haga su cierre, o lo fuerces desde la jornada, no se puede.",
@@ -67,12 +72,15 @@ export const MENSAJES = {
   usuarios: {
     "alcance-insuficiente": "Esta acción pertenece al administrador de la empresa.",
     "identificador-duplicado": "Ese identificador ya está en uso.",
+    "identificador-invalido":
+      "El identificador es un nombre de usuario, no un correo: no lleva «@». Usa letras, números, punto, guion o guion bajo.",
+    "correo-duplicado": "Ese correo ya está en uso. Con el correo también se entra, así que no puede repetirse.",
     "no-es-el-principal": "Esta sección pertenece al administrador principal de tu empresa.",
     "es-el-principal": "Al administrador principal no lo desactiva nadie. Traspasa el papel antes, si hace falta.",
     "es-uno-mismo": "No puedes traspasarte el papel a ti mismo.",
     "destino-requerido": "Elige a quién le traspasas la administración.",
     "destino-no-activo":
-      "Solo puedes traspasarlo a un administrador activo: uno desactivado dejaría a tu empresa sin nadie que administre usuarios.",
+      "Solo puedes traspasarlo a un administrador activo: uno desactivado dejaría a tu empresa sin nadie que gestione a los demás administradores.",
     "error-inesperado": "No se pudo completar la acción. Vuelve a intentarlo.",
   },
   perfil: {
@@ -86,6 +94,7 @@ export const MENSAJES = {
     "moneda-requerida": "Elige la moneda que quieres añadir.",
     "sede-cerrada": "Esa sede está cerrada, así que no admite cambios en sus monedas.",
     "moneda-desconocida": "Esa moneda no está en el catálogo de PuntoCash.",
+    "moneda-retirada": "PuntoCash retiró {moneda} del catálogo: ya no se puede añadir a más sedes.",
     "ya-en-la-lista": "{moneda} ya está en la lista de esta sede.",
     "no-en-la-lista": "{moneda} ya no estaba en la lista de esta sede.",
     "con-saldo": "{moneda} tiene saldo en {cajas}. Debe quedar en cero antes de retirarla de la lista.",
@@ -99,6 +108,7 @@ export const MENSAJES = {
     "fuera-de-la-lista": "{moneda} no está en la lista de esta sede. Añádela en Monedas antes de fijar su tasa.",
     "sin-moneda-local": "El peso cubano no está en la lista de esta sede. Añádelo en Monedas antes de fijar ninguna tasa.",
     "sin-rango": "PuntoCash todavía no ha definido un rango para {moneda}. Solicítaselo para poder cotizarla.",
+    "demasiados-decimales": "Una tasa admite hasta 4 decimales.",
     "compra-fuera-de-rango": "La tasa de compra está fuera del rango de PuntoCash.",
     "venta-fuera-de-rango": "La tasa de venta está fuera del rango de PuntoCash.",
     "compra-mayor-que-venta": "La compra no puede ser mayor que la venta.",

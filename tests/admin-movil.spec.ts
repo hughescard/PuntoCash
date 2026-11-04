@@ -57,7 +57,7 @@ test.describe("navegación", () => {
 
     const destinos = [
       "Inicio", "Jornadas", "Aprobaciones", "Operaciones",
-      "Sedes", "Cajas", "Equipos", "Trabajadores", "Usuarios",
+      "Sedes", "Cajas", "Equipos", "Trabajadores", "Administradores",
       "Monedas", "Tasas", "Promociones", "Reportes",
     ];
     for (const destino of destinos) {

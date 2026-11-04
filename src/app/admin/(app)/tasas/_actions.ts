@@ -11,7 +11,7 @@ import {
   type TasaWriteDenial,
 } from "@/features/network/rates";
 import { redEnAlcance } from "@/features/network/scoped-reads";
-import { formatAmount } from "@/lib/format";
+import { formatTasa } from "@/lib/format";
 import { mensaje } from "../mensajes";
 
 /**
@@ -58,7 +58,7 @@ export async function fijarTasaAction(
 
   const { tasa, anterior } = resultado.value;
   const sede = redEnAlcance(session.scope).sede(sedeId);
-  const cifras = (c: number, v: number) => `${formatAmount(c, 2)} / ${formatAmount(v, 2)}`;
+  const cifras = (c: number, v: number) => `${formatTasa(c)} / ${formatTasa(v)}`;
 
   registrarEvento({
     actorId: session.user.id,
@@ -94,7 +94,7 @@ export async function confirmarTasaAjustadaAction(
   if (!resultado.ok) return { ok: false, error: motivo(resultado.reason, code) };
 
   const sede = redEnAlcance(session.scope).sede(sedeId);
-  const cifras = `${formatAmount(resultado.value.compra, 2)} / ${formatAmount(resultado.value.venta, 2)}`;
+  const cifras = `${formatTasa(resultado.value.compra)} / ${formatTasa(resultado.value.venta)}`;
   registrarEvento({
     actorId: session.user.id,
     actorName: session.user.fullName,
@@ -134,7 +134,7 @@ export async function retirarTasaAction(
     branchId: sedeId,
     operatorId: session.operator.id,
     /* FR-AD-TASA-16: las cifras que se retiran, y que después no hay ninguna. */
-    before: `${formatAmount(resultado.value.compra, 2)} / ${formatAmount(resultado.value.venta, 2)}`,
+    before: `${formatTasa(resultado.value.compra)} / ${formatTasa(resultado.value.venta)}`,
     after: "Sin tasa",
   });
 

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui";
 import { DOCUMENT_TYPES } from "@/features/customers/customers";
 import { crearTrabajadorAction, type CampoDelAlta, type ResultadoAlta, type ValoresDelAlta } from "../_actions";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 
 /**
  * Alta de un trabajador — **FR-AD-TRAB-3** a **FR-AD-TRAB-8**.
@@ -60,7 +61,7 @@ const DOCUMENTO = campo("documento", "Número de documento");
 const TELEFONO = campo("telefono", "Teléfono");
 const CORREO = campo("correo", "Correo electrónico");
 const IDENTIFICADOR = campo("identificador", "Identificador de acceso", {
-  description: "Con esto inicia sesión. No es su correo.",
+  description: "Su nombre de usuario, sin «@». Podrá entrar con él o con su correo.",
 });
 const SEDE = campo("sede", "Sede", { description: "Solo aparecen las sedes que administras." });
 
@@ -89,7 +90,7 @@ export function NuevoTrabajadorForm({
   const previo: ValoresDelAlta | undefined = estado && !estado.ok ? estado.valores : undefined;
 
   return (
-    <form action={accion} className="max-w-form-max" noValidate>
+    <form onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max" noValidate>
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {/* Un rechazo que no pertenece a ningún campo concreto se dice

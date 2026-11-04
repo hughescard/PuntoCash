@@ -28,6 +28,14 @@ export interface Seccion {
   columnas: string[];
   /** Columnas que pueden ser negativas y se escriben con signo. */
   conSigno?: boolean[];
+  /** Columnas que cuentan cosas —«Sedes»— y se escriben sin decimales ni «—». */
+  enteras?: boolean[];
+  /** Columnas que no se suman en la fila de total: sumarlas no significaría nada. */
+  sinTotal?: boolean[];
+  /** Cómo se llama la columna de operaciones, si no es «Operaciones». */
+  etiquetaOperaciones?: string;
+  /** Las operaciones son un promedio y se escriben con decimales. */
+  operacionesConDecimales?: boolean;
   filas: FilaExportada[];
   /** La fila de total, si sumar las filas tiene sentido. */
   conTotal: boolean;
@@ -37,8 +45,15 @@ export interface Contenido {
   titulo: string;
   empresa: string;
   periodo: string;
-  sedes: string;
-  trabajador: string;
+  /**
+   * Los datos de la portada tras el periodo y antes de «Generado»: en Admin,
+   * las sedes y el trabajador; en Super administración, la red entera.
+   */
+  portada: readonly (readonly [string, string])[];
+  /** De qué es el reporte, en una línea: lo que dice la auditoría al exportarlo. */
+  alcance: string;
+  /** La línea de contexto que repite cada hoja, bajo su título. */
+  pie: string;
   generado: Date;
   generadoPor: string;
   totales: { operaciones: number; monedas: { moneda: string; valor: number }[] };
@@ -103,8 +118,12 @@ export function contenidoDe(r: Reporte, session: AdminSession, ahora = new Date(
     titulo: "Resumen de operaciones",
     empresa: session.operator.name,
     periodo,
-    sedes,
-    trabajador: r.trabajador ? r.trabajador.fullName : "Todos",
+    portada: [
+      ["Sedes", sedes],
+      ["Trabajador", r.trabajador ? r.trabajador.fullName : "Todos"],
+    ],
+    alcance: `${sedes} · Trabajador: ${r.trabajador ? r.trabajador.fullName : "Todos"}`,
+    pie: `${session.operator.name} · ${sedes} · Trabajador: ${r.trabajador ? r.trabajador.fullName : "Todos"}`,
     generado: ahora,
     generadoPor: session.user.fullName,
     totales: { operaciones: r.total.operaciones, monedas: r.monedas.map((m) => ({ moneda: m, valor: r.total.volumen[m] ?? 0 })) },

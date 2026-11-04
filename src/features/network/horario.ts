@@ -136,3 +136,19 @@ export function enHorario(horario: HorarioSemanal, now: Date = new Date()): bool
   const ahora = `${hh}:${mm}`;
   return franja.abre <= ahora && ahora < franja.cierra;
 }
+
+/**
+ * El horario tal como lo manda `HorarioEditor`: `{dia}-abierto` (casilla),
+ * `{dia}-abre` y `{dia}-cierra`. Un día sin la casilla marcada es un día
+ * cerrado aunque traiga horas: el editor las conserva para cuando se vuelva a
+ * abrir y no deben contar.
+ */
+export function horarioDesdeFormulario(formData: FormData): HorarioSemanal {
+  const leer = (campo: string) => String(formData.get(campo) ?? "").trim();
+  return Object.fromEntries(
+    DIAS.map((dia): [Dia, Franja | null] => [
+      dia,
+      formData.get(`${dia}-abierto`) ? { abre: leer(`${dia}-abre`), cierra: leer(`${dia}-cierra`) } : null,
+    ]),
+  ) as HorarioSemanal;
+}

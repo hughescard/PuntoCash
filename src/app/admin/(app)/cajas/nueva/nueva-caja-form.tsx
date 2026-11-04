@@ -14,6 +14,7 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { crearCajaAction, type ResultadoAccion } from "../_actions";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 
 /**
  * El formulario de alta. El desenlace lo decide el dominio y llega por
@@ -56,7 +57,7 @@ export function NuevaCajaForm({
   const unica = sedes.length === 1 ? sedes[0] : undefined;
 
   return (
-    <form action={accion}>
+    <form onSubmit={enviarSinReiniciar(accion)}>
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {estado && !estado.ok ? (

@@ -30,6 +30,7 @@ import {
   type ResultadoAccionUsuario,
   type ResultadoCredencialUsuario,
 } from "../_actions";
+import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 
 /**
  * Lo que la ficha de un usuario permite hacer — **FR-AD-USR-6** a
@@ -57,9 +58,9 @@ const CORREO: FieldSpec = {
 
 const DESTINO: FieldSpec = {
   id: "usuario-destino-principal",
-  label: "Quién pasa a administrar los usuarios",
+  label: "Quién pasa a ser el administrador principal",
   required: true,
-  description: "Solo aparecen los usuarios activos de tu empresa.",
+  description: "Solo aparecen los administradores activos de tu empresa.",
 };
 
 const SELECT_CLASS =
@@ -108,7 +109,7 @@ export function AccionesUsuario({
         {usuario.esPrincipal && candidatos.length > 0 ? (
           <Button variant="secondary" disabled={!hydrated} onClick={() => setAbierto("traspasar")}>
             <Crown aria-hidden="true" />
-            Traspasar la administración de usuarios
+            Traspasar la administración principal
           </Button>
         ) : null}
 
@@ -140,8 +141,8 @@ export function AccionesUsuario({
         >
           Es lo que garantiza que la empresa nunca se quede sin quien pueda dar de alta a otro.
           {candidatos.length > 0
-            ? " Si vas a dejar la empresa, traspasa primero la administración de usuarios; a partir de ahí tu usuario se podrá desactivar como cualquier otro."
-            : " Para poder traspasarla antes tiene que haber otro usuario activo."}
+            ? " Si vas a dejar la empresa, traspasa primero la administración principal; a partir de ahí tu cuenta se podrá desactivar como cualquier otro."
+            : " Para poder traspasarla antes tiene que haber otro administrador activo."}
         </Alert>
       ) : null}
 
@@ -218,7 +219,7 @@ function CambiarCorreo({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion} noValidate>
+          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -322,7 +323,7 @@ function Credencial({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -396,7 +397,7 @@ function Desactivar({
         {hecho ? (
           <>
             <DialogBody>
-              <Alert variant="success" title="Usuario desactivado">
+              <Alert variant="success" title="Administrador desactivado">
                 {estado.mensaje}
               </Alert>
             </DialogBody>
@@ -405,7 +406,7 @@ function Desactivar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -463,7 +464,7 @@ function Reactivar({
         {hecho ? (
           <>
             <DialogBody>
-              <Alert variant="success" title="Usuario reactivado">
+              <Alert variant="success" title="Administrador reactivado">
                 {estado.mensaje}
               </Alert>
             </DialogBody>
@@ -472,7 +473,7 @@ function Reactivar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -541,7 +542,7 @@ function Traspasar({
     <Dialog open onOpenChange={(valor) => (valor ? undefined : cerrar())}>
       <DialogContent size="md">
         <DialogHeader>
-          <DialogTitle>Traspasar la administración de usuarios</DialogTitle>
+          <DialogTitle>Traspasar la administración principal</DialogTitle>
           <DialogDescription>
             {hecho
               ? "Ya no gobiernas esta sección."
@@ -559,7 +560,7 @@ function Traspasar({
             <DialogFooter>
               {/* **Navegación completa, no `Link`**, y es deliberado. Al
                   traspasar, el menú de la izquierda tiene que perder
-                  «Usuarios»; con una navegación de cliente el shell se reutiliza
+                  «Administradores»; con una navegación de cliente el shell se reutiliza
                   y la entrada se queda ahí, llevando a un 404. Y no se puede
                   revalidar desde la acción, porque eso reharía esta misma
                   página —que ya no se puede ver— y borraría la confirmación
@@ -572,7 +573,7 @@ function Traspasar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -582,7 +583,7 @@ function Traspasar({
                 </Alert>
               ) : null}
 
-              <Alert variant="warning" title="Dejarás de ver la sección de Usuarios">
+              <Alert variant="warning" title="Dejarás de ver la sección de Administradores">
                 No hay dos administradores principales. Al confirmar pierdes el acceso a esta
                 sección —seguirás pudiendo todo lo demás— y solo quien la reciba podrá
                 devolvértela.

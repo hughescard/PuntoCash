@@ -1,11 +1,13 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos de Producto (PRD) · v1.18
+## Documento de Requisitos de Producto (PRD) · v1.19
 
 **Estado:** Describe la consola de administración de sede **completa**. Lo que queda fuera de la capa se nombra en §6; no se da por hecho en ningún punto de este documento.
 
 **Destinatarios:** Producto, negocio, liderazgo técnico, jefatura de proyecto, desarrollo y QA.
 
-**Alcance:** Únicamente la consola **Admin de sede** (`/admin`), la del mercante que administra una o varias sedes. **No cubre Super Admin** (`/super-admin`), la consola de PuntoCash sobre su red: esa superficie no entra en esta entrega y vive en `PuntoCash_Administracion_PRD_v1.md`.
+**Alcance:** Únicamente la consola **Admin de sede** (`/admin`), la del mercante que administra una o varias sedes. **No cubre Super Admin** (`/super-admin`), la consola de PuntoCash sobre su red: esa consola tiene su propio PRD, `PuntoCash_Super_Admin_PRD_v1.md`.
+
+**Control de cambios — v1.19 (03/11/2026).** **Una sede se ve desde que es del mercante.** Quien recibe una sede no ve las jornadas, aprobaciones ni operaciones del operador anterior; hereda la sucursal montada.
 
 **Control de cambios — v1.18 (21/10/2026).** Revisión completa antes de la entrega. Tres decisiones de producto: **cambiar de sede no hace perder la pantalla** —se conservan el periodo y los filtros, salvo la caja y el trabajador, que son de la sede que se deja—; el **motivo** de desactivar a un trabajador o corregir su correo es obligatorio pero **sin largo mínimo**, porque basta con que diga algo; y un reporte exportado con un trabajador elegido **no lleva el corte por trabajador**, que sería una sola fila. El documento deja de llamarse entrega parcial.
 
@@ -92,11 +94,11 @@ El producto resuelve las cuatro tensiones con tres principios que atraviesan tod
 
 El rol de esta consola es el **Admin de sede**: la persona autenticada con la que un mercante gobierna las sedes que tiene asignadas.
 
-Lo que gobierna: crea y retira las cajas de sus sedes, vincula y desvincula los equipos de esas cajas y sus kioscos de autoservicio, da de alta y desactiva a sus trabajadores, crea los demás usuarios administradores de su propia empresa, declara qué monedas maneja cada sede y fija la tasa de cada moneda que cotiza, publica sus promociones, resuelve las aprobaciones pendientes y supervisa jornadas, cierres y volumen.
+Lo que gobierna: crea y retira las cajas de sus sedes, vincula y desvincula los equipos de esas cajas y sus kioscos de autoservicio, da de alta y desactiva a sus trabajadores, crea los demás administradores de su propia empresa, declara qué monedas maneja cada sede y fija la tasa de cada moneda que cotiza, publica sus promociones, resuelve las aprobaciones pendientes y supervisa jornadas, cierres y volumen.
 
 Lo que **no** hace, por diseño y no por falta de construcción: no opera caja —no abre jornadas, no registra operaciones, no ajusta efectivo, no hace el cierre de caja **[A6]**—, no corrige el pasado **[A7]**, y no ve una sola sede fuera de las que administra en este momento **[A1]**.
 
-Un mercante tiene **uno o varios usuarios administradores**. El primero lo entrega PuntoCash al asignarle su primera sede; ese primero crea los demás. Sobre la operación —sedes, cajas, equipos, trabajadores, monedas, tasas, promociones, aprobaciones y reportes— **todos pueden exactamente lo mismo, en todas las sedes de la empresa**: no hay sub-roles, ni supervisores con permisos recortados, ni usuarios limitados a una sucursal. La **única** diferencia entre un usuario y otro es quién administra el grupo de usuarios, y eso pertenece a uno solo: el **administrador principal** (§4).
+Un mercante tiene **uno o varios administradores**. El primero lo entrega PuntoCash al asignarle su primera sede; ese primero crea los demás. Sobre la operación —sedes, cajas, equipos, trabajadores, monedas, tasas, promociones, aprobaciones y reportes— **todos pueden exactamente lo mismo, en todas las sedes de la empresa**: no hay sub-roles, ni supervisores con permisos recortados, ni usuarios limitados a una sucursal. La **única** diferencia entre un usuario y otro es quién administra el grupo de usuarios, y eso pertenece a uno solo: el **administrador principal** (§4).
 
 El **Worker** no sabe que existe un mercante, y el **Cliente** no llega nunca a esta superficie. Ninguna pantalla de `/admin` completa un servicio, mueve efectivo, invoca a un proveedor externo ni verifica la identidad de un cliente.
 
@@ -114,7 +116,7 @@ El dominio de la Fase 1 llegaba hasta la Caja y se detenía ahí: una Caja no pe
 | **Operador** (mercante) | La persona o empresa a la que se entrega en administración una o más sedes: nombre, contacto, fecha de alta y estado (activo, suspendido, dado de baja). Nunca es dueña de una Sede. | PuntoCash **[A3]** |
 | **Asignación** | El vínculo Sede↔Operador durante un periodo, con inicio, fin y motivo. Una sede tiene como máximo una asignación vigente **[A2]**, y las cerradas no se borran ni se editan: son el historial de quién respondía por esa sede en cada tramo del tiempo. | PuntoCash **[A3]** |
 | **Usuario administrador** | La cuenta con la que una persona del mercante entra en esta consola. El primero lo entrega PuntoCash; los demás los crea el **administrador principal**. | PuntoCash el primero; el principal los demás **[A4]** |
-| **Administrador principal** | El usuario que gobierna el grupo de usuarios de su empresa. Es el único que da de alta, edita, desactiva y reactiva usuarios administradores; para los demás esa sección **no existe**. El papel **se traspasa** a otro usuario activo, en un solo acto, y **a su titular no lo desactiva nadie**. | El mercante (el propio titular, al traspasarlo) |
+| **Administrador principal** | El usuario que gobierna el grupo de usuarios de su empresa. Es el único que da de alta, edita, desactiva y reactiva administradores; para los demás esa sección **no existe**. El papel **se traspasa** a otro usuario activo, en un solo acto, y **a su titular no lo desactiva nadie**. | El mercante (el propio titular, al traspasarlo) |
 | **Caja** | Un puesto de mostrador de una sede, con sus saldos por moneda. Es el objeto al que se vincula un equipo. Sin cajas una sede no opera; sin equipo vinculado, una caja tampoco. | El mercante **[A4]** |
 | **Equipo** | Un dispositivo que el producto reconoce porque un administrador lo declaró. Dos clases, mismo mecanismo, objetos distintos: el **equipo de caja**, atado a una sede y a una de sus cajas, y el **kiosco de autoservicio**, atado a una sede. Un equipo sin vincular no es nada. | El mercante **[A10]** |
 | **Reto de vinculación** | Lo que un equipo sin vincular muestra para poder ser declarado: un QR y un código de seis cifras, dos formas de lo mismo, válidos diez minutos, renovados por el propio equipo y **de un solo uso**. | El equipo lo muestra; el mercante lo canjea |
@@ -130,7 +132,7 @@ PuntoCash  ──decide qué sedes existen, a quién se entregan y dentro de qu�
    │                                                                                │
    ├── Operador (mercante) ──administra vía Asignación (histórica)───────────────────┤
    │        │                                                                       │
-   │        └── usuarios administradores: el 1.º lo entrega PuntoCash;               │
+   │        └── administradores: el 1.º lo entrega PuntoCash;               │
    │            los demás los crea el administrador principal                        │
    │                                                                                │
    └── Sede ◄───────────────────────────────────────────────────────────────────────┘
@@ -197,7 +199,7 @@ Puede además **editar sus datos**, **reasignarlo a otra sede** —con efecto in
 
 Y puede **ayudar con el acceso** cuando un trabajador dice que no le llega el código. Lo que esa pantalla hace es enseñar el correo registrado **sin enmascarar** —porque de lo que se trata es de encontrar la errata, y una dirección enmascarada esconde justo eso— y permitir corregirlo, con motivo escrito. Lo que **no** hace, y lo dice antes de cualquier control porque es la expectativa equivocada con la que se llega: no muestra el código, no lo genera y no inicia sesión por el trabajador. El segundo factor no se salta ni se delega **[R13]**.
 
-**Usuarios administradores.** El administrador principal da de alta a los demás usuarios de su empresa, los edita, les cambia el correo, les regenera la credencial, los desactiva y los reactiva. El alta advierte de la consecuencia que más sorprende: *este usuario podrá hacer todo lo que tú puedes hacer en la operación, en todas tus sedes*.
+**Administradores.** El administrador principal da de alta a los demás usuarios de su empresa, los edita, les cambia el correo, les regenera la credencial, los desactiva y los reactiva. El alta advierte de la consecuencia que más sorprende: *este usuario podrá hacer todo lo que tú puedes hacer en la operación, en todas tus sedes*.
 
 Para quien no es el principal, esa sección **no existe** — no aparece en el menú y sus rutas responden como inexistentes, no como prohibidas. La diferencia importa: «no tienes permiso» invita a pedirlo y deja a alguien esperando; «no está ahí» no abre esa conversación.
 
@@ -223,6 +225,8 @@ Una caja **no empieza de cero cada día**: lo que deja un cierre es lo que encue
 
 Todo lo que esta consola muestra está acotado al **alcance vigente** de la sesión: las sedes que el operador administra en este momento. El selector de alcance filtra dentro de ese conjunto; no lo elige ni lo amplía **[A1]**.
 
+Y dentro de cada sede, **solo desde que es suya**. Cuando una sede cambia de manos, el mercante que la recibe no ve las jornadas, las aprobaciones ni las operaciones del anterior: no responde de ellas, y son actividad de otra empresa. Lo que hereda es la sucursal montada —cajas, equipos, trabajadores, monedas y tasas—, que sí ve completa. PuntoCash, en cambio, ve el historial entero de cada sede, y es quien resuelve las diferencias de efectivo que el anterior dejó pendientes.
+
 ---
 
 ## 6. Lo que queda fuera de esta entrega
@@ -239,8 +243,8 @@ Catorce reglas rigen esta capa. Se numeran **A1–A14** para no confundirse con 
 | --- | --- | --- |
 | **A1** | **Aislamiento por alcance.** El Worker ve su caja; el Admin de sede ve exactamente las sedes que tiene asignadas en este momento; el Super Admin ve la red. Nadie ve hacia los lados, y el alcance no es una preferencia elegible: se deriva de la sesión. | Es la extensión natural de **[R12]** un nivel hacia arriba. Un mercante viendo el volumen del mercante de al lado sería una filtración de negocio, no un fallo de permisos. |
 | **A2** | **Una sede tiene como máximo un operador vigente.** Revocar una asignación la cierra con fecha y motivo, nunca la borra. El historial de asignaciones es inmutable. | Sin esto, «quién respondía por esta sede cuando pasó aquello» no tiene respuesta. Con esto, siempre la tiene. |
-| **A3** | **Solo PuntoCash decide qué sedes existen y quién las administra.** Es el único que crea una sede, le da su código y su nombre, la suspende y la cierra; el único que da de alta y de baja mercantes y les asigna y revoca sedes; el único que entrega a un mercante su primer usuario administrador; y el único que fija los rangos de tasa y los servicios habilitados de cada sede. | La sede es propiedad de PuntoCash y la marca también. Lo delegado es la explotación, no la titularidad ni los límites dentro de los cuales se explota. Los datos de contacto —dirección, teléfono y horario— son parte de la explotación y los mantiene el mercante. |
-| **A4** | **Todo lo que vive dentro de una sede lo gobierna su mercante.** Las cajas, los equipos vinculados, los trabajadores, los demás usuarios administradores de su empresa, las monedas que la sede maneja y las tasas que cotiza los crea, los modifica y los da de baja el Admin de esa sede, y solo en sedes que administra. Una sede nace vacía y es su mercante quien la pone en marcha. | Quien responde de una operación tiene que poder configurarla. Si otro pudiera retirarle una caja o desactivarle un trabajador por debajo, dejaría de poder responder de lo que ocurre en su mostrador. |
+| **A3** | **Solo PuntoCash decide qué sedes existen y quién las administra.** Es el único que crea una sede, le da su código y su nombre, la suspende y la cierra; el único que da de alta y de baja mercantes y les asigna y revoca sedes; el único que entrega a un mercante su primer administrador; y el único que fija los rangos de tasa y los servicios habilitados de cada sede. | La sede es propiedad de PuntoCash y la marca también. Lo delegado es la explotación, no la titularidad ni los límites dentro de los cuales se explota. Los datos de contacto —dirección, teléfono y horario— son parte de la explotación y los mantiene el mercante. |
+| **A4** | **Todo lo que vive dentro de una sede lo gobierna su mercante.** Las cajas, los equipos vinculados, los trabajadores, los demás administradores de su empresa, las monedas que la sede maneja y las tasas que cotiza los crea, los modifica y los da de baja el Admin de esa sede, y solo en sedes que administra. Una sede nace vacía y es su mercante quien la pone en marcha. | Quien responde de una operación tiene que poder configurarla. Si otro pudiera retirarle una caja o desactivarle un trabajador por debajo, dejaría de poder responder de lo que ocurre en su mostrador. |
 | **A5** | **La tasa efectiva de una sede siempre cabe dentro del rango vigente de PuntoCash.** El mercante declara libremente qué monedas maneja su sede, del catálogo de la plataforma; pero solo puede **fijar la tasa** de una moneda si ella y el peso cubano están en esa lista, PuntoCash tiene rango para esa moneda, y le ha habilitado ahí el servicio de Cambio de moneda. Compra y venta se fijan en el mismo acto: no hay moneda cotizada sin tasa. Si PuntoCash mueve un rango y deja tasas fuera, esas tasas se fijan al límite más cercano, se audita y se avisa; si retira el rango, la tasa deja de cotizarse sin borrarse. | Una sede con una tasa arbitraria rompe la promesa de marca única. La cadena catálogo → lista de la sede → servicio → rango → par reparte cada decisión donde corresponde. |
 | **A6** | **El Admin supervisa y desbloquea; no opera.** Ninguna pantalla de `/admin` registra una operación, mueve efectivo, abre una jornada ni invoca a un proveedor externo. Sus dos únicas acciones sobre la operación viva son aprobar o rechazar una solicitud y forzar el cierre de una jornada. Ambas exigen motivo escrito. | Sin las dos excepciones, una caja bloqueada se queda bloqueada; con más que esas dos, el control interno del Worker pierde su valor. |
 | **A7** | **Nada de lo que hace un Admin altera lo que registró un Worker.** Aprobar, rechazar y forzar un cierre **añaden** un hecho nuevo, atribuido al Admin, con su sello de tiempo y su motivo. Ningún movimiento, cierre ni operación cambia, se recalcula ni desaparece. | Es **[R9]** aplicado a la capa de gobierno. Un histórico que un supervisor puede reescribir no es un histórico. |
@@ -250,7 +254,7 @@ Catorce reglas rigen esta capa. Se numeran **A1–A14** para no confundirse con 
 | **A11** | **Un equipo, un puesto.** Una caja tiene como máximo un equipo vinculado a la vez, y un kiosco pertenece a una sola sede. Desvincular corta la sesión del dispositivo al instante y, si había un trabajador operando, termina también la suya — pero **nunca cierra una Jornada**, porque la Jornada es de la caja y no del equipo. | Cerrar la Jornada al desvincular haría que un cambio de ordenador produjera un cierre forzado, que es precisamente lo que el producto evita. |
 | **A12** | **Lo que esta capa declara para una sede es lo único que esa sede exhibe y aplica.** Las tasas del tablero público son las mismas con las que la sede cotiza; las monedas listadas son las que la sede opera; los datos de contacto son los del registro de sedes; las promociones son las vigentes en la fecha. No existe una segunda copia que alguien deba sincronizar a mano, y cambiar cualquiera de esos datos no debe requerir un despliegue de código. | Un cliente que lee en la sala una cifra y en caja le aplican otra deja de fiarse de la casa de cambio. Y dos copias del mismo dato que alguien sincroniza a mano terminan diferenciándose. |
 | **A13** | **El trabajador pertenece a una sede, no a una caja.** La caja que opera la determina el equipo en que inicia sesión, y solo puede iniciar sesión en equipos vinculados a cajas de su propia sede. El alta de un trabajador elige sede; nunca caja. | La caja es un puesto compartido por turnos; atarla a la cuenta de una persona contradiría el modelo de equipo vinculado. |
-| **A14** | **PuntoCash observa dentro de la sede y actúa solo sobre la sede entera.** Ninguna consola de PuntoCash crea, modifica ni da de baja una caja, un equipo vinculado, un trabajador o un usuario administrador más allá del primero. Su único recurso ante un problema dentro de una sede es **suspender al operador** —que corta el acceso de sus usuarios administradores y de todos los trabajadores de sus sedes— o **suspender la sede**. Ambas son reversibles, exigen motivo y quedan auditadas. | PuntoCash es dueña de la red y del software, no del mostrador: interviniendo pieza a pieza en una sede ajena se volvería su administradora de hecho, sin serlo y sin responder de ella. |
+| **A14** | **PuntoCash observa dentro de la sede y actúa solo sobre la sede entera.** Ninguna consola de PuntoCash crea, modifica ni da de baja una caja, un equipo vinculado, un trabajador o un administrador más allá del primero. Su único recurso ante un problema dentro de una sede es **suspender al operador** —que corta el acceso de sus administradores y de todos los trabajadores de sus sedes— o **suspender la sede**. Ambas son reversibles, exigen motivo y quedan auditadas. | PuntoCash es dueña de la red y del software, no del mostrador: interviniendo pieza a pieza en una sede ajena se volvería su administradora de hecho, sin serlo y sin responder de ella. |
 
 ### 7.1 Cómo rigen R1–R13 sobre esta consola
 
@@ -282,7 +286,7 @@ Lo que el producto terminado debe garantizar. Son criterios de negocio: cada uno
 
 **RP-25.** Las tasas, las monedas operadas, los datos de sede y las promociones que cualquier superficie de PuntoCash exhiba en una sucursal deben provenir de lo que esta capa declara para esa sede, en un único lugar, sin despliegue de código y sin copia paralela. Las tasas que se exhiben deben ser las mismas con las que esa sede cotiza.
 
-**RP-26.** Ninguna consola de PuntoCash debe poder crear, modificar ni dar de baja una caja, un equipo vinculado, un trabajador o un usuario administrador de una sede, ni fijar su tasa efectiva ni sus monedas. Su único recurso sobre lo que ocurre dentro de una sede es suspender al operador o a la sede, y ambas acciones deben ser reversibles y quedar auditadas.
+**RP-26.** Ninguna consola de PuntoCash debe poder crear, modificar ni dar de baja una caja, un equipo vinculado, un trabajador o un administrador de una sede, ni fijar su tasa efectiva ni sus monedas. Su único recurso sobre lo que ocurre dentro de una sede es suspender al operador o a la sede, y ambas acciones deben ser reversibles y quedar auditadas.
 
 ---
 
@@ -295,14 +299,14 @@ Amplía el Apéndice A de `PuntoCash_Worker_Functional_Requirements_v1.md` y el 
 | **Sede** | Una casa de cambio física de la red, siempre propiedad de PuntoCash. Nace sin cajas; las crea su mercante. |
 | **Operador** / **mercante** | La persona o empresa a la que PuntoCash entrega una o más sedes en administración. Nunca es propietaria. |
 | **Admin de sede** | El rol autenticado con el que un Operador usa `/admin`. Un operador puede tener varios usuarios con este rol, todos con las mismas potestades sobre la operación. |
-| **Administrador principal** | El único usuario de un operador que gobierna el grupo de usuarios administradores de su empresa. El papel se traspasa; a su titular no lo desactiva nadie. |
-| **Usuario inicial** | El primer usuario administrador de un operador, entregado por PuntoCash. Es un hecho histórico que no cambia, y **no** es lo mismo que el administrador principal, que se mueve. Al nacer una empresa coinciden. |
+| **Administrador principal** | El único usuario de un operador que gobierna el grupo de administradores de su empresa. El papel se traspasa; a su titular no lo desactiva nadie. |
+| **Usuario inicial** | El primer administrador de un operador, entregado por PuntoCash. Es un hecho histórico que no cambia, y **no** es lo mismo que el administrador principal, que se mueve. Al nacer una empresa coinciden. |
 | **Alcance** | El conjunto de sedes que una sesión puede ver. Derivado de la sesión, nunca elegido por el usuario. |
 | **Asignación** | El vínculo histórico Sede↔Operador durante un periodo, con inicio, fin y motivo. |
 | **Caja** | Un puesto de mostrador de una sede, creado y retirado por su mercante, y objeto al que se vincula un equipo. |
 | **Equipo** | Un dispositivo declarado por un administrador: el equipo de una caja, o un kiosco de autoservicio. |
 | **Reto de vinculación** | El QR y el código de seis cifras que un equipo sin vincular muestra; válidos diez minutos, renovados solos, de un solo uso. |
-| **Credencial inicial** | La contraseña que el Admin entrega a un trabajador o a un usuario administrador al darlo de alta. Se muestra una sola vez y sirve indefinidamente hasta que su dueño la cambia. |
+| **Credencial inicial** | La contraseña que el Admin entrega a un trabajador o a un administrador al darlo de alta. Se muestra una sola vez y sirve indefinidamente hasta que su dueño la cambia. |
 | **Catálogo de monedas** | Las monedas que la plataforma soporta, mantenido por PuntoCash. |
 | **Lista de monedas de una sede** | Las monedas que esa sucursal maneja, elegidas del catálogo por su mercante. Es lo que un Worker puede añadir a su caja. |
 | **Tasa** | Lo que una sede paga y cobra, en pesos cubanos, por una unidad de una moneda de su lista. La fija el mercante dentro del rango de PuntoCash; es la misma que exhibe su tablero. |

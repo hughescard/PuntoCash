@@ -39,7 +39,23 @@ export function formatAmount(amount: number, fractionDigits = 2): string {
  * el tablero mostrara una cifra distinta de la que la sede cotiza (**A12**).
  */
 export function cifraDeTablero(rate: number): string {
-  return formatAmount(rate, Number.isInteger(rate) ? 0 : 2);
+  return Number.isInteger(rate) ? formatAmount(rate, 0) : formatTasa(rate);
+}
+
+/** Una tasa se escribe con hasta 4 decimales, sin ceros de más: 318,50 · 318,525 · 0,0031. */
+export const DECIMALES_DE_TASA = 4;
+
+export function formatTasa(rate: number): string {
+  return new Intl.NumberFormat(LOCALE, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: DECIMALES_DE_TASA,
+    useGrouping: true,
+  }).format(rate);
+}
+
+/** ¿Trae la cifra más decimales de los que admite una tasa? */
+export function excedeDecimalesDeTasa(v: number): boolean {
+  return Math.abs(Math.round(v * 1e4) / 1e4 - v) > 1e-9;
 }
 
 /** Formats an amount together with its currency code: "1.250,00 USD". */
@@ -53,6 +69,44 @@ export function formatMoney({ amount, currency }: Money, fractionDigits = 2): st
  */
 export function formatRate(rate: number, fractionDigits = 4): string {
   return formatAmount(rate, fractionDigits);
+}
+
+/** La moneda del país. Toda tasa se cotiza contra ella; no hay pares cruzados. */
+export const LOCAL_CURRENCY = "CUP";
+
+/**
+ * La tasa aplicada, tal como la cotiza la sede: la divisa contra el peso
+ * cubano, con dos decimales — «1 USD = 326,00 CUP» — venda o compre.
+ *
+ * Es la misma cifra que el cliente acaba de leer en el tablero, así que puede
+ * contrastarla. El inverso no sirve para eso: «1 CUP = 0,0031 USD», redondeado,
+ * no reproduce el importe de la operación —45.640,00 CUP darían 141,48 USD y no
+ * 140,00—, y nadie cotiza en diezmilésimas de dólar.
+ *
+ * `appliedRate` son unidades de destino por cada unidad de origen, que es como
+ * lo guarda la operación.
+ */
+export function formatAppliedRateLine(
+  sourceCurrency: string,
+  destinationCurrency: string,
+  appliedRate: number,
+): string {
+  const cupPerForeign =
+    destinationCurrency === LOCAL_CURRENCY
+      ? appliedRate
+      : sourceCurrency === LOCAL_CURRENCY
+        ? 1 / appliedRate
+        : null;
+
+  /* Un par entre dos divisas no existe en el producto. Si llegara uno, se dice
+     tal cual en vez de inventarle una cotización contra el peso. */
+  if (cupPerForeign === null || !Number.isFinite(cupPerForeign) || cupPerForeign <= 0) {
+    return `1 ${sourceCurrency} = ${formatRate(appliedRate)} ${destinationCurrency}`;
+  }
+
+  const foreign =
+    destinationCurrency === LOCAL_CURRENCY ? sourceCurrency : destinationCurrency;
+  return `1 ${foreign} = ${formatTasa(cupPerForeign)} ${LOCAL_CURRENCY}`;
 }
 
 /**

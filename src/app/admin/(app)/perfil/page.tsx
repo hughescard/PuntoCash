@@ -143,7 +143,7 @@ function NotaCorreo({
           href={`/admin/usuarios/${usuarioId}` as Route}
           className="font-medium text-primary underline underline-offset-2"
         >
-          tu ficha en Usuarios
+          tu ficha en Administradores
         </Link>
         .
       </>

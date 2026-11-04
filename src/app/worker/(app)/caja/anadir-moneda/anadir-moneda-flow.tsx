@@ -25,7 +25,7 @@ import { getCurrentWorker } from "@/features/worker/session";
 import {
   CAJA_BALANCES,
   CAJA_SUMMARY,
-  getAvailableCurrenciesToAdd,
+  monedasQueSePuedenAnadir,
   getJornadaActual,
   habilitarMoneda,
   type CajaCurrencyCatalogEntry,
@@ -48,7 +48,7 @@ function noopSubscribe() {
  * 0,00 with no ledger movement — its opening amount, if any, is defined later
  * from Fondeo inicial, the only place that ever does.
  */
-export function AnadirMonedaFlow(): React.JSX.Element {
+export function AnadirMonedaFlow({ monedasDeLaSede }: { monedasDeLaSede: readonly string[] }): React.JSX.Element {
   const router = useRouter();
   // Repone lo que el equipo tenga guardado —qué monedas están habilitadas,
   // entre otras cosas— y vuelve a pintar si cambia (`features/caja/use-caja.ts`).
@@ -77,7 +77,7 @@ export function AnadirMonedaFlow(): React.JSX.Element {
   const [duplicateError, setDuplicateError] = React.useState<string | undefined>();
   const [submitting, setSubmitting] = React.useState(false);
 
-  const available = getAvailableCurrenciesToAdd();
+  const available = monedasQueSePuedenAnadir(monedasDeLaSede);
   const filtered = React.useMemo(() => {
     const q = normalizeForSearch(query);
     if (!q) return available;
@@ -231,7 +231,9 @@ export function AnadirMonedaFlow(): React.JSX.Element {
 
                     {filtered.length === 0 ? (
                       <p className="rounded-control border border-border bg-surface-subtle px-4 py-6 text-center text-body-sm text-text-secondary">
-                        No encontramos monedas disponibles con ese término.
+                        {available.length === 0
+                          ? "Tu caja ya tiene todas las monedas de la sede. Si necesitas otra, pídele a tu administrador que la añada a la lista de la sede."
+                          : "No encontramos monedas disponibles con ese término."}
                       </p>
                     ) : (
                       <ul

@@ -20,6 +20,8 @@ const FUENTE = "Montserrat";
 const argb = (hex: string) => `FF${hex.slice(1)}`;
 const CIFRA = '#,##0.00;-#,##0.00;"—"';
 const CIFRA_CON_SIGNO = '+#,##0.00;-#,##0.00;0.00';
+/* Un promedio de operaciones por sede: un decimal. */
+const PROMEDIO = '#,##0.0;-#,##0.0;"—"';
 
 export async function reporteExcel(k: Contenido): Promise<Uint8Array> {
   const libro = new ExcelJS.Workbook();
@@ -56,8 +58,7 @@ function resumen(libro: ExcelJS.Workbook, k: Contenido, logo: number) {
 
   for (const [etiqueta, valor] of [
     ["Periodo", k.periodo],
-    ["Sedes", k.sedes],
-    ["Trabajador", k.trabajador],
+    ...k.portada,
     ["Generado", `${fechaYHora(k.generado.toISOString())} · ${k.generadoPor}`],
   ] as const) {
     celda(h, r, 2, etiqueta.toUpperCase(), { size: 8, color: COLOR.gris, medium: true });
@@ -99,7 +100,7 @@ function hojaDeCorte(libro: ExcelJS.Workbook, k: Contenido, s: Seccion) {
   const h = libro.addWorksheet(nombre, { views: [{ showGridLines: false, state: "frozen", ySplit: 4 }] });
   pie(h, k);
 
-  const textos = [s.primera, ...(s.segunda ? [s.segunda] : []), "Operaciones"];
+  const textos = [s.primera, ...(s.segunda ? [s.segunda] : []), s.etiquetaOperaciones ?? "Operaciones"];
   const cabecera = [...textos, ...s.columnas];
   const n = cabecera.length;
   const primeraCifra = textos.length - 1; /* índice 0-based de «Operaciones» */
@@ -108,7 +109,7 @@ function hojaDeCorte(libro: ExcelJS.Workbook, k: Contenido, s: Seccion) {
 
   celda(h, 1, 1, `${s.titulo} · ${k.periodo}`, { size: 13, bold: true, color: COLOR.navy });
   h.getRow(1).height = 22;
-  celda(h, 2, 1, `${k.empresa} · ${k.sedes} · Trabajador: ${k.trabajador}`, { size: 9, color: COLOR.gris });
+  celda(h, 2, 1, k.pie, { size: 9, color: COLOR.gris });
   if (s.nota) celda(h, 3, 1, s.nota, { size: 9, color: COLOR.gris });
 
   cabeceraDeTabla(h, 4, 1, cabecera, primeraCifra);
@@ -128,8 +129,11 @@ function hojaDeCorte(libro: ExcelJS.Workbook, k: Contenido, s: Seccion) {
       cel.value = v;
       cel.font = { name: FUENTE, size: 10, color: { argb: argb(i === 1 && s.segunda ? COLOR.gris : COLOR.antracita) } };
       if (i === 0 && f.fecha) cel.numFmt = "ddd dd/mm/yyyy";
-      if (i === primeraCifra) cel.numFmt = "#,##0";
-      if (i > primeraCifra) cel.numFmt = s.conSigno?.[i - primeraCifra - 1] ? CIFRA_CON_SIGNO : CIFRA;
+      if (i === primeraCifra) cel.numFmt = s.operacionesConDecimales ? PROMEDIO : "#,##0";
+      if (i > primeraCifra) {
+        const col = i - primeraCifra - 1;
+        cel.numFmt = s.conSigno?.[col] ? CIFRA_CON_SIGNO : s.enteras?.[col] ? "#,##0" : CIFRA;
+      }
       if (i >= primeraCifra) cel.alignment = { horizontal: "right" };
     });
     bordeInferior(h, r, 1, n);
@@ -140,12 +144,14 @@ function hojaDeCorte(libro: ExcelJS.Workbook, k: Contenido, s: Seccion) {
     const fila = h.getRow(r);
     fila.getCell(1).value = "Total";
     for (let i = primeraCifra; i < n; i++) {
+      /* Una columna que no se suma —«Sedes»: una sede puede estar en dos mercantes si cambió de manos— se deja en blanco. */
+      if (i > primeraCifra && s.sinTotal?.[i - primeraCifra - 1]) continue;
       const col = h.getColumn(i + 1).letter;
       const suma = i === primeraCifra
         ? s.filas.reduce((a, f) => a + f.operaciones, 0)
         : s.filas.reduce((a, f) => a + f.valores[i - primeraCifra - 1]!, 0);
       fila.getCell(i + 1).value = { formula: `SUBTOTAL(9,${col}5:${col}${r - 1})`, result: suma };
-      fila.getCell(i + 1).numFmt = i === primeraCifra ? "#,##0" : CIFRA;
+      fila.getCell(i + 1).numFmt = i === primeraCifra ? (s.operacionesConDecimales ? CIFRA : "#,##0") : s.enteras?.[i - primeraCifra - 1] ? "#,##0" : CIFRA;
       fila.getCell(i + 1).alignment = { horizontal: "right" };
     }
     for (let i = 1; i <= n; i++) {

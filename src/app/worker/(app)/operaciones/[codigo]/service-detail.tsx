@@ -3,7 +3,7 @@ import { ArrowDown, ArrowLeftRight, FileText, Wallet } from "lucide-react";
 
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
-import { formatMoney, formatRate, type Money } from "@/lib/format";
+import { formatAppliedRateLine, formatMoney, type Money } from "@/lib/format";
 import { findCurrency } from "@/features/exchange/quote";
 import type { OperationRecord } from "@/features/operations/operations-history";
 import { DetailCard, DetailList, DetailRow } from "./detail-parts";
@@ -134,7 +134,7 @@ function CurrencyExchangeDetail({
       <div className="flex flex-col gap-1">
         <span className="text-caption text-text-secondary">Tasa aplicada</span>
         <span className="pc-numeric text-body font-semibold whitespace-nowrap text-text-primary">
-          1 {source.currency} = {formatRate(appliedRate)} {destination.currency}
+          {formatAppliedRateLine(source.currency, destination.currency, appliedRate)}
         </span>
       </div>
     </DetailCard>
