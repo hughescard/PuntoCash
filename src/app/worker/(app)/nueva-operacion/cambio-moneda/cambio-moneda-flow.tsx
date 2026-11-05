@@ -151,6 +151,7 @@ function CambioMonedaOperation(): React.JSX.Element {
       sourceAmount: result.value.sourceAmount,
       destinationAmount: result.value.destinationAmount,
       appliedRate: result.value.appliedRate,
+      tasasAplicadas: result.value.tasasAplicadas,
       quoteId: `${state.sourceCurrency}-${state.destinationCurrency}`,
       quotedAt: new Date().toISOString(),
     };
@@ -188,20 +189,18 @@ function CambioMonedaOperation(): React.JSX.Element {
   const monedasCambiables = CAJA_BALANCES.map((b) => b.currency).filter((c) => cotizables.includes(c));
   const monedasSinTasa = CAJA_BALANCES.map((b) => b.currency).filter((c) => !cotizables.includes(c));
 
-  /* Toda tasa es contra el peso: un lado del cambio es siempre CUP. Si lo
-     elegido no forma un par que esta caja pueda cambiar, se corrige al par
-     más cercano en vez de dejar una cotización imposible en pantalla. */
+  /* Si una de las dos monedas elegidas no se puede cambiar en esta caja, se
+     corrige a una que sí, en vez de dejar una cotización imposible en pantalla.
+     Entre dos divisas se cambia pasando por el peso (`cotizacion.ts`). */
   const clave = monedasCambiables.join(",");
   React.useEffect(() => {
-    const divisas = clave.split(",").filter((c) => c && c !== "CUP");
-    if (!clave.includes("CUP") || divisas.length === 0) return;
+    const validas = clave.split(",").filter(Boolean);
+    if (validas.length < 2) return;
     const { sourceCurrency: s, destinationCurrency: d } = state;
-    if (s === "CUP") {
-      if (!divisas.includes(d)) dispatch({ type: "set-destination-currency", currency: divisas[0]! });
-    } else if (!divisas.includes(s)) {
-      dispatch({ type: "set-source-currency", currency: divisas[0]! });
-    } else if (d !== "CUP") {
-      dispatch({ type: "set-destination-currency", currency: "CUP" });
+    if (!validas.includes(s)) {
+      dispatch({ type: "set-source-currency", currency: validas.find((c) => c !== d)! });
+    } else if (!validas.includes(d)) {
+      dispatch({ type: "set-destination-currency", currency: validas.find((c) => c !== s)! });
     }
   }, [clave, state]);
 

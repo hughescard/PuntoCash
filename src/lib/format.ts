@@ -98,8 +98,8 @@ export function formatAppliedRateLine(
         ? 1 / appliedRate
         : null;
 
-  /* Un par entre dos divisas no existe en el producto. Si llegara uno, se dice
-     tal cual en vez de inventarle una cotización contra el peso. */
+  /* Entre dos divisas no hay una tasa contra el peso que enseñar: se dice la
+     equivalencia que resulta de pivotar por el peso, «1 EUR = 1,0491 USD». */
   if (cupPerForeign === null || !Number.isFinite(cupPerForeign) || cupPerForeign <= 0) {
     return `1 ${sourceCurrency} = ${formatRate(appliedRate)} ${destinationCurrency}`;
   }

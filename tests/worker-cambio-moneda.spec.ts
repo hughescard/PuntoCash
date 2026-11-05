@@ -118,6 +118,17 @@ test.describe("step 1 · cambio", () => {
     await expect(page.getByText("1 USD = 318,00 CUP").first()).toBeVisible();
   });
 
+  test("entre dos divisas cotiza pivotando por el peso y enseña las dos tasas", async ({ page }) => {
+    await page.getByLabel("Moneda origen").click();
+    await page.getByRole("option", { name: /^EUR/ }).click();
+    await page.getByLabel("Moneda destino").click();
+    await page.getByRole("option", { name: /^USD/ }).click();
+    await setAmount(page, "100");
+    /* 100 EUR × 342 (compra) ÷ 326 (venta) = 104,907… → 104,90 USD. */
+    await expect(page.getByLabel("Monto a recibir (calculado)")).toHaveValue("104,90");
+    await expect(page.getByText("1 EUR = 1,0491 USD · EUR a 342,00 y USD a 326,00 CUP").first()).toBeVisible();
+  });
+
   test("uses SVG flags and never emoji", async ({ page }) => {
     await expect(page.locator("svg[data-currency-flag]").first()).toBeVisible();
 

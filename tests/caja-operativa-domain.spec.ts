@@ -147,6 +147,40 @@ test.describe("Durante la jornada", () => {
     ]);
   });
 
+  test("entre dos divisas se pivota por el peso: compra de una, venta de la otra", async () => {
+    const ctx = puesto({ CUP: 0, EUR: 0, USD: 500 });
+    const tasas = tasasVigentes(ctx.sede.id);
+    const eur = tasas.find((t) => t.code === "EUR")!;
+    const usd = tasas.find((t) => t.code === "USD")!;
+    const q = cotizar(tasas, "EUR", "USD", 100);
+    expect(q.ok).toBe(true);
+    if (!q.ok) return;
+    expect(q.value.destinationAmount).toBe(Math.floor(((100 * eur.compra) / usd.venta) * 100) / 100);
+    expect(q.value.tasasAplicadas).toEqual([
+      { code: "EUR", lado: "compra", valor: eur.compra },
+      { code: "USD", lado: "venta", valor: usd.venta },
+    ]);
+
+    const r = registrarCambio(ctx, {
+      cliente: CLIENTE,
+      sourceCurrency: "EUR",
+      destinationCurrency: "USD",
+      sourceAmount: 100,
+      destinationAmountVisto: q.value.destinationAmount,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(saldo(ctx, "EUR")).toBe(100);
+    expect(saldo(ctx, "USD")).toBeCloseTo(500 - q.value.destinationAmount, 2);
+    /* El peso solo sirve de pivote: no entra ni sale de la caja. */
+    expect(saldo(ctx, "CUP")).toBe(0);
+    const j = jornadaPorId(r.value.jornadaId)!;
+    expect(j.movimientos.filter((m) => m.operationCode === r.value.codigo).map((m) => m.concepto)).toEqual([
+      "Compra de EUR",
+      "Venta de USD",
+    ]);
+  });
+
   test("si la cifra que vio el cliente ya no es la de la tasa, el cambio se rechaza con la cotización nueva", () => {
     const ctx = puesto({ CUP: 100_000, USD: 0 });
     const r = registrarCambio(ctx, {

@@ -8,8 +8,10 @@
  *
  *   · divisa → CUP: el cliente vende; se aplica la compra.
  *   · CUP → divisa: el cliente compra; se aplica la venta.
- *   · divisa → otra divisa: **no existe**. Toda tasa es contra el peso, así
- *     que un cambio entre dos divisas son dos cambios, y se hacen como tales.
+ *   · divisa → otra divisa: se pivota por el peso. La casa compra la divisa
+ *     del cliente a su tasa de compra y le vende la otra a su tasa de venta
+ *     (EUR → CUP → USD). No hay tasa cruzada propia: sale de las dos de la
+ *     sede.
  *
  * El importe que se entrega se redondea **a la baja** al céntimo: la casa
  * nunca entrega una fracción que no tiene en la caja ni redondea a su favor
@@ -41,7 +43,7 @@ export interface Cotizacion {
   tasasAplicadas: readonly { code: string; lado: "compra" | "venta"; valor: number }[];
 }
 
-export type MotivoSinCotizar = "misma-moneda" | "par-inexistente" | "sin-tasa" | "importe-invalido";
+export type MotivoSinCotizar = "misma-moneda" | "sin-tasa" | "importe-invalido";
 
 function aLaBaja(valor: number): number {
   return Math.floor(valor * 100 + 1e-9) / 100;
@@ -54,7 +56,6 @@ export function cotizar(
   sourceAmount: number,
 ): { ok: true; value: Cotizacion } | { ok: false; reason: MotivoSinCotizar } {
   if (sourceCurrency === destinationCurrency) return { ok: false, reason: "misma-moneda" };
-  if (sourceCurrency !== MONEDA_LOCAL && destinationCurrency !== MONEDA_LOCAL) return { ok: false, reason: "par-inexistente" };
   if (!Number.isFinite(sourceAmount) || sourceAmount <= 0) return { ok: false, reason: "importe-invalido" };
 
   const tasa = (code: string) => tasas.find((t) => t.code === code) ?? null;

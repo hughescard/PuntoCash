@@ -66,6 +66,11 @@ export interface ExchangeQuote {
   appliedRate: number;
   /** Identifies the pricing used, so a reviewed operation keeps its snapshot. */
   quoteId: string;
+  /**
+   * Las tasas de la sede que se aplicaron. Entre dos divisas son dos —la
+   * compra de una y la venta de la otra, pivotando por el peso— y se enseñan.
+   */
+  tasasAplicadas?: readonly { code: string; lado: "compra" | "venta"; valor: number }[];
   quotedAt: string;
 }
 

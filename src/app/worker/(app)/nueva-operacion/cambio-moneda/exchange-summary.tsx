@@ -4,7 +4,7 @@ import { CircleCheck, FileText, TriangleAlert, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
-import { formatAppliedRateLine, formatMoney } from "@/lib/format";
+import { formatAppliedRateLine, formatMoney, formatTasa } from "@/lib/format";
 import { findCurrency, type ExchangeQuote } from "@/features/exchange/quote";
 
 /**
@@ -107,11 +107,14 @@ export function ExchangeSummaryCard({
  * misma en las dos direcciones del cambio: la que su sede cotiza.
  */
 export function formatAppliedRate(quote: ExchangeQuote): string {
-  return formatAppliedRateLine(
-    quote.sourceCurrency,
-    quote.destinationCurrency,
-    quote.appliedRate,
-  );
+  const linea = formatAppliedRateLine(quote.sourceCurrency, quote.destinationCurrency, quote.appliedRate);
+  /* Entre dos divisas se pivota por el peso: se dicen las dos tasas de la sede
+     con que se calculó, para que el trabajador pueda explicárselo al cliente. */
+  if (quote.tasasAplicadas && quote.tasasAplicadas.length === 2) {
+    const [a, b] = quote.tasasAplicadas;
+    return `${linea} · ${a!.code} a ${formatTasa(a!.valor)} y ${b!.code} a ${formatTasa(b!.valor)} CUP`;
+  }
+  return linea;
 }
 
 function currencyNameOf(code: string): string | undefined {

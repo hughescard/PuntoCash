@@ -180,7 +180,7 @@ export function StepCambio({
                     <SelectTrigger {...fieldAria(DEST_CURRENCY)}>
                       <SelectValue />
                     </SelectTrigger>
-                    <CurrencyOptions monedas={sourceCurrency === "CUP" ? monedasCambiables.filter((c) => c !== "CUP") : monedasCambiables.filter((c) => c === "CUP")} />
+                    <CurrencyOptions monedas={monedasCambiables} />
                   </Select>
                 </Field>
 
