@@ -41,29 +41,42 @@ import {
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
 import { formatDateTime, formatMoney, formatSignedAmount, parseAmountInput } from "@/lib/format";
-import { getCurrentWorker } from "@/features/worker/session";
+import { useRouter } from "next/navigation";
 import {
-  CAJA_BALANCES,
-  CAJA_SUMMARY,
-  ajustarEfectivo,
   findCajaCurrency,
-  getJornadaActual,
   getValidAdjustmentReasons,
-  hasOpenJornada,
   isReasonCompatibleWithDifference,
-  type AjustarEfectivoResult,
   type CajaAdjustmentReason,
   type CajaBalance,
 } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
+import { ajustarEfectivoAction } from "../../../_actions";
+
+interface AjustarEfectivoResult {
+  currency: string;
+  saldoAnterior: number;
+  efectivoContado: number;
+  diferencia: number;
+  saldoActual: number;
+  motivo: CajaAdjustmentReason;
+  observaciones?: string;
+  timestamp: string;
+  caja: string;
+}
 
 /** Un mensaje por cada rechazo que el dominio puede devolver. */
-const CONFIRM_ERROR: Readonly<Record<"motivo-incompatible" | "moneda-no-habilitada", string>> = {
+const CONFIRM_ERROR: Readonly<Record<string, string>> = {
   "motivo-incompatible":
     'El motivo seleccionado ya no es compatible con la diferencia calculada. Vuelve a "Registrar conteo" y selecciona un motivo válido.',
   "moneda-no-habilitada":
     "Esa moneda ya no está habilitada en esta caja, así que no se puede ajustar su efectivo. Vuelve a Caja y comprueba las monedas habilitadas.",
+  "diferencia-cero":
+    "El saldo de la caja cambió mientras revisabas y ya coincide con lo contado: no hay nada que ajustar.",
+  bloqueada: "La sede no está operando: no se pueden registrar ajustes. Haz el arqueo y cierre de tu jornada.",
+  "jornada-no-abierta": "La jornada ya no está abierta: quizá la administración forzó su cierre.",
 };
+const CONFIRM_ERROR_GENERICO = "No se pudo registrar el ajuste. Vuelve a Caja y comprueba su estado.";
 
 const CAJA_ROUTE = "/worker/caja" as Route;
 
@@ -88,12 +101,13 @@ interface AjusteDraft {
  * efectivo — corrección de saldo").
  */
 export function AjustarEfectivoFlow(): React.JSX.Element {
-  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
-  // cambia (`features/caja/use-caja.ts`).
-  useCaja();
-
-  const worker = getCurrentWorker();
-  const jornada = getJornadaActual();
+  const router = useRouter();
+  const caja = useCaja();
+  const vista = useVistaDeCaja();
+  const worker = vista.trabajador;
+  const jornada = caja.jornadaAbierta ? caja.jornada : null;
+  const CAJA_BALANCES = caja.balances;
+  const CAJA_SUMMARY = caja.summary;
 
   const [step, setStep] = React.useState<Step>("form");
 
@@ -119,7 +133,7 @@ export function AjustarEfectivoFlow(): React.JSX.Element {
    * equipo se repone justo después de hidratar, y una captura hecha antes de
    * eso diría que no hay jornada para siempre.
    */
-  const blocked = !hasOpenJornada() && result === null;
+  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && result === null;
 
   const selectedBalance = CAJA_BALANCES.find((b) => b.currency === currency) ?? null;
   const selectedCurrencyEntry = currency ? findCajaCurrency(currency) : undefined;
@@ -160,7 +174,7 @@ export function AjustarEfectivoFlow(): React.JSX.Element {
     current: CajaAdjustmentReason | "",
     newDiferencia: number | null,
   ): CajaAdjustmentReason | "" {
-    if (current === "" || current === "Error de registro" || current === "Otro") return current;
+    if (current === "" || current === "Otro") return current;
     if (newDiferencia === null) return current;
     return isReasonCompatibleWithDifference(current, newDiferencia) ? current : "";
   }
@@ -222,14 +236,11 @@ export function AjustarEfectivoFlow(): React.JSX.Element {
     if (!draft || submitting) return;
     setSubmitting(true);
     setConfirmError(undefined);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    const outcome = ajustarEfectivo({
+    const outcome = await ajustarEfectivoAction({
       currency: draft.balance.currency,
-      efectivoContado: draft.efectivoContado,
+      contado: draft.efectivoContado,
       motivo: draft.motivo,
-      observaciones: draft.observaciones || undefined,
-      timestamp: new Date(),
+      ...(draft.observaciones ? { observaciones: draft.observaciones } : {}),
     });
 
     if (!outcome.ok) {
@@ -238,13 +249,24 @@ export function AjustarEfectivoFlow(): React.JSX.Element {
          producto. Cada rechazo dice qué pasó y cuál es el paso siguiente
          (§5), nunca "Algo salió mal". */
       setSubmitting(false);
-      setConfirmError(CONFIRM_ERROR[outcome.reason]);
+      setConfirmError(CONFIRM_ERROR[outcome.reason] ?? CONFIRM_ERROR_GENERICO);
       return;
     }
 
-    setResult(outcome.result);
+    setResult({
+      currency: outcome.value.currency,
+      saldoAnterior: outcome.value.saldoAntes,
+      efectivoContado: draft.efectivoContado,
+      diferencia: outcome.value.diferencia,
+      saldoActual: outcome.value.saldoDespues,
+      motivo: draft.motivo,
+      ...(draft.observaciones ? { observaciones: draft.observaciones } : {}),
+      timestamp: outcome.value.fechaHora,
+      caja: CAJA_SUMMARY.register,
+    });
     setSubmitting(false);
     setStep("completado");
+    router.refresh();
   }
 
   if (blocked) {
@@ -261,7 +283,9 @@ export function AjustarEfectivoFlow(): React.JSX.Element {
             </span>
             <p className="mt-2 text-section-title text-text-primary">Caja cerrada</p>
             <p className="max-w-sm text-body text-text-secondary">
-              Debes abrir una jornada antes de ajustar efectivo.
+              {vista.bloqueo
+                ? "La sede no está operando: solo puedes hacer el arqueo y cierre de tu jornada."
+                : "Debes abrir una jornada antes de ajustar efectivo."}
             </p>
             <Button className="mt-4" asChild>
               <Link href={CAJA_ROUTE}>Volver a Caja</Link>
@@ -657,6 +681,7 @@ function AjusteRevision({
   onVolver: () => void;
   onConfirmar: () => void;
 }) {
+  const CAJA_SUMMARY = useCaja().summary;
   const entry = findCajaCurrency(draft.balance.currency);
 
   return (
@@ -725,6 +750,7 @@ function AjusteRevision({
 
 /** Step 3 — Success. Unlike Steps 1-2, showing both "Saldo anterior" and "Saldo actual" here is intentional: a final before/after record, not a duplicate of "Efectivo contado". */
 function AjusteCompletado({ result, worker }: { result: AjustarEfectivoResult; worker: string }) {
+  const CAJA_SUMMARY = useCaja().summary;
   const entry = findCajaCurrency(result.currency);
   const currencyLabel = entry ? `${entry.code} · ${entry.name}` : result.currency;
 
@@ -795,6 +821,7 @@ function AjustePrintableReceipt({
   worker: string;
   currencyLabel: string;
 }) {
+  const CAJA_SUMMARY = useCaja().summary;
   return (
     <section className="hidden print:block" aria-hidden="true">
       <h1 style={{ fontSize: "18px", fontWeight: 700 }}>PuntoCash · Comprobante de ajuste de efectivo</h1>

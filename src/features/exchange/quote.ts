@@ -11,6 +11,8 @@
  * pair — never recompute any of it downstream.
  */
 
+import { monedaIso } from "@/features/network/iso-monedas";
+
 export interface SupportedCurrency {
   code: string;
   /** Full name, shown beside the code in selectors (§15 "Moneda"). */
@@ -25,7 +27,8 @@ export const SUPPORTED_CURRENCIES = [
 ] as const satisfies readonly SupportedCurrency[];
 
 export function findCurrency(code: string): SupportedCurrency | undefined {
-  return SUPPORTED_CURRENCIES.find((currency) => currency.code === code);
+  const iso = monedaIso(code);
+  return iso ? { code: iso.code, name: iso.name } : SUPPORTED_CURRENCIES.find((currency) => currency.code === code);
 }
 
 /** Label used by selectors and read-only rows: "USD — Dólar estadounidense". */

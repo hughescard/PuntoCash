@@ -15,8 +15,6 @@ import {
 } from "lucide-react";
 
 import {
-  Alert,
-  Badge,
   Button,
   Card,
   CardContent,
@@ -35,15 +33,12 @@ import { OperationStatusBadge } from "@/components/patterns/operation-status-bad
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
 import { formatAmount, formatMoney } from "@/lib/format";
-import { getCurrentWorker, getGreeting } from "@/features/worker/session";
-import {
-  CASH_BALANCES,
-  EXCHANGE_RATES,
-  RATES_UPDATED_LABEL,
-  RECENT_OPERATIONS,
-  WORKER_ALERTS,
-} from "@/features/worker/home-data";
-import { getHomeQuickActions } from "@/features/operations/services";
+
+const formatTime = (d: Date) =>
+  new Intl.DateTimeFormat("es-ES", { timeZone: "America/Havana", hour: "2-digit", minute: "2-digit" }).format(d);
+import { getVistaDeCaja } from "@/features/worker/sesion-servidor";
+import { WORKER_SERVICES } from "@/features/operations/services";
+import { AvisoDeCaja } from "../aviso-de-caja";
 
 export const metadata: Metadata = {
   title: "Inicio",
@@ -83,14 +78,29 @@ function CardFooterLink({ href, children }: { href: Route; children: React.React
   );
 }
 
-export default function WorkerHomePage() {
-  const worker = getCurrentWorker();
-  const hasAlerts = WORKER_ALERTS.length > 0;
+export default async function WorkerHomePage() {
+  const vista = await getVistaDeCaja();
+  if (!vista) return null;
+  const worker = { firstName: vista.trabajador.firstName, register: vista.caja.nombre };
+  const CASH_BALANCES = vista.saldos;
+  const EXCHANGE_RATES = vista.tasas.map((t) => ({ currency: t.code, buy: t.compra, sell: t.venta }));
+  /* Accesos rápidos: los servicios que la caja puede prestar de verdad —
+     disponibles en el producto y habilitados por PuntoCash en esta sede. */
+  const quickActions = WORKER_SERVICES.filter((s) => s.status === "available" && vista.servicios.includes(s.id));
+  const RECENT_OPERATIONS = vista.operaciones.slice(0, 5).map((o) => ({
+    code: o.codigo,
+    time: formatTime(new Date(o.fechaHora)),
+    client: o.cliente.nombre,
+    service: o.servicio,
+    amount: o.amount.kind === "exchange" ? o.amount.source : o.amount.money,
+    status: o.estado,
+  }));
+  const hasAlerts = false;
 
   return (
     <>
       <PageHeader
-        title={`${getGreeting()}, ${worker.firstName}`}
+        title={`Hola, ${worker.firstName}`}
         description="Aquí tienes el estado de tu jornada."
         actions={
           <Button asChild>
@@ -103,6 +113,8 @@ export default function WorkerHomePage() {
       />
 
       <div className="flex flex-col gap-6">
+        <AvisoDeCaja />
+
         {/* ---- Mi caja · Tasas vigentes ------------------------------------ */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card className="flex flex-col">
@@ -129,8 +141,6 @@ export default function WorkerHomePage() {
                     <dt className="flex items-center gap-2 text-label text-text-secondary">
                       <CurrencyFlag currency={balance.currency} />
                       <span className="font-semibold text-text-primary">{balance.currency}</span>
-                      {/* A low balance is stated, not only coloured (§20). */}
-                      {balance.low ? <Badge variant="warning">Nivel bajo</Badge> : null}
                     </dt>
                     <dd className="pc-numeric text-amount text-text-primary">
                       {formatAmount(balance.amount)}
@@ -186,7 +196,7 @@ export default function WorkerHomePage() {
             <CardFooter className="justify-between">
               <span className="inline-flex items-center gap-2 text-caption text-text-secondary">
                 <Clock className="size-3.5" aria-hidden="true" />
-                {RATES_UPDATED_LABEL}
+                Las que tu sede tiene en vigor
               </span>
               <CardFooterLink href="/worker/tasas">Ver todas</CardFooterLink>
             </CardFooter>
@@ -206,7 +216,7 @@ export default function WorkerHomePage() {
             {/* Stacked icon over a centred label: the longest labels wrap
                 symmetrically instead of being truncated. */}
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-              {getHomeQuickActions().map((service) => (
+              {quickActions.map((service) => (
                 <li key={service.slug}>
                   <QuickAction
                     href={`/worker/nueva-operacion/${service.slug}` as Route}
@@ -300,16 +310,12 @@ export default function WorkerHomePage() {
                 <div className="flex min-w-0 items-center gap-3">
                   <CardGlyph icon={Bell} />
                   <CardTitle>Alertas</CardTitle>
-                  <Badge variant="warning">{WORKER_ALERTS.length}</Badge>
+
                 </div>
               </CardHeader>
 
               <CardContent className="flex flex-col gap-3">
-                {WORKER_ALERTS.map((alert) => (
-                  <Alert key={alert.id} variant={alert.variant} title={alert.title}>
-                    {alert.description}
-                  </Alert>
-                ))}
+                {null}
               </CardContent>
 
               <CardFooter>

@@ -5,7 +5,7 @@ import { ArrowLeft, Building2, ClipboardList, Zap } from "lucide-react";
 import { DetailCard, DetailList, DetailRow } from "@/app/worker/(app)/operaciones/[codigo]/detail-parts";
 import { MovementTypeBadge } from "@/app/worker/(app)/caja/caja-movements-table";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { CAJA_SUMMARY, findCajaCurrency, type CajaMovement } from "@/features/caja/caja-data";
+import { findCajaCurrency, type CajaMovement } from "@/features/caja/caja-data";
 import { formatDateTime, formatMoney, formatSignedAmount } from "@/lib/format";
 
 /**
@@ -95,8 +95,8 @@ export function CashJornadaCard({ movement }: { movement: CajaMovement }): React
   return (
     <DetailCard title="Caja y jornada" icon={Building2}>
       <DetailList>
-        <DetailRow label="Caja" value={jornada?.register ?? CAJA_SUMMARY.register} />
-        <DetailRow label="Trabajador" value={jornada?.worker ?? CAJA_SUMMARY.worker} />
+        <DetailRow label="Caja" value={jornada?.register ?? "—"} />
+        <DetailRow label="Trabajador" value={jornada?.worker ?? "—"} />
         {jornada ? (
           <DetailRow
             label="Jornada"

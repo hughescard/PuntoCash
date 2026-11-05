@@ -29,7 +29,7 @@ import {
 } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatAmount, parseAmountInput } from "@/lib/format";
-import { SUPPORTED_CURRENCIES, type ExchangeQuote } from "@/features/exchange/quote";
+import { findCurrency, type ExchangeQuote } from "@/features/exchange/quote";
 import { ExchangeSummaryCard, formatAppliedRate, type CashCheck } from "./exchange-summary";
 
 const SOURCE_CURRENCY: FieldSpec = { id: "moneda-origen", label: "Moneda origen" };
@@ -38,14 +38,14 @@ const DEST_CURRENCY: FieldSpec = { id: "moneda-destino", label: "Moneda destino"
 const DEST_AMOUNT: FieldSpec = { id: "monto-recibir", label: "Monto a recibir (calculado)" };
 
 /** Options carry flag, code and name; the code and name are authoritative. */
-function CurrencyOptions() {
+function CurrencyOptions({ monedas }: { monedas: readonly string[] }) {
   return (
     <SelectContent>
-      {SUPPORTED_CURRENCIES.map((currency) => (
-        <SelectItem key={currency.code} value={currency.code}>
+      {monedas.map((code) => (
+        <SelectItem key={code} value={code}>
           <span className="flex items-center gap-2">
-            <CurrencyFlag currency={currency.code} />
-            {currency.code} — {currency.name}
+            <CurrencyFlag currency={code} />
+            {code} — {findCurrency(code)?.name ?? code}
           </span>
         </SelectItem>
       ))}
@@ -80,6 +80,8 @@ export interface StepCambioProps {
    * en CAD y no lo encuentra aquí no puede saber si es un fallo o una regla.
    */
   monedasSinTasa: readonly string[];
+  /** Las monedas de la caja que se pueden cambiar con las tasas en vigor de la sede. */
+  monedasCambiables: readonly string[];
   sourceCurrency: string;
   destinationCurrency: string;
   amountInput: string;
@@ -100,6 +102,7 @@ export function StepCambio({
   cash,
   amountError,
   monedasSinTasa,
+  monedasCambiables,
   onSourceCurrencyChange,
   onDestinationCurrencyChange,
   onAmountChange,
@@ -136,7 +139,7 @@ export function StepCambio({
                     <SelectTrigger {...fieldAria(SOURCE_CURRENCY)}>
                       <SelectValue />
                     </SelectTrigger>
-                    <CurrencyOptions />
+                    <CurrencyOptions monedas={monedasCambiables} />
                   </Select>
                 </Field>
 
@@ -177,7 +180,7 @@ export function StepCambio({
                     <SelectTrigger {...fieldAria(DEST_CURRENCY)}>
                       <SelectValue />
                     </SelectTrigger>
-                    <CurrencyOptions />
+                    <CurrencyOptions monedas={monedasCambiables} />
                   </Select>
                 </Field>
 

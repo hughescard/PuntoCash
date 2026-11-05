@@ -7,16 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { PageHeader } from "@/components/shell/app-shell";
 import { Pagination } from "@/components/patterns/pagination";
 import {
-  CAJA_BALANCES,
-  CAJA_METRICS,
-  CAJA_SUMMARY,
   getCajaActions,
+  metricasDelDia,
   movementMatchesDateFilter,
   movementMatchesQuery,
   type CajaMovementDateFilter,
 } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
-import { CajaAlerts } from "./caja-alerts";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
+import { AvisoDeCaja } from "../aviso-de-caja";
 import { CajaActionsCard } from "./caja-actions-card";
 import { CajaBalancesCard } from "./caja-balances-card";
 import { CajaMetrics } from "./caja-metrics";
@@ -53,6 +52,7 @@ export function CajaView(): React.JSX.Element {
   // Repone la jornada que el equipo tenga guardada y vuelve a pintar cuando el
   // libro cambia (`features/caja/use-caja.ts`).
   const caja = useCaja();
+  const vista = useVistaDeCaja();
   const [filters, setFilters] = React.useState<CajaMovementsFiltersValue>(INITIAL_FILTERS);
   const [page, setPage] = React.useState(1);
 
@@ -91,13 +91,13 @@ export function CajaView(): React.JSX.Element {
       />
 
       <div className="flex flex-col gap-6 print:hidden">
-        <CajaSummaryCard summary={CAJA_SUMMARY} />
+        <CajaSummaryCard summary={caja.summary} />
 
-        <CajaAlerts />
+        <AvisoDeCaja />
 
-        <CajaBalancesCard balances={CAJA_BALANCES} />
+        <CajaBalancesCard balances={caja.balances} />
 
-        <CajaMetrics metrics={CAJA_METRICS} />
+        <CajaMetrics metrics={metricasDelDia(caja.movimientos)} />
 
         <Card>
           <CardHeader>
@@ -144,10 +144,13 @@ export function CajaView(): React.JSX.Element {
           </CardContent>
         </Card>
 
-        <CajaActionsCard actions={getCajaActions()} onPrint={() => window.print()} />
+        <CajaActionsCard
+          actions={getCajaActions({ hayJornada: caja.jornada !== null, propia: caja.jornadaAbierta, bloqueada: vista.bloqueo !== null, otraCaja: vista.jornadaEnOtraCaja !== null })}
+          onPrint={() => window.print()}
+        />
       </div>
 
-      <CajaPrintableSummary summary={CAJA_SUMMARY} balances={CAJA_BALANCES} />
+      <CajaPrintableSummary summary={caja.summary} balances={caja.balances} />
     </>
   );
 }

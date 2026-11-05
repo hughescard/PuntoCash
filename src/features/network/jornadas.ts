@@ -598,6 +598,31 @@ function sembrarTodo(now: Date): Jornada[] {
 }
 
 /* -------------------------------------------------------------------------
+ * Escritura de Worker — la única vía por la que nace una jornada fuera de la
+ * siembra (`caja-operativa.ts`)
+ * ---------------------------------------------------------------------- */
+
+/** Añade una jornada que acaba de abrir un trabajador. */
+export function registrarJornada(j: Jornada): void {
+  jornadas.push(j);
+}
+
+/** La última jornada de una caja que ya no está abierta, o `null`. */
+export function ultimaJornadaCerradaDeCaja(registerId: string): Jornada | null {
+  let ultima: Jornada | null = null;
+  for (const j of jornadas) {
+    if (j.registerId !== registerId || j.estado === "abierta" || !j.closedAt) continue;
+    if (!ultima || j.closedAt > ultima.closedAt!) ultima = j;
+  }
+  return ultima;
+}
+
+/** Las jornadas de una caja, de la más reciente a la más antigua. */
+export function jornadasDeCaja(registerId: string): readonly Jornada[] {
+  return jornadas.filter((j) => j.registerId === registerId).sort((a, b) => b.openedAt.localeCompare(a.openedAt));
+}
+
+/* -------------------------------------------------------------------------
  * Lecturas
  * ---------------------------------------------------------------------- */
 

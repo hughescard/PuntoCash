@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { ArrowLeft, CalendarDays, ClipboardList, FileSearch, Lock, User } from "lucide-react";
 
 import { Button, Card, CardContent } from "@/components/ui";
 import { OperationStatusBadge } from "@/components/patterns/operation-status-badge";
 import { formatDateTime } from "@/lib/format";
 import {
-  findOperation,
+
   operationDocumentLabel,
   type OperationRecord,
 } from "@/features/operations/operations-history";
@@ -33,7 +34,7 @@ import { GiroDetail } from "./giro-detail";
  * comprobante across the foot.
  */
 export function OperationDetailView({ codigo }: { codigo: string }): React.JSX.Element {
-  const operation = findOperation(codigo);
+  const operation = useVistaDeCaja().operaciones.find((o) => o.codigo === codigo);
 
   if (!operation) return <OperationNotFound codigo={codigo} />;
   if (operation.servicio === "Remesa" && operation.remittance) return <RemittanceOperationDetail operation={operation} />;

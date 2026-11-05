@@ -7,6 +7,7 @@ import {
   TwoFactorHeading,
   type TwoFactorScreenCopy,
 } from "@/components/patterns/two-factor-form";
+import { abrirSesionTrabajador, descartarAccesoTrabajador } from "../../_actions";
 
 /**
  * Verificación en dos pasos del Worker.
@@ -24,6 +25,11 @@ const WORKER_2FA: TwoFactorScreenCopy = {
   successTitle: "Verificación completada",
   successMessage: "Bienvenido a PuntoCash. Tu jornada está lista para comenzar.",
   assistance: "al administrador de tu sede",
+  /* La sesión se abre en el servidor, contra el reto que emitió él. */
+  onVerified: async (code) => {
+    await abrirSesionTrabajador(code);
+  },
+  onDiscard: descartarAccesoTrabajador,
 };
 
 export function VerificationForm(): React.JSX.Element | null {

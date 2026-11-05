@@ -7,9 +7,10 @@ import { Alert, Button, Card, CardContent, CardHeader, CardTitle } from "@/compo
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatIsoDate, formatMoney } from "@/lib/format";
 import { documentTypeShortLabel } from "@/features/customers/customers";
-import { CAJA_SUMMARY, findCajaCurrency } from "@/features/caja/caja-data";
+import { findCajaCurrency } from "@/features/caja/caja-data";
 import { senderFullName, type GiroDraft } from "./giro-types";
 import { municipalityLabel, provinceLabel } from "./giro-validation";
+import { useCaja } from "@/features/caja/use-caja";
 
 /** "🇨🇺 500,00 CUP" — the approved amount treatment for Importe (a)/(a entregar). */
 function MoneyWithFlag({ amount, currency }: { amount: number; currency: string }) {
@@ -38,6 +39,7 @@ export function GiroReview({
   onCancel: () => void;
   onContinue: () => void;
 }): React.JSX.Element {
+  const CAJA_SUMMARY = useCaja().summary;
   const currencyEntry = findCajaCurrency(draft.senderCurrency);
   const currencyLabel = currencyEntry ? `${currencyEntry.code} · ${currencyEntry.name}` : draft.senderCurrency;
 
@@ -139,6 +141,7 @@ export function GiroConfirmation({
   onCancel: () => void;
   onConfirm: () => void;
 }): React.JSX.Element {
+  const CAJA_SUMMARY = useCaja().summary;
   const currencyEntry = findCajaCurrency(draft.senderCurrency);
   const currencyLabel = currencyEntry ? `${currencyEntry.code} · ${currencyEntry.name}` : draft.senderCurrency;
 

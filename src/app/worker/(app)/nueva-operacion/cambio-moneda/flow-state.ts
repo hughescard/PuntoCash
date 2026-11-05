@@ -66,7 +66,7 @@ export interface FlowState {
 const DEFAULT_STATE: FlowState = {
   step: "cambio",
   sourceCurrency: "USD",
-  destinationCurrency: "EUR",
+  destinationCurrency: "CUP",
   amountInput: "1.000,00",
   quote: null,
   customer: null,

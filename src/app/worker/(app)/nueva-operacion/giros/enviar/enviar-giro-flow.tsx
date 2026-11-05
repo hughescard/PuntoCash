@@ -45,9 +45,9 @@ import {
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
 import { DOCUMENT_TYPES, type DocumentType } from "@/features/customers/customers";
-import { getCurrentWorker } from "@/features/worker/session";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { PROVINCE_CATALOG, getMunicipalitiesForProvince } from "@/features/geography/cuba-provinces";
-import { CAJA_BALANCES, CAJA_SUMMARY, findCajaCurrency, hasOpenJornada } from "@/features/caja/caja-data";
+import { findCajaCurrency } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
 import { formatAmount } from "@/lib/format";
 import {
@@ -93,7 +93,7 @@ interface InitialFlow {
  * missing (e.g. a passport instead of a carné) leaves it on Step 1 with the
  * rest filled in.
  */
-function buildInitialFlow(): InitialFlow {
+function buildInitialFlow(monedas: readonly string[]): InitialFlow {
   const handoff = readPendingWorkerHandoff("giros-enviar");
   if (!handoff) return { step: "registrar", values: INITIAL_VALUES, draft: null, kioskCode: null };
 
@@ -107,7 +107,7 @@ function buildInitialFlow(): InitialFlow {
     beneficiary: { ...EMPTY_BENEFICIARY, ...beneficiary },
     giro: { senderCurrency, amountInput: formatAmount(deliveryAmount, 2) },
   };
-  const { draft } = validateGiroForm(values, CAJA_BALANCES.map((balance) => balance.currency));
+  const { draft } = validateGiroForm(values, monedas);
   return { step: draft ? "revisar" : "registrar", values, draft, kioskCode: handoff.code };
 }
 
@@ -123,13 +123,13 @@ function buildInitialFlow(): InitialFlow {
  */
 export function EnviarGiroFlow(): React.JSX.Element {
   const router = useRouter();
-  const worker = getCurrentWorker();
+  const caja = useCaja();
+  const vista = useVistaDeCaja();
+  const worker = vista.trabajador;
+  const CAJA_BALANCES = caja.balances;
+  const CAJA_SUMMARY = caja.summary;
 
-  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
-  // cambia (`features/caja/use-caja.ts`).
-  useCaja();
-
-  const [initial] = React.useState(buildInitialFlow);
+  const [initial] = React.useState(() => buildInitialFlow(CAJA_BALANCES.map((b) => b.currency)));
   const [step, setStep] = React.useState<Step>(initial.step);
   const [values, setValues] = React.useState<GiroFormValues>(initial.values);
   const [errors, setErrors] = React.useState(NO_ERRORS);
@@ -152,7 +152,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
    * equipo se repone justo después de hidratar, y una captura hecha antes de
    * eso diría que no hay jornada para siempre.
    */
-  const blocked = !hasOpenJornada() && completed === null;
+  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
 
   const enabledCurrencies = CAJA_BALANCES.map((balance) => balance.currency);
 
@@ -185,7 +185,12 @@ export function EnviarGiroFlow(): React.JSX.Element {
     setSubmitting(true);
     setConfirmError(undefined);
 
-    const outcome = await confirmGiro({ draft, worker: worker.fullName });
+    const outcome = await confirmGiro({
+      draft,
+      worker: worker.fullName,
+      jornadaAbierta: caja.jornadaAbierta,
+      monedasHabilitadas: CAJA_BALANCES.map((b) => b.currency),
+    });
 
     setSubmitting(false);
     if (!outcome.ok) {
@@ -769,6 +774,7 @@ function TextField({
  * ---------------------------------------------------------------------- */
 
 function ResumenGiro({ values }: { values: GiroFormValues }) {
+  const CAJA_SUMMARY = useCaja().summary;
   const beneficiaryName = values.beneficiary.receiverName.trim();
   const provinceMunicipio =
     values.beneficiary.receiverProvince && values.beneficiary.receiverMunicipality

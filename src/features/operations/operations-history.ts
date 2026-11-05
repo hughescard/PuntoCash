@@ -619,7 +619,7 @@ export function operationMatchesDateFilter(record: OperationRecord, filter: Oper
   // from — see `MOCK_NOW` — so filtering stays coherent regardless of how
   // much real time has passed since.
   const elapsedHours =
-    (MOCK_NOW.getTime() - new Date(record.fechaHora).getTime()) / (60 * 60 * 1000);
+    (Date.now() - new Date(record.fechaHora).getTime()) / (60 * 60 * 1000);
   return elapsedHours <= spec.hours;
 }
 

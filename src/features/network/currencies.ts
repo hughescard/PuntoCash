@@ -182,9 +182,31 @@ export function cajasConMoneda(sedeId: string, code: string): readonly MonedaEnC
   });
 }
 
-/** Monedas habilitadas en una caja. La consulta Worker cuando se recablee. */
+/** Monedas habilitadas en una caja. */
 export function monedasDeCaja(registerId: string): readonly string[] {
   return findRegisterById(registerId) ? [...(saldos.get(registerId)?.keys() ?? [])] : [];
+}
+
+/**
+ * Worker habilita una moneda en su caja, en cero (**FR-CAJA-13**, **FR-CAJA-14**).
+ * La regla de que esté en la lista de la sede la comprueba quien llama
+ * (`caja-operativa.ts`); aquí solo se registra.
+ */
+export function habilitarMonedaEnCaja(registerId: string, code: string): void {
+  const actuales = saldos.get(registerId) ?? new Map<string, number>();
+  if (!actuales.has(code)) actuales.set(code, 0);
+  saldos.set(registerId, actuales);
+}
+
+/**
+ * Worker deja aquí el saldo de cada moneda tras cada hecho de su caja, para
+ * que el bloqueo de retirar una moneda (**FR-AD-MON-7**) vea lo que de verdad
+ * hay. Una moneda que la caja no tenía queda habilitada.
+ */
+export function anotarSaldoDeCaja(registerId: string, code: string, saldo: number): void {
+  const actuales = saldos.get(registerId) ?? new Map<string, number>();
+  actuales.set(code, saldo);
+  saldos.set(registerId, actuales);
 }
 
 /* -------------------------------------------------------------------------

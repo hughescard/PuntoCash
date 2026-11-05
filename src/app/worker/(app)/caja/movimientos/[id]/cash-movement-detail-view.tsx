@@ -35,8 +35,8 @@ import { MovementReceiptSection } from "./movement-receipt-section";
  * fabricated for a concept this screen doesn't specifically know about.
  */
 export function CashMovementDetailView({ movementId }: { movementId: string }): React.JSX.Element {
-  useCaja();
-  const movement = findInternalCajaMovement(movementId);
+  const caja = useCaja();
+  const movement = findInternalCajaMovement(caja.movimientos, movementId);
 
   if (!movement) return <MovementNotFound movementId={movementId} />;
 

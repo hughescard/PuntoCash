@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { Lock, User } from "lucide-react";
 
 import { Alert, Button, Field, fieldAria, Input, PasswordInput, type FieldSpec } from "@/components/ui";
-import { authenticate, type LoginResult } from "@/features/auth/mock-auth";
+import { openChallenge } from "@/features/auth/two-factor";
+import { iniciarAccesoTrabajador, type WorkerLoginResult } from "../../_actions";
 import { useHydrated } from "@/lib/use-hydrated";
 
 /**
@@ -58,6 +59,11 @@ const FAILURES = {
     message:
       "Tu cuenta está bloqueada por seguridad. Solicita asistencia al administrador de tu sede para reactivarla.",
   },
+  "sede-sin-operar": {
+    title: "Tu sede no está operando",
+    message:
+      "PuntoCash suspendió o cerró la operación de esta sede, y no tienes ninguna jornada abierta en esta caja que cerrar. Consulta con el administrador de tu sede.",
+  },
   "network-error": {
     title: "No se pudo conectar con PuntoCash",
     message:
@@ -86,7 +92,7 @@ export function LoginForm(): React.JSX.Element {
 
   const submitting = status === "submitting";
   // A blocked account cannot be resolved by retrying, so the form is closed.
-  const locked = status === "challenge-sent" || failure === "account-blocked";
+  const locked = status === "challenge-sent" || failure === "account-blocked" || failure === "sede-sin-operar";
   const disabled = submitting || locked;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -115,9 +121,14 @@ export function LoginForm(): React.JSX.Element {
     setFieldErrors({});
     setStatus("submitting");
 
-    const result: LoginResult = await authenticate({ identifier, password });
+    /* El paso 1 ocurre en el servidor: comprueba la contraseña, que la cuenta
+       sea de la sede de esta caja y que la sede opere. */
+    const result: WorkerLoginResult = await iniciarAccesoTrabajador({ identifier, password });
 
     if (result.status === "challenge-required") {
+      /* El reto de la pantalla (cuenta atrás, intentos, reenvío) vive en el
+         navegador; el que decide lo tiene el servidor. */
+      openChallenge(identifier, result.correoEnmascarado);
       // Stays locked while the destination loads, so the form cannot be
       // submitted twice during navigation — and so a second submit cannot
       // open a second challenge and invalidate the code just sent.

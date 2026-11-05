@@ -21,16 +21,10 @@ import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, Input }
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
 import { normalizeForSearch } from "@/features/operations/services";
-import { getCurrentWorker } from "@/features/worker/session";
-import {
-  CAJA_BALANCES,
-  CAJA_SUMMARY,
-  monedasQueSePuedenAnadir,
-  getJornadaActual,
-  habilitarMoneda,
-  type CajaCurrencyCatalogEntry,
-} from "@/features/caja/caja-data";
+import { findCajaCurrency, type CajaCurrencyCatalogEntry } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
+import { habilitarMonedaAction } from "../../../_actions";
 
 const CAJA_ROUTE = "/worker/caja" as Route;
 const FONDEO_INICIAL_ROUTE = "/worker/caja/fondeo-inicial" as Route;
@@ -48,13 +42,14 @@ function noopSubscribe() {
  * 0,00 with no ledger movement — its opening amount, if any, is defined later
  * from Fondeo inicial, the only place that ever does.
  */
-export function AnadirMonedaFlow({ monedasDeLaSede }: { monedasDeLaSede: readonly string[] }): React.JSX.Element {
+export function AnadirMonedaFlow(): React.JSX.Element {
   const router = useRouter();
-  // Repone lo que el equipo tenga guardado —qué monedas están habilitadas,
-  // entre otras cosas— y vuelve a pintar si cambia (`features/caja/use-caja.ts`).
   const caja = useCaja();
-  const worker = getCurrentWorker();
-  const jornada = getJornadaActual();
+  const vista = useVistaDeCaja();
+  const worker = vista.trabajador;
+  const jornada = caja.jornadaAbierta ? caja.jornada : null;
+  const CAJA_SUMMARY = caja.summary;
+  const CAJA_BALANCES = caja.balances;
 
   // Which screen sent the worker here. `useSyncExternalStore` rather than a
   // lazy `useState` initializer or an effect: this component is still
@@ -77,18 +72,18 @@ export function AnadirMonedaFlow({ monedasDeLaSede }: { monedasDeLaSede: readonl
   const [duplicateError, setDuplicateError] = React.useState<string | undefined>();
   const [submitting, setSubmitting] = React.useState(false);
 
-  const available = monedasQueSePuedenAnadir(monedasDeLaSede);
+  const available = React.useMemo<readonly CajaCurrencyCatalogEntry[]>(
+    () => vista.monedasPorAnadir.flatMap((code) => {
+      const entry = findCajaCurrency(code);
+      return entry ? [entry] : [];
+    }),
+    [vista.monedasPorAnadir],
+  );
   const filtered = React.useMemo(() => {
     const q = normalizeForSearch(query);
     if (!q) return available;
     return available.filter((entry) => normalizeForSearch(`${entry.code} ${entry.name}`).includes(q));
-    /* `available` se recalcula en cada render, así que ponerlo en las
-       dependencias anularía el memo. `caja.version` sí cambia justo cuando el
-       catálogo habilitado cambia de verdad —al habilitar una moneda, o al
-       reponer lo guardado en el equipo—, que es lo único que debe
-       recalcularlo. */
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, caja.version]);
+  }, [query, available]);
 
   const selectedEntry = available.find((entry) => entry.code === selected) ?? null;
 
@@ -103,9 +98,7 @@ export function AnadirMonedaFlow({ monedasDeLaSede }: { monedasDeLaSede: readonl
   async function handleConfirm() {
     if (!selected || submitting) return;
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
-
-    const result = habilitarMoneda(selected);
+    const result = await habilitarMonedaAction(selected);
     if (!result.ok) {
       // Graceful, not a technical-looking error: the currency simply stopped
       // being available while this screen was open.

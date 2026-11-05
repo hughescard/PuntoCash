@@ -14,9 +14,8 @@ import {
 } from "lucide-react";
 
 import { Alert, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/components/ui";
-import { CAJA_BALANCES, hasOpenJornada, isCurrencyEnabled } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
-import { getCurrentWorker } from "@/features/worker/session";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import { clearPendingWorkerHandoff, readPendingWorkerHandoff } from "@/features/kiosk/self-service-request";
 import { BackLink, ContextStrip, GIROS_ROUTE, Rows, row } from "./cobrar-giro-parts";
@@ -45,11 +44,11 @@ type Step = "codigo" | "revisar" | "confirmar" | "resultado";
  */
 export function CobrarGiroFlow(): React.JSX.Element {
   const router = useRouter();
-  const worker = getCurrentWorker();
-
-  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
-  // cambia (`features/caja/use-caja.ts`).
-  useCaja();
+  const caja = useCaja();
+  const vista = useVistaDeCaja();
+  const worker = vista.trabajador;
+  const CAJA_BALANCES = caja.balances;
+  const isCurrencyEnabled = (c: string) => CAJA_BALANCES.some((b) => b.currency === c);
 
   // Code handed over by "Buscar solicitud" (kiosk request), if any.
   const [handoffCode] = React.useState(() => readPendingWorkerHandoff("giros-cobrar")?.data.code ?? null);
@@ -72,7 +71,7 @@ export function CobrarGiroFlow(): React.JSX.Element {
    * equipo se repone justo después de hidratar, y una captura hecha antes de
    * eso diría que no hay jornada para siempre.
    */
-  const blocked = !hasOpenJornada() && completed === null;
+  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
 
   const availableCash = transfer
     ? CAJA_BALANCES.find((balance) => balance.currency === transfer.payoutCurrency)?.amount
@@ -141,7 +140,13 @@ export function CobrarGiroFlow(): React.JSX.Element {
     setSubmitting(true);
     setConfirmError(undefined);
 
-    const outcome = await confirmGiroPayout({ transfer, worker: worker.fullName });
+    const outcome = await confirmGiroPayout({
+      transfer,
+      worker: worker.fullName,
+      caja: caja.summary.register,
+      jornadaAbierta: caja.jornadaAbierta,
+      saldos: CAJA_BALANCES,
+    });
 
     setSubmitting(false);
     if (!outcome.ok) {

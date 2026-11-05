@@ -4,8 +4,8 @@ import * as React from "react";
 
 import { PageHeader } from "@/components/shell/app-shell";
 import { Pagination } from "@/components/patterns/pagination";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
 import {
-  OPERATIONS,
   operationMatchesDateFilter,
   operationMatchesDateRange,
   operationMatchesQuery,
@@ -43,6 +43,9 @@ function isDefaultFilters(value: OperationsFiltersValue): boolean {
  * replacing `OPERATIONS` and this component's local state with a fetch.
  */
 export function OperationsList(): React.JSX.Element {
+  /* Las operaciones de esta caja **[R12]**, de la red: las de cualquier
+     jornada, también las de otros trabajadores que la operaron antes. */
+  const OPERATIONS = useVistaDeCaja().operaciones;
   const [filters, setFilters] = React.useState<OperationsFiltersValue>(INITIAL_FILTERS);
   const [page, setPage] = React.useState(1);
 
@@ -57,7 +60,7 @@ export function OperationsList(): React.JSX.Element {
           (filters.fecha !== "personalizado" ||
             operationMatchesDateRange(op, filters.desde, filters.hasta)),
       ),
-    [filters],
+    [filters, OPERATIONS],
   );
 
   // Any filter change can invalidate the current page (e.g. page 3 of a list

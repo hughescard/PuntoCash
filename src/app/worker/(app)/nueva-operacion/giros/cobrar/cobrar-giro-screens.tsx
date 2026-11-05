@@ -5,7 +5,6 @@ import { ArrowRight, CircleCheck, CreditCard, UserRound } from "lucide-react";
 
 import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { formatMoney } from "@/lib/format";
-import { CAJA_SUMMARY } from "@/features/caja/caja-data";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 import {
   DELIVERY_METHOD_LABEL,
@@ -21,6 +20,7 @@ import {
   currencyLabel,
   row,
 } from "./cobrar-giro-parts";
+import { useCaja } from "@/features/caja/use-caja";
 
 /** Why a looked-up giro cannot be paid right now. `null` means it can. */
 export type PayoutBlock = "estado" | "moneda" | "fondos" | null;
@@ -156,6 +156,7 @@ export function GiroPayoutConfirmation({
   onCancel: () => void;
   onConfirm: () => void;
 }): React.JSX.Element {
+  const CAJA_SUMMARY = useCaja().summary;
   return (
     <div className="flex flex-col gap-6">
       <StepBackLink label="Volver a Revisar giro" onClick={onBack} />

@@ -7,9 +7,10 @@ import { CircleCheck, FileText, Printer } from "lucide-react";
 import { Button, Card, CardContent } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import { findCajaCurrency, CAJA_SUMMARY } from "@/features/caja/caja-data";
+import { findCajaCurrency } from "@/features/caja/caja-data";
 import { senderFullName, type BeneficiaryValues, type SenderValues } from "./giro-types";
 import { municipalityLabel, provinceLabel } from "./giro-validation";
+import { useCaja } from "@/features/caja/use-caja";
 
 /** "🇨🇺 500,00 CUP" — the approved amount treatment for Importe. */
 function MoneyWithFlag({ amount, currency }: { amount: number; currency: string }) {
@@ -36,6 +37,7 @@ export interface GiroCompleted {
 
 /** Step 4 — Success. */
 export function GiroResult({ completed }: { completed: GiroCompleted }): React.JSX.Element {
+  const CAJA_SUMMARY = useCaja().summary;
   const currencyEntry = findCajaCurrency(completed.senderCurrency);
   const currencyLabel = currencyEntry ? `${currencyEntry.code} · ${currencyEntry.name}` : completed.senderCurrency;
 
@@ -105,6 +107,7 @@ function PrintableGiroReceipt({
   completed: GiroCompleted;
   currencyLabel: string;
 }) {
+  const CAJA_SUMMARY = useCaja().summary;
   const { beneficiary } = completed;
   return (
     <section className="hidden print:block" aria-hidden="true">

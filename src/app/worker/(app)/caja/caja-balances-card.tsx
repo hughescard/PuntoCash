@@ -64,10 +64,10 @@ export function CajaBalancesCard({
                   {formatAmount(balance.amount)}
                 </TableCell>
                 <TableCell className="pr-6 whitespace-nowrap">
-                  {balance.low ? (
-                    <Badge variant="warning">Nivel bajo</Badge>
+                  {balance.amount > 0 ? (
+                    <Badge variant="success">Con efectivo</Badge>
                   ) : (
-                    <Badge variant="success">Normal</Badge>
+                    <Badge variant="neutral">Sin efectivo</Badge>
                   )}
                 </TableCell>
               </TableRow>

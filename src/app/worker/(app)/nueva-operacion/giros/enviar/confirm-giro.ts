@@ -1,25 +1,10 @@
-import { CAJA_BALANCES, CAJA_SUMMARY, hasOpenJornada, registrarEntradaComercial } from "@/features/caja/caja-data";
-import { registerCompletedOperation } from "@/features/operations/operations-history";
+import { registrarOperacionAction } from "../../../../_actions";
 import { transferProvider, type TransferCreatePayload } from "@/features/transfers/transfer-provider";
 import { senderFullName, type GiroDraft } from "./giro-types";
 import { municipalityLabel, provinceLabel } from "./giro-validation";
 import type { GiroCompleted } from "./giro-result";
 
 export type ConfirmGiroOutcome = { ok: true; completed: GiroCompleted } | { ok: false; message: string };
-
-/**
- * "PC-yyMMdd-NNNNNN" — format-compatible with every other PuntoCash
- * operation-code generator (Cambio de moneda, Remesas), kept as its own
- * local sequence so this flow never shares a counter with another one.
- */
-let operationSequence = 9000;
-function nextGiroOperationCode(now: Date): string {
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  operationSequence += 1;
-  return `PC-${yy}${mm}${dd}-${String(operationSequence).padStart(6, "0")}`;
-}
 
 /**
  * The only place `transferProvider.createTransfer` is ever called. Follows
@@ -32,13 +17,15 @@ function nextGiroOperationCode(now: Date): string {
 export async function confirmGiro(params: {
   draft: GiroDraft;
   worker: string;
+  jornadaAbierta: boolean;
+  monedasHabilitadas: readonly string[];
 }): Promise<ConfirmGiroOutcome> {
   const { draft } = params;
 
-  if (!hasOpenJornada()) {
+  if (!params.jornadaAbierta) {
     return { ok: false, message: "Debes tener una jornada abierta para registrar el giro." };
   }
-  if (!CAJA_BALANCES.some((balance) => balance.currency === draft.senderCurrency)) {
+  if (!params.monedasHabilitadas.includes(draft.senderCurrency)) {
     return { ok: false, message: `${draft.senderCurrency} ya no está habilitada en esta caja.` };
   }
 
@@ -63,23 +50,7 @@ export async function confirmGiro(params: {
     };
   }
 
-  const now = new Date();
-  const operationCode = nextGiroOperationCode(now);
-
-  const cashIn = registrarEntradaComercial({
-    operationCode,
-    concepto: "Giros",
-    currency: payload.senderCurrency,
-    amount: draft.deliveryAmount,
-    timestamp: now,
-  });
-  if (!cashIn.ok) {
-    return { ok: false, message: "No se pudo registrar el movimiento en caja. Intenta nuevamente." };
-  }
-
-  registerCompletedOperation({
-    codigo: operationCode,
-    fechaHora: now.toISOString(),
+  const registrada = await registrarOperacionAction({
     cliente: {
       nombre: senderFullName(draft.sender),
       documentType: draft.sender.documentType,
@@ -87,19 +58,8 @@ export async function confirmGiro(params: {
       telefono: draft.sender.phone,
       nacionalidad: draft.sender.nationality,
     },
+    tramo: { currency: payload.senderCurrency, delta: draft.deliveryAmount, concepto: "Envío de giro" },
     servicio: "Giros",
-    estado: "Completada",
-    amount: {
-      kind: "single",
-      money: { amount: draft.deliveryAmount, currency: payload.senderCurrency },
-      cashSnapshot: {
-        before: { amount: cashIn.saldoAntes, currency: payload.senderCurrency },
-        movement: { amount: draft.deliveryAmount, currency: payload.senderCurrency },
-        after: { amount: cashIn.saldoDespues, currency: payload.senderCurrency },
-      },
-    },
-    worker: CAJA_SUMMARY.worker,
-    caja: CAJA_SUMMARY.register,
     transfer: {
       transferAction: "send",
       externalId: external.transfer.id,
@@ -121,6 +81,11 @@ export async function confirmGiro(params: {
       externalStatus: external.transfer.status,
     },
   });
+  if (!registrada.ok) {
+    return { ok: false, message: "No se pudo registrar el movimiento en caja. Solicita asistencia: el giro ya existe en el servicio externo." };
+  }
+  const operationCode = registrada.value.codigo;
+  const now = new Date(registrada.value.fechaHora);
 
   const completed: GiroCompleted = {
     operationCode,

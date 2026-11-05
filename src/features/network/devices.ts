@@ -242,7 +242,10 @@ export interface PairingChallenge {
  * Un reto por equipo pendiente. En memoria, como el resto del dominio: una
  * recarga completa del servidor los olvida, y el terminal pedirá otro.
  */
-const pendingChallenges = new Map<string, PairingChallenge>();
+/* En `globalThis`: el equipo pide su reto desde `/worker` y el administrador
+   lo canjea desde `/admin`, y los dos tienen que ver el mismo. */
+const ALMACEN_RETOS = globalThis as typeof globalThis & { __puntocashRetosDeEquipo?: Map<string, PairingChallenge> };
+const pendingChallenges = (ALMACEN_RETOS.__puntocashRetosDeEquipo ??= new Map<string, PairingChallenge>());
 
 /** "482913" → "482 913", la agrupación que muestra el terminal y teclea el admin. */
 export function formatPairingCode(code: string): string {

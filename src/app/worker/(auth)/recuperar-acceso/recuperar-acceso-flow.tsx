@@ -6,6 +6,7 @@ import {
   PasswordRecoveryForm,
   type RecuperacionCopy,
 } from "@/components/patterns/password-recovery-form";
+import { guardarContrasenaTrabajadorAction } from "../../_actions";
 
 /**
  * Recuperación de contraseña del Worker — **§2.13**.
@@ -23,5 +24,5 @@ const WORKER_RECUPERACION: RecuperacionCopy = {
 };
 
 export function RecuperarAccesoFlow(): React.JSX.Element {
-  return <PasswordRecoveryForm copy={WORKER_RECUPERACION} />;
+  return <PasswordRecoveryForm copy={WORKER_RECUPERACION} alGuardar={guardarContrasenaTrabajadorAction} />;
 }

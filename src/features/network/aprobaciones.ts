@@ -74,7 +74,7 @@ export const MOTIVO_RESOLUCION_MIN = 10;
  * Siembra
  * ---------------------------------------------------------------------- */
 
-function derivar(j: Jornada): Solicitud[] {
+export function derivar(j: Jornada): Solicitud[] {
   const base = {
     sedeId: j.sedeId,
     registerId: j.registerId,
@@ -178,6 +178,14 @@ function sembrar(now: Date): Solicitud[] {
 
 const ALMACEN = globalThis as typeof globalThis & { __puntocashSolicitudes?: Solicitud[] };
 const solicitudes: Solicitud[] = (ALMACEN.__puntocashSolicitudes ??= sembrar(new Date()));
+
+/**
+ * Las solicitudes que nacen de lo que un trabajador acaba de registrar
+ * (`caja-operativa.ts`). Nacen pendientes, sin umbral (**FR-AD-APR-1**).
+ */
+export function registrarSolicitudes(nuevas: readonly Solicitud[]): void {
+  for (const s of nuevas) if (!solicitudes.some((x) => x.id === s.id)) solicitudes.push(s);
+}
 
 /* -------------------------------------------------------------------------
  * Lecturas

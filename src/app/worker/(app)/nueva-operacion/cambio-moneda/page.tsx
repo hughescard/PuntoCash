@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { exigirServicio } from "@/features/worker/servicio-habilitado";
+
 import { CambioMonedaFlow } from "./cambio-moneda-flow";
 
 export const metadata: Metadata = {
@@ -15,6 +17,7 @@ export const metadata: Metadata = {
  * still covers the twelve services whose flows are not built, and Next resolves
  * this static segment ahead of it.
  */
-export default function CambioMonedaPage() {
+export default async function CambioMonedaPage() {
+  await exigirServicio("cambio-moneda");
   return <CambioMonedaFlow />;
 }

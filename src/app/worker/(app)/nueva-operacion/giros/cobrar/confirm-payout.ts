@@ -1,11 +1,5 @@
-import {
-  CAJA_BALANCES,
-  CAJA_SUMMARY,
-  hasOpenJornada,
-  isCurrencyEnabled,
-  registrarSalidaComercial,
-} from "@/features/caja/caja-data";
-import { registerCompletedOperation } from "@/features/operations/operations-history";
+import type { CajaBalance } from "@/features/caja/caja-data";
+import { registrarOperacionAction } from "../../../../_actions";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 
@@ -31,19 +25,6 @@ export type ConfirmPayoutOutcome =
   | { ok: true; completed: GiroPayoutCompleted }
   | { ok: false; message: string };
 
-/**
- * "PC-yyMMdd-NNNNNN" — its own local sequence, deliberately not shared with
- * Enviar giro: a payout is an independent commercial operation with its own
- * operation code, even though it carries the same external Giro code.
- */
-let operationSequence = 9500;
-function nextPayoutOperationCode(now: Date): string {
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  operationSequence += 1;
-  return `PC-${yy}${mm}${dd}-${String(operationSequence).padStart(6, "0")}`;
-}
 
 /**
  * The only place `transferProvider.completeTransfer` is ever called.
@@ -67,10 +48,15 @@ function nextPayoutOperationCode(now: Date): string {
 export async function confirmGiroPayout(params: {
   transfer: TransferPayoutSnapshot;
   worker: string;
+  caja: string;
+  jornadaAbierta: boolean;
+  saldos: readonly CajaBalance[];
 }): Promise<ConfirmPayoutOutcome> {
   const { transfer } = params;
+  const CAJA_BALANCES = params.saldos;
+  const isCurrencyEnabled = (c: string) => CAJA_BALANCES.some((b) => b.currency === c);
 
-  if (!hasOpenJornada()) {
+  if (!params.jornadaAbierta) {
     return { ok: false, message: "Debes tener una jornada abierta para entregar el giro." };
   }
   if (!isCurrencyEnabled(transfer.payoutCurrency)) {
@@ -99,26 +85,10 @@ export async function confirmGiroPayout(params: {
     };
   }
 
-  const now = new Date();
-  const operationCode = nextPayoutOperationCode(now);
-
-  const cashOut = registrarSalidaComercial({
-    operationCode,
-    concepto: "Giros",
-    currency: transfer.payoutCurrency,
-    amount: transfer.deliveryAmount,
-    timestamp: now,
-  });
-  if (!cashOut.ok) {
-    return { ok: false, message: "No se pudo registrar el movimiento en caja. Intenta nuevamente." };
-  }
-
   const provinceCode = transfer.receiverProvince;
   const municipalityCode = transfer.receiverMunicipality;
 
-  registerCompletedOperation({
-    codigo: operationCode,
-    fechaHora: now.toISOString(),
+  const registrada = await registrarOperacionAction({
     // The beneficiary — not the sender — is the client of a payout.
     cliente: {
       nombre: transfer.receiverName,
@@ -128,18 +98,7 @@ export async function confirmGiroPayout(params: {
       nacionalidad: "No disponible",
     },
     servicio: "Giros",
-    estado: "Completada",
-    amount: {
-      kind: "single",
-      money: { amount: transfer.deliveryAmount, currency: transfer.payoutCurrency },
-      cashSnapshot: {
-        before: { amount: cashOut.saldoAntes, currency: transfer.payoutCurrency },
-        movement: { amount: transfer.deliveryAmount, currency: transfer.payoutCurrency },
-        after: { amount: cashOut.saldoDespues, currency: transfer.payoutCurrency },
-      },
-    },
-    worker: CAJA_SUMMARY.worker,
-    caja: CAJA_SUMMARY.register,
+    tramo: { currency: transfer.payoutCurrency, delta: -transfer.deliveryAmount, concepto: "Pago de giro" },
     transfer: {
       transferAction: "payout",
       externalId: transfer.id,
@@ -163,6 +122,11 @@ export async function confirmGiroPayout(params: {
       externalStatus: external.transfer.status,
     },
   });
+  if (!registrada.ok) {
+    return { ok: false, message: "No se pudo registrar el movimiento en caja. Solicita asistencia: el giro ya figura como pagado en el servicio externo." };
+  }
+  const operationCode = registrada.value.codigo;
+  const now = new Date(registrada.value.fechaHora);
 
   return {
     ok: true,
@@ -175,7 +139,7 @@ export async function confirmGiroPayout(params: {
       payoutAmount: transfer.deliveryAmount,
       payoutCurrency: transfer.payoutCurrency,
       externalStatus: external.transfer.status,
-      caja: CAJA_SUMMARY.register,
+      caja: params.caja,
       worker: params.worker,
       completedAt: now.toISOString(),
     },

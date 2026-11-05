@@ -32,7 +32,10 @@ import {
 } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { BRANCHES, findBranchById, findRegisterById, registersOf } from "@/features/branches/branches";
-import { CAJA_SUMMARY } from "@/features/caja/caja-data";
+/* Worker ya no se vincula aquí: su equipo lo vincula el administrador en
+   `/admin/equipos/vincular`, contra la red. Se conserva la forma del simulador
+   para el kiosco. */
+const CAJA_SUMMARY = { register: "Caja 03" } as const;
 import {
   formatPairingCode,
   type DeviceState,

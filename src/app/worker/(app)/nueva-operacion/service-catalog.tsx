@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { ArrowRight, Search, SearchX, TicketCheck, X } from "lucide-react";
 
 import { Button, Input } from "@/components/ui";
@@ -32,6 +33,11 @@ import {
  */
 export function ServiceCatalog(): React.JSX.Element {
   const hydrated = useHydrated();
+  /* Un servicio que PuntoCash no habilitó en esta sede **no aparece**
+     (decisión del 5/11/2026): el trabajador no tiene nada que hacer con él.
+     Los que el producto todavía no ofrece siguen a la vista como «En
+     construcción», que no depende de la sede. */
+  const servicios = useVistaDeCaja().servicios;
   const [query, setQuery] = React.useState("");
   const searchId = React.useId();
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -42,10 +48,13 @@ export function ServiceCatalog(): React.JSX.Element {
       SERVICE_CATEGORIES.map((category) => ({
         category,
         services: WORKER_SERVICES.filter(
-          (service) => service.category === category.id && serviceMatchesQuery(service, query),
+          (service) =>
+            service.category === category.id &&
+            (service.status !== "available" || servicios.includes(service.id)) &&
+            serviceMatchesQuery(service, query),
         ),
       })).filter((group) => group.services.length > 0),
-    [query],
+    [query, servicios],
   );
 
   const searching = query.trim().length > 0;
