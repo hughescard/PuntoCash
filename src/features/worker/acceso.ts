@@ -17,6 +17,7 @@
  * otra recuperándola):
  *   · cualquier trabajador de la red, por identificador o correo;
  *   · `error@puntocash.com` → falla la conexión;
+ *   · `bloqueado@puntocash.com` → cuenta desactivada;
  *   · `caduca@puntocash.com` → el código caduca a los 20 s (lo decide la
  *     pantalla de verificación; aquí se trata como el trabajador `jperez`).
  */
@@ -55,6 +56,8 @@ export async function verificarCredencialesTrabajador(
   await new Promise((r) => setTimeout(r, LATENCY_MS));
   const cuenta = identifier.trim().toLowerCase();
   if (cuenta === "error@puntocash.com") return { status: "network-error" };
+  /* Demostración: una cuenta desactivada sin tener que desactivar a nadie. */
+  if (cuenta === "bloqueado@puntocash.com") return { status: "account-blocked" };
 
   const worker = findWorkerByCuenta(cuenta === "caduca@puntocash.com" ? "jperez" : cuenta);
   const aceptada = (worker && contrasenas.get(worker.id)) ?? DEMO_PASSWORD;

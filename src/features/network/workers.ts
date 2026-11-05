@@ -11,11 +11,10 @@
  * problema con una persona es suspender la sede o al operador, que corta el
  * acceso de todos a la vez (FR-SA-TRAB-6).
  *
- * El acceso de Worker (`mock-auth.ts`) **todavía no consulta este registro**:
- * acepta cualquier identificador con la contraseña de demostración. En el
- * producto real, el acceso valida identificador y credencial contra el
- * trabajador, su estado y la sede asignada. La limitación de la demostración
- * está en la nota de entrega (§8.3).
+ * El acceso de Worker (`features/worker/acceso.ts`) **consulta este registro**:
+ * el trabajador, su estado y que sea de la sede del equipo. En la
+ * demostración todos aceptan la contraseña `puntocash` hasta que alguien la
+ * cambia recuperándola.
  */
 
 import { cuentaCoincide, esIdentificadorValido, normalizarCuenta } from "@/features/auth/identificador";
@@ -24,6 +23,7 @@ import { findSedeById } from "./sedes";
 import { findOperatorById } from "./operators";
 import { operadorVigente } from "./assignments";
 import { requireOperatorScope, type Scope } from "./scope";
+import { almacen } from "./almacen";
 
 export type WorkerStatus = "activo" | "desactivado";
 
@@ -88,7 +88,7 @@ function worker(
   };
 }
 
-const mutableWorkers: NetworkWorker[] = [
+const mutableWorkers: NetworkWorker[] = almacen("trabajadores", () => [
   worker("trb-1", "jperez", "Juan Pérez", "88041203211", "sede-vedado"),
   worker("trb-2", "lgomez", "Lidia Gómez", "91072355442", "sede-vedado"),
   worker("trb-3", "afonseca", "Alberto Fonseca", "85110488763", "sede-vedado"),
@@ -109,7 +109,7 @@ const mutableWorkers: NetworkWorker[] = [
   worker("trb-14", "ifuentes", "Ismael Fuentes", "81092066404", "sede-centro-habana"),
   /* En la sede suspendida de Bahía: activo, pero sin poder entrar (FR-AD-TRAB-16). */
   worker("trb-15", "rleon", "Raúl León", "86090455215", "sede-trinidad"),
-];
+]);
 
 const deactivated = mutableWorkers.find((w) => w.id === "trb-12");
 if (deactivated) {

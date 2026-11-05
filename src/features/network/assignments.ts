@@ -14,6 +14,7 @@
 import { findOperatorById } from "./operators";
 import { cerrarSede, findSedeById, isMotivoValido, SEDES, type Sede, type SedeWriteResult } from "./sedes";
 import { isGlobal, type Scope } from "./scope";
+import { almacen } from "./almacen";
 
 export interface Assignment {
   id: string;
@@ -26,7 +27,7 @@ export interface Assignment {
   endedReason?: string;
 }
 
-const mutableAssignments: Assignment[] = [
+const mutableAssignments: Assignment[] = almacen("asignaciones", () => [
   {
     id: "asg-1",
     branchId: "sede-vedado",
@@ -118,7 +119,7 @@ const mutableAssignments: Assignment[] = [
     startedReason: "Entrega inicial de la sede al operador seleccionado",
   },
   /* sede-santiago no aparece: está sin operador asignado a propósito. */
-];
+]);
 
 export const ASSIGNMENTS: readonly Assignment[] = mutableAssignments;
 

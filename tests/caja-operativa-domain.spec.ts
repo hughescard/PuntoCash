@@ -1,0 +1,265 @@
+import { expect, test } from "@playwright/test";
+
+import {
+  abrirJornada,
+  ajustarEfectivo,
+  cerrarJornada,
+  compararApertura,
+  contextoDe,
+  estadoDeCaja,
+  habilitarMoneda,
+  registrarCambio,
+  registrarOperacionSimple,
+  tasasVigentes,
+  type ContextoDeCaja,
+} from "@/features/network/caja-operativa";
+import { solicitudesDeJornada } from "@/features/network/aprobaciones";
+import { jornadaAbiertaDeCaja, jornadaPorId } from "@/features/network/jornadas";
+import { operacionPorCodigo } from "@/features/network/operaciones";
+import { crearPuestoDePrueba } from "@/features/network/puesto-de-prueba";
+import { cotizar } from "@/features/exchange/cotizacion";
+
+/**
+ * La caja que opera un trabajador, en el dominio de la red
+ * (`features/network/caja-operativa.ts`). Cada prueba trabaja sobre **su
+ * propio puesto** —caja, equipo y trabajador nuevos—, porque una prueba de
+ * dominio que toca datos sembrados contamina a las demás del mismo proceso.
+ */
+
+const CLIENTE = {
+  nombre: "Ana Ruiz Cabrera",
+  documentType: "CI" as const,
+  documentNumber: "92112087654",
+  telefono: "+53 5 345 6789",
+  nacionalidad: "Cubana",
+};
+
+function puesto(fondos: Record<string, number> | null = null, monedas: readonly string[] = [], enSede?: string): ContextoDeCaja {
+  const p = crearPuestoDePrueba({ fondos, monedas, ...(enSede ? { enSede } : {}) });
+  if (!p.ok) throw new Error(p.error);
+  const c = contextoDe({ workerId: p.value.workerId, terminalId: p.value.terminalId });
+  if (!c.ok) throw new Error(c.reason);
+  return c.value;
+}
+
+function saldo(ctx: ContextoDeCaja, currency: string): number {
+  return estadoDeCaja(ctx).saldos.find((s) => s.currency === currency)?.amount ?? NaN;
+}
+
+test.describe("Apertura a ciegas", () => {
+  test("la primera jornada de una caja no compara con nada y no pide motivos", () => {
+    const ctx = puesto(null, ["CUP", "USD"]);
+    const r = abrirJornada(ctx, [
+      { currency: "CUP", contado: 50_000 },
+      { currency: "USD", contado: 300 },
+    ]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.apertura.cierreAnterior).toBeNull();
+    expect(solicitudesDeJornada(r.value.id)).toHaveLength(0);
+    expect(saldo(ctx, "CUP")).toBe(50_000);
+    expect(saldo(ctx, "USD")).toBe(300);
+  });
+
+  test("hay que contar todas las monedas de la caja", () => {
+    const ctx = puesto(null, ["CUP", "USD"]);
+    const r = abrirJornada(ctx, [{ currency: "CUP", contado: 1 }]);
+    expect(r).toMatchObject({ ok: false, reason: "conteo-invalido" });
+  });
+
+  test("tras un cierre, una diferencia necesita un motivo compatible con su signo y nace como solicitud", () => {
+    const ctx = puesto({ CUP: 10_000, USD: 200 });
+    expect(cerrarJornada(ctx, [
+      { currency: "CUP", contado: 10_000 },
+      { currency: "USD", contado: 200 },
+    ]).ok).toBe(true);
+
+    const comparada = compararApertura(ctx, [
+      { currency: "CUP", contado: 10_000 },
+      { currency: "USD", contado: 300 },
+    ]);
+    expect(comparada.ok).toBe(true);
+    if (!comparada.ok) return;
+    expect(comparada.value.monedas.find((m) => m.currency === "USD")).toMatchObject({ dejado: 200, contado: 300, diferencia: 100 });
+
+    expect(abrirJornada(ctx, [
+      { currency: "CUP", contado: 10_000 },
+      { currency: "USD", contado: 300 },
+    ])).toMatchObject({ ok: false, reason: "motivo-requerido", currency: "USD" });
+    expect(abrirJornada(ctx, [
+      { currency: "CUP", contado: 10_000 },
+      { currency: "USD", contado: 300, motivo: "Retiro de fondos" },
+    ])).toMatchObject({ ok: false, reason: "motivo-incompatible" });
+    expect(abrirJornada(ctx, [
+      { currency: "CUP", contado: 10_000 },
+      { currency: "USD", contado: 300, motivo: "Otro" },
+    ])).toMatchObject({ ok: false, reason: "observaciones-requeridas" });
+
+    const r = abrirJornada(ctx, [
+      { currency: "CUP", contado: 10_000 },
+      { currency: "USD", contado: 300, motivo: "Reposición de fondos", observaciones: "Entregados por la administración." },
+    ]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const sol = solicitudesDeJornada(r.value.id);
+    expect(sol).toHaveLength(1);
+    expect(sol[0]).toMatchObject({ tipo: "apertura", currency: "USD", referencia: 200, contado: 300, diferencia: 100, motivo: "Reposición de fondos", estado: "pendiente" });
+  });
+});
+
+test.describe("Durante la jornada", () => {
+  test("un ajuste fija el saldo en lo contado y deja su solicitud", () => {
+    const ctx = puesto({ CUP: 5_000 });
+    const m = ajustarEfectivo(ctx, { currency: "CUP", contado: 4_800, motivo: "Faltante detectado" });
+    expect(m.ok).toBe(true);
+    expect(saldo(ctx, "CUP")).toBe(4_800);
+    const j = jornadaAbiertaDeCaja(ctx.register.id)!;
+    expect(solicitudesDeJornada(j.id).map((s) => s.tipo)).toEqual(["ajuste"]);
+    expect(ajustarEfectivo(ctx, { currency: "CUP", contado: 4_900, motivo: "Faltante detectado" })).toMatchObject({ ok: false, reason: "motivo-incompatible" });
+    expect(ajustarEfectivo(ctx, { currency: "CUP", contado: 4_800, motivo: "Otro", observaciones: "x" })).toMatchObject({ ok: false, reason: "diferencia-cero" });
+  });
+
+  test("un cambio se cotiza con las tasas en vigor de la sede y mueve los dos tramos", () => {
+    const ctx = puesto({ CUP: 100_000, USD: 0 });
+    const tasas = tasasVigentes(ctx.sede.id);
+    const q = cotizar(tasas, "USD", "CUP", 100);
+    expect(q.ok).toBe(true);
+    if (!q.ok) return;
+    const usd = tasas.find((t) => t.code === "USD")!;
+    expect(q.value.destinationAmount).toBe(100 * usd.compra);
+
+    const r = registrarCambio(ctx, {
+      cliente: CLIENTE,
+      sourceCurrency: "USD",
+      destinationCurrency: "CUP",
+      sourceAmount: 100,
+      destinationAmountVisto: q.value.destinationAmount,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(saldo(ctx, "USD")).toBe(100);
+    expect(saldo(ctx, "CUP")).toBe(100_000 - 100 * usd.compra);
+    expect(operacionPorCodigo(r.value.codigo)).toMatchObject({ servicio: "Cambio de moneda", registerId: ctx.register.id });
+    const j = jornadaPorId(r.value.jornadaId)!;
+    expect(j.movimientos.filter((m) => m.operationCode === r.value.codigo).map((m) => m.concepto)).toEqual([
+      "Compra de USD",
+      "Pago por compra de USD",
+    ]);
+  });
+
+  test("si la cifra que vio el cliente ya no es la de la tasa, el cambio se rechaza con la cotización nueva", () => {
+    const ctx = puesto({ CUP: 100_000, USD: 0 });
+    const r = registrarCambio(ctx, {
+      cliente: CLIENTE,
+      sourceCurrency: "USD",
+      destinationCurrency: "CUP",
+      sourceAmount: 100,
+      destinationAmountVisto: 1,
+    });
+    expect(r.ok).toBe(false);
+    expect(r).toHaveProperty("cotizacion");
+  });
+
+  test("no se entrega lo que la caja no tiene", () => {
+    const ctx = puesto({ CUP: 1_000 });
+    const r = registrarOperacionSimple(ctx, {
+      servicio: "Remesa",
+      cliente: CLIENTE,
+      tramo: { currency: "CUP", delta: -2_000, concepto: "Pago de remesa" },
+    });
+    expect(r).toMatchObject({ ok: false, reason: "fondos-insuficientes", currency: "CUP" });
+  });
+
+  test("el código de operación lleva el día en hora de Cuba", () => {
+    const ctx = puesto({ CUP: 10_000 });
+    /* 03:30 UTC del 6/11 son las 22:30 del 5/11 en La Habana. */
+    const r = registrarOperacionSimple(
+      ctx,
+      { servicio: "Giros", cliente: CLIENTE, tramo: { currency: "CUP", delta: 500, concepto: "Envío de giro" } },
+      new Date("2026-11-06T03:30:00Z"),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.codigo.startsWith("PC-261105-")).toBe(true);
+  });
+
+  test("una moneda fuera de la lista de la sede no se habilita", () => {
+    const ctx = puesto({ CUP: 1 });
+    expect(habilitarMoneda(ctx, "JPY")).toMatchObject({ ok: false, reason: "moneda-fuera-de-la-sede" });
+  });
+});
+
+test.describe("Lo que la caja no deja hacer", () => {
+  test("un servicio que PuntoCash no habilitó en la sede no se presta", () => {
+    const ctx = puesto({ CUP: 10_000 });
+    const sinRemesas = { ...ctx, sede: { ...ctx.sede, services: ctx.sede.services.filter((s) => s !== "remesas") } };
+    expect(registrarOperacionSimple(sinRemesas, {
+      servicio: "Remesa",
+      cliente: CLIENTE,
+      tramo: { currency: "CUP", delta: -100, concepto: "Pago de remesa" },
+    })).toMatchObject({ ok: false, reason: "servicio-no-habilitado" });
+  });
+
+  test("con la sede suspendida no se registra nada, pero la jornada se cierra", () => {
+    const ctx = puesto({ CUP: 10_000 });
+    const suspendida = { ...ctx, sede: { ...ctx.sede, status: "suspendida" as const } };
+    expect(estadoDeCaja(suspendida).bloqueo).toBe("sede-suspendida");
+    expect(registrarOperacionSimple(suspendida, {
+      servicio: "Giros",
+      cliente: CLIENTE,
+      tramo: { currency: "CUP", delta: 100, concepto: "Envío de giro" },
+    })).toMatchObject({ ok: false, reason: "bloqueada" });
+    expect(ajustarEfectivo(suspendida, { currency: "CUP", contado: 9_000, motivo: "Faltante detectado" })).toMatchObject({ ok: false, reason: "bloqueada" });
+    expect(cerrarJornada(suspendida, [{ currency: "CUP", contado: 10_000 }]).ok).toBe(true);
+    expect(compararApertura(suspendida, [{ currency: "CUP", contado: 10_000 }])).toMatchObject({ ok: false, reason: "bloqueada" });
+  });
+
+  test("la jornada abierta de otro trabajador no se opera ni se cierra", () => {
+    const a = puesto({ CUP: 10_000 });
+    const b = puesto(null, [], a.sede.id);
+    /* El trabajador de B, sentado en el equipo de A. */
+    const intruso = contextoDe({ workerId: b.worker.id, terminalId: a.terminal.id });
+    expect(intruso.ok).toBe(true);
+    if (!intruso.ok) return;
+    expect(cerrarJornada(intruso.value, [{ currency: "CUP", contado: 10_000 }])).toMatchObject({ ok: false, reason: "jornada-de-otro" });
+    expect(compararApertura(intruso.value, [{ currency: "CUP", contado: 10_000 }])).toMatchObject({ ok: false, reason: "jornada-abierta" });
+  });
+
+  test("un trabajador no abre una segunda jornada en otra caja", () => {
+    const a = puesto({ CUP: 10_000 });
+    const b = puesto(null, ["CUP"], a.sede.id);
+    const mismoEnB = contextoDe({ workerId: a.worker.id, terminalId: b.terminal.id });
+    /* Es de la misma sede, así que puede sentarse; abrir, no. */
+    expect(mismoEnB.ok).toBe(true);
+    if (!mismoEnB.ok) return;
+    expect(estadoDeCaja(mismoEnB.value).jornadaEnOtraCaja?.cajaNombre).toBe(a.register.name);
+    expect(abrirJornada(mismoEnB.value, [{ currency: "CUP", contado: 1 }])).toMatchObject({ ok: false, reason: "trabajador-con-otra-jornada" });
+  });
+
+  test("un trabajador de otra sede no opera en este equipo", () => {
+    const a = puesto(null);
+    expect(contextoDe({ workerId: "trb-4", terminalId: a.terminal.id })).toMatchObject({ ok: false, reason: "otra-sede" });
+  });
+});
+
+test.describe("Cierre", () => {
+  test("cada diferencia del arqueo deja un ajuste de cierre y su solicitud", () => {
+    const ctx = puesto({ CUP: 10_000, USD: 100 });
+    expect(cerrarJornada(ctx, [
+      { currency: "CUP", contado: 9_500 },
+      { currency: "USD", contado: 100 },
+    ])).toMatchObject({ ok: false, reason: "motivo-requerido", currency: "CUP" });
+    const r = cerrarJornada(ctx, [
+      { currency: "CUP", contado: 9_500, motivo: "Faltante detectado" },
+      { currency: "USD", contado: 100 },
+    ]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.estado).toBe("cerrada");
+    expect(r.value.saldosFinales).toEqual([
+      { currency: "CUP", amount: 9_500 },
+      { currency: "USD", amount: 100 },
+    ]);
+    expect(solicitudesDeJornada(r.value.id).map((s) => [s.tipo, s.diferencia])).toEqual([["cierre", -500]]);
+    expect(jornadaAbiertaDeCaja(ctx.register.id)).toBeNull();
+  });
+});

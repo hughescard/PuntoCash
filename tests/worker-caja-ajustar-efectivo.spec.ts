@@ -1,7 +1,7 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
-import { esperarFondeoVivo, rellenar } from "./worker-helpers";
-import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
+import { abrirPorPantalla } from "./worker-helpers";
 
 /**
  * Worker Caja — Ajustar efectivo (/worker/caja/ajustar-efectivo).
@@ -27,19 +27,10 @@ import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
  * interfaz.
  */
 
-test.use({ storageState: cajaConJornadaAbierta({ EUR: 1_200 }) });
+test.use({ fondos: { EUR: 1_200 } });
 
 async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "1200" }) {
-  await page.goto("/worker/caja/fondeo-inicial");
-  await esperarFondeoVivo(page);
-  for (const [currency, value] of Object.entries(fondos)) {
-    await rellenar(page.getByLabel(`Fondo inicial en ${currency}`), value);
-  }
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-  await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
-    timeout: 5000,
-  });
+  await abrirPorPantalla(page, fondos);
 }
 
 /**
@@ -95,7 +86,7 @@ test.describe("ajustar efectivo — action availability", () => {
    * repone al hidratar, de modo que la pantalla bloqueada que pintó el
    * servidor se sustituye por la de trabajo a media prueba.
    */
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
+  test.use({ fondos: null });
 
   test("the Caja tile is disabled with an accurate reason, never generic, while no jornada is open", async ({
     page,
@@ -127,7 +118,7 @@ test.describe("ajustar efectivo — route blocking without an open jornada", () 
    * repone al hidratar, de modo que la pantalla bloqueada que pintó el
    * servidor se sustituye por la de trabajo a media prueba.
    */
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
+  test.use({ fondos: null });
 
   test("direct navigation without a jornada shows the blocked state, not the form", async ({ page }) => {
     await page.goto("/worker/caja/ajustar-efectivo");
@@ -254,14 +245,15 @@ test.describe("ajustar efectivo — counted cash and difference", () => {
 });
 
 test.describe("ajustar efectivo — motivo and observaciones", () => {
-  test("offers exactly the four approved reasons, no more", async ({ page }) => {
+  test("ofrece los motivos que lee la administración, y ninguno más", async ({ page }) => {
     await goToAjustarEfectivo(page);
     await page.getByLabel("Motivo del ajuste").click();
 
-    for (const reason of ["Faltante detectado", "Sobrante detectado", "Error de registro", "Otro"]) {
+    /* Sin diferencia todavía, los tres; «Error de registro» ya no existe. */
+    for (const reason of ["Faltante detectado", "Sobrante detectado", "Otro"]) {
       await expect(page.getByRole("option", { name: reason, exact: true })).toBeVisible();
     }
-    await expect(page.getByRole("option")).toHaveCount(4);
+    await expect(page.getByRole("option")).toHaveCount(3);
   });
 
   test("observaciones is optional for every reason except Otro", async ({ page }) => {
@@ -344,14 +336,14 @@ test.describe("ajustar efectivo — Step 1 → Step 2", () => {
     page,
   }) => {
     await goToAjustarEfectivo(page);
-    await fillStep1(page, { counted: "1185", motivo: "Error de registro", observaciones: "Conteo verificado nuevamente." });
+    await fillStep1(page, { counted: "1185", motivo: "Otro", observaciones: "Conteo verificado nuevamente." });
     await page.getByRole("button", { name: "Continuar" }).click();
 
     await expect(page.getByText("EUR · Euro")).toBeVisible();
     await expect(page.getByText("1.200,00 EUR")).toBeVisible();
     await expect(page.getByText("1.185,00 EUR")).toBeVisible();
     await expect(page.getByText("−15,00 EUR").or(page.getByText("-15,00 EUR"))).toBeVisible();
-    await expect(page.getByText("Error de registro")).toBeVisible();
+    await expect(page.getByText("Otro", { exact: true })).toBeVisible();
     await expect(page.getByText("Conteo verificado nuevamente.")).toBeVisible();
     await expect(page.getByText("Se registrará al confirmar")).toBeVisible();
     await expect(page.getByText(/Saldo después/)).toHaveCount(0);

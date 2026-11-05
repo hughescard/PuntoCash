@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-import { BASE_URL, EQUIPO_SIN_JORNADA } from "./tests/storage-state";
+import { BASE_URL, WORKER_BASE_URL } from "./tests/storage-state";
 
 /**
  * La batería de pruebas de PuntoCash.
@@ -83,15 +83,30 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     trace: "on-first-retry",
 
-    /*
-     * La línea de salida: equipo vinculado a Caja 03, caja sin abrir. Vive en
-     * `tests/storage-state.ts`, junto a `cajaConJornadaAbierta(fondos)`, que es
-     * con lo que un archivo se sale de aquí cuando necesita la caja ya abierta.
-     */
-    storageState: EQUIPO_SIN_JORNADA,
   },
 
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  /*
+   * Dos proyectos y **dos servidores**. Desde que Worker opera sobre la red,
+   * sus pruebas abren, operan y cierran jornadas de verdad en el servidor; si
+   * compartieran servidor con las de `/admin` y `/super-admin`, les cambiarían
+   * los recuentos que esas comprueban. Las de Worker van contra su propio
+   * servidor (`WORKER_BASE_URL`), arrancado con `PUNTOCASH_PRUEBAS=1`, que es
+   * lo que habilita `/pruebas/puesto`: cada prueba pide ahí su propio
+   * puesto —caja, equipo y trabajador nuevos— y no se pisa con las demás
+   * (`tests/worker-fixture.ts`).
+   */
+  projects: [
+    {
+      name: "chromium",
+      testIgnore: [/worker-.*\.spec\.ts/],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "worker",
+      testMatch: [/worker-.*\.spec\.ts/],
+      use: { ...devices["Desktop Chrome"], baseURL: WORKER_BASE_URL },
+    },
+  ],
 
   /*
    * Compilación de producción, no `next dev`.
@@ -113,7 +128,8 @@ export default defineConfig({
    * El build es incremental: solo la primera corrida tras tocar código paga
    * el tiempo completo.
    */
-  webServer: {
+  webServer: [
+   {
     command: "npm run build && npm start",
     url: `${BASE_URL}/design-system`,
     /*
@@ -126,5 +142,14 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     // Cubre el build además del arranque.
     timeout: 300_000,
-  },
+   },
+   {
+    /* El de Worker usa el mismo build (lo espera tras el primero) en otro puerto. */
+    command: `npx next start -p ${new URL(WORKER_BASE_URL).port}`,
+    url: `${WORKER_BASE_URL}/design-system`,
+    env: { PUNTOCASH_PRUEBAS: "1" },
+    reuseExistingServer: !process.env.CI,
+    timeout: 300_000,
+   },
+  ],
 });

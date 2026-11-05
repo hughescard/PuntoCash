@@ -270,14 +270,20 @@ function conteoValido(n: number): boolean {
 
 /* -- Ayudas de libro ------------------------------------------------------ */
 
-let secuencia = 0;
+/** `CM-AAMMDD-NNNNNN`: el identificador que ve el trabajador en su libro y en el comprobante. */
+const CONTADOR = globalThis as typeof globalThis & { __puntocash_movimientosDeCaja?: number };
+
+function idDeMovimiento(fechaHora: string): string {
+  CONTADOR.__puntocash_movimientosDeCaja = (CONTADOR.__puntocash_movimientosDeCaja ?? 0) + 1;
+  const d = diaEnCuba(fechaHora);
+  return `CM-${d.slice(2, 4)}${d.slice(5, 7)}${d.slice(8, 10)}-${String(CONTADOR.__puntocash_movimientosDeCaja).padStart(6, "0")}`;
+}
 
 function movimiento(j: Jornada, m: Omit<MovimientoDeJornada, "id" | "saldoDespues">): MovimientoDeJornada {
   const antes = saldoEnLibros(j, m.currency);
-  secuencia += 1;
   const nuevo: MovimientoDeJornada = {
     ...m,
-    id: `${j.id}-W${Date.now().toString(36)}${String(secuencia).padStart(4, "0")}`,
+    id: idDeMovimiento(m.fechaHora),
     saldoDespues: antes + m.amount,
   };
   j.movimientos.push(nuevo);

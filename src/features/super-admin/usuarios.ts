@@ -19,6 +19,7 @@
 
 import { cuentaCoincide, esIdentificadorValido, normalizarCuenta } from "@/features/auth/identificador";
 import { isMotivoValido } from "@/features/network/sedes";
+import { almacen } from "@/features/network/almacen";
 
 export type PuntoCashUserStatus = "activo" | "desactivado";
 
@@ -86,7 +87,9 @@ const USUARIOS: PuntoCashUser[] = [
   },
 ];
 
-const mutableUsers: PuntoCashUser[] = USUARIOS;
+/* En `globalThis`, como los almacenes de la red (`network/almacen.ts`): una
+   cuenta dada de alta desde una acción tiene que existir para la ficha. */
+const mutableUsers: PuntoCashUser[] = almacen("usuariosPuntoCash", () => USUARIOS);
 
 /** La lista para leer. Las escrituras pasan por las funciones de abajo. */
 export const PUNTOCASH_USERS: readonly PuntoCashUser[] = mutableUsers;

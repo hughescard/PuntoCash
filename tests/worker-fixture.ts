@@ -1,0 +1,93 @@
+import { test as base, expect } from "@playwright/test";
+
+import { WORKER_BASE_URL } from "./storage-state";
+
+/**
+ * El `test` de las pruebas de Worker: antes de cada prueba pide al servidor de
+ * pruebas **un puesto propio** —una caja nueva en PuntoCash Vedado, su equipo
+ * vinculado y un trabajador nuevo, «Juan Pérez»— y deja el navegador como ese
+ * equipo con la sesión ya abierta.
+ *
+ *   · `fondos`: si se da, la caja abre su primera jornada con esos importes;
+ *     `null` deja la caja sin abrir (es lo de serie).
+ *   · `monedas`: monedas habilitadas además de las de `fondos`.
+ *   · `conSesion`: `false` deja el equipo vinculado pero sin nadie dentro,
+ *     para las pruebas del acceso.
+ *
+ * El puesto llega en el fixture `puesto`, por si la prueba necesita el nombre
+ * de la caja o el identificador del trabajador.
+ */
+export interface Puesto {
+  terminalId: string;
+  workerId: string;
+  identifier: string;
+  registerId: string;
+  sedeId: string;
+  caja: string;
+}
+
+interface Opciones {
+  fondos: Record<string, number> | null;
+  /** Servicios de la sede del puesto; por defecto, los de Vedado. */
+  servicios: readonly string[] | null;
+  /** Giros enviados (importes en CUP) que la jornada registra al abrir. */
+  giros: readonly number[];
+  /** Cierra la jornada abierta con `fondos` contando lo que hay. */
+  cerrada: boolean;
+  /** Carga el historial de 128 operaciones con que se diseñó la lista. */
+  historial: boolean;
+  /** Ajustes de efectivo que la jornada registra al abrir. */
+  ajustes: readonly { currency: string; contado: number; motivo: string; observaciones?: string }[];
+  monedas: readonly string[];
+  sede: string;
+  conSesion: boolean;
+}
+
+export const test = base.extend<Opciones & { puesto: Puesto }>({
+  fondos: [null, { option: true }],
+  servicios: [null, { option: true }],
+  giros: [[], { option: true }],
+  cerrada: [false, { option: true }],
+  historial: [false, { option: true }],
+  ajustes: [[], { option: true }],
+  /* Las cuatro con que trabajaba la Caja 03 de la demostración. */
+  monedas: [["CUP", "USD", "EUR", "GBP"], { option: true }],
+  sede: ["sede-vedado", { option: true }],
+  conSesion: [true, { option: true }],
+
+  puesto: [
+    async ({ request, context, fondos, monedas, sede, servicios, giros, cerrada, historial, ajustes, conSesion }, use) => {
+      const datos = encodeURIComponent(JSON.stringify({ fondos, monedas, sede, giros, cerrar: cerrada, historial, ajustes, ...(servicios ? { servicios } : {}) }));
+      /* Un reintento: con seis trabajadores pidiendo puestos a la vez, el
+         servidor puede cortar alguna conexión. */
+      const pedir = () => request.get(`${WORKER_BASE_URL}/pruebas/puesto?datos=${datos}`);
+      const r = await pedir().catch(() => pedir());
+      const html = await r.text();
+      const json = /<pre id="puesto">([\s\S]*?)<\/pre>/.exec(html)?.[1];
+      expect(json, `no se pudo preparar el puesto (${r.status()})`).toBeTruthy();
+      const resultado = JSON.parse(json!.replaceAll("&quot;", '"').replaceAll("&amp;", "&")) as { ok: boolean; value: Puesto; error?: string };
+      expect(resultado.ok, `no se pudo preparar el puesto: ${resultado.error}`).toBe(true);
+      const puesto = resultado.value;
+      const cookie = (name: string, value: string) => ({
+        name,
+        value,
+        domain: "localhost",
+        path: "/worker",
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax" as const,
+        expires: -1,
+      });
+      await context.addCookies([
+        cookie("pc_caja_device", puesto.terminalId),
+        ...(conSesion
+          ? [cookie("pc_worker_session", encodeURIComponent(JSON.stringify({ workerId: puesto.workerId, terminalId: puesto.terminalId })))]
+          : []),
+      ]);
+      await use(puesto);
+    },
+    { auto: true },
+  ],
+});
+
+export { expect };

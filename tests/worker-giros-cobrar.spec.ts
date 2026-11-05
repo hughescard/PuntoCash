@@ -1,6 +1,6 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
-import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
 
 /**
  * Worker Nueva operación — Giros — Cobrar giro
@@ -20,7 +20,7 @@ import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
  * **por enlace**, nunca con un `page.goto` posterior.
  */
 
-test.use({ storageState: cajaConJornadaAbierta({ CUP: 50_000 }) });
+test.use({ fondos: { CUP: 50_000 }, historial: true });
 
 function onScreen(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true });
@@ -140,7 +140,7 @@ test.describe("Cobrar giro — jornada gate", () => {
    * servidor pintó se sustituye por el formulario a media prueba y lo que falla
    * es un `click` sobre un elemento que se acaba de desprender del DOM.
    */
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
+  test.use({ fondos: null });
 
   test("a closed Caja blocks the flow before any lookup is possible", async ({ page }) => {
     await page.goto("/worker/nueva-operacion/giros/cobrar");
@@ -478,7 +478,7 @@ test.describe("Cobrar giro — external failures", () => {
         .getByRole("table")
         .nth(1)
         .locator("tbody tr")
-        .filter({ hasText: "Giros" })
+        .filter({ hasText: "Pago de giro" })
         .filter({ hasNotText: SEEDED_GIRO_CODE_PREFIX }),
     ).toHaveCount(0);
   });
@@ -569,7 +569,7 @@ test.describe("Cobrar giro — payout completed", () => {
     await expect(rows).toHaveCount(1);
 
     const row = rows.first();
-    await expect(row).toContainText("Giros");
+    await expect(row).toContainText("Pago de giro");
     await expect(row).toContainText("Salida");
     await expect(row).toContainText("−2.500,00");
     // Commercial movements route through their Operation Detail — they carry

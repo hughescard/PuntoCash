@@ -1,4 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+
+/* La caja del puesto carga el historial con que se diseñó la lista. */
+test.use({ historial: true });
 
 /**
  * Worker operation detail — /worker/operaciones/[codigo].

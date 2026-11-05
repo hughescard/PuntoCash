@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
 import { esperarFondeoVivo, openJornada, rellenar } from "./worker-helpers";
 
@@ -240,8 +241,8 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await rellenar(page.getByLabel("Fondo inicial en CUP"), "200000");
-    await page.getByLabel("Fondo inicial en USD").fill("4000");
+    await rellenar(page.getByLabel("Efectivo contado en CUP"), "200000");
+    await page.getByLabel("Efectivo contado en USD").fill("4000");
 
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/anadir-moneda\?returnTo=fondeo-inicial$/);
@@ -251,10 +252,10 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
     await page.getByRole("button", { name: "Añadir moneda" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/, { timeout: 3000 });
-    await expect(page.getByLabel("Fondo inicial en CUP")).toHaveValue("200000");
-    await expect(page.getByLabel("Fondo inicial en USD")).toHaveValue("4000");
+    await expect(page.getByLabel("Efectivo contado en CUP")).toHaveValue("200000");
+    await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("4000");
 
-    const cadInput = page.getByLabel("Fondo inicial en CHF");
+    const cadInput = page.getByLabel("Efectivo contado en CHF");
     await expect(cadInput).toBeVisible();
     await expect(cadInput).toHaveValue("");
   });
@@ -264,14 +265,16 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await page.getByLabel("Fondo inicial en CUP").fill("200000");
+    await page.getByLabel("Efectivo contado en CUP").fill("200000");
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await openPicker(page);
     await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("button", { name: "Añadir moneda" }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/, { timeout: 3000 });
 
-    await page.getByLabel("Fondo inicial en CHF").fill("1000");
+    await page.getByLabel("Efectivo contado en CHF").fill("1000");
+    /* Se cuentan todas las monedas de la caja: las que no tienen efectivo, en cero. */
+    for (const c of ["USD", "EUR", "GBP"]) await page.getByLabel(`Efectivo contado en ${c}`).fill("0");
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
     await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
@@ -291,13 +294,13 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await page.getByLabel("Fondo inicial en EUR").fill("1500");
+    await page.getByLabel("Efectivo contado en EUR").fill("1500");
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await page.getByRole("link", { name: "Cancelar" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/);
-    await expect(page.getByLabel("Fondo inicial en EUR")).toHaveValue("1500");
-    await expect(page.getByLabel("Fondo inicial en CHF")).toHaveCount(0);
+    await expect(page.getByLabel("Efectivo contado en EUR")).toHaveValue("1500");
+    await expect(page.getByLabel("Efectivo contado en CHF")).toHaveCount(0);
   });
 });
 

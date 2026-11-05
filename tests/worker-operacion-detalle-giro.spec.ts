@@ -1,13 +1,16 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
-import { cajaConJornadaAbierta } from "./storage-state";
+/* La caja del puesto carga el historial con que se diseñó la lista. */
+test.use({ historial: true });
+
 
 /*
  * La jornada se siembra con 50.000 CUP, que es lo que abría el fondeo que
  * había aquí: las dieciocho pruebas la necesitan abierta y ninguna trata de
  * abrirla.
  */
-test.use({ storageState: cajaConJornadaAbierta({ CUP: 50_000 }) });
+test.use({ fondos: { CUP: 50_000 } });
 
 /**
  * Worker Operaciones — specialized historical detail for

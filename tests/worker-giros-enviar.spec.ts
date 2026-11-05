@@ -1,14 +1,14 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
-import { esperarFondeoVivo, rellenar } from "./worker-helpers";
-import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
+import { abrirPorPantalla } from "./worker-helpers";
 
 /*
  * La jornada se siembra con 1.200 EUR, que es lo que abría el fondeo que había
  * aquí. El grupo de encaminamiento trata justo de la caja cerrada y de la
  * transición al abrirla, así que se sale de la siembra y abre por la interfaz.
  */
-test.use({ storageState: cajaConJornadaAbierta({ EUR: 1_200 }) });
+test.use({ fondos: { EUR: 1_200 } });
 
 /**
  * Worker Nueva operación — Giros — Enviar giro
@@ -31,17 +31,7 @@ function onScreen(page: Page, text: string | RegExp) {
 }
 
 async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "1200" }) {
-  await page.goto("/worker/caja/fondeo-inicial");
-  await esperarFondeoVivo(page);
-  for (const [currency, value] of Object.entries(fondos)) {
-    await rellenar(page.getByLabel(`Fondo inicial en ${currency}`), value);
-  }
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-  await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
-    timeout: 5000,
-  });
-  await page.getByRole("link", { name: "Ir a Caja" }).click();
+  await abrirPorPantalla(page, fondos);
 }
 
 async function goToGiros(page: Page) {
@@ -116,7 +106,7 @@ test.describe("Giros — service and routing", () => {
    * repone al hidratar, de modo que la pantalla bloqueada que pintó el
    * servidor se sustituye por la de trabajo a media prueba.
    */
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
+  test.use({ fondos: null });
 
   test("is enabled in Nueva operación and its card leads to the operation selector", async ({ page }) => {
     await page.goto("/worker/nueva-operacion");
@@ -381,7 +371,7 @@ test.describe("Success — Caja, Operaciones and result", () => {
     await expect(table.locator("tr", { hasText: "EUR" })).toContainText("1.700,00");
 
     const movementsTable = page.getByRole("table").nth(1);
-    const row = movementsTable.locator("tbody tr").filter({ hasText: "Giros" }).first();
+    const row = movementsTable.locator("tbody tr").filter({ hasText: "Envío de giro" }).first();
     await expect(row).toContainText("Entrada");
     await expect(row).toContainText("+500,00");
     await expect(row.getByRole("link", { name: "Ver detalle" })).toHaveCount(0);

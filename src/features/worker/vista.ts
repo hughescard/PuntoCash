@@ -65,12 +65,15 @@ function aCajaJornada(j: Jornada): CajaJornada {
 
 function movimientosDeLibro(registerId: string, now: Date): CajaMovement[] {
   const desde = now.getTime() - DIAS_DE_LIBRO * 24 * 3600 * 1000;
-  const out: CajaMovement[] = [];
+  const out: (CajaMovement & { orden: number })[] = [];
+  let orden = 0;
   for (const j of jornadasDeCaja(registerId)) {
     if (new Date(j.openedAt).getTime() < desde && j.estado !== "abierta") continue;
     const snap = aCajaJornada(j);
     for (const m of j.movimientos) {
+      orden += 1;
       out.push({
+        orden,
         id: m.id,
         fechaHora: m.fechaHora,
         ...(m.operationCode ? { operationCode: m.operationCode } : {}),
@@ -86,7 +89,16 @@ function movimientosDeLibro(registerId: string, now: Date): CajaMovement[] {
       });
     }
   }
-  return out.sort((a, b) => b.fechaHora.localeCompare(a.fechaHora));
+  /* Del más reciente al más antiguo; dos del mismo instante, en orden inverso
+     de registro —el libro de una jornada está en orden—. */
+  const jornadaOrden = (x: { orden: number }) => x.orden;
+  return out
+    .sort((a, b) => b.fechaHora.localeCompare(a.fechaHora) || (a.jornada?.openedAt === b.jornada?.openedAt ? jornadaOrden(b) - jornadaOrden(a) : 0))
+    .map((m) => {
+      const copia: CajaMovement & { orden?: number } = { ...m };
+      delete copia.orden;
+      return copia;
+    });
 }
 
 export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new Date()): VistaDeCaja {
@@ -118,10 +130,17 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
     tasas: estado.tasas,
     servicios: estado.servicios,
     jornadaEnOtraCaja: estado.jornadaEnOtraCaja,
-    operaciones: operacionesDeCaja(ctx.register.id).map((o) => {
-      /* Lo que no es del historial de Worker se queda en el servidor. */
-      const { sedeId: _s, registerId: _r, workerId: _w, jornadaId: _j, origenKiosco: _k, ...registro } = o;
-      return registro;
-    }),
+    operaciones: operacionesDeCaja(ctx.register.id).map(registroDeWorker),
   };
+}
+
+/** El registro de una operación como lo ve Worker: lo que es de la red se queda en el servidor. */
+export function registroDeWorker(o: OperationRecord): OperationRecord {
+  const copia: OperationRecord & Partial<Record<"sedeId" | "registerId" | "workerId" | "jornadaId" | "origenKiosco", unknown>> = { ...o };
+  delete copia.sedeId;
+  delete copia.registerId;
+  delete copia.workerId;
+  delete copia.jornadaId;
+  delete copia.origenKiosco;
+  return copia;
 }

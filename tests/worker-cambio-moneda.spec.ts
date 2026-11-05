@@ -1,6 +1,6 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
-import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
 
 /**
  * Cambio de moneda — the first complete PuntoCash operation.
@@ -13,9 +13,9 @@ import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
  *
  * Quotes come from the mock provider and clients from the mock repository, both
  * deterministic. The seeded client is Carlos Pérez Rodríguez (CI 90010112345).
- * The jornada is funded with 3.850,00 USD and 2.120,00 EUR, so 1.000,00 USD →
- * 920,00 EUR is the happy path and anything above ~2.304,00 USD exhausts the
- * register.
+ * La caja es una copia de PuntoCash Vedado (USD a 318 / 326) con 500.000 CUP
+ * y 3.850 USD: 1.000,00 USD → 318.000,00 CUP es el camino feliz, y por encima
+ * de unos 1.572 USD la caja no tiene pesos para pagar.
  */
 
 const FLOW = "/worker/nueva-operacion/cambio-moneda";
@@ -27,7 +27,7 @@ const SEEDED_DOCUMENT = "90010112345";
  * aquí: veintitrés de estas pruebas la necesitan abierta y ninguna trata de
  * abrirla. El único grupo que trata de la caja cerrada se sale de la siembra.
  */
-test.use({ storageState: cajaConJornadaAbierta({ CUP: 245_000, USD: 3_850, EUR: 2_120, GBP: 950 }) });
+test.use({ fondos: { CUP: 500_000, USD: 3_850, EUR: 2_120, GBP: 950 } });
 
 /** Entra al flujo de Cambio de moneda por donde entra el trabajador. */
 async function startCambio(page: Page) {
@@ -64,7 +64,7 @@ test.describe("sin jornada abierta", () => {
    * repone al hidratar, de modo que la pantalla bloqueada que pintó el
    * servidor se sustituye por la de trabajo a media prueba.
    */
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
+  test.use({ fondos: null });
 
   test("blocks the flow with Caja cerrada and offers the way to Caja", async ({ page }) => {
     await page.goto(FLOW);
@@ -114,8 +114,8 @@ test.describe("step 1 · cambio", () => {
       }),
     ).toHaveAttribute("aria-current", "page");
 
-    await expect(page.getByLabel("Monto a recibir (calculado)")).toHaveValue("920,00");
-    await expect(page.getByText("1 USD = 0,9200 EUR").first()).toBeVisible();
+    await expect(page.getByLabel("Monto a recibir (calculado)")).toHaveValue("318.000,00");
+    await expect(page.getByText("1 USD = 318,00 CUP").first()).toBeVisible();
   });
 
   test("uses SVG flags and never emoji", async ({ page }) => {
@@ -128,21 +128,22 @@ test.describe("step 1 · cambio", () => {
   test("uses the canonical money order, amount before currency", async ({ page }) => {
     const summary = page.getByRole("main");
     await expect(summary.getByText("1.000,00 USD").first()).toBeVisible();
-    await expect(summary.getByText("920,00 EUR").first()).toBeVisible();
+    await expect(summary.getByText("318.000,00 CUP").first()).toBeVisible();
     await expect(page.getByText("USD 1.000,00")).toHaveCount(0);
   });
 
   test("recalculates when the amount changes", async ({ page }) => {
     await setAmount(page, "2000");
-    await expect(page.getByLabel("Monto a recibir (calculado)")).toHaveValue("1.840,00");
+    await expect(page.getByLabel("Monto a recibir (calculado)")).toHaveValue("636.000,00");
   });
 
   test("swapping exchanges both sides and re-quotes", async ({ page }) => {
     await page.getByRole("button", { name: /Intercambiar monedas/ }).click();
 
-    await expect(page.getByLabel("Moneda origen")).toContainText("EUR");
+    await expect(page.getByLabel("Moneda origen")).toContainText("CUP");
     await expect(page.getByLabel("Moneda destino")).toContainText("USD");
-    await expect(page.getByText(/1 EUR = 1,0870 USD/).first()).toBeVisible();
+    /* Al revés, la casa vende dólares: se aplica la venta. */
+    await expect(page.getByText("1 USD = 326,00 CUP").first()).toBeVisible();
   });
 
   test("never allows the same currency on both sides", async ({ page }) => {
@@ -191,7 +192,7 @@ test.describe("step 2 · cliente", () => {
 
     // The side summary carries the committed numbers (§14).
     await expect(page.getByText("1.000,00 USD").first()).toBeVisible();
-    await expect(page.getByText("1.200,00 EUR").first()).toBeVisible();
+    await expect(page.getByText("182.000,00 CUP").first()).toBeVisible();
   });
 
   test("finds the seeded client and shows them read-only", async ({ page }) => {
@@ -285,13 +286,13 @@ test.describe("step 3 · revisión", () => {
 
     const main = page.getByRole("main");
     await expect(main.getByText("1.000,00 USD").first()).toBeVisible();
-    await expect(main.getByText("920,00 EUR").first()).toBeVisible();
-    await expect(main.getByText("1 USD = 0,9200 EUR").first()).toBeVisible();
+    await expect(main.getByText("318.000,00 CUP").first()).toBeVisible();
+    await expect(main.getByText("1 USD = 318,00 CUP").first()).toBeVisible();
 
     // Before / deduction / after.
-    await expect(main.getByText("2.120,00 EUR").first()).toBeVisible();
-    await expect(main.getByText("− 920,00 EUR").first()).toBeVisible();
-    await expect(main.getByText("1.200,00 EUR").first()).toBeVisible();
+    await expect(main.getByText("500.000,00 CUP").first()).toBeVisible();
+    await expect(main.getByText("− 318.000,00 CUP").first()).toBeVisible();
+    await expect(main.getByText("182.000,00 CUP").first()).toBeVisible();
   });
 
   test("shows worker and register but allocates no code before confirmation", async ({ page }) => {
@@ -304,6 +305,12 @@ test.describe("step 3 · revisión", () => {
   });
 
   test("confirming shows a busy state and cannot be submitted twice", async ({ page }) => {
+    /* La confirmación va al servidor; se le da medio segundo de viaje para
+       poder ver el estado intermedio. */
+    await page.route("**/worker/nueva-operacion/cambio-moneda", async (route) => {
+      if (route.request().method() === "POST") await new Promise((r) => setTimeout(r, 800));
+      await route.continue();
+    });
     const confirm = page.getByRole("button", { name: "Confirmar cambio" });
     await confirm.click();
 
@@ -367,7 +374,7 @@ test.describe("navigation and cancellation", () => {
 
     await page.getByRole("button", { name: "Volver" }).click();
     await expect(page.getByLabel("Monto a entregar")).toHaveValue("1.500,00");
-    await expect(page.getByLabel("Monto a recibir (calculado)")).toHaveValue("1.380,00");
+    await expect(page.getByLabel("Monto a recibir (calculado)")).toHaveValue("477.000,00");
   });
 
   test("cancelling a started operation asks before discarding", async ({ page }) => {
@@ -405,8 +412,8 @@ test.describe("result", () => {
     await expect(main.getByText(/PC-\d{6}-\d{6}/).first()).toBeVisible();
     await expect(main.getByText("Carlos Pérez Rodríguez").first()).toBeVisible();
     await expect(main.getByText("1.000,00 USD").first()).toBeVisible();
-    await expect(main.getByText("920,00 EUR").first()).toBeVisible();
-    await expect(main.getByText("1 USD = 0,9200 EUR").first()).toBeVisible();
+    await expect(main.getByText("318.000,00 CUP").first()).toBeVisible();
+    await expect(main.getByText("1 USD = 318,00 CUP").first()).toBeVisible();
 
     // A completed operation offers no way back into the flow (§19), and none
     // of the in-flow actions survive onto the result screen.
@@ -472,13 +479,15 @@ test.describe("result", () => {
     await expect(rows).toHaveCount(2);
     await expect(rows.filter({ hasText: "Entrada" })).toContainText("+1.000,00");
     await expect(rows.filter({ hasText: "Entrada" })).toContainText("4.850,00");
-    await expect(rows.filter({ hasText: "Salida" })).toContainText("−920,00");
-    await expect(rows.filter({ hasText: "Salida" })).toContainText("1.200,00");
-    await expect(rows.first()).toContainText("Cambio de moneda");
+    await expect(rows.filter({ hasText: "Salida" })).toContainText("−318.000,00");
+    await expect(rows.filter({ hasText: "Salida" })).toContainText("182.000,00");
+    /* Cada tramo dice lo que hizo: la casa compró dólares y pagó pesos. */
+    await expect(rows.filter({ hasText: "Entrada" })).toContainText("Compra de USD");
+    await expect(rows.filter({ hasText: "Salida" })).toContainText("Pago por compra de USD");
 
-    // Live balances reflect the exchange: +1.000 USD, −920 EUR.
+    // Live balances reflect the exchange: +1.000 USD, −318.000 CUP.
     await expect(page.getByRole("row", { name: /USD.*4\.850,00/ }).first()).toBeVisible();
-    await expect(page.getByRole("row", { name: /EUR.*1\.200,00/ }).first()).toBeVisible();
+    await expect(page.getByRole("row", { name: /CUP.*182\.000,00/ }).first()).toBeVisible();
   });
 
   test("starting another operation returns to the catalog", async ({ page }) => {

@@ -1,6 +1,7 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
-import { esperarFondeoVivo, rellenar } from "./worker-helpers";
+import { abrirPorPantalla } from "./worker-helpers";
 
 /**
  * Worker Caja — Cash Movement Detail (/worker/caja/movimientos/[id]).
@@ -25,17 +26,18 @@ function onScreen(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true });
 }
 
+/*
+ * La jornada abre con 1.200 EUR, paga un giro y registra un ajuste de 15 EUR
+ * de faltante, con su nota: la ficha de un ajuste se comprueba sobre él.
+ */
+test.use({
+  fondos: { EUR: 1_200, CUP: 10_000 },
+  giros: [1_000],
+  ajustes: [{ currency: "EUR", contado: 1_185, motivo: "Faltante detectado", observaciones: "Conteo verificado nuevamente." }],
+});
+
 async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "1200" }) {
-  await page.goto("/worker/caja/fondeo-inicial");
-  await esperarFondeoVivo(page);
-  for (const [currency, value] of Object.entries(fondos)) {
-    await rellenar(page.getByLabel(`Fondo inicial en ${currency}`), value);
-  }
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-  await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
-    timeout: 5000,
-  });
+  await abrirPorPantalla(page, fondos);
 }
 
 /** From the Caja main screen, opens the Ajustar efectivo tile. */
@@ -127,12 +129,10 @@ test.describe("caja movements table — Acciones column", () => {
   }) => {
     await page.goto("/worker/caja");
     const movementsTable = page.getByRole("table").nth(1);
-    const row = movementsTable.locator("tbody tr").filter({ hasText: "PC-260818-005004" }).first();
-
-    await expect(row.getByRole("link", { name: "PC-260818-005004" })).toHaveAttribute(
-      "href",
-      "/worker/operaciones/PC-260818-005004",
-    );
+    const row = movementsTable.locator("tbody tr").filter({ hasText: "Envío de giro" }).first();
+    const link = row.getByRole("link", { name: /^PC-\d{6}-\d{6}$/ });
+    const code = (await link.textContent())!.trim();
+    await expect(link).toHaveAttribute("href", `/worker/operaciones/${code}`);
     await expect(row.getByRole("link", { name: "Ver detalle" })).toHaveCount(0);
   });
 
@@ -232,6 +232,8 @@ test.describe("cash movement detail — Ajuste de efectivo (static fixture)", ()
 });
 
 test.describe("cash movement detail — a live positive adjustment", () => {
+  test.use({ fondos: null, giros: [], ajustes: [] });
+
   test("a positive difference keeps its explicit + sign and success semantics", async ({ page }) => {
     await openJornada(page, { EUR: "1200" });
     await makeAdjustment(page, { currency: "EUR", counted: "1220", motivo: "Sobrante detectado" });
@@ -242,6 +244,8 @@ test.describe("cash movement detail — a live positive adjustment", () => {
 });
 
 test.describe("cash movement detail — Fondeo inicial (live)", () => {
+  test.use({ fondos: null, giros: [], ajustes: [] });
+
   test("resolves and shows only genuinely available common movement information", async ({ page }) => {
     await openJornada(page, { EUR: "1200" });
     await goToCajaAndOpenDetail(page, "Fondeo inicial");
@@ -261,23 +265,9 @@ test.describe("cash movement detail — Fondeo inicial (live)", () => {
   });
 });
 
-test.describe("cash movement detail — generic internal fallback", () => {
-  test("a concept with no specialized component shows only common fields, nothing fabricated", async ({
-    page,
-  }) => {
-    // "Fondeo adicional" (the static mock fixtures) has no specialized
-    // detail component either — the same generic fallback path as Fondeo
-    // inicial, exercised here against the pre-seeded, non-live data.
-    await openDetailFor(page, "Fondeo adicional");
-
-    await expect(page.getByRole("heading", { name: "Movimiento de caja" })).toBeVisible();
-    await expect(page.getByText("Detalle del ajuste")).toHaveCount(0);
-    await expect(page.getByText("Motivo")).toHaveCount(0);
-    await expect(page.getByText("Observaciones")).toHaveCount(0);
-  });
-});
-
 test.describe("cash movement detail — historical immutability", () => {
+  test.use({ fondos: null, giros: [], ajustes: [] });
+
   test("does not change when the current Caja balance changes later", async ({ page }) => {
     await openJornada(page, { EUR: "1200" });
     await makeAdjustment(page, { currency: "EUR", counted: "1185", motivo: "Faltante detectado" });

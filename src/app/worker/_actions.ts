@@ -41,6 +41,7 @@ import {
   serializeWorkerSession,
 } from "@/features/worker/sesion";
 import { getContextoDeTrabajo } from "@/features/worker/sesion-servidor";
+import { registroDeWorker } from "@/features/worker/vista";
 
 
 /**
@@ -292,13 +293,6 @@ export async function registrarOperacionAction(op: OperacionPorRegistrar): Promi
   });
 }
 
-function sinRed<T extends OperationRecord>(o: T): OperationRecord {
-  const { sedeId: _s, registerId: _r, workerId: _w, jornadaId: _j, origenKiosco: _k, ...registro } = o as T & {
-    sedeId?: string;
-    registerId?: string;
-    workerId?: string;
-    jornadaId?: string;
-    origenKiosco?: unknown;
-  };
-  return registro;
+function sinRed(o: OperationRecord): OperationRecord {
+  return registroDeWorker(o);
 }

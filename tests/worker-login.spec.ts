@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
 import { esperarBotonVivo } from "./worker-helpers";
 
@@ -113,8 +114,8 @@ test("empty submit reports both fields and marks them invalid", async ({ page })
   expect(dangling).toEqual([]);
 });
 
-test("invalid credentials show a recoverable error and keep the form usable", async ({ page }) => {
-  await signIn(page, "juan.perez", "incorrecta");
+test("invalid credentials show a recoverable error and keep the form usable", async ({ page, puesto }) => {
+  await signIn(page, puesto.identifier, "incorrecta");
 
   await expect(page.getByRole("alert").filter({ hasText: "No se pudo iniciar sesión" })).toBeVisible();
   // Recoverable: the user must be able to correct and retry.
@@ -139,8 +140,8 @@ test("a network failure explains the next step", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Iniciar sesión" })).toBeEnabled();
 });
 
-test("submitting locks the form, then correct credentials reach the 2FA step", async ({ page }) => {
-  await signIn(page, "juan.perez", VALID_PASSWORD);
+test("submitting locks the form, then correct credentials reach the 2FA step", async ({ page, puesto }) => {
+  await signIn(page, puesto.identifier, VALID_PASSWORD);
 
   // In flight: the button reports busy and the fields are locked.
   const submit = page.getByRole("button", { name: /Verificando|Iniciar sesión/ });

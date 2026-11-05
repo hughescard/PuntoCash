@@ -1,4 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+
+/* La caja del puesto carga el historial con que se diseñó la lista. */
+test.use({ historial: true });
 
 /**
  * Fecha de una celda "dd/MM/yyyy · HH:mm".
@@ -232,8 +235,9 @@ test.describe("worker operaciones — filters", () => {
     await page.getByLabel("Fecha").click();
     await page.getByRole("option", { name: "Hoy" }).click();
 
-    // `not.toHaveText` reintenta; leer el texto dos veces seguidas no.
-    await expect(total).not.toHaveText(totalBefore);
+    /* El historial es de agosto: «Hoy» no deja ninguna, y el recuento de
+       antes desaparece. */
+    await expect(page.getByText(totalBefore)).toHaveCount(0);
   });
 
   test("Limpiar filtros restores the full list and is disabled at rest", async ({ page }) => {

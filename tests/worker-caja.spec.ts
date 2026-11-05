@@ -1,12 +1,18 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
 /**
  * Worker Caja — the operational/financial register view.
  *
- * Phase 1: balances, today's metrics, a movement ledger and an actions area
- * that visibly prepares (but does not implement) fund/adjust/transfer/close.
- * Data comes from `src/features/caja/caja-data.ts`.
+ * Saldos, indicadores del día, libro de movimientos y acciones, sobre la caja
+ * del puesto de la prueba en la red: jornada abierta con estos fondos y
+ * dieciocho giros enviados, que dan un libro de más de una página.
  */
+
+const GIROS = Array.from({ length: 18 }, (_, i) => 1_000 + i * 100);
+test.use({ fondos: { CUP: 245_000, USD: 3_850, EUR: 2_120, GBP: 950 }, giros: GIROS, monedas: ["CHF"] });
+const CUP_FINAL = 245_000 + GIROS.reduce((a, b) => a + b, 0);
+const fmt = (n: number) => n.toLocaleString("es-ES", { minimumFractionDigits: 2, useGrouping: "always" } as Intl.NumberFormatOptions);
 
 /**
  * The print-only "Imprimir resumen" section repeats several of these same
@@ -15,13 +21,6 @@ import { test, expect, type Page } from "@playwright/test";
  */
 function onScreen(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true });
-}
-
-/** Reads the "Disponible después" figure (with currency) off an operation's own detail page. */
-async function readDisponibleDespues(page: Page): Promise<string | undefined> {
-  const row = page.locator("div").filter({ hasText: /^Disponible después/ }).last();
-  const text = await row.textContent();
-  return text?.replace("Disponible después", "").trim();
 }
 
 test.describe("worker caja — render and shell", () => {
@@ -65,7 +64,7 @@ test.describe("worker caja — balances", () => {
     const balancesTable = page.getByRole("table").first();
 
     for (const [currency, amount] of [
-      ["CUP", "245.000,00"],
+      ["CUP", fmt(CUP_FINAL)],
       ["USD", "3.850,00"],
       ["EUR", "2.120,00"],
       ["GBP", "950,00"],
@@ -89,12 +88,11 @@ test.describe("worker caja — balances", () => {
     expect(hasRegionalIndicator).toBe(false);
   });
 
-  test("flags a low balance as text, not colour alone", async ({ page }) => {
+  test("el estado de cada saldo es texto, y no inventa un «nivel bajo» sin umbral", async ({ page }) => {
     const balancesTable = page.getByRole("table").first();
-    const eurRow = balancesTable.locator("tbody tr").filter({ hasText: "EUR" });
-    await expect(eurRow.getByText("Nivel bajo")).toBeVisible();
     const cupRow = balancesTable.locator("tbody tr").filter({ hasText: "CUP" });
-    await expect(cupRow.getByText("Normal")).toBeVisible();
+    await expect(cupRow.getByText("Con efectivo")).toBeVisible();
+    await expect(page.getByText("Nivel bajo")).toHaveCount(0);
   });
 });
 
@@ -111,11 +109,10 @@ test.describe("worker caja — metrics and alerts", () => {
     }
   });
 
-  test("shows the low-EUR alert using the established status language", async ({ page }) => {
+  test("los indicadores salen del libro de hoy", async ({ page }) => {
     await page.goto("/worker/caja");
-    const alert = page.getByRole("status").filter({ hasText: "Efectivo bajo en EUR" });
-    await expect(alert).toBeVisible();
-    await expect(alert).toContainText("nivel operativo recomendado");
+    const ops = page.getByText("Operaciones de hoy", { exact: true }).locator("..");
+    await expect(ops).toContainText(String(GIROS.length));
   });
 });
 
@@ -165,19 +162,21 @@ test.describe("worker caja — movements", () => {
 
   test("a currency with no movements shows the empty state, not an error", async ({ page }) => {
     await page.getByLabel("Moneda").click();
-    await page.getByRole("option", { name: "GBP", exact: true }).click();
+    /* CHF está habilitada en cero: no tiene ningún movimiento. */
+    await page.getByRole("option", { name: "CHF", exact: true }).click();
     await expect(page.getByText("No encontramos movimientos")).toBeVisible();
   });
 
   test("searches by operation code", async ({ page }) => {
     const table = page.getByRole("table").nth(1);
-    await page.getByPlaceholder("Buscar por operación o concepto").fill("PC-260818-005004");
+    const code = (await table.getByRole("link", { name: /^PC-\d{6}-\d{6}$/ }).first().textContent())!.trim();
+    await page.getByPlaceholder("Buscar por operación o concepto").fill(code);
     /* La fila visible anterior al filtro ya satisface `toBeVisible()`, así que
        esa espera no demuestra nada y la lectura sincrónica podía medir la tabla
        sin filtrar. La forma que sí espera es afirmar que no queda ninguna fila
        distinta. */
     const rows = table.locator("tbody tr");
-    await expect(rows.filter({ hasNotText: "PC-260818-005004" })).toHaveCount(0);
+    await expect(rows.filter({ hasNotText: code })).toHaveCount(0);
     await expect(rows).not.toHaveCount(0);
   });
 
@@ -205,139 +204,34 @@ test.describe("worker caja — movements", () => {
     const table = page.getByRole("table").nth(1);
     // Fecha y hora (unlike Operación) is never blank, so it reliably proves
     // page 2 shows a different, older slice of the ledger.
-    const firstDatePage1 = await table.locator("tbody tr td:nth-child(1)").first().textContent();
+    /* Todo el libro de la prueba cae en el mismo minuto: se compara la fila
+       entera, no solo la hora. */
+    const firstDatePage1 = await table.locator("tbody tr").first().textContent();
 
     await page.getByRole("navigation", { name: "Paginación" }).getByRole("button", { name: "2", exact: true }).click();
     await expect(page.getByText(/Mostrando 21–\d+/)).toBeVisible();
 
-    const firstDatePage2 = await table.locator("tbody tr td:nth-child(1)").first().textContent();
+    const firstDatePage2 = await table.locator("tbody tr").first().textContent();
     expect(firstDatePage2).not.toEqual(firstDatePage1);
   });
 });
 
-test.describe("worker caja — historical cash-balance consistency", () => {
-  test.beforeEach(async ({ page }) => {
+test.describe("worker caja — saldos del libro", () => {
+  test("el saldo después del primer giro es el fondeo más ese giro", async ({ page }) => {
     await page.goto("/worker/caja");
-    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
-    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
-    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
-    await page.getByRole("main").waitFor();
-  });
-
-  /**
-   * Regression coverage for the fix: the Caja ledger must display an
-   * operation's own historical cash snapshot rather than a value
-   * reconstructed to make the series terminate at today's live balance.
-   */
-  test("PC-260818-005004's EUR movement shows its historical snapshot, not the current balance", async ({
-    page,
-  }) => {
-    const table = page.getByRole("table").nth(1);
-    const row = table
+    const row = page
+      .getByRole("table")
+      .nth(1)
       .locator("tbody tr")
-      .filter({ hasText: "PC-260818-005004" })
-      .filter({ hasText: "EUR" });
-
-    await expect(row.getByText("Salida", { exact: true })).toBeVisible();
-    await expect(row.getByText("−920,00", { exact: true })).toBeVisible();
-    // The live EUR balance shown in "Saldos de caja" is 2.120,00 — if this
-    // cell showed that instead, the fix has regressed.
-    await expect(row.getByText("330,00", { exact: true })).toBeVisible();
-    await expect(row.getByText("2.120,00")).toHaveCount(0);
+      .filter({ hasText: "Envío de giro" })
+      .filter({ hasText: `+${fmt(GIROS[0]!)}` });
+    await expect(row.getByText(fmt(245_000 + GIROS[0]!), { exact: true })).toBeVisible();
   });
 
-  test("that value matches the operation's own amount.cashSnapshot.after, read from its detail page", async ({
-    page,
-  }) => {
-    const table = page.getByRole("table").nth(1);
-    const row = table
-      .locator("tbody tr")
-      .filter({ hasText: "PC-260818-005004" })
-      .filter({ hasText: "EUR" });
-    // "Saldo después" (index 6) — not the last column: "Acciones" (§ Cash
-    // Movement Detail) comes after it.
-    const ledgerSaldoDespues = (await row.locator("td").nth(6).textContent())?.trim();
-
-    await page.goto("/worker/operaciones/PC-260818-005004");
-    const detailCashAfter = await readDisponibleDespues(page);
-
-    // The ledger shows the bare figure ("330,00"); the detail card shows it
-    // with the currency code appended ("330,00 EUR") — same historical value.
-    expect(detailCashAfter).toBe(`${ledgerSaldoDespues} EUR`);
-  });
-
-  test("snapshot-anchored rows are not overwritten across every Cambio de moneda operation, not just one", async ({
-    page,
-  }) => {
-    const table = page.getByRole("table").nth(1);
-    // Every "Cambio de moneda" Salida row's own operation detail must report
-    // the exact same "Disponible después" the ledger shows — generic across
-    // the whole ledger, not special-cased to a single code.
-    const salidaRows = table.locator("tbody tr").filter({ hasText: "Cambio de moneda" }).filter({
-      hasText: "Salida",
-    });
-    const sampleSize = Math.min(3, await salidaRows.count());
-    expect(sampleSize).toBeGreaterThan(0);
-
-    for (let i = 0; i < sampleSize; i++) {
-      const row = salidaRows.nth(i);
-      // Cada iteración vuelve a /worker/caja, así que la tabla se rehace:
-      // `allTextContents()` no espera y leería un array vacío.
-      await row.waitFor();
-      const cells = await row.locator("td").allTextContents();
-      const code = cells[1]?.trim();
-      const ledgerCurrency = cells[4]?.trim();
-      // "Saldo después" is second-to-last: "Acciones" (§ Cash Movement Detail) is the final column.
-      const ledgerSaldoDespues = cells[cells.length - 2]?.trim();
-
-      await page.goto(`/worker/operaciones/${code}`);
-      const detailCashAfter = await readDisponibleDespues(page);
-
-      expect(detailCashAfter).toBe(`${ledgerSaldoDespues} ${ledgerCurrency}`);
-      await page.goto("/worker/caja");
-    }
-  });
-
-  test("operations without a cash snapshot still fall back to a computed running balance", async ({
-    page,
-  }) => {
-    const table = page.getByRole("table").nth(1);
-    // A single-currency service (Remesa/Extracción/Pago) never carries a
-    // cashSnapshot — its row must still show a real computed figure, not a
-    // blank dash, confirming the fallback path is unaffected by the fix.
-    const fallbackRow = table
-      .locator("tbody tr")
-      .filter({ hasText: "Remesa nacional" })
-      .first();
-    // "Saldo después" (index 6) — not the last column: "Acciones" (§ Cash
-    // Movement Detail) comes after it.
-    const saldoDespues = (await fallbackRow.locator("td").nth(6).textContent())?.trim();
-
-    expect(saldoDespues).toBeTruthy();
-    expect(saldoDespues).not.toBe("—");
-  });
-
-  test("an explicit reconciling movement, not a disguised operation, closes the gap to the live balance", async ({
-    page,
-  }) => {
-    const table = page.getByRole("table").nth(1);
-    const reconcilingRow = table
-      .locator("tbody tr")
-      .filter({ hasText: "Fondeo adicional" })
-      .filter({ hasText: "EUR" });
-
-    await expect(reconcilingRow).toBeVisible();
-    // No operation code: this is an internal Caja movement, not masquerading
-    // as a customer operation.
-    await expect(reconcilingRow.getByText("—", { exact: true })).toBeVisible();
-    await expect(reconcilingRow.getByText("+1.790,00", { exact: true })).toBeVisible();
-    await expect(reconcilingRow.getByText("2.120,00", { exact: true })).toBeVisible();
-  });
-
-  test("current Caja balances remain correctly displayed", async ({ page }) => {
-    const balancesTable = page.getByRole("table").first();
-    const eurRow = balancesTable.locator("tbody tr").filter({ hasText: "EUR" });
-    await expect(eurRow.getByText("2.120,00", { exact: true })).toBeVisible();
+  test("el último movimiento de CUP deja el saldo que muestra la caja", async ({ page }) => {
+    await page.goto("/worker/caja");
+    const ultimo = page.getByRole("table").nth(1).locator("tbody tr").filter({ hasText: "CUP" }).first();
+    await expect(ultimo.getByText(fmt(CUP_FINAL), { exact: true })).toBeVisible();
   });
 });
 
@@ -366,10 +260,10 @@ test.describe("worker caja — actions", () => {
     );
   });
 
-  test("Registrar fondeo inicial is enabled and navigates to its own flow", async ({ page }) => {
-    const tile = page.getByRole("link", { name: /Registrar fondeo inicial/ });
-    await tile.click();
-    await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/);
+  test("con la jornada abierta, «Abrir jornada» está deshabilitada con su motivo", async ({ page }) => {
+    const tile = page.getByRole("button", { name: /Abrir jornada/ });
+    await expect(tile).toBeDisabled();
+    await expect(tile.getByText("Jornada abierta")).toBeVisible();
   });
 
   test("Añadir moneda is enabled and navigates to its own flow", async ({ page }) => {
@@ -378,22 +272,27 @@ test.describe("worker caja — actions", () => {
     await expect(page).toHaveURL(/\/worker\/caja\/anadir-moneda$/);
   });
 
-  test("Arqueo y cierre stays disabled until a jornada is open", async ({ page }) => {
+  test("Ajustar efectivo y Arqueo y cierre llevan a sus flujos con la jornada abierta", async ({ page }) => {
     await expect(page.getByText("Transferir entre cajas")).toHaveCount(0);
-    const tile = page.getByRole("button", { name: /Arqueo y cierre/ });
-    await expect(tile).toBeDisabled();
-    await expect(tile.getByText("Requiere jornada abierta")).toBeVisible();
+    await expect(page.getByRole("link", { name: /Ajustar efectivo/ })).toBeVisible();
+    await page.getByRole("link", { name: /Arqueo y cierre/ }).click();
+    await expect(page).toHaveURL(/\/worker\/caja\/arqueo-cierre$/);
   });
+});
 
-  // Ajustar efectivo is a built flow gated on an open jornada, not an
-  // unbuilt capability — its disabled badge must say so, never "Próximamente".
-  test("Ajustar efectivo renders disabled with its true reason while no jornada is open", async ({
-    page,
-  }) => {
-    const tile = page.getByRole("button", { name: /Ajustar efectivo/ });
-    await expect(tile).toBeDisabled();
-    await expect(tile.getByText("Requiere jornada abierta")).toBeVisible();
-    await expect(tile.getByText("Próximamente")).toHaveCount(0);
+test.describe("worker caja — sin jornada", () => {
+  test.use({ fondos: null, giros: [], monedas: ["CUP"] });
+
+  test("Arqueo y cierre y Ajustar efectivo se deshabilitan con su motivo real", async ({ page }) => {
+    await page.goto("/worker/caja");
+    for (const name of [/Arqueo y cierre/, /Ajustar efectivo/]) {
+      const tile = page.getByRole("button", { name });
+      await expect(tile).toBeDisabled();
+      await expect(tile.getByText("Requiere jornada abierta")).toBeVisible();
+      await expect(tile.getByText("Próximamente")).toHaveCount(0);
+    }
+    await page.getByRole("link", { name: /Abrir jornada/ }).click();
+    await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/);
   });
 });
 

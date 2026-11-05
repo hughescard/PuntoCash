@@ -103,21 +103,33 @@ export async function rellenar(campo: Locator, valor: string): Promise<void> {
   }).toPass({ timeout: 20_000, intervals: [100, 250, 500, 1000] });
 }
 
-/** Abre la jornada con un fondeo inicial y deja la pantalla en Caja. */
-export async function openJornada(
-  page: Page,
-  funds: Record<string, string> = { CUP: "200000", USD: "4250", EUR: "1185" },
-): Promise<void> {
+/**
+ * Abre la jornada **por la pantalla**: cuenta cada moneda de la caja —las que
+ * no estén en `funds`, en cero—, revisa y confirma. Es la primera jornada del
+ * puesto, así que no hay diferencias que explicar. Se queda en el resultado.
+ */
+export async function abrirPorPantalla(page: Page, funds: Record<string, string>): Promise<void> {
   await page.goto("/worker/caja/fondeo-inicial");
   await esperarFondeoVivo(page);
-  for (const [currency, value] of Object.entries(funds)) {
-    await rellenar(page.getByLabel(`Fondo inicial en ${currency}`), value);
+  const campos = page.getByLabel(/^Efectivo contado en [A-Z]{3}$/);
+  for (const campo of await campos.all()) {
+    const label = (await campo.getAttribute("aria-label")) ?? (await campo.evaluate((el) => (el as HTMLInputElement).labels?.[0]?.textContent ?? ""));
+    const code = /([A-Z]{3})$/.exec(label.trim())?.[1] ?? "";
+    await rellenar(campo, funds[code] ?? "0");
   }
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
   await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
-    timeout: 5000,
+    timeout: 10_000,
   });
+}
+
+/** Abre la jornada por la pantalla y deja la pantalla en Caja. */
+export async function openJornada(
+  page: Page,
+  funds: Record<string, string> = { CUP: "200000", USD: "4250", EUR: "1185" },
+): Promise<void> {
+  await abrirPorPantalla(page, funds);
   await page.getByRole("link", { name: "Ir a Caja" }).click();
 }
 

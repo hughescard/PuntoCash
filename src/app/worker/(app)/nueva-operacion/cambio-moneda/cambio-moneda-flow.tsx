@@ -188,16 +188,22 @@ function CambioMonedaOperation(): React.JSX.Element {
   const monedasCambiables = CAJA_BALANCES.map((b) => b.currency).filter((c) => cotizables.includes(c));
   const monedasSinTasa = CAJA_BALANCES.map((b) => b.currency).filter((c) => !cotizables.includes(c));
 
-  /* Si la moneda de partida no se puede cambiar en esta caja, se elige la primera que sí. */
+  /* Toda tasa es contra el peso: un lado del cambio es siempre CUP. Si lo
+     elegido no forma un par que esta caja pueda cambiar, se corrige al par
+     más cercano en vez de dejar una cotización imposible en pantalla. */
+  const clave = monedasCambiables.join(",");
   React.useEffect(() => {
-    if (monedasCambiables.length < 2) return;
-    if (!monedasCambiables.includes(state.sourceCurrency)) {
-      dispatch({ type: "set-source-currency", currency: monedasCambiables.find((c) => c !== state.destinationCurrency) ?? monedasCambiables[0]! });
+    const divisas = clave.split(",").filter((c) => c && c !== "CUP");
+    if (!clave.includes("CUP") || divisas.length === 0) return;
+    const { sourceCurrency: s, destinationCurrency: d } = state;
+    if (s === "CUP") {
+      if (!divisas.includes(d)) dispatch({ type: "set-destination-currency", currency: divisas[0]! });
+    } else if (!divisas.includes(s)) {
+      dispatch({ type: "set-source-currency", currency: divisas[0]! });
+    } else if (d !== "CUP") {
+      dispatch({ type: "set-destination-currency", currency: "CUP" });
     }
-    if (!monedasCambiables.includes(state.destinationCurrency)) {
-      dispatch({ type: "set-destination-currency", currency: monedasCambiables.find((c) => c !== state.sourceCurrency) ?? monedasCambiables[0]! });
-    }
-  }, [monedasCambiables, state.sourceCurrency, state.destinationCurrency]);
+  }, [clave, state]);
 
   const dirty = hasMeaningfulData(state);
 

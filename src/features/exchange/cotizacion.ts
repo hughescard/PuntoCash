@@ -8,8 +8,8 @@
  *
  *   · divisa → CUP: el cliente vende; se aplica la compra.
  *   · CUP → divisa: el cliente compra; se aplica la venta.
- *   · divisa → otra divisa: la casa compra la primera y vende la segunda, a
- *     través del peso. No hay tasa cruzada propia.
+ *   · divisa → otra divisa: **no existe**. Toda tasa es contra el peso, así
+ *     que un cambio entre dos divisas son dos cambios, y se hacen como tales.
  *
  * El importe que se entrega se redondea **a la baja** al céntimo: la casa
  * nunca entrega una fracción que no tiene en la caja ni redondea a su favor
@@ -41,7 +41,7 @@ export interface Cotizacion {
   tasasAplicadas: readonly { code: string; lado: "compra" | "venta"; valor: number }[];
 }
 
-export type MotivoSinCotizar = "misma-moneda" | "sin-tasa" | "importe-invalido";
+export type MotivoSinCotizar = "misma-moneda" | "par-inexistente" | "sin-tasa" | "importe-invalido";
 
 function aLaBaja(valor: number): number {
   return Math.floor(valor * 100 + 1e-9) / 100;
@@ -54,6 +54,7 @@ export function cotizar(
   sourceAmount: number,
 ): { ok: true; value: Cotizacion } | { ok: false; reason: MotivoSinCotizar } {
   if (sourceCurrency === destinationCurrency) return { ok: false, reason: "misma-moneda" };
+  if (sourceCurrency !== MONEDA_LOCAL && destinationCurrency !== MONEDA_LOCAL) return { ok: false, reason: "par-inexistente" };
   if (!Number.isFinite(sourceAmount) || sourceAmount <= 0) return { ok: false, reason: "importe-invalido" };
 
   const tasa = (code: string) => tasas.find((t) => t.code === code) ?? null;
@@ -87,7 +88,8 @@ export function cotizar(
       destinationCurrency,
       sourceAmount,
       destinationAmount,
-      appliedRate: destinationAmount / sourceAmount,
+      /* La tasa tal cual, sin el redondeo del importe: «1 USD = 326,00 CUP». */
+      appliedRate: destino / sourceAmount,
       tasasAplicadas: usadas,
     },
   };

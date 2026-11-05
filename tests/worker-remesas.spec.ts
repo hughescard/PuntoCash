@@ -1,13 +1,13 @@
-import { expect, test, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
-import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
 
 /*
  * La jornada se siembra con 1.000 CUP, que es lo que abría el fondeo que había
  * aquí. La prueba de la caja cerrada vive ahora en su propio grupo, con la
  * línea de salida sin jornada.
  */
-test.use({ storageState: cajaConJornadaAbierta({ CUP: 1_000 }) });
+test.use({ fondos: { CUP: 1_000 } });
 
 async function entrarARemesas(page: Page) {
   await page.goto("/worker/caja");
@@ -23,7 +23,7 @@ async function searchReadyRemittance(page: Page) {
 }
 
 test.describe("Remesas — caja cerrada", () => {
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
+  test.use({ fondos: null });
 
   test("is code-only and blocks a closed Caja", async ({ page }) => {
     await page.goto("/worker/nueva-operacion/remesas");

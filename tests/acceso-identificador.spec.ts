@@ -2,8 +2,6 @@ import { expect, test } from "@playwright/test";
 
 import { ADMIN_PASSWORD, DEMO_CODE, submitCredentials } from "./admin-helpers";
 import { submitSuperAdminCredentials } from "./super-admin-helpers";
-import { EQUIPO_SIN_JORNADA } from "./storage-state";
-import { esperarBotonVivo } from "./worker-helpers";
 
 /**
  * En las tres consolas se entra con el **identificador de acceso** —un nombre
@@ -42,24 +40,6 @@ test("Super administración: el acceso pide usuario o correo, y el usuario entra
   await page.waitForURL(/\/super-admin\/inicio$/);
 
   await expect(page.getByRole("banner").getByText("Elena Marrero Fonseca")).toBeVisible();
-});
-
-test.describe("Worker", () => {
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
-
-  test("entra con el nombre de usuario y con el correo", async ({ page }) => {
-    for (const cuenta of ["jperez", "jperez@puntocash.com"]) {
-      await page.goto("/worker/login");
-      await esperarBotonVivo(page, "Iniciar sesión", "el inicio de sesión de Worker");
-      await page.getByLabel("Usuario o correo electrónico").fill(cuenta);
-      await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN_PASSWORD);
-      await page.getByRole("button", { name: "Iniciar sesión" }).click();
-      await page.waitForURL(/\/worker\/verificacion$/);
-      await expect(page.getByRole("heading", { name: "Verifica que eres tú" })).toBeVisible();
-      /* El mismo destino se escriba el usuario o el correo: es la misma cuenta. */
-      await expect(page.getByText("j•••z@puntocash.com")).toBeVisible();
-    }
-  });
 });
 
 test("el alta de un usuario dice que el identificador no es un correo, y lo rechaza si lo es", async ({ page }) => {
