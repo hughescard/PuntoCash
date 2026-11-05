@@ -2,6 +2,9 @@ import { expect, test } from "@playwright/test";
 
 import {
   abrirJornada,
+  abrirJornadaDeclarada,
+  aperturaDeclarada,
+  declararConteoDeApertura,
   ajustarEfectivo,
   cerrarJornada,
   compararApertura,
@@ -104,6 +107,40 @@ test.describe("Apertura a ciegas", () => {
     const sol = solicitudesDeJornada(r.value.id);
     expect(sol).toHaveLength(1);
     expect(sol[0]).toMatchObject({ tipo: "apertura", currency: "USD", referencia: 200, contado: 300, diferencia: 100, motivo: "Reposición de fondos", estado: "pendiente" });
+  });
+});
+
+test.describe("Conteo de apertura declarado", () => {
+  test("se declara una vez: un segundo conteo se rechaza y la apertura usa el primero", () => {
+    const ctx = puesto(null, ["CUP", "USD"]);
+    const d = declararConteoDeApertura(ctx, [
+      { currency: "CUP", contado: 50_000 },
+      { currency: "USD", contado: 300 },
+    ]);
+    expect(d.ok).toBe(true);
+    const otra = declararConteoDeApertura(ctx, [
+      { currency: "CUP", contado: 60_000 },
+      { currency: "USD", contado: 300 },
+    ]);
+    expect(otra).toMatchObject({ ok: false, reason: "conteo-ya-declarado" });
+    expect(aperturaDeclarada(ctx)?.comparacion.monedas.find((m) => m.currency === "CUP")?.contado).toBe(50_000);
+
+    const r = abrirJornadaDeclarada(ctx, []);
+    expect(r.ok).toBe(true);
+    expect(saldo(ctx, "CUP")).toBe(50_000);
+    /* Abierta la jornada, la declaración desaparece. */
+    expect(aperturaDeclarada(ctx)).toBeNull();
+  });
+
+  test("sin conteo declarado no se abre por esta vía", () => {
+    const ctx = puesto(null, ["CUP"]);
+    expect(abrirJornadaDeclarada(ctx, [])).toMatchObject({ ok: false, reason: "sin-conteo-declarado" });
+  });
+
+  test("con el conteo declarado, la caja no gana una moneda que no se contó", () => {
+    const ctx = puesto(null, ["CUP"]);
+    expect(declararConteoDeApertura(ctx, [{ currency: "CUP", contado: 1_000 }]).ok).toBe(true);
+    expect(habilitarMoneda(ctx, "USD")).toMatchObject({ ok: false, reason: "conteo-ya-declarado" });
   });
 });
 

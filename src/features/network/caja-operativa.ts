@@ -33,6 +33,7 @@ import type {
   OperationServiceName,
 } from "@/features/operations/operations-history";
 
+import { almacen } from "./almacen";
 import { derivar, registrarSolicitudes } from "./aprobaciones";
 import { estadoDeSede } from "./assignments";
 import { anotarSaldoDeCaja, habilitarMonedaEnCaja, monedasDeCaja, monedasDeSede, sedeManejaMoneda } from "./currencies";
@@ -223,7 +224,10 @@ export type CajaDenial =
   | "diferencia-cero"
   | "servicio-no-habilitado"
   | "sin-tasa"
-  | "fondos-insuficientes";
+  | "fondos-insuficientes"
+  /** Ya hay un conteo de apertura declarado: no se cuenta otra vez. */
+  | "conteo-ya-declarado"
+  | "sin-conteo-declarado";
 
 export type CajaResult<T> = { ok: true; value: T } | { ok: false; reason: CajaDenial; currency?: string };
 
@@ -358,6 +362,83 @@ function redondear(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/* -- Conteo de apertura declarado ----------------------------------------- */
+
+/**
+ * El conteo de apertura **se declara una vez**. Al continuar, el trabajador
+ * acepta que las cifras no se podrán cambiar; desde ese momento quedan en el
+ * servidor y la apertura solo puede confirmarse con ellas. Salir de la
+ * pantalla y volver a entrar lleva a la revisión de lo declarado, no a un
+ * conteo nuevo: si no, ver lo que dejó el cierre anterior y volver a «contar»
+ * borraría cualquier diferencia.
+ *
+ * Es de quien contó en esa caja. Se descarta cuando la caja abre jornada.
+ */
+interface ConteoDeclarado {
+  registerId: string;
+  workerId: string;
+  declaradoAt: string;
+  conteos: readonly { currency: string; contado: number }[];
+}
+
+const declarados = almacen("conteos-de-apertura", () => new Map<string, ConteoDeclarado>());
+const claveDeclarado = (ctx: Pick<ContextoDeCaja, "register" | "worker">) => `${ctx.register.id}|${ctx.worker.id}`;
+
+export interface AperturaDeclarada {
+  declaradoAt: string;
+  comparacion: ComparacionDeApertura;
+}
+
+export function declararConteoDeApertura(
+  ctx: ContextoDeCaja,
+  conteos: readonly { currency: string; contado: number }[],
+  now = new Date(),
+): CajaResult<AperturaDeclarada> {
+  if (declarados.has(claveDeclarado(ctx))) return no("conteo-ya-declarado");
+  if (jornadaAbiertaDeTrabajador(ctx.worker.id)) return no("trabajador-con-otra-jornada");
+  const comparada = compararApertura(ctx, conteos);
+  if (!comparada.ok) return comparada;
+  const declaradoAt = now.toISOString();
+  declarados.set(claveDeclarado(ctx), {
+    registerId: ctx.register.id,
+    workerId: ctx.worker.id,
+    declaradoAt,
+    conteos: conteos.map((c) => ({ currency: c.currency, contado: c.contado })),
+  });
+  return { ok: true, value: { declaradoAt, comparacion: comparada.value } };
+}
+
+/** El conteo que declaró quien opera en esta caja y que todavía no abrió jornada. */
+export function aperturaDeclarada(ctx: ContextoDeCaja): AperturaDeclarada | null {
+  const d = declarados.get(claveDeclarado(ctx));
+  if (!d) return null;
+  const comparada = compararApertura(ctx, d.conteos);
+  return comparada.ok ? { declaradoAt: d.declaradoAt, comparacion: comparada.value } : null;
+}
+
+/** Abre la jornada con **el conteo declarado**; del trabajador solo llegan los motivos. */
+export function abrirJornadaDeclarada(
+  ctx: ContextoDeCaja,
+  explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
+  now = new Date(),
+): CajaResult<Jornada> {
+  const d = declarados.get(claveDeclarado(ctx));
+  if (!d) return no("sin-conteo-declarado");
+  const porMoneda = new Map(explicaciones.map((e) => [e.currency, e]));
+  return abrirJornada(
+    ctx,
+    d.conteos.map((c) => {
+      const e = porMoneda.get(c.currency);
+      return { ...c, ...(e?.motivo ? { motivo: e.motivo } : {}), ...(e?.observaciones ? { observaciones: e.observaciones } : {}) };
+    }),
+    now,
+  );
+}
+
+function descartarDeclarados(registerId: string): void {
+  for (const [k, d] of declarados) if (d.registerId === registerId) declarados.delete(k);
+}
+
 /**
  * Abre la jornada con lo contado. Toda diferencia con el cierre anterior
  * necesita su motivo, y cada una nace como solicitud de aprobación.
@@ -414,6 +495,7 @@ export function abrirJornada(ctx: ContextoDeCaja, conteos: readonly ConteoDeAper
     }
   }
   registrarJornada(jornada);
+  descartarDeclarados(ctx.register.id);
   registrarSolicitudes(derivar(jornada));
   marcarActividad(ctx.terminal.id, now);
   return { ok: true, value: jornada };
@@ -507,6 +589,8 @@ export function habilitarMoneda(ctx: ContextoDeCaja, currency: string): CajaResu
   if (bloqueoDe(ctx)) return no("bloqueada");
   if (!sedeManejaMoneda(ctx.sede.id, currency)) return no("moneda-fuera-de-la-sede", currency);
   if (monedasHabilitadas(ctx.register.id).has(currency)) return no("ya-habilitada", currency);
+  /* Con el conteo ya declarado, la caja no gana una moneda que no se contó. */
+  if (!jornadaAbiertaDeCaja(ctx.register.id) && declarados.has(claveDeclarado(ctx))) return no("conteo-ya-declarado", currency);
   habilitarMonedaEnCaja(ctx.register.id, currency);
   return { ok: true, value: currency };
 }

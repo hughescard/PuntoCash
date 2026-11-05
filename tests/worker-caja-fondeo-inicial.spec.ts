@@ -26,6 +26,7 @@ async function contar(page: Page, amounts: Record<string, string>) {
     await rellenar(page.getByLabel(`Efectivo contado en ${currency}`), value);
   }
   await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("button", { name: "Confirmar conteo" }).click();
   await expect(page.getByRole("heading", { name: "Revisión de la apertura" })).toBeVisible();
 }
 
@@ -99,11 +100,27 @@ test.describe("abrir jornada — primera jornada de la caja", () => {
     await expect(page.getByLabel(/Motivo de la diferencia/)).toHaveCount(0);
   });
 
-  test("avisa de que el conteo no se podrá cambiar y la revisión no permite recontar", async ({ page }) => {
+  test("al continuar avisa de que los valores no podrán cambiarse; «Seguir contando» vuelve al conteo", async ({ page }) => {
     await page.goto("/worker/caja/fondeo-inicial");
-    await expect(page.getByText("Lo que introduzcas no se podrá cambiar")).toBeVisible();
+    await esperarFondeoVivo(page);
+    for (const [currency, value] of Object.entries(CUATRO)) await rellenar(page.getByLabel(`Efectivo contado en ${currency}`), value);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    const aviso = page.getByRole("dialog");
+    await expect(aviso.getByRole("heading", { name: "Los valores introducidos no podrán ser cambiados" })).toBeVisible();
+    await expect(aviso.getByText("4.250,00")).toBeVisible();
+    await aviso.getByRole("button", { name: "Seguir contando" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("4250");
+  });
+
+  test("un conteo declarado no se repite: salir y volver lleva a su revisión", async ({ page }) => {
     await contar(page, CUATRO);
     await expect(page.getByRole("button", { name: "Volver a contar" })).toHaveCount(0);
+    await page.goto("/worker/caja");
+    await page.goto("/worker/caja/fondeo-inicial");
+    await expect(page.getByRole("heading", { name: "Revisión de la apertura" })).toBeVisible();
+    await expect(page.getByLabel("Efectivo contado en USD")).toHaveCount(0);
+    await expect(page.getByText("4.250,00 USD")).toBeVisible();
   });
 
   test("confirmar abre la jornada con lo contado y un Fondeo inicial por moneda con efectivo", async ({ page }) => {

@@ -118,6 +118,7 @@ export async function abrirPorPantalla(page: Page, funds: Record<string, string>
     await rellenar(campo, funds[code] ?? "0");
   }
   await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("button", { name: "Confirmar conteo" }).click();
   await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
   await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
     timeout: 10_000,

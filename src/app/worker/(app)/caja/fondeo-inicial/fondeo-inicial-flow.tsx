@@ -14,6 +14,13 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   Input,
   Select,
   SelectContent,
@@ -36,7 +43,7 @@ import {
 import { useCaja } from "@/features/caja/use-caja";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
 import type { ComparacionDeApertura } from "@/features/network/caja-operativa";
-import { abrirJornadaAction, compararAperturaAction } from "../../../_actions";
+import { abrirJornadaAction, declararAperturaAction } from "../../../_actions";
 
 const CAJA_ROUTE = "/worker/caja" as Route;
 const ANADIR_MONEDA_ROUTE = "/worker/caja/anadir-moneda?returnTo=fondeo-inicial" as Route;
@@ -73,11 +80,19 @@ export function FondeoInicialFlow(): React.JSX.Element {
   const monedas = vista.apertura.monedas;
   const anterior = vista.apertura.cierreAnterior;
 
-  const [step, setStep] = React.useState<Step>("conteo");
+  const declarada = vista.aperturaDeclarada;
+  const [pasoElegido, setStep] = React.useState<Step>("conteo");
   const [amounts, setAmounts] = React.useState<Record<string, string>>(() => consumeFondeoInicialDraft()?.amounts ?? {});
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | undefined>();
-  const [comparacion, setComparacion] = React.useState<ComparacionDeApertura | null>(null);
+  const [comparacionLocal, setComparacion] = React.useState<ComparacionDeApertura | null>(null);
+  /* Un conteo ya declarado —en otra pestaña, o antes de salir y volver— no se
+     vuelve a contar: se revisa. */
+  const step: Step = declarada && pasoElegido === "conteo" ? "revision" : pasoElegido;
+  const comparacion = comparacionLocal ?? declarada?.comparacion ?? null;
+  /** Lo contado, a la espera de que el trabajador acepte que no se podrá cambiar. */
+  const [porDeclarar, setPorDeclarar] = React.useState<{ currency: string; contado: number }[] | null>(null);
+
   const [explicaciones, setExplicaciones] = React.useState<Record<string, Explicacion>>({});
   const [revisionSubmitted, setRevisionSubmitted] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
@@ -113,22 +128,36 @@ export function FondeoInicialFlow(): React.JSX.Element {
       setErrors(nextErrors);
       return;
     }
+    setPorDeclarar(conteos);
+  }
+
+  /** El trabajador acepta el aviso: el conteo queda declarado y ya no cambia. */
+  async function handleDeclarar() {
+    if (!porDeclarar || submitting) return;
     setSubmitting(true);
-    const r = await compararAperturaAction(conteos);
+    const r = await declararAperturaAction(porDeclarar);
     setSubmitting(false);
+    setPorDeclarar(null);
     if (!r.ok) {
+      if (r.reason === "conteo-ya-declarado") {
+        router.refresh();
+        return;
+      }
       setFormError(
         r.reason === "jornada-abierta"
           ? "La caja ya tiene una jornada abierta."
-          : r.reason === "bloqueada"
-            ? "La sede no está operando: no se puede abrir una jornada."
-            : "No se pudo comprobar el conteo. Revisa las cifras e inténtalo de nuevo.",
+          : r.reason === "trabajador-con-otra-jornada"
+            ? "Ya tienes una jornada abierta en otra caja. Ciérrala antes de abrir esta."
+            : r.reason === "bloqueada"
+              ? "La sede no está operando: no se puede abrir una jornada."
+              : "No se pudo registrar el conteo. Revisa las cifras e inténtalo de nuevo.",
       );
       return;
     }
-    setComparacion(r.value);
+    setComparacion(r.value.comparacion);
     setRevisionSubmitted(false);
     setStep("revision");
+    router.refresh();
   }
 
   const diferencias = comparacion && comparacion.cierreAnterior
@@ -148,11 +177,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
     if (diferencias.some((d) => explicacionIncompleta(d.currency))) return;
     setSubmitting(true);
     const r = await abrirJornadaAction(
-      comparacion.monedas.map((m) => ({
-        currency: m.currency,
-        contado: m.contado,
-        ...(m.diferencia !== 0 && comparacion.cierreAnterior ? explicaciones[m.currency] : {}),
-      })),
+      comparacion.cierreAnterior ? diferencias.map((d) => ({ currency: d.currency, ...explicaciones[d.currency] })) : [],
     );
     setSubmitting(false);
     if (!r.ok) {
@@ -230,7 +255,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
           <h1 className="text-screen-title text-text-primary">Revisión de la apertura</h1>
           <p className="mt-2 max-w-2xl text-body text-text-secondary">
             {comparacion.cierreAnterior
-              ? "Esto es lo que contaste comparado con lo que dejó el cierre anterior."
+              ? "Tu conteo declarado, comparado con lo que dejó el cierre anterior. Las cifras ya no se pueden cambiar."
               : "Es la primera jornada de esta caja: no hay un cierre anterior con el que comparar."}
           </p>
         </div>
@@ -384,10 +409,6 @@ export function FondeoInicialFlow(): React.JSX.Element {
               ¿Hay en la caja una moneda que no aparece? <span className="font-medium text-primary underline">Añádela a la caja →</span>
             </Link>
 
-            <Alert variant="warning" title="Lo que introduzcas no se podrá cambiar">
-              Tómate el tiempo que necesites para contar. Escribe las cifras solo cuando estés seguro de haber terminado: al continuar quedan registradas como tu conteo de apertura.
-            </Alert>
-
             {formError ? <Alert variant="error" title={formError} /> : null}
 
             <div className="flex items-center justify-end gap-3 border-t border-border pt-5">
@@ -407,11 +428,47 @@ export function FondeoInicialFlow(): React.JSX.Element {
             <CardTitle>Cómo se abre la caja</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-body-sm text-text-secondary">
-            <p>Primero cuentas. Después verás lo que dejó el cierre anterior y, si algo no coincide, dirás por qué.</p>
+            <p>Cuenta con calma. Cuando continúes, lo que escribiste queda declarado como tu conteo y ya no se puede cambiar.</p>
+            <p>Después verás lo que dejó el cierre anterior y, si algo no coincide, dirás por qué.</p>
             <p>Lo que cuentes es el efectivo con el que empieza la jornada.</p>
           </CardContent>
         </Card>
       </form>
+
+      {porDeclarar ? (
+        <Dialog open onOpenChange={(v) => (v || submitting ? undefined : setPorDeclarar(null))}>
+          <DialogContent size="md">
+            <DialogHeader>
+              <DialogTitle>Los valores introducidos no podrán ser cambiados</DialogTitle>
+              <DialogDescription>
+                Si confirmas, este será tu conteo de apertura de {caja.summary.register}. Si todavía no terminaste de contar,
+                vuelve y termina antes de confirmar.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogBody>
+              <ul className="flex flex-col divide-y divide-border rounded-control border border-border">
+                {porDeclarar.map((c) => (
+                  <li key={c.currency} className="flex items-center justify-between gap-4 px-4 py-2.5 text-body-sm">
+                    <span className="flex items-center gap-2 font-semibold text-text-primary">
+                      <CurrencyFlag currency={c.currency} />
+                      {c.currency}
+                    </span>
+                    <span className="pc-numeric font-semibold">{formatMoney({ amount: c.contado, currency: c.currency })}</span>
+                  </li>
+                ))}
+              </ul>
+            </DialogBody>
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={() => setPorDeclarar(null)} disabled={submitting}>
+                Seguir contando
+              </Button>
+              <Button type="button" loading={submitting} onClick={() => void handleDeclarar()}>
+                Confirmar conteo
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </div>
   );
 }

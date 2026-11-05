@@ -11,17 +11,16 @@ import {
 } from "@/features/admin/pending-access";
 import { DEMO_CODE } from "@/features/auth/two-factor";
 import {
-  abrirJornada,
+  abrirJornadaDeclarada,
   ajustarEfectivo,
   cerrarJornada,
-  compararApertura,
   contextoDe,
+  declararConteoDeApertura,
   habilitarMoneda,
   registrarCambio,
   registrarOperacionSimple,
+  type AperturaDeclarada,
   type CajaDenial,
-  type ComparacionDeApertura,
-  type ConteoDeApertura,
   type ContextoDeCaja,
   type OperacionPorRegistrar,
 } from "@/features/network/caja-operativa";
@@ -196,15 +195,19 @@ async function conCaja<T>(fn: (ctx: ContextoDeCaja) => AccionDeCaja<T>): Promise
   return r;
 }
 
-export async function compararAperturaAction(
+/** Declara el conteo de apertura: desde aquí ya no se cambia. */
+export async function declararAperturaAction(
   conteos: readonly { currency: string; contado: number }[],
-): Promise<AccionDeCaja<ComparacionDeApertura>> {
-  return conCaja((ctx) => compararApertura(ctx, conteos));
+): Promise<AccionDeCaja<AperturaDeclarada>> {
+  return conCaja((ctx) => declararConteoDeApertura(ctx, conteos));
 }
 
-export async function abrirJornadaAction(conteos: readonly ConteoDeApertura[]): Promise<AccionDeCaja<{ openedAt: string }>> {
+/** Abre con lo declarado; solo viajan los motivos de las diferencias. */
+export async function abrirJornadaAction(
+  explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
+): Promise<AccionDeCaja<{ openedAt: string }>> {
   return conCaja((ctx) => {
-    const r = abrirJornada(ctx, conteos);
+    const r = abrirJornadaDeclarada(ctx, explicaciones);
     return r.ok ? { ok: true, value: { openedAt: r.value.openedAt } } : r;
   });
 }

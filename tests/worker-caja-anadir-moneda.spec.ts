@@ -276,6 +276,7 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
     /* Se cuentan todas las monedas de la caja: las que no tienen efectivo, en cero. */
     for (const c of ["USD", "EUR", "GBP"]) await page.getByLabel(`Efectivo contado en ${c}`).fill("0");
     await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Confirmar conteo" }).click();
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
     await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
       timeout: 3000,
