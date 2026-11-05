@@ -116,7 +116,8 @@ export function derivar(j: Jornada): Solicitud[] {
         referencia: a.esperado,
         contado: a.contado,
         diferencia: a.diferencia,
-        motivo: a.motivo ?? "Otro",
+        motivo: a.motivo ?? SIN_EXPLICAR,
+        ...(mov?.observaciones ? { observaciones: mov.observaciones } : {}),
         ...(mov ? { movimientoId: mov.id } : {}),
         estado: "pendiente",
       });
@@ -183,6 +184,21 @@ const solicitudes: Solicitud[] = (ALMACEN.__puntocashSolicitudes ??= sembrar(new
  * Las solicitudes que nacen de lo que un trabajador acaba de registrar
  * (`caja-operativa.ts`). Nacen pendientes, sin umbral (**FR-AD-APR-1**).
  */
+/**
+ * Lo que figura como motivo de una diferencia de cierre que el trabajador no
+ * llegó a explicar: la jornada se cierra al confirmar el conteo y los motivos
+ * se piden justo después.
+ */
+export const SIN_EXPLICAR = "Sin explicar";
+
+/** El motivo que el trabajador da, justo después de cerrar, a una diferencia de cierre. */
+export function explicarSolicitudDeCierre(jornadaId: string, currency: string, motivo: string, observaciones?: string): void {
+  const s = solicitudes.find((x) => x.id === `SOL-${jornadaId}-C-${currency}`);
+  if (!s || s.estado !== "pendiente") return;
+  s.motivo = motivo;
+  if (observaciones) s.observaciones = observaciones;
+}
+
 export function registrarSolicitudes(nuevas: readonly Solicitud[]): void {
   for (const s of nuevas) if (!solicitudes.some((x) => x.id === s.id)) solicitudes.push(s);
 }

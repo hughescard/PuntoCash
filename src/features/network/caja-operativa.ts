@@ -35,7 +35,7 @@ import type {
 } from "@/features/operations/operations-history";
 
 import { almacen } from "./almacen";
-import { derivar, registrarSolicitudes } from "./aprobaciones";
+import { derivar, explicarSolicitudDeCierre, registrarSolicitudes } from "./aprobaciones";
 import { estadoDeSede } from "./assignments";
 import { anotarSaldoDeCaja, habilitarMonedaEnCaja, monedasDeCaja, monedasDeSede, sedeManejaMoneda } from "./currencies";
 import { findTerminalById, marcarActividad } from "./devices";
@@ -43,6 +43,7 @@ import {
   diaEnCuba,
   jornadaAbiertaDeCaja,
   jornadaAbiertaDeTrabajador,
+  jornadaPorId,
   registrarJornada,
   saldosDe,
   ultimaJornadaCerradaDeCaja,
@@ -237,8 +238,8 @@ export type CajaDenial =
   /** Ya hay un conteo de apertura declarado: no se cuenta otra vez. */
   | "conteo-ya-declarado"
   | "sin-conteo-declarado"
-  /** El arqueo de cierre ya está declarado: la jornada solo puede cerrarse. */
-  | "cierre-declarado";
+  /** Las diferencias de ese cierre ya se explicaron, o no hay nada que explicar. */
+  | "cierre-sin-explicacion-pendiente";
 
 export type CajaResult<T> = { ok: true; value: T } | { ok: false; reason: CajaDenial; currency?: string };
 
@@ -521,7 +522,6 @@ export function ajustarEfectivo(
   const propia = jornadaPropia(ctx);
   if (!propia.ok) return propia as CajaResult<MovimientoDeJornada>;
   const j = propia.value;
-  if (cierresDeclarados.has(j.id)) return no("cierre-declarado");
   if (bloqueoDe(ctx)) return no("bloqueada");
   if (!monedasHabilitadas(ctx.register.id).has(input.currency)) return no("moneda-no-habilitada", input.currency);
   if (!conteoValido(input.contado)) return no("conteo-invalido", input.currency);
@@ -551,6 +551,7 @@ export function cerrarJornada(
   ctx: ContextoDeCaja,
   conteos: readonly { currency: string; contado: number; motivo?: string; observaciones?: string }[],
   now = new Date(),
+  opciones: { motivosDespues?: boolean } = {},
 ): CajaResult<Jornada> {
   const propia = jornadaPropia(ctx);
   if (!propia.ok) return propia;
@@ -564,9 +565,11 @@ export function cerrarJornada(
     const c = porMoneda.get(currency)!;
     const esperado = saldoEnLibros(j, currency);
     const diferencia = redondear(c.contado - esperado);
-    const r = revisarExplicacion(diferencia, c, MOTIVOS_DE_AJUSTE, currency);
-    if (!r.ok) return r as CajaResult<Jornada>;
-    arqueo.push({ currency, esperado, contado: c.contado, diferencia, ...(diferencia !== 0 ? { motivo: c.motivo } : {}) });
+    if (!opciones.motivosDespues) {
+      const r = revisarExplicacion(diferencia, c, MOTIVOS_DE_AJUSTE, currency);
+      if (!r.ok) return r as CajaResult<Jornada>;
+    }
+    arqueo.push({ currency, esperado, contado: c.contado, diferencia, ...(diferencia !== 0 && c.motivo ? { motivo: c.motivo } : {}) });
   }
   const at = now.toISOString();
   for (const a of arqueo.filter((x) => x.diferencia !== 0)) {
@@ -577,7 +580,7 @@ export function cerrarJornada(
       concepto: "Ajuste de cierre",
       currency: a.currency,
       amount: a.diferencia,
-      motivo: a.motivo,
+      ...(a.motivo ? { motivo: a.motivo } : {}),
       saldoAntes: a.esperado,
       ...(c.observaciones?.trim() ? { observaciones: c.observaciones.trim() } : {}),
     });
@@ -588,7 +591,6 @@ export function cerrarJornada(
   j.saldosFinales = arqueo.map((a) => ({ currency: a.currency, amount: a.contado }));
   j.sesionActiva = false;
   for (const s of j.saldosFinales) anotarSaldoDeCaja(j.registerId, s.currency, s.amount);
-  cierresDeclarados.delete(j.id);
   registrarSolicitudes(derivar(j));
   return { ok: true, value: j };
 }
@@ -598,90 +600,67 @@ function conteoDeCierreCompleto(monedas: readonly string[], conteos: readonly { 
   return monedas.every((c) => contadas.has(c)) && conteos.every((c) => monedas.includes(c.currency) && conteoValido(c.contado));
 }
 
-/* -- Conteo de cierre declarado (a ciegas) -------------------------------- */
+/* -- Arqueo y cierre a ciegas ---------------------------------------------- */
 
 /**
- * **El cierre se cuenta a ciegas** (decisión del 5/11/2026). Quien cierra no
- * ve el saldo en libros mientras cuenta: así no puede escribir una cifra que
- * cuadre sin tenerla, y su diferencia contra los libros —que salen de las
- * operaciones de su jornada— es suya. Por eso lo que declara es la referencia
- * creíble que recibe quien abre la jornada siguiente.
+ * **Arquear y cerrar es un solo acto** (decisiones del 5/11/2026).
  *
- * Como en la apertura, el conteo **se declara una vez**: después se le
- * enseña lo esperado y la diferencia, y solo puede explicarla y cerrar. Desde
- * que lo declara, la jornada no registra nada más —el efectivo ya está
- * contado—.
+ * Quien cierra cuenta **sin ver el saldo en libros**: así no puede escribir
+ * una cifra que cuadre sin tenerla, y su diferencia contra los libros —que
+ * salen de las operaciones de su jornada— es suya. Lo que declara es lo que
+ * recibe quien abre la jornada siguiente.
+ *
+ * Al confirmar el conteo **la jornada queda cerrada en ese instante**: no hay
+ * un estado intermedio en el que, vista ya la diferencia, se pueda cancelar y
+ * volver a contar copiando lo esperado. Los motivos de las diferencias se
+ * piden justo después (`explicarCierre`). Si el trabajador no llega a darlos
+ * —se va la luz, cierra el navegador—, la diferencia llega igual al
+ * administrador, como «Sin explicar».
  */
-interface CierreDeclaradoGuardado {
-  jornadaId: string;
-  declaradoAt: string;
-  conteos: readonly { currency: string; contado: number }[];
-}
-
-const cierresDeclarados = almacen("conteos-de-cierre", () => new Map<string, CierreDeclaradoGuardado>());
-
-export interface CierreDeclarado {
-  declaradoAt: string;
-  monedas: readonly { currency: string; esperado: number; contado: number; diferencia: number }[];
-}
-
-function compararCierre(j: Jornada, d: CierreDeclaradoGuardado): CierreDeclarado {
-  return {
-    declaradoAt: d.declaradoAt,
-    monedas: d.conteos.map((c) => {
-      const esperado = saldoEnLibros(j, c.currency);
-      return { currency: c.currency, esperado, contado: c.contado, diferencia: redondear(c.contado - esperado) };
-    }),
-  };
-}
-
-export function declararConteoDeCierre(
+export function cerrarConArqueo(
   ctx: ContextoDeCaja,
   conteos: readonly { currency: string; contado: number }[],
   now = new Date(),
-): CajaResult<CierreDeclarado> {
-  const propia = jornadaPropia(ctx);
-  if (!propia.ok) return propia as CajaResult<CierreDeclarado>;
-  const j = propia.value;
-  if (cierresDeclarados.has(j.id)) return no("conteo-ya-declarado");
-  const monedas = [...monedasHabilitadas(ctx.register.id)];
-  if (!conteoDeCierreCompleto(monedas, conteos)) return no("conteo-invalido");
-  const d: CierreDeclaradoGuardado = {
-    jornadaId: j.id,
-    declaradoAt: now.toISOString(),
-    conteos: monedas.map((currency) => ({ currency, contado: conteos.find((c) => c.currency === currency)!.contado })),
-  };
-  cierresDeclarados.set(j.id, d);
-  return { ok: true, value: compararCierre(j, d) };
-}
-
-/** El arqueo de cierre que declaró quien tiene la jornada abierta en esta caja. */
-export function cierreDeclarado(ctx: ContextoDeCaja): CierreDeclarado | null {
-  const j = jornadaAbiertaDeCaja(ctx.register.id);
-  if (!j || j.workerId !== ctx.worker.id) return null;
-  const d = cierresDeclarados.get(j.id);
-  return d ? compararCierre(j, d) : null;
-}
-
-/** Cierra con **el conteo declarado**; del trabajador solo llegan los motivos. */
-export function cerrarJornadaDeclarada(
-  ctx: ContextoDeCaja,
-  explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
-  now = new Date(),
 ): CajaResult<Jornada> {
-  const propia = jornadaPropia(ctx);
-  if (!propia.ok) return propia;
-  const d = cierresDeclarados.get(propia.value.id);
-  if (!d) return no("sin-conteo-declarado");
-  const porMoneda = new Map(explicaciones.map((e) => [e.currency, e]));
   return cerrarJornada(
     ctx,
-    d.conteos.map((c) => {
-      const e = porMoneda.get(c.currency);
-      return { ...c, ...(e?.motivo ? { motivo: e.motivo } : {}), ...(e?.observaciones ? { observaciones: e.observaciones } : {}) };
-    }),
+    conteos.map((c) => ({ currency: c.currency, contado: c.contado })),
     now,
+    { motivosDespues: true },
   );
+}
+
+/**
+ * Los motivos de las diferencias de un cierre recién hecho. Solo quien cerró,
+ * desde la misma caja, todos a la vez y una sola vez.
+ */
+export function explicarCierre(
+  ctx: ContextoDeCaja,
+  jornadaId: string,
+  explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
+): CajaResult<Jornada> {
+  const j = jornadaPorId(jornadaId);
+  if (!j || j.workerId !== ctx.worker.id || j.registerId !== ctx.register.id) return no("jornada-de-otro");
+  if (j.estado !== "cerrada" || !j.arqueo) return no("cierre-sin-explicacion-pendiente");
+  const pendientes = j.arqueo.monedas.filter((a) => a.diferencia !== 0 && !a.motivo);
+  if (pendientes.length === 0) return no("cierre-sin-explicacion-pendiente");
+  const porMoneda = new Map(explicaciones.map((e) => [e.currency, e]));
+  for (const a of pendientes) {
+    const r = revisarExplicacion(a.diferencia, porMoneda.get(a.currency), MOTIVOS_DE_AJUSTE, a.currency);
+    if (!r.ok) return r as CajaResult<Jornada>;
+  }
+  for (const a of pendientes) {
+    const e = porMoneda.get(a.currency)!;
+    const observaciones = e.observaciones?.trim() || undefined;
+    a.motivo = e.motivo;
+    const mov = j.movimientos.find((m) => m.concepto === "Ajuste de cierre" && m.currency === a.currency);
+    if (mov) {
+      mov.motivo = e.motivo;
+      if (observaciones) mov.observaciones = observaciones;
+    }
+    explicarSolicitudDeCierre(j.id, a.currency, e.motivo!, observaciones);
+  }
+  return { ok: true, value: j };
 }
 
 /* -- Añadir moneda -------------------------------------------------------- */
@@ -693,7 +672,6 @@ export function habilitarMoneda(ctx: ContextoDeCaja, currency: string): CajaResu
   /* Con el conteo ya declarado, la caja no gana una moneda que no se contó. */
   const abierta = jornadaAbiertaDeCaja(ctx.register.id);
   if (!abierta && declarados.has(claveDeclarado(ctx))) return no("conteo-ya-declarado", currency);
-  if (abierta && cierresDeclarados.has(abierta.id)) return no("cierre-declarado", currency);
   habilitarMonedaEnCaja(ctx.register.id, currency);
   return { ok: true, value: currency };
 }
@@ -727,7 +705,6 @@ function comprobarOperar(ctx: ContextoDeCaja, servicio: OperationServiceName): C
   const propia = jornadaPropia(ctx);
   if (!propia.ok) return propia;
   const j = propia.value;
-  if (cierresDeclarados.has(j.id)) return no("cierre-declarado");
   if (bloqueoDe(ctx)) return no("bloqueada");
   const id = SERVICIO_DE[servicio];
   if (!id || !ctx.sede.services.includes(id)) return no("servicio-no-habilitado");

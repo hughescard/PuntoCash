@@ -4,9 +4,8 @@ import {
   abrirJornada,
   abrirJornadaDeclarada,
   aperturaDeclarada,
-  cerrarJornadaDeclarada,
-  cierreDeclarado,
-  declararConteoDeCierre,
+  cerrarConArqueo,
+  explicarCierre,
   declararConteoDeApertura,
   ajustarEfectivo,
   cerrarJornada,
@@ -147,22 +146,29 @@ test.describe("Conteo de apertura declarado", () => {
   });
 });
 
-test.describe("Cierre a ciegas declarado y apertura con totales", () => {
-  test("el arqueo se declara una vez, bloquea la jornada y cierra con lo declarado", () => {
+test.describe("Arqueo y cierre en un acto; apertura con totales", () => {
+  test("confirmar el conteo cierra; la diferencia nace «Sin explicar» y se explica una vez", () => {
     const ctx = puesto({ CUP: 10_000 });
-    const d = declararConteoDeCierre(ctx, [{ currency: "CUP", contado: 9_900 }]);
-    expect(d.ok && d.value.monedas[0]).toMatchObject({ esperado: 10_000, contado: 9_900, diferencia: -100 });
-    expect(declararConteoDeCierre(ctx, [{ currency: "CUP", contado: 10_000 }])).toMatchObject({ ok: false, reason: "conteo-ya-declarado" });
-    expect(ajustarEfectivo(ctx, { currency: "CUP", contado: 10_000, motivo: "Sobrante detectado" })).toMatchObject({ ok: false, reason: "cierre-declarado" });
-    expect(cierreDeclarado(ctx)?.monedas[0]?.contado).toBe(9_900);
-
-    expect(cerrarJornadaDeclarada(ctx, [])).toMatchObject({ ok: false, reason: "motivo-requerido" });
-    const r = cerrarJornadaDeclarada(ctx, [{ currency: "CUP", motivo: "Faltante detectado" }]);
+    const r = cerrarConArqueo(ctx, [{ currency: "CUP", contado: 9_900 }]);
     expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const j = r.value;
+    expect(j.estado).toBe("cerrada");
+    expect(j.arqueo?.monedas[0]).toMatchObject({ esperado: 10_000, contado: 9_900, diferencia: -100 });
+    expect(solicitudesDeJornada(j.id).find((s) => s.tipo === "cierre")?.motivo).toBe("Sin explicar");
 
-    /* Quien abre recibe lo declarado, no los libros. */
-    const entregado = estadoDeCaja(ctx).apertura.entregado;
-    expect(entregado).toEqual([{ currency: "CUP", amount: 9_900 }]);
+    /* Ya cerrada: no se cuenta otra vez. */
+    expect(cerrarConArqueo(ctx, [{ currency: "CUP", contado: 10_000 }])).toMatchObject({ ok: false, reason: "jornada-no-abierta" });
+
+    expect(explicarCierre(ctx, j.id, [{ currency: "CUP", motivo: "Sobrante detectado" }])).toMatchObject({ ok: false, reason: "motivo-incompatible" });
+    expect(explicarCierre(ctx, j.id, [{ currency: "CUP", motivo: "Faltante detectado", observaciones: "Billete roto" }]).ok).toBe(true);
+    const s = solicitudesDeJornada(j.id).find((x) => x.tipo === "cierre");
+    expect(s).toMatchObject({ motivo: "Faltante detectado", observaciones: "Billete roto" });
+    expect(j.movimientos.find((m) => m.concepto === "Ajuste de cierre")?.motivo).toBe("Faltante detectado");
+    expect(explicarCierre(ctx, j.id, [{ currency: "CUP", motivo: "Retiro de fondos" }])).toMatchObject({ ok: false, reason: "cierre-sin-explicacion-pendiente" });
+
+    /* Quien abre recibe lo contado, no los libros. */
+    expect(estadoDeCaja(ctx).apertura.entregado).toEqual([{ currency: "CUP", amount: 9_900 }]);
   });
 });
 

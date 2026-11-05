@@ -258,8 +258,6 @@ export interface EstadoParaAcciones {
   bloqueada: boolean;
   /** Quien opera tiene abierta una jornada en otra caja. */
   otraCaja?: boolean;
-  /** El arqueo de cierre ya está declarado: la jornada solo puede cerrarse. */
-  cierreDeclarado?: boolean;
 }
 
 /** Lo que la caja deja hacer ahora mismo, cada cosa con el motivo si no se puede. */
@@ -287,7 +285,7 @@ export function getCajaActions(e: EstadoParaAcciones): readonly CajaAction[] {
       description: "Incorpora una nueva divisa a los saldos de la caja.",
       availability: "available",
       href: "/worker/caja/anadir-moneda",
-      ...(deOtro ? no("Jornada de otro trabajador") : e.cierreDeclarado ? no("Arqueo de cierre declarado") : e.bloqueada ? no("Sede sin operar") : {}),
+      ...(deOtro ? no("Jornada de otro trabajador") : e.bloqueada ? no("Sede sin operar") : {}),
     },
     {
       id: "ajustar-efectivo",
@@ -295,7 +293,7 @@ export function getCajaActions(e: EstadoParaAcciones): readonly CajaAction[] {
       description: "Corrige un saldo tras un conteo físico.",
       availability: "available",
       href: "/worker/caja/ajustar-efectivo",
-      ...(!e.propia ? no("Requiere jornada abierta") : e.cierreDeclarado ? no("Arqueo de cierre declarado") : e.bloqueada ? no("Sede sin operar") : {}),
+      ...(!e.propia ? no("Requiere jornada abierta") : e.bloqueada ? no("Sede sin operar") : {}),
     },
     {
       id: "arqueo",

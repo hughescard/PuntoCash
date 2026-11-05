@@ -13,22 +13,21 @@ import { DEMO_CODE } from "@/features/auth/two-factor";
 import {
   abrirJornadaDeclarada,
   ajustarEfectivo,
-  cerrarJornadaDeclarada,
+  cerrarConArqueo,
   contextoDe,
-  declararConteoDeCierre,
+  explicarCierre,
   declararConteoDeApertura,
   habilitarMoneda,
   registrarCambio,
   registrarOperacionSimple,
   type AperturaDeclarada,
   type CajaDenial,
-  type CierreDeclarado,
   type ContextoDeCaja,
   type OperacionPorRegistrar,
 } from "@/features/network/caja-operativa";
 import type { Cotizacion } from "@/features/exchange/cotizacion";
 import { emitirReto, findTerminalById, resolverTerminal } from "@/features/network/devices";
-import { jornadaAbiertaDeCaja } from "@/features/network/jornadas";
+import { jornadaAbiertaDeCaja, type Jornada } from "@/features/network/jornadas";
 import type { OperationClienteSnapshot, OperationRecord } from "@/features/operations/operations-history";
 import { registrarContrasenaDeTrabajador, verificarCredencialesTrabajador } from "@/features/worker/acceso";
 import {
@@ -248,36 +247,45 @@ export async function ajustarEfectivoAction(input: {
 }
 
 export interface CierreRegistrado {
+  jornadaId: string;
   openedAt: string;
   closedAt: string;
   monedas: readonly { currency: string; esperado: number; contado: number; diferencia: number; motivo?: string; observaciones?: string }[];
 }
 
-/** Declara el arqueo de cierre, contado a ciegas: desde aquí ya no se cambia. */
-export async function declararCierreAction(
-  conteos: readonly { currency: string; contado: number }[],
-): Promise<AccionDeCaja<CierreDeclarado>> {
-  return conCaja((ctx) => declararConteoDeCierre(ctx, conteos));
+function aCierreRegistrado(j: Jornada): CierreRegistrado {
+  return {
+    jornadaId: j.id,
+    openedAt: j.openedAt,
+    closedAt: j.closedAt!,
+    monedas: (j.arqueo?.monedas ?? []).map((a) => {
+      const mov = j.movimientos.find((m) => m.concepto === "Ajuste de cierre" && m.currency === a.currency);
+      return { ...a, ...(mov?.observaciones ? { observaciones: mov.observaciones } : {}) };
+    }),
+  };
 }
 
-export async function cerrarJornadaAction(
+/**
+ * Arqueo y cierre en un solo acto: el conteo, hecho a ciegas, cierra la
+ * jornada en el momento de confirmarlo. Los motivos van después.
+ */
+export async function cerrarConArqueoAction(
+  conteos: readonly { currency: string; contado: number }[],
+): Promise<AccionDeCaja<CierreRegistrado>> {
+  return conCaja((ctx) => {
+    const r = cerrarConArqueo(ctx, conteos);
+    return r.ok ? { ok: true, value: aCierreRegistrado(r.value) } : r;
+  });
+}
+
+/** Los motivos de las diferencias del cierre que se acaba de hacer. */
+export async function explicarCierreAction(
+  jornadaId: string,
   explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
 ): Promise<AccionDeCaja<CierreRegistrado>> {
   return conCaja((ctx) => {
-    const r = cerrarJornadaDeclarada(ctx, explicaciones);
-    if (!r.ok) return r;
-    const obs = new Map(explicaciones.map((c) => [c.currency, c.observaciones?.trim()]));
-    return {
-      ok: true,
-      value: {
-        openedAt: r.value.openedAt,
-        closedAt: r.value.closedAt!,
-        monedas: (r.value.arqueo?.monedas ?? []).map((a) => ({
-          ...a,
-          ...(a.diferencia !== 0 && obs.get(a.currency) ? { observaciones: obs.get(a.currency) } : {}),
-        })),
-      },
-    };
+    const r = explicarCierre(ctx, jornadaId, explicaciones);
+    return r.ok ? { ok: true, value: aCierreRegistrado(r.value) } : r;
   });
 }
 

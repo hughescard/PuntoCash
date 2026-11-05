@@ -133,7 +133,7 @@ export function AjustarEfectivoFlow(): React.JSX.Element {
    * equipo se repone justo después de hidratar, y una captura hecha antes de
    * eso diría que no hay jornada para siempre.
    */
-  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null || vista.cierreDeclarado !== null) && result === null;
+  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && result === null;
 
   const selectedBalance = CAJA_BALANCES.find((b) => b.currency === currency) ?? null;
   const selectedCurrencyEntry = currency ? findCajaCurrency(currency) : undefined;

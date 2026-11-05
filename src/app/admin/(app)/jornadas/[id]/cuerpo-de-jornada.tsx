@@ -191,7 +191,12 @@ export function CuerpoDeJornada({
                 <span className="pc-numeric text-body-sm text-text-secondary">Contado {formatAmount(m.contado)}</span>
                 <span className="flex flex-col">
                   <Diferencia currency={m.currency} diferencia={m.diferencia} />
-                  {m.motivo ? <span className="text-body-sm text-text-secondary">{m.motivo}</span> : null}
+                  {m.motivo ? (
+                    <span className="text-body-sm text-text-secondary">{m.motivo}</span>
+                  ) : m.diferencia !== 0 ? (
+                    /* La jornada se cierra al confirmar el conteo; el motivo llega después, si llega. */
+                    <span className="text-body-sm text-text-secondary">Sin explicar</span>
+                  ) : null}
                   <EstadoDeAprobacion solicitud={solicitudDe("cierre", m.currency)} base={base} />
                 </span>
               </li>

@@ -145,7 +145,7 @@ export function CajaView(): React.JSX.Element {
         </Card>
 
         <CajaActionsCard
-          actions={getCajaActions({ hayJornada: caja.jornada !== null, propia: caja.jornadaAbierta, bloqueada: vista.bloqueo !== null, otraCaja: vista.jornadaEnOtraCaja !== null, cierreDeclarado: vista.cierreDeclarado !== null })}
+          actions={getCajaActions({ hayJornada: caja.jornada !== null, propia: caja.jornadaAbierta, bloqueada: vista.bloqueo !== null, otraCaja: vista.jornadaEnOtraCaja !== null })}
           onPrint={() => window.print()}
         />
       </div>

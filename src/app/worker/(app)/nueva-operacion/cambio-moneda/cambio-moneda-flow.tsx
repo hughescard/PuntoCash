@@ -64,7 +64,7 @@ const CATALOG_ROUTE = "/worker/nueva-operacion";
 export function CambioMonedaFlow(): React.JSX.Element {
   const caja = useCaja();
   const vista = useVistaDeCaja();
-  const blocked = !caja.jornadaAbierta || vista.bloqueo !== null || vista.cierreDeclarado !== null;
+  const blocked = !caja.jornadaAbierta || vista.bloqueo !== null;
   // A kiosk prefill is only ever handed over from "Buscar solicitud", which is
   // itself blocked without a jornada — but never leave one dangling here.
   React.useEffect(() => {

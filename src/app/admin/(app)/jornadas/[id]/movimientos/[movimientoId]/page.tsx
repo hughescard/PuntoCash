@@ -73,7 +73,11 @@ export default async function AdminMovimientoPage({
               }
               numerico={Boolean(m.operationCode)}
             />
-            {m.motivo ? <Dato etiqueta="Motivo" valor={m.motivo} /> : null}
+            {m.motivo ? (
+              <Dato etiqueta="Motivo" valor={m.motivo} />
+            ) : m.concepto === "Ajuste de cierre" ? (
+              <Dato etiqueta="Motivo" valor="Sin explicar" />
+            ) : null}
             {m.observaciones ? <Dato etiqueta="Observaciones" valor={m.observaciones} /> : null}
             {solicitud ? (
               <Dato

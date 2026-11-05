@@ -58,16 +58,15 @@ test.describe("arqueo y cierre — availability", () => {
 
 const CUADRA = { CUP: "200000", USD: "4250", EUR: "1185", GBP: "0" };
 
-/** Cuenta, continúa y acepta el aviso: el arqueo queda declarado. */
-async function declarar(page: Page, counts: Record<string, string>) {
+/** Cuenta, continúa y confirma: la caja queda cerrada en ese momento. */
+async function cerrarContando(page: Page, counts: Record<string, string>) {
   await goToCierre(page);
   for (const [currency, amount] of Object.entries(counts)) await fillCount(page, currency, amount);
   await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Confirmar arqueo" }).click();
-  await expect(page.getByRole("heading", { name: "Revisar cierre de caja" })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Confirmar y cerrar caja" }).click();
 }
 
-test.describe("arqueo y cierre — a ciegas", () => {
+test.describe("arqueo y cierre — a ciegas, en un solo acto", () => {
   test("se cuenta sin ver el saldo esperado ni la diferencia", async ({ page }) => {
     await goToCierre(page);
     for (const currency of ["CUP", "USD", "EUR", "GBP"]) await expect(page.getByLabel(`Efectivo contado en ${currency}`)).toBeVisible();
@@ -86,7 +85,7 @@ test.describe("arqueo y cierre — a ciegas", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
-  test("al continuar avisa de que no se podrá cambiar; «Seguir contando» conserva lo escrito", async ({ page }) => {
+  test("al continuar avisa de que no se podrá cambiar; «Seguir contando» no cierra nada", async ({ page }) => {
     await goToCierre(page);
     for (const [currency, amount] of Object.entries({ ...CUADRA, USD: "4240" })) await fillCount(page, currency, amount);
     await page.getByRole("button", { name: "Continuar" }).click();
@@ -95,39 +94,41 @@ test.describe("arqueo y cierre — a ciegas", () => {
     await expect(aviso.getByText("4.240,00 USD")).toBeVisible();
     await aviso.getByRole("button", { name: "Seguir contando" }).click();
     await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("4240");
+    await page.goto("/worker/caja");
+    await expect(page.getByRole("link", { name: /Arqueo y cierre/ })).toBeVisible();
   });
 
-  test("declarado, enseña lo esperado y la diferencia, y pide motivo compatible", async ({ page }) => {
-    await declarar(page, { ...CUADRA, USD: "4240" });
-    await expect(page.getByText("−10,00 USD")).toBeVisible();
+  test("confirmar cierra la caja; los motivos se piden en una ventana de la que no se sale", async ({ page }) => {
+    await cerrarContando(page, { ...CUADRA, USD: "4240" });
+    const ventana = page.getByRole("dialog");
+    await expect(ventana.getByRole("heading", { name: "Caja cerrada · explica las diferencias" })).toBeVisible();
+    await expect(ventana.getByText("−10,00 USD")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(ventana).toBeVisible();
+    await expect(ventana.getByRole("button", { name: "Cerrar", exact: true })).toHaveCount(0);
+
     await page.locator("#cierre-motivo-USD").click();
     await expect(page.getByRole("option", { name: "Faltante detectado" })).toBeVisible();
     await expect(page.getByRole("option", { name: "Sobrante detectado" })).toHaveCount(0);
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Confirmar cierre" }).click();
+    await ventana.getByRole("button", { name: "Guardar motivos y terminar" }).click();
     await expect(page.getByRole("heading", { name: "Caja cerrada correctamente" })).toHaveCount(0);
-    await chooseReason(page, "USD", "Otro");
-    await page.getByRole("button", { name: "Confirmar cierre" }).click();
-    await expect(page.getByRole("heading", { name: "Caja cerrada correctamente" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Volver" })).toHaveCount(0);
   });
 
-  test("declarado, salir y volver lleva a la revisión y la caja ya no opera", async ({ page }) => {
-    await declarar(page, CUADRA);
+  test("si se abandona la ventana, la caja ya está cerrada", async ({ page }) => {
+    await cerrarContando(page, { ...CUADRA, USD: "4240" });
+    await expect(page.getByRole("heading", { name: "Caja cerrada · explica las diferencias" })).toBeVisible();
     await page.goto("/worker/caja");
-    await expect(page.getByText("Declaraste el arqueo de cierre")).toBeVisible();
-    await expect(page.getByRole("button", { name: /Ajustar efectivo/ })).toBeDisabled();
-    await page.getByRole("link", { name: /Arqueo y cierre/ }).click();
-    await expect(page.getByRole("heading", { name: "Revisar cierre de caja" })).toBeVisible();
-    await expect(page.getByLabel("Efectivo contado en USD")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Abrir jornada/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Arqueo y cierre/ })).toBeDisabled();
   });
 });
 
 test.describe("arqueo y cierre — confirmation", () => {
   test("creates only required Ajuste de cierre movements, closes the jornada, and exposes the internal detail", async ({ page }) => {
-    await declarar(page, { ...CUADRA, USD: "4240" });
+    await cerrarContando(page, { ...CUADRA, USD: "4240" });
     await chooseReason(page, "USD", "Faltante detectado", "Conteo repetido.");
-    await page.getByRole("button", { name: "Confirmar cierre" }).click();
+    await page.getByRole("button", { name: "Guardar motivos y terminar" }).click();
     await expect(page.getByRole("heading", { name: "Caja cerrada correctamente" })).toBeVisible({ timeout: 4000 });
     await expect(
       page.getByText("Monedas arqueadas", { exact: true }).locator("xpath=following-sibling::p[1]"),
@@ -149,9 +150,8 @@ test.describe("arqueo y cierre — confirmation", () => {
 test.describe("arqueo y cierre — cierre perfecto", () => {
   test.use({ fondos: { CUP: 10 } });
 
-  test("a perfectly balanced closing creates no movement and re-enables initial funding", async ({ page }) => {
-    await declarar(page, { CUP: "10", USD: "0", EUR: "0", GBP: "0" });
-    await page.getByRole("button", { name: "Confirmar cierre" }).click();
+  test("a perfectly balanced closing closes straight away and creates no movement", async ({ page }) => {
+    await cerrarContando(page, { CUP: "10", USD: "0", EUR: "0", GBP: "0" });
     await expect(page.getByRole("heading", { name: "Caja cerrada correctamente" })).toBeVisible({ timeout: 4000 });
     await page.getByRole("link", { name: "Ir a Caja" }).click();
     await expect(page.getByRole("link", { name: /Abrir jornada/ })).toBeVisible();
