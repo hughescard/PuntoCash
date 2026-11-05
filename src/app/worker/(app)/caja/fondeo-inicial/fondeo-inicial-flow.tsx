@@ -305,9 +305,6 @@ export function FondeoInicialFlow(): React.JSX.Element {
         </Card>
 
         <div className="flex items-center justify-end gap-3">
-          <Button variant="secondary" type="button" onClick={() => setStep("conteo")}>
-            Volver a contar
-          </Button>
           <Button type="button" loading={submitting} onClick={() => void handleConfirm()}>
             {submitting ? null : <CircleCheck aria-hidden="true" />}
             {submitting ? "Abriendo…" : "Confirmar y abrir caja"}
@@ -386,6 +383,10 @@ export function FondeoInicialFlow(): React.JSX.Element {
               <Plus className="size-4 shrink-0 text-primary" aria-hidden="true" />
               ¿Hay en la caja una moneda que no aparece? <span className="font-medium text-primary underline">Añádela a la caja →</span>
             </Link>
+
+            <Alert variant="warning" title="Lo que introduzcas no se podrá cambiar">
+              Tómate el tiempo que necesites para contar. Escribe las cifras solo cuando estés seguro de haber terminado: al continuar quedan registradas como tu conteo de apertura.
+            </Alert>
 
             {formError ? <Alert variant="error" title={formError} /> : null}
 

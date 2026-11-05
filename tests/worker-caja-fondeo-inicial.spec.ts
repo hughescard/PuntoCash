@@ -99,10 +99,11 @@ test.describe("abrir jornada — primera jornada de la caja", () => {
     await expect(page.getByLabel(/Motivo de la diferencia/)).toHaveCount(0);
   });
 
-  test("Volver a contar conserva lo escrito", async ({ page }) => {
+  test("avisa de que el conteo no se podrá cambiar y la revisión no permite recontar", async ({ page }) => {
+    await page.goto("/worker/caja/fondeo-inicial");
+    await expect(page.getByText("Lo que introduzcas no se podrá cambiar")).toBeVisible();
     await contar(page, CUATRO);
-    await page.getByRole("button", { name: "Volver a contar" }).click();
-    await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("4250");
+    await expect(page.getByRole("button", { name: "Volver a contar" })).toHaveCount(0);
   });
 
   test("confirmar abre la jornada con lo contado y un Fondeo inicial por moneda con efectivo", async ({ page }) => {
