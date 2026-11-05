@@ -27,6 +27,15 @@ export function AvisoDeCaja(): React.JSX.Element | null {
   const v = useVistaDeCaja();
   const j = v.jornada;
 
+  if (v.cierreDeclarado) {
+    return (
+      <Alert variant="warning" title="Declaraste el arqueo de cierre">
+        La jornada ya no registra operaciones. Entra en Arqueo y cierre para explicar las diferencias y confirmar el
+        cierre.
+      </Alert>
+    );
+  }
+
   if (v.bloqueo) {
     return (
       <Alert variant="error" title="No se pueden registrar operaciones">

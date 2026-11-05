@@ -13,14 +13,16 @@ import { DEMO_CODE } from "@/features/auth/two-factor";
 import {
   abrirJornadaDeclarada,
   ajustarEfectivo,
-  cerrarJornada,
+  cerrarJornadaDeclarada,
   contextoDe,
+  declararConteoDeCierre,
   declararConteoDeApertura,
   habilitarMoneda,
   registrarCambio,
   registrarOperacionSimple,
   type AperturaDeclarada,
   type CajaDenial,
+  type CierreDeclarado,
   type ContextoDeCaja,
   type OperacionPorRegistrar,
 } from "@/features/network/caja-operativa";
@@ -251,13 +253,20 @@ export interface CierreRegistrado {
   monedas: readonly { currency: string; esperado: number; contado: number; diferencia: number; motivo?: string; observaciones?: string }[];
 }
 
+/** Declara el arqueo de cierre, contado a ciegas: desde aquí ya no se cambia. */
+export async function declararCierreAction(
+  conteos: readonly { currency: string; contado: number }[],
+): Promise<AccionDeCaja<CierreDeclarado>> {
+  return conCaja((ctx) => declararConteoDeCierre(ctx, conteos));
+}
+
 export async function cerrarJornadaAction(
-  conteos: readonly { currency: string; contado: number; motivo?: string; observaciones?: string }[],
+  explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
 ): Promise<AccionDeCaja<CierreRegistrado>> {
   return conCaja((ctx) => {
-    const r = cerrarJornada(ctx, conteos);
+    const r = cerrarJornadaDeclarada(ctx, explicaciones);
     if (!r.ok) return r;
-    const obs = new Map(conteos.map((c) => [c.currency, c.observaciones?.trim()]));
+    const obs = new Map(explicaciones.map((c) => [c.currency, c.observaciones?.trim()]));
     return {
       ok: true,
       value: {

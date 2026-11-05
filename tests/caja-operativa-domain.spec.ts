@@ -4,6 +4,9 @@ import {
   abrirJornada,
   abrirJornadaDeclarada,
   aperturaDeclarada,
+  cerrarJornadaDeclarada,
+  cierreDeclarado,
+  declararConteoDeCierre,
   declararConteoDeApertura,
   ajustarEfectivo,
   cerrarJornada,
@@ -141,6 +144,25 @@ test.describe("Conteo de apertura declarado", () => {
     const ctx = puesto(null, ["CUP"]);
     expect(declararConteoDeApertura(ctx, [{ currency: "CUP", contado: 1_000 }]).ok).toBe(true);
     expect(habilitarMoneda(ctx, "USD")).toMatchObject({ ok: false, reason: "conteo-ya-declarado" });
+  });
+});
+
+test.describe("Cierre a ciegas declarado y apertura con totales", () => {
+  test("el arqueo se declara una vez, bloquea la jornada y cierra con lo declarado", () => {
+    const ctx = puesto({ CUP: 10_000 });
+    const d = declararConteoDeCierre(ctx, [{ currency: "CUP", contado: 9_900 }]);
+    expect(d.ok && d.value.monedas[0]).toMatchObject({ esperado: 10_000, contado: 9_900, diferencia: -100 });
+    expect(declararConteoDeCierre(ctx, [{ currency: "CUP", contado: 10_000 }])).toMatchObject({ ok: false, reason: "conteo-ya-declarado" });
+    expect(ajustarEfectivo(ctx, { currency: "CUP", contado: 10_000, motivo: "Sobrante detectado" })).toMatchObject({ ok: false, reason: "cierre-declarado" });
+    expect(cierreDeclarado(ctx)?.monedas[0]?.contado).toBe(9_900);
+
+    expect(cerrarJornadaDeclarada(ctx, [])).toMatchObject({ ok: false, reason: "motivo-requerido" });
+    const r = cerrarJornadaDeclarada(ctx, [{ currency: "CUP", motivo: "Faltante detectado" }]);
+    expect(r.ok).toBe(true);
+
+    /* Quien abre recibe lo declarado, no los libros. */
+    const entregado = estadoDeCaja(ctx).apertura.entregado;
+    expect(entregado).toEqual([{ currency: "CUP", amount: 9_900 }]);
   });
 });
 

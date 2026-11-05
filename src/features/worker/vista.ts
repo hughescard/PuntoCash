@@ -19,7 +19,7 @@ import type {
 } from "@/features/caja/caja-data";
 import type { TasaVigente } from "@/features/exchange/cotizacion";
 import type { OperationRecord } from "@/features/operations/operations-history";
-import { aperturaDeclarada, type AperturaDeclarada, type BloqueoDeCaja, type ContextoDeCaja, type EstadoDeCaja } from "@/features/network/caja-operativa";
+import { aperturaDeclarada, cierreDeclarado, type AperturaDeclarada, type CierreDeclarado, type BloqueoDeCaja, type ContextoDeCaja, type EstadoDeCaja } from "@/features/network/caja-operativa";
 import { jornadasDeCaja, type Jornada } from "@/features/network/jornadas";
 import { operacionesDeCaja } from "@/features/network/operaciones";
 
@@ -45,6 +45,8 @@ export interface VistaDeCaja {
   apertura: EstadoDeCaja["apertura"];
   /** El conteo de apertura que este trabajador ya declaró en esta caja, sin abrir todavía. */
   aperturaDeclarada: AperturaDeclarada | null;
+  /** El arqueo de cierre que el trabajador ya declaró en su jornada abierta. */
+  cierreDeclarado: CierreDeclarado | null;
   tasas: readonly TasaVigente[];
   servicios: readonly string[];
   jornadaEnOtraCaja: EstadoDeCaja["jornadaEnOtraCaja"];
@@ -130,6 +132,7 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
     bloqueo: estado.bloqueo,
     apertura: estado.apertura,
     aperturaDeclarada: j ? null : aperturaDeclarada(ctx),
+    cierreDeclarado: propia ? cierreDeclarado(ctx) : null,
     tasas: estado.tasas,
     servicios: estado.servicios,
     jornadaEnOtraCaja: estado.jornadaEnOtraCaja,

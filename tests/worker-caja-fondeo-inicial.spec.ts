@@ -160,14 +160,27 @@ test.describe("abrir jornada — primera jornada de la caja", () => {
   });
 });
 
-test.describe("abrir jornada — a ciegas, tras un cierre", () => {
+test.describe("abrir jornada — con totales, tras un cierre", () => {
   test.use({ fondos: { CUP: 100_000, USD: 500 }, monedas: [], cerrada: true });
 
-  test("el conteo no enseña lo que dejó el cierre anterior", async ({ page }) => {
+  test("enseña lo entregado al cierre y lo trae escrito como recibido", async ({ page }) => {
     await page.goto("/worker/caja/fondeo-inicial");
-    await expect(page.getByLabel("Efectivo contado en CUP")).toBeVisible();
-    await expect(page.getByText("100.000,00")).toHaveCount(0);
-    await expect(page.getByText("500,00")).toHaveCount(0);
+    await expect(page.getByText("Entregado", { exact: true })).toBeVisible();
+    await expect(page.getByText("100.000,00 CUP")).toBeVisible();
+    await expect(page.getByText("500,00 USD")).toBeVisible();
+    await expect(page.getByLabel("Efectivo contado en CUP")).toHaveValue("100000,00");
+    await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("500,00");
+  });
+
+  test("aceptar lo entregado abre sin diferencias", async ({ page }) => {
+    await page.goto("/worker/caja/fondeo-inicial");
+    await esperarFondeoVivo(page);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByRole("dialog").getByText(/desde ahí el efectivo es tu responsabilidad/)).toBeVisible();
+    await page.getByRole("button", { name: "Confirmar conteo" }).click();
+    await expect(page.getByText("Coincide")).toHaveCount(2);
+    await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
+    await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible();
   });
 
   test("lo que coincide se dice; una diferencia pide motivo compatible con su signo", async ({ page }) => {

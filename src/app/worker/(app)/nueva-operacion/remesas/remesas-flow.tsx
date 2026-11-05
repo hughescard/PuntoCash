@@ -44,7 +44,7 @@ export function RemesasFlow(): React.JSX.Element {
    * equipo se repone justo después de hidratar, y una captura hecha antes de
    * eso diría que no hay jornada para siempre.
    */
-  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
+  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null || vista.cierreDeclarado !== null) && completed === null;
 
   const cash = remittance ? CAJA_BALANCES.find((item) => item.currency === remittance.payoutCurrency) : undefined;
   const sufficient = !!remittance && !!cash && cash.amount >= remittance.deliveryAmount;

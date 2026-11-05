@@ -7,19 +7,17 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarClock,
-  Check,
   CircleCheck,
   ClipboardCheck,
   Clock3,
   Lock,
   Printer,
   TrendingDown,
-  TrendingUp,
   User,
   Wallet,
 } from "lucide-react";
 
-import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, fieldAria } from "@/components/ui";
+import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, fieldAria } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
 import { formatDateTime, formatMoney, formatSignedAmount, parseAmountInput } from "@/lib/format";
@@ -27,7 +25,6 @@ import { useRouter } from "next/navigation";
 import {
   findCajaCurrency,
   getValidAdjustmentReasons,
-  isReasonCompatibleWithDifference,
   type CajaAdjustmentReason,
   type CajaBalance,
   type CajaClosingAuditCurrency,
@@ -35,7 +32,8 @@ import {
 } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
-import { cerrarJornadaAction } from "../../../_actions";
+import type { CierreDeclarado } from "@/features/network/caja-operativa";
+import { cerrarJornadaAction, declararCierreAction } from "../../../_actions";
 
 interface CerrarJornadaResult {
   jornada: CajaJornada;
@@ -47,7 +45,6 @@ interface CerrarJornadaResult {
 
 const CAJA_ROUTE = "/worker/caja" as Route;
 const OBSERVACIONES_MAX = 250;
-type Step = "form" | "revision" | "completado";
 
 interface ClosingDraftCurrency {
   currency: string;
@@ -58,16 +55,18 @@ interface ClosingDraftCurrency {
   observaciones?: string;
 }
 
-interface ClosingFormRow {
-  balance: CajaBalance;
-  raw: string;
-  counted: number | null;
-  valid: boolean;
-  difference: number | null;
-  motivo: CajaAdjustmentReason | "";
-  observaciones: string;
-}
-
+/**
+ * **Arqueo y cierre — a ciegas** (decisión del 5/11/2026).
+ *
+ * Quien cierra cuenta **sin ver el saldo en libros**. Al continuar se le
+ * avisa de que las cifras no se podrán cambiar; si confirma, quedan
+ * declaradas en el servidor y desde ahí la jornada no registra nada más. Solo
+ * entonces ve lo esperado y la diferencia, explica cada una y cierra.
+ *
+ * Contar a ciegas es lo que hace creíble lo declarado: si coincide con los
+ * libros, no pudo copiarlo. Y es la cifra que recibe quien abre la jornada
+ * siguiente, que ve esos totales y dice si los recibe.
+ */
 export function ArqueoCierreFlow(): React.JSX.Element {
   const router = useRouter();
   const caja = useCaja();
@@ -76,94 +75,94 @@ export function ArqueoCierreFlow(): React.JSX.Element {
   const worker = vista.trabajador;
   const CAJA_BALANCES = caja.balances;
   const CAJA_SUMMARY = caja.summary;
-  const [step, setStep] = React.useState<Step>("form");
+  const declarado = vista.cierreDeclarado;
   const [amounts, setAmounts] = React.useState<Record<string, string>>({});
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [porDeclarar, setPorDeclarar] = React.useState<{ currency: string; contado: number }[] | null>(null);
   const [motivos, setMotivos] = React.useState<Record<string, CajaAdjustmentReason | "">>({});
   const [observaciones, setObservaciones] = React.useState<Record<string, string>>({});
   const [submitted, setSubmitted] = React.useState(false);
-  const [draft, setDraft] = React.useState<readonly ClosingDraftCurrency[]>([]);
   const [result, setResult] = React.useState<CerrarJornadaResult | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | undefined>();
   const [confirmError, setConfirmError] = React.useState<string | undefined>();
 
-  /*
-   * Sin jornada abierta no hay nada que arquear — salvo que la haya cerrado
-   * este mismo flujo, porque entonces lo que el trabajador está mirando es su
-   * propio resultado y no puede quedar tapado por su propio efecto.
-   *
-   * Se lee en cada render, no se captura al entrar: el estado guardado en el
-   * equipo se repone justo después de hidratar, y una captura hecha antes de
-   * eso diría que no hay jornada para siempre.
-   */
+  /* Sin jornada abierta no hay nada que arquear, salvo que la haya cerrado
+     este mismo flujo: su resultado no puede quedar tapado por su efecto. */
   const blocked = !caja.jornadaAbierta && result === null;
-
-  const rows = CAJA_BALANCES.map((balance) => {
-    const raw = amounts[balance.currency] ?? "";
-    const counted = parseAmountInput(raw);
-    const valid = counted !== null && counted >= 0;
-    const difference = valid ? Math.round((counted - balance.amount) * 100) / 100 : null;
-    const motivo = motivos[balance.currency] ?? "";
-    return { balance, raw, counted, valid, difference, motivo, observaciones: observaciones[balance.currency] ?? "" } satisfies ClosingFormRow;
-  });
-
-  const allRowsValid = rows.every((row) => {
-    if (!row.valid || row.difference === null) return false;
-    if (row.difference === 0) return true;
-    if (!row.motivo || !isReasonCompatibleWithDifference(row.motivo, row.difference)) return false;
-    return row.motivo !== "Otro" || row.observaciones.trim().length > 0;
-  });
-
-  const auditedCount = rows.filter((row) => row.valid).length;
-  const balancedCount = rows.filter((row) => row.difference === 0).length;
-  const differenceRows = rows.filter((row) => row.difference !== null && row.difference !== 0);
 
   function setCounted(currency: string, value: string) {
     setAmounts((prev) => ({ ...prev, [currency]: value }));
-    const balance = CAJA_BALANCES.find((item) => item.currency === currency);
-    const parsed = parseAmountInput(value);
-    const difference = balance && parsed !== null && parsed >= 0 ? Math.round((parsed - balance.amount) * 100) / 100 : null;
-    setMotivos((prev) => {
-      const current = prev[currency];
-      if (!current || current === "Otro" || difference === null) return prev;
-      return isReasonCompatibleWithDifference(current, difference) ? prev : { ...prev, [currency]: "" };
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[currency];
+      return next;
     });
+    setFormError(undefined);
   }
 
-  function buildDraft(): readonly ClosingDraftCurrency[] | null {
-    if (!allRowsValid) return null;
-    return rows.map((row) => ({
-      currency: row.balance.currency,
-      expected: row.balance.amount,
-      counted: row.counted!,
-      difference: row.difference!,
-      motivo: row.difference === 0 ? undefined : row.motivo || undefined,
-      observaciones: row.difference === 0 ? undefined : row.observaciones.trim() || undefined,
-    }));
-  }
-
-  function handleReview(event: React.FormEvent) {
+  /** Paso 1: todo contado → aviso de que no se podrá cambiar. */
+  function handleContinue(event: React.FormEvent) {
     event.preventDefault();
-    setSubmitted(true);
-    const nextDraft = buildDraft();
-    if (!nextDraft) return;
-    setDraft(nextDraft);
-    setStep("revision");
+    const nextErrors: Record<string, string> = {};
+    const conteos: { currency: string; contado: number }[] = [];
+    for (const { currency } of CAJA_BALANCES) {
+      const raw = amounts[currency]?.trim() ?? "";
+      const parsed = raw === "" ? null : parseAmountInput(raw);
+      if (raw === "") nextErrors[currency] = "Cuenta esta moneda. Si no hay efectivo, escribe 0.";
+      else if (parsed === null || parsed < 0) nextErrors[currency] = "Introduce un monto válido.";
+      else conteos.push({ currency, contado: parsed });
+    }
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    setPorDeclarar(conteos);
+  }
+
+  async function handleDeclarar() {
+    if (!porDeclarar || submitting) return;
+    setSubmitting(true);
+    const r = await declararCierreAction(porDeclarar);
+    setSubmitting(false);
+    setPorDeclarar(null);
+    if (!r.ok && r.reason !== "conteo-ya-declarado") {
+      setFormError(
+        r.reason === "jornada-no-abierta"
+          ? "La jornada ya no está abierta."
+          : "No se pudo registrar el arqueo. Revisa las cifras e inténtalo de nuevo.",
+      );
+      return;
+    }
+    setSubmitted(false);
+    router.refresh();
+  }
+
+  const diferencias = declarado ? declarado.monedas.filter((m) => m.diferencia !== 0) : [];
+
+  function explicacionIncompleta(currency: string): boolean {
+    const motivo = motivos[currency];
+    if (!motivo) return true;
+    return motivo === "Otro" && !(observaciones[currency] ?? "").trim();
   }
 
   async function handleConfirm() {
-    if (!draft.length || submitting) return;
+    if (!declarado || submitting) return;
+    setSubmitted(true);
+    if (diferencias.some((d) => explicacionIncompleta(d.currency))) return;
     setSubmitting(true);
     setConfirmError(undefined);
     const outcome = await cerrarJornadaAction(
-      draft.map(({ currency, counted, motivo, observaciones }) => ({
+      diferencias.map(({ currency }) => ({
         currency,
-        contado: counted,
-        ...(motivo ? { motivo } : {}),
-        ...(observaciones ? { observaciones } : {}),
+        motivo: motivos[currency] || undefined,
+        ...((observaciones[currency] ?? "").trim() ? { observaciones: observaciones[currency]!.trim() } : {}),
       })),
     );
     if (!outcome.ok) {
-      setConfirmError("No fue posible confirmar el cierre con la información actual. Vuelve al arqueo y revisa los datos.");
+      setConfirmError(
+        outcome.reason === "jornada-no-abierta"
+          ? "La jornada ya no está abierta: el administrador pudo haber forzado su cierre."
+          : "No fue posible confirmar el cierre. Revisa los motivos e inténtalo de nuevo.",
+      );
       setSubmitting(false);
       return;
     }
@@ -193,60 +192,107 @@ export function ArqueoCierreFlow(): React.JSX.Element {
       },
     });
     setSubmitting(false);
-    setStep("completado");
     router.refresh();
   }
 
+  if (result) return <CierreCompletado result={result} />;
   if (blocked) return <BlockedState />;
-  if (step === "completado" && result) return <CierreCompletado result={result} />;
-  if (step === "revision") return <CierreRevision draft={draft} jornada={jornada!} submitting={submitting} error={confirmError} onVolver={() => setStep("form")} onConfirmar={() => void handleConfirm()} />;
+  if (declarado && jornada) {
+    return (
+      <CierreRevision
+        declarado={declarado}
+        jornada={jornada}
+        submitting={submitting}
+        error={confirmError}
+        onConfirmar={() => void handleConfirm()}
+        resolucion={
+          diferencias.length > 0 ? (
+            <DifferenceResolution
+              rows={diferencias.map((d) => ({ balance: { currency: d.currency, amount: d.esperado }, difference: d.diferencia }))}
+              motivos={motivos}
+              observaciones={observaciones}
+              submitted={submitted}
+              onMotivo={(currency, motivo) => setMotivos((prev) => ({ ...prev, [currency]: motivo }))}
+              onObservaciones={(currency, value) => setObservaciones((prev) => ({ ...prev, [currency]: value.slice(0, OBSERVACIONES_MAX) }))}
+            />
+          ) : null
+        }
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <BackLink />
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0"><h1 className="text-screen-title text-text-primary">Arqueo y cierre de caja</h1><p className="mt-2 max-w-2xl text-body text-text-secondary">Cuenta el efectivo disponible para cerrar la jornada de {CAJA_SUMMARY.register}.</p></div>
+        <div className="min-w-0"><h1 className="text-screen-title text-text-primary">Arqueo y cierre de caja</h1><p className="mt-2 max-w-2xl text-body text-text-secondary">Cuenta el efectivo que hay en {CAJA_SUMMARY.register}, moneda por moneda, y escribe lo que cuentas.</p></div>
         <Badge variant="success">Jornada abierta</Badge>
       </div>
       <ContextStrip openedAt={jornada?.openedAt} worker={worker.fullName} />
 
-      <form onSubmit={handleReview} className="flex flex-col gap-6">
-        <div className="grid grid-cols-1 items-start gap-6 wide:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.9fr)]">
-          <Card>
-            <CardHeader><div className="flex items-center gap-3"><span aria-hidden="true" className="grid size-9 place-items-center rounded-control bg-primary-subtle text-primary"><ClipboardCheck className="size-[18px]" /></span><div><CardTitle>Arqueo por moneda</CardTitle><p className="mt-0.5 text-body-sm text-text-secondary">Ingresa el efectivo contado para cada moneda habilitada.</p></div></div></CardHeader>
-            <CardContent className="overflow-x-auto pt-0">
-              <div className="min-w-[38rem]">
-                <div className="grid grid-cols-[1.15fr_0.9fr_1.05fr_0.7fr_0.75fr] gap-3 border-b border-border pb-2 text-label font-medium text-text-secondary"><span>Moneda</span><span className="text-right">Saldo esperado</span><span>Efectivo contado</span><span className="text-right">Diferencia</span><span className="text-right">Estado</span></div>
-                {rows.map((row) => <CountRow key={row.balance.currency} row={row} submitted={submitted} onChange={(value) => setCounted(row.balance.currency, value)} />)}
-              </div>
-            </CardContent>
-          </Card>
-          <AuditSummary audited={auditedCount} balanced={balancedCount} differences={differenceRows} />
-        </div>
-
-        {differenceRows.length > 0 ? <DifferenceResolution rows={differenceRows} motivos={motivos} observaciones={observaciones} submitted={submitted} onMotivo={(currency, motivo) => setMotivos((prev) => ({ ...prev, [currency]: motivo }))} onObservaciones={(currency, value) => setObservaciones((prev) => ({ ...prev, [currency]: value.slice(0, OBSERVACIONES_MAX) }))} /> : null}
-
-        <div className="flex items-center justify-end gap-3 border-t border-border pt-5"><Button variant="secondary" type="button" asChild><Link href={CAJA_ROUTE}>Cancelar</Link></Button><Button type="submit" disabled={!allRowsValid}>Revisar cierre de caja<ArrowRight aria-hidden="true" /></Button></div>
+      <form onSubmit={handleContinue} className="grid grid-cols-1 items-start gap-6 wide:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <Card>
+          <CardHeader><div className="flex items-center gap-3"><span aria-hidden="true" className="grid size-9 place-items-center rounded-control bg-primary-subtle text-primary"><ClipboardCheck className="size-[18px]" /></span><div><CardTitle>Arqueo por moneda</CardTitle><p className="mt-0.5 text-body-sm text-text-secondary">Cuenta todas las monedas de la caja. Si en una no hay efectivo, escribe 0.</p></div></div></CardHeader>
+          <CardContent className="flex flex-col gap-5 pt-0">
+            <div>
+              <div className="grid grid-cols-[1fr_12rem] gap-4 border-b border-border pb-2 text-label font-medium text-text-secondary"><span>Moneda</span><span>Efectivo contado</span></div>
+              {CAJA_BALANCES.map(({ currency }) => <CountRow key={currency} currency={currency} value={amounts[currency] ?? ""} error={errors[currency]} onChange={(value) => setCounted(currency, value)} />)}
+            </div>
+            {formError ? <Alert variant="error" title={formError} /> : null}
+            <div className="flex items-center justify-end gap-3 border-t border-border pt-5"><Button variant="secondary" type="button" asChild><Link href={CAJA_ROUTE}>Cancelar</Link></Button><Button type="submit">Continuar<ArrowRight aria-hidden="true" /></Button></div>
+          </CardContent>
+        </Card>
+        <Card className="self-start">
+          <CardHeader><CardTitle>Cómo se cierra la caja</CardTitle></CardHeader>
+          <CardContent className="flex flex-col gap-3 text-body-sm text-text-secondary">
+            <p>Cuenta con calma. Cuando continúes, lo que escribiste queda declarado como tu arqueo y ya no se puede cambiar.</p>
+            <p>Después verás lo que esperaban los libros de tu jornada y, si algo no coincide, dirás por qué.</p>
+            <p>Lo que declares es lo que recibirá quien abra la caja la próxima vez.</p>
+          </CardContent>
+        </Card>
       </form>
+
+      {porDeclarar ? <AvisoDeDeclaracion conteos={porDeclarar} caja={CAJA_SUMMARY.register} submitting={submitting} onSeguir={() => setPorDeclarar(null)} onConfirmar={() => void handleDeclarar()} /> : null}
     </div>
   );
 }
 
-function CountRow({ row, submitted, onChange }: { row: ClosingFormRow; submitted: boolean; onChange: (value: string) => void }) {
-  const entry = findCajaCurrency(row.balance.currency);
-  const invalid = submitted && !row.valid;
-  const state = row.difference === null ? null : row.difference === 0 ? "Cuadrada" : row.difference < 0 ? "Faltante" : "Sobrante";
-  return <div className="grid grid-cols-[1.15fr_0.9fr_1.05fr_0.7fr_0.75fr] items-center gap-3 border-b border-border py-3 last:border-b-0">
-    <span className="flex items-center gap-2"><CurrencyFlag currency={row.balance.currency} /><span className="flex flex-col"><span className="text-body-sm font-semibold">{row.balance.currency}</span><span className="text-caption text-text-secondary">{entry?.name}</span></span></span>
-    <span className="pc-numeric text-right text-body-sm font-medium">{formatMoney(row.balance)}</span>
-    <Input aria-label={`Efectivo contado en ${row.balance.currency}`} value={row.raw} onChange={(event) => onChange(event.target.value)} inputMode="decimal" autoComplete="off" numeric invalid={invalid} placeholder="0,00" suffix={row.balance.currency} />
-    <span className={cn("pc-numeric text-right text-body-sm font-semibold", row.difference === null || row.difference === 0 ? "text-text-primary" : row.difference > 0 ? "text-success-foreground" : "text-error-foreground")}>{row.difference === null ? "—" : `${formatSignedAmount(row.difference)} ${row.balance.currency}`}</span>
-    <span className="justify-self-end">{state === "Cuadrada" ? <Badge variant="success" icon={<Check aria-hidden="true" />}>Cuadrada</Badge> : state === "Faltante" ? <Badge variant="error" icon={<TrendingDown aria-hidden="true" />}>Faltante</Badge> : state === "Sobrante" ? <Badge variant="success" icon={<TrendingUp aria-hidden="true" />}>Sobrante</Badge> : <span className="text-caption text-text-secondary">Pendiente</span>}</span>
-  </div>;
+function AvisoDeDeclaracion({ conteos, caja, submitting, onSeguir, onConfirmar }: { conteos: readonly { currency: string; contado: number }[]; caja: string; submitting: boolean; onSeguir: () => void; onConfirmar: () => void }) {
+  return (
+    <Dialog open onOpenChange={(v) => (v || submitting ? undefined : onSeguir())}>
+      <DialogContent size="md">
+        <DialogHeader>
+          <DialogTitle>Los valores introducidos no podrán ser cambiados</DialogTitle>
+          <DialogDescription>
+            Si confirmas, este será tu arqueo de cierre de {caja} y la jornada ya no registrará operaciones. Si todavía no
+            terminaste de contar, vuelve y termina antes de confirmar.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <ul className="flex flex-col divide-y divide-border rounded-control border border-border">
+            {conteos.map((c) => (
+              <li key={c.currency} className="flex items-center justify-between gap-4 px-4 py-2.5 text-body-sm">
+                <span className="flex items-center gap-2 font-semibold text-text-primary"><CurrencyFlag currency={c.currency} />{c.currency}</span>
+                <span className="pc-numeric font-semibold">{formatMoney({ amount: c.contado, currency: c.currency })}</span>
+              </li>
+            ))}
+          </ul>
+        </DialogBody>
+        <DialogFooter>
+          <Button type="button" variant="secondary" onClick={onSeguir} disabled={submitting}>Seguir contando</Button>
+          <Button type="button" loading={submitting} onClick={onConfirmar}>Confirmar arqueo</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-function AuditSummary({ audited, balanced, differences }: { audited: number; balanced: number; differences: readonly { balance: CajaBalance; difference: number | null; motivo: string }[] }) {
-  return <Card className="self-start"><CardHeader><div className="flex items-center gap-3"><span aria-hidden="true" className="grid size-9 place-items-center rounded-control bg-surface-subtle text-primary"><ClipboardCheck className="size-[18px]" /></span><CardTitle>Resumen del arqueo</CardTitle></div></CardHeader><CardContent className="flex flex-col gap-5 pt-0"><div className="grid grid-cols-3 gap-3"><Metric label="Monedas arqueadas" value={audited} tone="success" /><Metric label="Cuadradas" value={balanced} tone="success" /><Metric label="Con diferencias" value={differences.length} tone={differences.length ? "error" : "neutral"} /></div>{differences.length ? <div className="flex flex-col gap-3"><p className="text-body-sm font-semibold text-text-primary">Diferencias detectadas</p>{differences.map((row) => { const entry = findCajaCurrency(row.balance.currency); return <div key={row.balance.currency} className={cn("flex items-center justify-between gap-3 rounded-control border px-3 py-3", row.difference! < 0 ? "border-error-border bg-error-subtle" : "border-success-border bg-success-subtle")}><span className="flex min-w-0 items-center gap-2"><CurrencyFlag currency={row.balance.currency} /><span className="truncate text-body-sm">{row.balance.currency} · {entry?.name}</span></span><span className={cn("pc-numeric text-body-sm font-semibold", row.difference! < 0 ? "text-error-foreground" : "text-success-foreground")}>{formatSignedAmount(row.difference!)} {row.balance.currency}</span></div>; })}</div> : null}</CardContent></Card>;
+function CountRow({ currency, value, error, onChange }: { currency: string; value: string; error?: string; onChange: (value: string) => void }) {
+  const entry = findCajaCurrency(currency);
+  return <div className="grid grid-cols-[1fr_12rem] items-start gap-4 border-b border-border py-3 last:border-b-0">
+    <span className="flex items-center gap-2 pt-2.5"><CurrencyFlag currency={currency} /><span className="text-body-sm font-semibold">{currency}</span><span className="text-body-sm text-text-secondary">· {entry?.name}</span></span>
+    <div className="flex flex-col gap-1"><Input aria-label={`Efectivo contado en ${currency}`} aria-invalid={error ? true : undefined} value={value} onChange={(event) => onChange(event.target.value)} inputMode="decimal" autoComplete="off" numeric invalid={Boolean(error)} placeholder="0,00" suffix={currency} />{error ? <p className="text-caption text-error-foreground">{error}</p> : null}</div>
+  </div>;
 }
 
 function Metric({ label, value, tone }: { label: string; value: number; tone: "success" | "error" | "neutral" }) { return <div className={cn("rounded-control border px-3 py-3 text-center", tone === "success" ? "border-success-border bg-success-subtle" : tone === "error" ? "border-error-border bg-error-subtle" : "border-border bg-surface-subtle")}><p className="text-caption text-text-secondary">{label}</p><p className="mt-1 pc-numeric text-amount font-semibold text-text-primary">{value}</p></div>; }
@@ -255,7 +301,31 @@ function DifferenceResolution({ rows, motivos, observaciones, submitted, onMotiv
   return <Card><CardHeader><div className="flex items-center gap-3"><span aria-hidden="true" className="grid size-9 place-items-center rounded-control bg-error-subtle text-error-foreground"><TrendingDown className="size-[18px]" /></span><CardTitle>Monedas con diferencia</CardTitle></div></CardHeader><CardContent className="flex flex-col gap-5 pt-0">{rows.map((row) => { const entry = findCajaCurrency(row.balance.currency); const reason = motivos[row.balance.currency] ?? ""; const required = reason === "Otro"; const invalid = submitted && (!reason || (required && !(observaciones[row.balance.currency] ?? "").trim())); return <div key={row.balance.currency} className="grid grid-cols-1 items-start gap-4 border-b border-border pb-5 last:border-b-0 last:pb-0 wide:grid-cols-[minmax(12rem,0.8fr)_minmax(15rem,1fr)_minmax(18rem,1.2fr)]"><div className="flex items-center gap-2 pt-2"><CurrencyFlag currency={row.balance.currency} /><span><span className="block text-body-sm font-semibold">{row.balance.currency}</span><span className="text-caption text-text-secondary">{entry?.name}</span></span></div><div><p className="mb-2 text-label text-text-primary">Motivo <span className="text-error" aria-hidden="true">*</span></p><Select value={reason} onValueChange={(value) => onMotivo(row.balance.currency, value as CajaAdjustmentReason)}><SelectTrigger {...fieldAria({ id: `cierre-motivo-${row.balance.currency}`, required: true, error: invalid && !reason ? "required" : undefined })} invalid={invalid && !reason}><SelectValue placeholder="Selecciona un motivo" /></SelectTrigger><SelectContent>{getValidAdjustmentReasons(row.difference ?? 0).map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div><div><div className="mb-2 flex items-baseline justify-between"><label htmlFor={`cierre-observaciones-${row.balance.currency}`} className="text-label text-text-primary">{required ? <>Observaciones <span className="text-error" aria-hidden="true">*</span></> : "Observaciones (opcional)"}</label><span className="text-caption text-text-secondary">{(observaciones[row.balance.currency] ?? "").length}/{OBSERVACIONES_MAX}</span></div><textarea id={`cierre-observaciones-${row.balance.currency}`} aria-required={required || undefined} aria-invalid={invalid || undefined} value={observaciones[row.balance.currency] ?? ""} onChange={(event) => onObservaciones(row.balance.currency, event.target.value)} maxLength={OBSERVACIONES_MAX} rows={2} className={cn("w-full resize-none rounded-control border bg-surface px-4 py-3 text-body outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20", invalid ? "border-error" : "border-border hover:border-border-strong")} placeholder="Añade detalles si es necesario." /></div></div>; })}</CardContent></Card>;
 }
 
-function CierreRevision({ draft, jornada, submitting, error, onVolver, onConfirmar }: { draft: readonly ClosingDraftCurrency[]; jornada: CajaJornada; submitting: boolean; error?: string; onVolver: () => void; onConfirmar: () => void }) { const CAJA_SUMMARY = useCaja().summary; return <div className="flex flex-col gap-6"><BackLink /><div><h1 className="text-screen-title text-text-primary">Revisar cierre de caja</h1><p className="mt-2 max-w-2xl text-body text-text-secondary">Verifica el arqueo antes de cerrar definitivamente la jornada.</p></div><Card className="mx-auto w-full max-w-5xl"><CardHeader><div className="flex items-center gap-3"><span aria-hidden="true" className="grid size-9 place-items-center rounded-control bg-primary-subtle text-primary"><ClipboardCheck className="size-[18px]" /></span><CardTitle>Resumen del cierre</CardTitle></div></CardHeader><CardContent className="flex flex-col gap-5 pt-0"><dl className="grid grid-cols-2 gap-x-8 gap-y-3 wide:grid-cols-4"><ReviewInfo label="Caja" value={CAJA_SUMMARY.register} /><ReviewInfo label="Trabajador" value={jornada.worker} /><ReviewInfo label="Apertura" value={formatDateTime(new Date(jornada.openedAt))} /><ReviewInfo label="Cierre" value="Se registrará al confirmar" /></dl><AuditReviewTable draft={draft} /><Alert variant="warning" title="Al confirmar, la jornada quedará cerrada y no podrán registrarse nuevas operaciones ni movimientos en esta jornada." />{error ? <Alert variant="error" title={error} /> : null}</CardContent></Card><div className="mx-auto flex w-full max-w-5xl justify-end gap-3"><Button variant="secondary" type="button" onClick={onVolver}>Volver</Button><Button type="button" loading={submitting} onClick={onConfirmar}>{submitting ? "Confirmando…" : "Confirmar cierre"}</Button></div></div>; }
+function CierreRevision({ declarado, jornada, submitting, error, resolucion, onConfirmar }: { declarado: CierreDeclarado; jornada: CajaJornada; submitting: boolean; error?: string; resolucion: React.ReactNode; onConfirmar: () => void }) {
+  const CAJA_SUMMARY = useCaja().summary;
+  const draft: ClosingDraftCurrency[] = declarado.monedas.map((m) => ({ currency: m.currency, expected: m.esperado, counted: m.contado, difference: m.diferencia }));
+  return (
+    <div className="flex flex-col gap-6">
+      <BackLink />
+      <div>
+        <h1 className="text-screen-title text-text-primary">Revisar cierre de caja</h1>
+        <p className="mt-2 max-w-2xl text-body text-text-secondary">Tu arqueo declarado, comparado con lo que esperaban los libros de la jornada. Las cifras ya no se pueden cambiar.</p>
+      </div>
+      <Card>
+        <CardHeader><div className="flex items-center gap-3"><span aria-hidden="true" className="grid size-9 place-items-center rounded-control bg-primary-subtle text-primary"><ClipboardCheck className="size-[18px]" /></span><div><CardTitle>Resumen del cierre</CardTitle><p className="mt-0.5 text-body-sm text-text-secondary">Arqueo declarado el {formatDateTime(new Date(declarado.declaradoAt))}.</p></div></div></CardHeader>
+        <CardContent className="flex flex-col gap-5 pt-0">
+          <dl className="grid grid-cols-2 gap-x-8 gap-y-3 wide:grid-cols-4"><ReviewInfo label="Caja" value={CAJA_SUMMARY.register} /><ReviewInfo label="Trabajador" value={jornada.worker} /><ReviewInfo label="Apertura" value={formatDateTime(new Date(jornada.openedAt))} /><ReviewInfo label="Cierre" value="Se registrará al confirmar" /></dl>
+          <AuditReviewTable draft={draft} />
+        </CardContent>
+      </Card>
+      {resolucion}
+      {declarado.monedas.some((m) => m.diferencia !== 0) ? <Alert variant="info" title="Cada diferencia llega al administrador de la sede para su aprobación." /> : null}
+      <Alert variant="warning" title="Al confirmar, la jornada quedará cerrada. Lo que declaraste es lo que recibirá quien abra la caja la próxima vez." />
+      {error ? <Alert variant="error" title={error} /> : null}
+      <div className="flex justify-end gap-3"><Button type="button" loading={submitting} onClick={onConfirmar}>{submitting ? "Confirmando…" : "Confirmar cierre"}</Button></div>
+    </div>
+  );
+}
 
 function AuditReviewTable({ draft }: { draft: readonly ClosingDraftCurrency[] }) { return <div className="overflow-x-auto"><div className="min-w-[38rem]"><div className="grid grid-cols-[1.1fr_repeat(3,0.9fr)_1.1fr] gap-4 border-b border-border pb-2 text-label text-text-secondary"><span>Moneda</span><span className="text-right">Esperado</span><span className="text-right">Contado</span><span className="text-right">Diferencia</span><span>Estado</span></div>{draft.map((row) => { const entry = findCajaCurrency(row.currency); const state = row.difference === 0 ? "Cuadrada" : row.difference < 0 ? "Faltante" : "Sobrante"; return <div key={row.currency} className="grid grid-cols-[1.1fr_repeat(3,0.9fr)_1.1fr] gap-4 border-b border-border py-3 text-body-sm last:border-b-0"><span className="font-semibold">{row.currency} <span className="font-normal text-text-secondary">· {entry?.name}</span></span><span className="pc-numeric text-right">{formatMoney({ amount: row.expected, currency: row.currency })}</span><span className="pc-numeric text-right">{formatMoney({ amount: row.counted, currency: row.currency })}</span><span className={cn("pc-numeric text-right font-semibold", row.difference < 0 ? "text-error-foreground" : row.difference > 0 ? "text-success-foreground" : "")}>{formatSignedAmount(row.difference)} {row.currency}</span><span>{state}{row.motivo ? ` · ${row.motivo}` : ""}{row.observaciones ? ` · ${row.observaciones}` : ""}</span></div>; })}</div></div>; }
 

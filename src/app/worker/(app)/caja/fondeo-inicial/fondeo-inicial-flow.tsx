@@ -56,21 +56,24 @@ interface Explicacion {
 }
 
 /**
- * **Abrir jornada — apertura a ciegas** (decisión del 5/11/2026).
+ * **Abrir jornada — con totales** (decisión del 5/11/2026).
  *
- * Quien abre la caja **cuenta lo que hay sin ver lo que dejó el cierre
- * anterior**. Solo después, al revisar, se le enseña dónde no coincide, y cada
- * diferencia pide su motivo: «Reposición de fondos» o «Retiro de fondos» si
- * alguien metió o sacó dinero entre jornadas y se sabe, «Faltante detectado» o
- * «Sobrante detectado» si no, y «Otro» con observaciones. Cada diferencia
- * llega al administrador como solicitud de aprobación.
+ * El cierre se cuenta a ciegas, y por eso lo que declara quien cierra es una
+ * referencia creíble: si cuadra con los libros, no pudo copiarlo. Quien abre
+ * **ve esos totales** —vienen escritos— y corrige solo lo que no recibe. Al
+ * confirmar recibe la caja con esas cifras: desde ahí el efectivo es suyo, y
+ * su propio cierre a ciegas lo comprobará contra los libros. Aceptar un total
+ * sin comprobarlo no le libra de nada.
  *
- * Contar a ciegas es lo que hace que el conteo valga: si el trabajador viera
- * antes lo esperado, lo natural sería escribirlo.
+ * Al continuar se le avisa de que las cifras no se podrán cambiar; quedan
+ * declaradas en el servidor y la apertura solo se confirma con ellas. Cada
+ * diferencia pide su motivo («Reposición de fondos», «Retiro de fondos»,
+ * «Faltante detectado», «Sobrante detectado» u «Otro» con observaciones) y
+ * llega al administrador de la sede como solicitud de aprobación.
  *
- *   · Primera jornada de la caja: no hay con qué comparar; solo se cuenta.
- *   · Tras un cierre forzado: lo «dejado» es el saldo en libros, y este es el
- *     primer conteo desde entonces. Se le dice al empezar.
+ *   · Primera jornada de la caja: no hay totales; solo se cuenta.
+ *   · Tras un cierre forzado: lo entregado es el saldo en libros, que nadie
+ *     contó. Se le dice al empezar.
  */
 export function FondeoInicialFlow(): React.JSX.Element {
   const hydrated = useHydrated();
@@ -82,7 +85,12 @@ export function FondeoInicialFlow(): React.JSX.Element {
 
   const declarada = vista.aperturaDeclarada;
   const [pasoElegido, setStep] = React.useState<Step>("conteo");
-  const [amounts, setAmounts] = React.useState<Record<string, string>>(() => consumeFondeoInicialDraft()?.amounts ?? {});
+  const entregado = React.useMemo(() => new Map(vista.apertura.entregado.map((e) => [e.currency, e.amount])), [vista.apertura.entregado]);
+  /* Se abre con totales: lo que declaró quien cerró viene escrito, y quien
+     abre cambia solo lo que no recibe. */
+  const [amounts, setAmounts] = React.useState<Record<string, string>>(
+    () => consumeFondeoInicialDraft()?.amounts ?? Object.fromEntries(vista.apertura.entregado.map((e) => [e.currency, e.amount.toFixed(2).replace(".", ",")])),
+  );
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | undefined>();
   const [comparacionLocal, setComparacion] = React.useState<ComparacionDeApertura | null>(null);
@@ -255,7 +263,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
           <h1 className="text-screen-title text-text-primary">Revisión de la apertura</h1>
           <p className="mt-2 max-w-2xl text-body text-text-secondary">
             {comparacion.cierreAnterior
-              ? "Tu conteo declarado, comparado con lo que dejó el cierre anterior. Las cifras ya no se pueden cambiar."
+              ? "Lo que declaraste recibir, comparado con lo entregado al cierre anterior. Las cifras ya no se pueden cambiar."
               : "Es la primera jornada de esta caja: no hay un cierre anterior con el que comparar."}
           </p>
         </div>
@@ -282,7 +290,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
             <div className="min-w-[40rem]">
               <div className="grid grid-cols-[1fr_repeat(3,9rem)] gap-4 border-b border-border pb-2 text-label font-medium text-text-secondary">
                 <span>Moneda</span>
-                <span className="text-right">Dejado</span>
+                <span className="text-right">Entregado</span>
                 <span className="text-right">Contado</span>
                 <span className="text-right">Diferencia</span>
               </div>
@@ -347,7 +355,9 @@ export function FondeoInicialFlow(): React.JSX.Element {
         <div className="min-w-0">
           <h1 className="text-screen-title text-text-primary">Abrir jornada</h1>
           <p className="mt-2 max-w-2xl text-body text-text-secondary">
-            Cuenta el efectivo que hay en {caja.summary.register}, moneda por moneda, y escribe lo que cuentas.
+            {anterior
+              ? `Comprueba el efectivo que recibes en ${caja.summary.register}. Si en una moneda no recibes lo entregado, escribe lo que hay.`
+              : `Cuenta el efectivo que hay en ${caja.summary.register}, moneda por moneda, y escribe lo que cuentas.`}
           </p>
         </div>
         <Badge variant="warning">Pendiente de apertura</Badge>
@@ -355,7 +365,8 @@ export function FondeoInicialFlow(): React.JSX.Element {
 
       {anterior?.forzado ? (
         <Alert variant="warning" title="La jornada anterior se cerró sin contar">
-          Tu conteo será el primero desde el cierre forzado de la jornada de {anterior.workerName}.
+          El administrador forzó el cierre de la jornada de {anterior.workerName}: lo entregado es el saldo en libros,
+          que nadie contó. Cuenta con cuidado: tu conteo será el primero desde entonces.
         </Alert>
       ) : null}
 
@@ -375,9 +386,11 @@ export function FondeoInicialFlow(): React.JSX.Element {
                 <Banknote className="size-[18px]" />
               </span>
               <div className="min-w-0">
-                <CardTitle>Efectivo contado</CardTitle>
+                <CardTitle>{anterior ? "Efectivo recibido" : "Efectivo contado"}</CardTitle>
                 <p className="mt-0.5 text-body-sm text-text-secondary">
-                  Cuenta todas las monedas de la caja. Si en una no hay efectivo, escribe 0.
+                  {anterior
+                    ? "Comprueba cada moneda. Si lo que hay no es lo entregado, escribe lo que hay."
+                    : "Cuenta todas las monedas de la caja. Si en una no hay efectivo, escribe 0."}
                 </p>
               </div>
             </div>
@@ -385,9 +398,10 @@ export function FondeoInicialFlow(): React.JSX.Element {
 
           <CardContent className="flex flex-col gap-5">
             <div>
-              <div className="grid grid-cols-[1fr_12rem] gap-4 border-b border-border pb-2">
+              <div className={cn("grid gap-4 border-b border-border pb-2", anterior ? "grid-cols-[1fr_10rem_12rem]" : "grid-cols-[1fr_12rem]")}>
                 <span className="text-label font-medium text-text-secondary">Moneda</span>
-                <span className="text-label font-medium text-text-secondary">Contado</span>
+                {anterior ? <span className="text-right text-label font-medium text-text-secondary">{anterior.forzado ? "En libros" : "Entregado"}</span> : null}
+                <span className="text-label font-medium text-text-secondary">{anterior ? "Recibido" : "Contado"}</span>
               </div>
               {monedas.map((currency) => (
                 <ConteoRow
@@ -395,6 +409,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
                   currency={currency}
                   value={amounts[currency] ?? ""}
                   error={errors[currency]}
+                  entregado={anterior ? entregado.get(currency) ?? 0 : undefined}
                   onChange={(value) => setAmount(currency, value)}
                 />
               ))}
@@ -428,9 +443,15 @@ export function FondeoInicialFlow(): React.JSX.Element {
             <CardTitle>Cómo se abre la caja</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-body-sm text-text-secondary">
-            <p>Cuenta con calma. Cuando continúes, lo que escribiste queda declarado como tu conteo y ya no se puede cambiar.</p>
-            <p>Después verás lo que dejó el cierre anterior y, si algo no coincide, dirás por qué.</p>
-            <p>Lo que cuentes es el efectivo con el que empieza la jornada.</p>
+            {anterior ? (
+              <>
+                <p>Ves lo que declaró quien cerró la caja. Comprueba que lo recibes y corrige solo lo que no coincida.</p>
+                <p>Al confirmar, recibes la caja con esas cifras: desde ahí el efectivo es tu responsabilidad, y tu propio cierre lo comprobará contra los libros.</p>
+                <p>Si algo no coincide, dirás por qué; la diferencia llega al administrador de la sede.</p>
+              </>
+            ) : (
+              <p>Es la primera jornada de esta caja: cuenta con calma lo que hay. Cuando continúes, lo que escribiste queda declarado y ya no se puede cambiar.</p>
+            )}
           </CardContent>
         </Card>
       </form>
@@ -441,8 +462,8 @@ export function FondeoInicialFlow(): React.JSX.Element {
             <DialogHeader>
               <DialogTitle>Los valores introducidos no podrán ser cambiados</DialogTitle>
               <DialogDescription>
-                Si confirmas, este será tu conteo de apertura de {caja.summary.register}. Si todavía no terminaste de contar,
-                vuelve y termina antes de confirmar.
+                Si confirmas, recibes {caja.summary.register} con estas cifras y desde ahí el efectivo es tu responsabilidad. Si
+                todavía no terminaste de comprobar, vuelve y termina antes de confirmar.
               </DialogDescription>
             </DialogHeader>
             <DialogBody>
@@ -646,22 +667,28 @@ function ConteoRow({
   currency,
   value,
   error,
+  entregado,
   onChange,
 }: {
   currency: string;
   value: string;
   error: string | undefined;
+  /** Lo que entregó el cierre anterior; sin él, la fila es un conteo sin referencia. */
+  entregado?: number;
   onChange: (value: string) => void;
 }) {
   const field: FieldSpec = { id: `fondeo-${currency}`, label: `Efectivo contado en ${currency}`, error };
   const currencyName = findCajaCurrency(currency)?.name;
   return (
-    <div className="grid grid-cols-[1fr_12rem] items-center gap-4 border-b border-border py-3 last:border-b-0">
+    <div className={cn("grid items-center gap-4 border-b border-border py-3 last:border-b-0", entregado === undefined ? "grid-cols-[1fr_12rem]" : "grid-cols-[1fr_10rem_12rem]")}>
       <span className="flex min-w-0 items-center gap-2">
         <CurrencyFlag currency={currency} />
         <span className="font-semibold text-text-primary">{currency}</span>
         {currencyName ? <span className="truncate text-body-sm text-text-secondary">· {currencyName}</span> : null}
       </span>
+      {entregado === undefined ? null : (
+        <span className="pc-numeric text-right text-body-sm font-medium text-text-primary">{formatMoney({ amount: entregado, currency })}</span>
+      )}
       <div>
         <label htmlFor={field.id} className="sr-only">
           {field.label}

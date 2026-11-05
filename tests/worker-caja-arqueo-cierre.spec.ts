@@ -56,67 +56,79 @@ test.describe("arqueo y cierre — availability", () => {
   });
 });
 
-test.describe("arqueo y cierre — form and review", () => {
-  test("renders every enabled currency, including zero-balance GBP, with SVG flags and read-only expected balances", async ({ page }) => {
+const CUADRA = { CUP: "200000", USD: "4250", EUR: "1185", GBP: "0" };
+
+/** Cuenta, continúa y acepta el aviso: el arqueo queda declarado. */
+async function declarar(page: Page, counts: Record<string, string>) {
+  await goToCierre(page);
+  for (const [currency, amount] of Object.entries(counts)) await fillCount(page, currency, amount);
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Confirmar arqueo" }).click();
+  await expect(page.getByRole("heading", { name: "Revisar cierre de caja" })).toBeVisible();
+}
+
+test.describe("arqueo y cierre — a ciegas", () => {
+  test("se cuenta sin ver el saldo esperado ni la diferencia", async ({ page }) => {
     await goToCierre(page);
     for (const currency of ["CUP", "USD", "EUR", "GBP"]) await expect(page.getByLabel(`Efectivo contado en ${currency}`)).toBeVisible();
     await expect(page.locator("svg[data-currency-flag]")).toHaveCount(4);
-    await expect(page.getByText("0,00 GBP")).toBeVisible();
-    await expect(page.getByText("¿Qué sigue?")).toHaveCount(0);
-    await expect(page.getByText(/Para las monedas con diferencia/)).toHaveCount(0);
+    await expect(page.getByText("200.000,00")).toHaveCount(0);
+    await expect(page.getByText("4.250,00")).toHaveCount(0);
+    await expect(page.getByText("Saldo esperado")).toHaveCount(0);
+    await expect(page.getByText("Diferencia")).toHaveCount(0);
   });
 
-  test("calculates states, offers only compatible reasons, and requires observations for Otro", async ({ page }) => {
+  test("una moneda sin contar no deja seguir", async ({ page }) => {
     await goToCierre(page);
-    await fillCount(page, "USD", "4240");
-    await expect(page.getByText("Faltante", { exact: true })).toBeVisible();
-    await page.getByText("Monedas con diferencia").scrollIntoViewIfNeeded();
+    await fillCount(page, "CUP", "200000");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByText("Cuenta esta moneda. Si no hay efectivo, escribe 0.").first()).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("al continuar avisa de que no se podrá cambiar; «Seguir contando» conserva lo escrito", async ({ page }) => {
+    await goToCierre(page);
+    for (const [currency, amount] of Object.entries({ ...CUADRA, USD: "4240" })) await fillCount(page, currency, amount);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    const aviso = page.getByRole("dialog");
+    await expect(aviso.getByRole("heading", { name: "Los valores introducidos no podrán ser cambiados" })).toBeVisible();
+    await expect(aviso.getByText("4.240,00 USD")).toBeVisible();
+    await aviso.getByRole("button", { name: "Seguir contando" }).click();
+    await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("4240");
+  });
+
+  test("declarado, enseña lo esperado y la diferencia, y pide motivo compatible", async ({ page }) => {
+    await declarar(page, { ...CUADRA, USD: "4240" });
+    await expect(page.getByText("−10,00 USD")).toBeVisible();
     await page.locator("#cierre-motivo-USD").click();
     await expect(page.getByRole("option", { name: "Faltante detectado" })).toBeVisible();
     await expect(page.getByRole("option", { name: "Sobrante detectado" })).toHaveCount(0);
     await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Confirmar cierre" }).click();
+    await expect(page.getByRole("heading", { name: "Caja cerrada correctamente" })).toHaveCount(0);
     await chooseReason(page, "USD", "Otro");
-    await expect(page.getByRole("button", { name: "Revisar cierre de caja" })).toBeDisabled();
-    await page.locator("#cierre-observaciones-USD").fill("Conteo verificado.");
-    await fillCount(page, "CUP", "200000");
-    await fillCount(page, "EUR", "1185");
-    await fillCount(page, "GBP", "0");
-    await expect(page.getByText("Cuadrada", { exact: true }).first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Revisar cierre de caja" })).toBeEnabled();
+    await page.getByRole("button", { name: "Confirmar cierre" }).click();
+    await expect(page.getByRole("heading", { name: "Caja cerrada correctamente" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Volver" })).toHaveCount(0);
   });
 
-  test("review preserves every audit row and warns that confirmation closes the jornada", async ({ page }) => {
-    await goToCierre(page);
-    await fillCount(page, "CUP", "200000");
-    await fillCount(page, "USD", "4240");
-    await fillCount(page, "EUR", "1185");
-    await fillCount(page, "GBP", "0");
-    await chooseReason(page, "USD", "Faltante detectado", "Conteo repetido.");
-    await page.getByRole("button", { name: "Revisar cierre de caja" }).click();
+  test("declarado, salir y volver lleva a la revisión y la caja ya no opera", async ({ page }) => {
+    await declarar(page, CUADRA);
+    await page.goto("/worker/caja");
+    await expect(page.getByText("Declaraste el arqueo de cierre")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Ajustar efectivo/ })).toBeDisabled();
+    await page.getByRole("link", { name: /Arqueo y cierre/ }).click();
     await expect(page.getByRole("heading", { name: "Revisar cierre de caja" })).toBeVisible();
-    await expect(page.getByText("Se registrará al confirmar")).toBeVisible();
-    await expect(page.getByText("Al confirmar, la jornada quedará cerrada y no podrán registrarse nuevas operaciones ni movimientos en esta jornada.")).toBeVisible();
-    await expect(page.getByText("Conteo repetido.").filter({ visible: true }).first()).toBeVisible();
-    await page.getByRole("button", { name: "Volver" }).click();
-    await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("4240");
+    await expect(page.getByLabel("Efectivo contado en USD")).toHaveCount(0);
   });
 });
 
 test.describe("arqueo y cierre — confirmation", () => {
   test("creates only required Ajuste de cierre movements, closes the jornada, and exposes the internal detail", async ({ page }) => {
-    await goToCierre(page);
-    await fillCount(page, "CUP", "200000");
-    await fillCount(page, "USD", "4240");
-    await fillCount(page, "EUR", "1185");
-    await fillCount(page, "GBP", "0");
+    await declarar(page, { ...CUADRA, USD: "4240" });
     await chooseReason(page, "USD", "Faltante detectado", "Conteo repetido.");
-    await page.getByRole("button", { name: "Revisar cierre de caja" }).click();
     await page.getByRole("button", { name: "Confirmar cierre" }).click();
     await expect(page.getByRole("heading", { name: "Caja cerrada correctamente" })).toBeVisible({ timeout: 4000 });
-    /* Antes eran `getByText("4").first()` y `getByText("1").last()`, que no
-       afirmaban nada comprobable: cualquier elemento con ese texto los
-       satisfacía, y `.last()` ataba la prueba al orden del documento. Cada
-       cifra se lee ahora de su propia métrica. */
     await expect(
       page.getByText("Monedas arqueadas", { exact: true }).locator("xpath=following-sibling::p[1]"),
     ).toHaveText("4");
@@ -132,21 +144,13 @@ test.describe("arqueo y cierre — confirmation", () => {
     await expect(page.getByText("Detalle del ajuste de cierre")).toBeVisible();
     await expect(page.getByText("Conteo repetido.").filter({ visible: true }).first()).toBeVisible();
   });
-
 });
 
 test.describe("arqueo y cierre — cierre perfecto", () => {
-  /* Diez CUP y el resto en cero: un arqueo sin diferencia en ninguna moneda
-     se cuenta más corto que con los fondos del resto del archivo. */
   test.use({ fondos: { CUP: 10 } });
 
   test("a perfectly balanced closing creates no movement and re-enables initial funding", async ({ page }) => {
-    await goToCierre(page);
-    await fillCount(page, "CUP", "10");
-    await fillCount(page, "USD", "0");
-    await fillCount(page, "EUR", "0");
-    await fillCount(page, "GBP", "0");
-    await page.getByRole("button", { name: "Revisar cierre de caja" }).click();
+    await declarar(page, { CUP: "10", USD: "0", EUR: "0", GBP: "0" });
     await page.getByRole("button", { name: "Confirmar cierre" }).click();
     await expect(page.getByRole("heading", { name: "Caja cerrada correctamente" })).toBeVisible({ timeout: 4000 });
     await page.getByRole("link", { name: "Ir a Caja" }).click();

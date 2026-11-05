@@ -71,7 +71,7 @@ export function CobrarGiroFlow(): React.JSX.Element {
    * equipo se repone justo después de hidratar, y una captura hecha antes de
    * eso diría que no hay jornada para siempre.
    */
-  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
+  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null || vista.cierreDeclarado !== null) && completed === null;
 
   const availableCash = transfer
     ? CAJA_BALANCES.find((balance) => balance.currency === transfer.payoutCurrency)?.amount
