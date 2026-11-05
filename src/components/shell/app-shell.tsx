@@ -147,8 +147,12 @@ export function AppMain({
 }): React.JSX.Element {
   return (
     /* The one scroll container in the shell. `min-h-0` lets it shrink to the
-       row's height so `overflow-y-auto` actually engages. */
-    <main className={cn("pc-scroll-y min-h-0 min-w-0 flex-1 bg-canvas p-5 sm:p-6 lg:p-8", className)}>
+       row's height so `overflow-y-auto` actually engages. `relative` makes it
+       the containing block of anything absolutely positioned inside (the
+       `sr-only` labels, for one): without it they are placed against the
+       page, below the fold, and the page itself scrolls past the shell
+       leaving a blank band at the bottom. */
+    <main className={cn("pc-scroll-y relative min-h-0 min-w-0 flex-1 bg-canvas p-5 sm:p-6 lg:p-8", className)}>
       <div className={cn(constrained && "max-w-form-max")}>{children}</div>
     </main>
   );
