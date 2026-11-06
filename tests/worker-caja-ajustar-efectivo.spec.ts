@@ -4,27 +4,16 @@ import { type Page } from "@playwright/test";
 import { abrirPorPantalla } from "./worker-helpers";
 
 /**
- * Worker Caja — Ajustar efectivo (/worker/caja/ajustar-efectivo).
+ * Worker Caja — Ajustar efectivo (/worker/caja/ajustar-efectivo), **a ciegas**
+ * (decisión del 6/11/2026).
  *
- * Corrects one enabled currency's CURRENT balance from a physical cash
- * count: the worker declares the counted cash, never an adjustment amount
- * directly, and the difference is computed automatically. Confirming writes
- * exactly one "Ajuste de efectivo" movement and updates only the selected
- * currency's balance — the jornada stays open throughout.
+ * El trabajador no ve el saldo de su caja: elige una moneda, escribe lo que
+ * contó y, al confirmar el aviso de que no podrá cambiarlo, el ajuste queda
+ * registrado con la diferencia contra los libros. Solo entonces la ve y dice
+ * por qué, en una ventana de la que no se sale sin terminar. Si coincide, no
+ * hay ajuste.
  *
- * `abrirJornada`/`ajustarEfectivo` mutan un módulo del lado del cliente que
- * ahora guarda su estado en el equipo, así que la jornada sobrevive a un
- * `page.goto`. Estas pruebas siguen llegando aquí **por enlace** de todas
- * formas: es más rápido que una navegación dura, y es el camino que recorre un
- * trabajador. Cada prueba tiene su propio contexto de navegador, con su propio
- * `localStorage`, así que ni la jornada ni los saldos se filtran entre
- * pruebas.
- *
- * La jornada **se siembra** con 1.200 EUR, que es lo que abría el fondeo que
- * había aquí: veintitrés de estas pruebas la necesitan abierta y ninguna trata
- * de abrirla. Los dos grupos que sí tratan de eso —la disponibilidad del
- * azulejo y el bloqueo de la ruta— se salen de la siembra y abren por la
- * interfaz.
+ * La jornada se siembra con 1.200 EUR.
  */
 
 test.use({ fondos: { EUR: 1_200 } });
@@ -33,50 +22,30 @@ async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "
   await abrirPorPantalla(page, fondos);
 }
 
-/**
- * Entra a Ajustar efectivo por su ruta, que con la jornada sembrada es
- * directo. Pasa por Caja —y no por la URL del formulario— para que el camino
- * siga siendo el del trabajador: el azulejo de Caja es lo único que lleva
- * aquí.
- */
 async function goToAjustarEfectivo(page: Page) {
   await page.goto("/worker/caja");
   await page.getByRole("link", { name: /Ajustar efectivo/ }).click();
   await expect(page.getByRole("heading", { name: "Ajustar efectivo" })).toBeVisible();
 }
 
-async function selectCurrency(page: Page, code: string) {
-  await page.getByRole("button", { name: /^Moneda:/ }).click();
-  await page.getByRole("option", { name: new RegExp(`^${code}`) }).click();
+async function contar(page: Page, counted: string, currency = "EUR") {
+  await page.locator("#ajuste-moneda").click();
+  await page.getByRole("option", { name: new RegExp(`^${currency}`) }).click();
+  await page.getByLabel("Efectivo contado").fill(counted);
+  await page.getByRole("button", { name: "Continuar" }).click();
 }
 
-async function fillStep1(
-  page: Page,
-  {
-    currency = "EUR",
-    counted,
-    motivo = "Faltante detectado",
-    observaciones,
-  }: { currency?: string; counted: string; motivo?: string; observaciones?: string },
-) {
-  await selectCurrency(page, currency);
-  await page.getByLabel("Efectivo contado").fill(counted);
-  await page.getByLabel("Motivo del ajuste").click();
+/** Cuenta, confirma el aviso y espera la ventana del motivo. */
+async function registrarConteo(page: Page, counted: string, currency = "EUR") {
+  await contar(page, counted, currency);
+  await page.getByRole("dialog").getByRole("button", { name: "Confirmar conteo" }).click();
+}
+
+async function explicar(page: Page, motivo: string, observaciones?: string) {
+  await page.locator("#ajuste-motivo").click();
   await page.getByRole("option", { name: motivo, exact: true }).click();
   if (observaciones) await page.locator("#ajuste-observaciones").fill(observaciones);
-}
-
-async function completeAdjustment(
-  page: Page,
-  opts: { currency?: string; counted: string; motivo?: string; observaciones?: string },
-) {
-  await fillStep1(page, opts);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await expect(page.getByRole("heading", { name: "Revisar ajuste de efectivo" })).toBeVisible();
-  await page.getByRole("button", { name: "Confirmar ajuste" }).click();
-  await expect(page.getByRole("heading", { name: "Ajuste registrado correctamente" })).toBeVisible({
-    timeout: 3000,
-  });
+  await page.getByRole("button", { name: "Guardar motivo y terminar" }).click();
 }
 
 test.describe("ajustar efectivo — action availability", () => {
@@ -123,10 +92,7 @@ test.describe("ajustar efectivo — route blocking without an open jornada", () 
   test("direct navigation without a jornada shows the blocked state, not the form", async ({ page }) => {
     await page.goto("/worker/caja/ajustar-efectivo");
 
-    await expect(page.getByText("Caja cerrada", { exact: true })).toBeVisible();
-    await expect(
-      page.getByText("Debes abrir una jornada antes de ajustar efectivo."),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "No hay jornada abierta" })).toBeVisible();
     await expect(page.getByLabel("Efectivo contado")).toHaveCount(0);
   });
 
@@ -137,301 +103,125 @@ test.describe("ajustar efectivo — route blocking without an open jornada", () 
   });
 });
 
-test.describe("ajustar efectivo — header and context", () => {
-  test("renders the approved header content and Jornada abierta badge", async ({ page }) => {
+test.describe("ajustar efectivo — a ciegas", () => {
+  test.beforeEach(async ({ page }) => {
     await goToAjustarEfectivo(page);
-
-    await expect(page.getByRole("heading", { name: "Ajustar efectivo" })).toBeVisible();
-    await expect(
-      page.getByText("Corrige el saldo de una moneda a partir de un conteo físico."),
-    ).toBeVisible();
-    await expect(page.getByText("Jornada abierta")).toBeVisible();
   });
 
-  test("the context strip shows Caja, Trabajador, Jornada and Monedas habilitadas — nothing invented", async ({
-    page,
-  }) => {
-    await goToAjustarEfectivo(page);
-
-    await expect(page.getByText("Caja 03").first()).toBeVisible();
-    await expect(page.getByText("Juan Pérez").first()).toBeVisible();
-    await expect(page.getByText("Abierta", { exact: true })).toBeVisible();
-    await expect(page.getByText(/Apertura: \d{2}\/\d{2}\/\d{4} · \d{2}:\d{2}/)).toBeVisible();
-    await expect(page.getByText("Monedas habilitadas")).toBeVisible();
-    await expect(page.getByText("4", { exact: true }).first()).toBeVisible();
-  });
-
-});
-
-test.describe("ajustar efectivo — currency selection", () => {
-  test("only currently enabled currencies are offered, never the full catalog", async ({ page }) => {
-    await goToAjustarEfectivo(page);
-    await page.getByRole("button", { name: /^Moneda:/ }).click();
-
-    for (const currency of ["CUP", "USD", "EUR", "GBP"]) {
-      await expect(page.getByRole("option", { name: new RegExp(`^${currency}`) })).toBeVisible();
-    }
-    // CAD is in the full catalog but not enabled for Caja 03 by default.
-    await expect(page.getByRole("option", { name: /^CAD/ })).toHaveCount(0);
-  });
-
-  test("options render an SVG flag (never emoji) marked aria-hidden, plus code and name", async ({
-    page,
-  }) => {
-    await goToAjustarEfectivo(page);
-    await page.getByRole("button", { name: /^Moneda:/ }).click();
-
-    await expect(page.getByRole("option", { name: "EUR — Euro" }).or(page.getByRole("option", { name: /^EUR/ }))).toBeVisible();
-    const flags = page.locator("svg[data-currency-flag]");
-    expect(await flags.count()).toBeGreaterThan(0);
-    for (const flag of await flags.all()) {
-      await expect(flag).toHaveAttribute("aria-hidden", "true");
-    }
-    const hasRegionalIndicator = await page.evaluate(() =>
-      /[\u{1F1E6}-\u{1F1FF}]/u.test(document.body.textContent ?? ""),
-    );
-    expect(hasRegionalIndicator).toBe(false);
-  });
-
-});
-
-test.describe("ajustar efectivo — counted cash and difference", () => {
-  test("the difference is computed automatically with an explicit sign, never a direct amount input", async ({
-    page,
-  }) => {
-    await goToAjustarEfectivo(page);
-    await selectCurrency(page, "EUR");
+  test("no enseña el saldo registrado ni calcula la diferencia mientras se cuenta", async ({ page }) => {
+    await page.locator("#ajuste-moneda").click();
+    await page.getByRole("option", { name: /^EUR/ }).click();
     await page.getByLabel("Efectivo contado").fill("1185");
-
-    await expect(
-      page.getByText("−15,00 EUR").or(page.getByText("-15,00 EUR")).first(),
-    ).toBeVisible();
-    await expect(page.getByLabel(/^Ajuste$/)).toHaveCount(0);
-    await expect(page.getByLabel(/^Diferencia$/)).toHaveCount(0);
-  });
-
-  test("an equal count shows the zero-difference notice and keeps Continuar disabled", async ({
-    page,
-  }) => {
-    await goToAjustarEfectivo(page);
-    await selectCurrency(page, "EUR");
-    await page.getByLabel("Efectivo contado").fill("1200");
-
-    await expect(
-      page.getByText(
-        "El efectivo contado coincide con el saldo registrado. No es necesario realizar un ajuste.",
-      ),
-    ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Continuar" })).toBeDisabled();
-  });
-
-  test("Continuar stays disabled until currency, counted cash and reason are all set", async ({
-    page,
-  }) => {
-    await goToAjustarEfectivo(page);
-    const continuar = page.getByRole("button", { name: "Continuar" });
-    await expect(continuar).toBeDisabled();
-
-    await selectCurrency(page, "EUR");
-    await expect(continuar).toBeDisabled();
-
-    await page.getByLabel("Efectivo contado").fill("1185");
-    await expect(continuar).toBeDisabled();
-
-    await page.getByLabel("Motivo del ajuste").click();
-    await page.getByRole("option", { name: "Faltante detectado", exact: true }).click();
-    await expect(continuar).toBeEnabled();
-  });
-});
-
-test.describe("ajustar efectivo — motivo and observaciones", () => {
-  test("ofrece los motivos que lee la administración, y ninguno más", async ({ page }) => {
-    await goToAjustarEfectivo(page);
-    await page.getByLabel("Motivo del ajuste").click();
-
-    /* Sin diferencia todavía, los tres; «Error de registro» ya no existe. */
-    for (const reason of ["Faltante detectado", "Sobrante detectado", "Otro"]) {
-      await expect(page.getByRole("option", { name: reason, exact: true })).toBeVisible();
+    for (const gone of ["Saldo registrado", "1.200,00", "Saldo actual", "Saldo después"]) {
+      await expect(page.getByText(gone)).toHaveCount(0);
     }
-    await expect(page.getByRole("option")).toHaveCount(3);
+    await expect(page.getByText("Diferencia", { exact: true })).toHaveCount(0);
   });
 
-  test("observaciones is optional for every reason except Otro", async ({ page }) => {
-    await goToAjustarEfectivo(page);
-    await fillStep1(page, { counted: "1185", motivo: "Faltante detectado" });
-    await expect(page.getByRole("button", { name: "Continuar" })).toBeEnabled();
+  test("solo ofrece las monedas habilitadas en la caja", async ({ page }) => {
+    await page.locator("#ajuste-moneda").click();
+    await expect(page.getByRole("option", { name: /^EUR/ })).toBeVisible();
+    await expect(page.getByRole("option", { name: /^CHF/ })).toHaveCount(0);
   });
 
-  test("observaciones becomes required when the reason is Otro", async ({ page }) => {
-    await goToAjustarEfectivo(page);
-    await selectCurrency(page, "EUR");
-    await page.getByLabel("Efectivo contado").fill("1185");
-    await page.getByLabel("Motivo del ajuste").click();
-    await page.getByRole("option", { name: "Otro", exact: true }).click();
-
-    await expect(page.getByRole("button", { name: "Continuar" })).toBeDisabled();
-    await expect(page.locator("#ajuste-observaciones")).toHaveAttribute("aria-required", "true");
-
-    await page.locator("#ajuste-observaciones").fill("Conteo repetido dos veces.");
-    await expect(page.getByRole("button", { name: "Continuar" })).toBeEnabled();
-  });
-});
-
-test.describe("ajustar efectivo — reason validity vs. difference sign", () => {
-  test('a negative difference does not offer "Sobrante detectado"', async ({ page }) => {
-    await goToAjustarEfectivo(page);
-    await selectCurrency(page, "EUR");
-    await page.getByLabel("Efectivo contado").fill("1185"); // registered 1.200,00 → -15,00
-    await page.getByLabel("Motivo del ajuste").click();
-
-    await expect(page.getByRole("option", { name: "Sobrante detectado", exact: true })).toHaveCount(0);
-  });
-
-  test('flipping + to - clears an already-selected "Sobrante detectado", never swaps it to "Faltante detectado"', async ({
-    page,
-  }) => {
-    await goToAjustarEfectivo(page);
-    await selectCurrency(page, "EUR");
-    await page.getByLabel("Efectivo contado").fill("1220"); // +20,00
-    await page.getByLabel("Motivo del ajuste").click();
-    await page.getByRole("option", { name: "Sobrante detectado", exact: true }).click();
-    await expect(page.getByLabel("Motivo del ajuste")).toHaveText("Sobrante detectado");
-
-    await page.getByLabel("Efectivo contado").fill("1185"); // now -15,00
-
-    await expect(page.getByLabel("Motivo del ajuste")).not.toHaveText("Sobrante detectado");
-    await expect(page.getByLabel("Motivo del ajuste")).not.toHaveText("Faltante detectado");
-    await expect(page.getByRole("button", { name: "Continuar" })).toBeDisabled();
-  });
-
-});
-
-test.describe("ajustar efectivo — live summary (Step 1)", () => {
-  test("reflects registered balance, counted cash and difference, with no duplicated 'Saldo después'", async ({
-    page,
-  }) => {
-    await goToAjustarEfectivo(page);
-    await fillStep1(page, { counted: "1185", motivo: "Faltante detectado", observaciones: "Conteo verificado nuevamente." });
-
-    await expect(page.getByText("Resumen del ajuste")).toBeVisible();
-    await expect(page.getByText("1.200,00 EUR").first()).toBeVisible();
-    await expect(page.getByText("1.185,00 EUR").first()).toBeVisible();
-    await expect(page.getByText(/Saldo después/)).toHaveCount(0);
-  });
-});
-
-test.describe("ajustar efectivo — Step 1 → Step 2", () => {
-  test("Continuar opens Revisar ajuste de efectivo", async ({ page }) => {
-    await goToAjustarEfectivo(page);
-    await fillStep1(page, { counted: "1185" });
+  test("sin moneda o sin conteo no deja seguir", async ({ page }) => {
     await page.getByRole("button", { name: "Continuar" }).click();
-
-    await expect(page.getByRole("heading", { name: "Revisar ajuste de efectivo" })).toBeVisible();
-    await expect(
-      page.getByText("Verifica la información antes de modificar el saldo de Caja 03."),
-    ).toBeVisible();
+    await expect(page.getByText("Selecciona la moneda que contaste.")).toBeVisible();
+    await expect(page.getByText("Introduce el efectivo contado. Si no hay, escribe 0.")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
-  test("the review preserves every entered value, with no duplicated 'Saldo después'", async ({
-    page,
-  }) => {
-    await goToAjustarEfectivo(page);
-    await fillStep1(page, { counted: "1185", motivo: "Otro", observaciones: "Conteo verificado nuevamente." });
-    await page.getByRole("button", { name: "Continuar" }).click();
-
-    await expect(page.getByText("EUR · Euro")).toBeVisible();
-    await expect(page.getByText("1.200,00 EUR")).toBeVisible();
-    await expect(page.getByText("1.185,00 EUR")).toBeVisible();
-    await expect(page.getByText("−15,00 EUR").or(page.getByText("-15,00 EUR"))).toBeVisible();
-    await expect(page.getByText("Otro", { exact: true })).toBeVisible();
-    await expect(page.getByText("Conteo verificado nuevamente.")).toBeVisible();
-    await expect(page.getByText("Se registrará al confirmar")).toBeVisible();
-    await expect(page.getByText(/Saldo después/)).toHaveCount(0);
-  });
-
-  test("Volver returns to Step 1 with the draft intact", async ({ page }) => {
-    await goToAjustarEfectivo(page);
-    await fillStep1(page, { counted: "1185", motivo: "Faltante detectado", observaciones: "Nota." });
-    await page.getByRole("button", { name: "Continuar" }).click();
-    await page.getByRole("button", { name: "Volver" }).click();
-
-    await expect(page.getByRole("heading", { name: "Registrar conteo" })).toBeVisible();
+  test("avisa de que el valor no podrá cambiarse; «Seguir contando» no registra nada", async ({ page }) => {
+    await contar(page, "1185");
+    const aviso = page.getByRole("dialog");
+    await expect(aviso.getByRole("heading", { name: "El valor introducido no podrá ser cambiado" })).toBeVisible();
+    await expect(aviso.getByText("1.185,00 EUR")).toBeVisible();
+    await aviso.getByRole("button", { name: "Seguir contando" }).click();
     await expect(page.getByLabel("Efectivo contado")).toHaveValue("1185");
-    await expect(page.locator("#ajuste-observaciones")).toHaveValue("Nota.");
+    await page.goto("/worker/caja");
+    await expect(page.getByRole("table").first().locator("tbody tr").filter({ hasText: "Ajuste de efectivo" })).toHaveCount(0);
+  });
+
+  test("si coincide, no hay ajuste", async ({ page }) => {
+    await registrarConteo(page, "1200");
+    await expect(page.getByRole("heading", { name: "El conteo coincide" })).toBeVisible();
+    await page.getByRole("link", { name: "Ir a Caja" }).click();
+    await expect(page.getByRole("table").first().locator("tbody tr").filter({ hasText: "Ajuste de efectivo" })).toHaveCount(0);
   });
 });
 
-test.describe("ajustar efectivo — confirmation and domain effects", () => {
-  test("a negative difference records a Salida movement with the exact concepto and no operation code", async ({
-    page,
-  }) => {
+test.describe("ajustar efectivo — la diferencia, después de registrar", () => {
+  test.beforeEach(async ({ page }) => {
     await goToAjustarEfectivo(page);
-    await completeAdjustment(page, { counted: "1185", motivo: "Faltante detectado" });
-    await page.getByRole("link", { name: "Ir a Caja" }).click();
+    await registrarConteo(page, "1185");
+  });
 
-    const movementsTable = page.getByRole("table").nth(1);
-    const row = movementsTable.locator("tbody tr").filter({ hasText: "Ajuste de efectivo" }).first();
+  test("la ventana enseña la diferencia y no se puede cerrar sin terminar", async ({ page }) => {
+    const ventana = page.getByRole("dialog");
+    await expect(ventana.getByRole("heading", { name: "Ajuste registrado · explica la diferencia" })).toBeVisible();
+    await expect(ventana.getByText("−15,00 EUR")).toBeVisible();
+    await expect(ventana.getByText("Falta efectivo")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(ventana).toBeVisible();
+    await expect(ventana.getByRole("button", { name: "Cerrar", exact: true })).toHaveCount(0);
+    /* El saldo no aparece ni aquí. */
+    await expect(page.getByText("1.200,00")).toHaveCount(0);
+  });
+
+  test("solo ofrece motivos compatibles con el signo", async ({ page }) => {
+    await page.locator("#ajuste-motivo").click();
+    await expect(page.getByRole("option", { name: "Faltante detectado" })).toBeVisible();
+    await expect(page.getByRole("option", { name: "Sobrante detectado" })).toHaveCount(0);
+    await expect(page.getByRole("option", { name: "Otro" })).toBeVisible();
+  });
+
+  test("sin motivo, o con «Otro» sin observaciones, no termina", async ({ page }) => {
+    await page.getByRole("button", { name: "Guardar motivo y terminar" }).click();
+    await expect(page.getByText("Selecciona el motivo de la diferencia.")).toBeVisible();
+    await page.locator("#ajuste-motivo").click();
+    await page.getByRole("option", { name: "Otro", exact: true }).click();
+    await page.getByRole("button", { name: "Guardar motivo y terminar" }).click();
+    await expect(page.getByText("Explica el motivo en las observaciones.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ajuste registrado", exact: true })).toHaveCount(0);
+  });
+
+  test("con el motivo, termina y lo registra en el libro sin saldos", async ({ page }) => {
+    await explicar(page, "Faltante detectado", "Conteo verificado nuevamente.");
+    await expect(page.getByRole("heading", { name: "Ajuste registrado", exact: true })).toBeVisible();
+    await expect(page.getByText("Faltante detectado")).toBeVisible();
+    await expect(page.getByText("Conteo verificado nuevamente.")).toBeVisible();
+    await expect(page.getByText("−15,00 EUR")).toBeVisible();
+    await expect(page.getByText("Saldo anterior")).toHaveCount(0);
+    await expect(page.getByText("Saldo actual")).toHaveCount(0);
+
+    await page.getByRole("link", { name: "Ir a Caja" }).click();
+    const row = page.getByRole("table").first().locator("tbody tr").filter({ hasText: "Ajuste de efectivo" });
+    await expect(row).toHaveCount(1);
     await expect(row).toContainText("Salida");
     await expect(row).toContainText("−15,00");
     await expect(row.locator("td").nth(1)).toHaveText("—");
   });
 
+  test("si abandona la ventana, el ajuste ya está registrado, como «Sin explicar»", async ({ page }) => {
+    await page.goto("/worker/caja");
+    const row = page.getByRole("table").first().locator("tbody tr").filter({ hasText: "Ajuste de efectivo" });
+    await expect(row).toHaveCount(1);
+    await row.getByRole("link", { name: "Ver detalle" }).click();
+    await expect(page.getByText("Sin explicar").filter({ visible: true }).first()).toBeVisible();
+  });
 });
 
-test.describe("ajustar efectivo — result", () => {
-  test("shows Saldo anterior, Ajuste and Saldo actual together — intentional here, unlike Steps 1–2", async ({
-    page,
-  }) => {
+test.describe("ajustar efectivo — reposición durante la jornada", () => {
+  test("contar después de recibir fondos da una diferencia positiva", async ({ page }) => {
     await goToAjustarEfectivo(page);
-    await completeAdjustment(page, { counted: "1185", motivo: "Faltante detectado" });
-
-    await expect(page.getByText("Ajuste registrado correctamente")).toBeVisible();
-    await expect(
-      page.getByText("El saldo de EUR · Euro en Caja 03 se actualizó correctamente."),
-    ).toBeVisible();
-    await expect(page.getByText("Saldo anterior").first()).toBeVisible();
-    await expect(page.getByText("1.200,00 EUR").first()).toBeVisible();
-    await expect(page.getByText("Saldo actual").first()).toBeVisible();
-    await expect(page.getByText("1.185,00 EUR").first()).toBeVisible();
-    await expect(page.getByText("Faltante detectado").first()).toBeVisible();
-    await expect(page.getByText("Juan Pérez").first()).toBeVisible();
-    await expect(page.getByText(/\d{2}\/\d{2}\/\d{4} · \d{2}:\d{2}/).first()).toBeVisible();
-  });
-
-  test('"Imprimir comprobante" triggers the existing browser-print mechanism', async ({ page }) => {
-    await goToAjustarEfectivo(page);
-    await completeAdjustment(page, { counted: "1185", motivo: "Faltante detectado" });
-
-    let printed = false;
-    await page.exposeFunction("__notifyPrint", () => {
-      printed = true;
-    });
-    await page.evaluate(() => {
-      window.print = () => (window as unknown as { __notifyPrint: () => void }).__notifyPrint();
-    });
-    await page.getByRole("button", { name: "Imprimir comprobante" }).click();
-    expect(printed).toBe(true);
-  });
-
-  test('"Ir a Caja" returns to Caja, which shows the corrected balance and the new movement', async ({
-    page,
-  }) => {
-    await goToAjustarEfectivo(page);
-    await completeAdjustment(page, { counted: "1185", motivo: "Faltante detectado" });
-    await page.getByRole("link", { name: "Ir a Caja" }).click();
-
-    await expect(page).toHaveURL(/\/worker\/caja$/);
-    const table = page.getByRole("table").first();
-    await expect(table.locator("tr", { hasText: "EUR" })).toContainText("1.185,00");
-    const movementsTable = page.getByRole("table").nth(1);
-    await expect(movementsTable.getByText("Ajuste de efectivo").first()).toBeVisible();
-  });
-
-  test("does not auto-redirect away from the result screen", async ({ page }) => {
-    await goToAjustarEfectivo(page);
-    await completeAdjustment(page, { counted: "1185", motivo: "Faltante detectado" });
-    await page.waitForTimeout(800);
-    await expect(page.getByText("Ajuste registrado correctamente")).toBeVisible();
+    await registrarConteo(page, "1700");
+    await expect(page.getByRole("dialog").getByText("+500,00 EUR")).toBeVisible();
+    await page.locator("#ajuste-motivo").click();
+    await expect(page.getByRole("option", { name: "Faltante detectado" })).toHaveCount(0);
+    await page.getByRole("option", { name: "Sobrante detectado", exact: true }).click();
+    await page.getByRole("button", { name: "Guardar motivo y terminar" }).click();
+    await expect(page.getByRole("heading", { name: "Ajuste registrado", exact: true })).toBeVisible();
+    await expect(page.getByText("+500,00 EUR")).toBeVisible();
   });
 });
 
@@ -440,7 +230,6 @@ test.describe("ajustar efectivo — layout", () => {
     test(`fits without page-level horizontal scroll at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await goToAjustarEfectivo(page);
-
       const overflows = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
       );
@@ -454,11 +243,10 @@ test.describe("ajustar efectivo — layout", () => {
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
     });
-
     await goToAjustarEfectivo(page);
-    await completeAdjustment(page, { counted: "1185", motivo: "Faltante detectado" });
-    await page.getByRole("link", { name: "Ir a Caja" }).click();
-
+    await registrarConteo(page, "1185");
+    await explicar(page, "Faltante detectado");
+    await expect(page.getByRole("heading", { name: "Ajuste registrado", exact: true })).toBeVisible();
     expect(errors).toEqual([]);
   });
 });

@@ -35,7 +35,7 @@ import type {
 } from "@/features/operations/operations-history";
 
 import { almacen } from "./almacen";
-import { derivar, explicarSolicitudDeCierre, registrarSolicitudes } from "./aprobaciones";
+import { derivar, explicarSolicitud, explicarSolicitudDeCierre, registrarSolicitudes } from "./aprobaciones";
 import { estadoDeSede } from "./assignments";
 import { anotarSaldoDeCaja, habilitarMonedaEnCaja, monedasDeCaja, monedasDeSede, sedeManejaMoneda } from "./currencies";
 import { findTerminalById, marcarActividad } from "./devices";
@@ -239,7 +239,9 @@ export type CajaDenial =
   | "conteo-ya-declarado"
   | "sin-conteo-declarado"
   /** Las diferencias de ese cierre ya se explicaron, o no hay nada que explicar. */
-  | "cierre-sin-explicacion-pendiente";
+  | "cierre-sin-explicacion-pendiente"
+  /** Ese ajuste ya tiene motivo, o no es un ajuste de esta jornada. */
+  | "ajuste-sin-explicacion-pendiente";
 
 export type CajaResult<T> = { ok: true; value: T } | { ok: false; reason: CajaDenial; currency?: string };
 
@@ -514,22 +516,29 @@ export function abrirJornada(ctx: ContextoDeCaja, conteos: readonly ConteoDeAper
 
 /* -- Ajuste de efectivo --------------------------------------------------- */
 
-export function ajustarEfectivo(
+/**
+ * **Ajustar efectivo, a ciegas** (decisión del 6/11/2026). El trabajador no
+ * ve el saldo de su caja: cuenta una moneda y declara lo contado. El ajuste
+ * queda registrado en ese momento, con la diferencia contra los libros y sin
+ * motivo; el motivo se pide justo después (`explicarAjuste`). Si no llega, la
+ * administración lo ve como «Sin explicar».
+ *
+ * Si lo contado coincide, no hay ajuste ni movimiento: `value` es `null`.
+ */
+export function contarParaAjuste(
   ctx: ContextoDeCaja,
-  input: { currency: string; contado: number; motivo: string; observaciones?: string },
+  input: { currency: string; contado: number },
   now = new Date(),
-): CajaResult<MovimientoDeJornada> {
+): CajaResult<MovimientoDeJornada | null> {
   const propia = jornadaPropia(ctx);
-  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada>;
+  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada | null>;
   const j = propia.value;
   if (bloqueoDe(ctx)) return no("bloqueada");
   if (!monedasHabilitadas(ctx.register.id).has(input.currency)) return no("moneda-no-habilitada", input.currency);
   if (!conteoValido(input.contado)) return no("conteo-invalido", input.currency);
   const antes = saldoEnLibros(j, input.currency);
   const diferencia = redondear(input.contado - antes);
-  if (diferencia === 0) return no("diferencia-cero", input.currency);
-  const r = revisarExplicacion(diferencia, input, MOTIVOS_DE_AJUSTE, input.currency);
-  if (!r.ok) return r as CajaResult<MovimientoDeJornada>;
+  if (diferencia === 0) return { ok: true, value: null };
 
   const m = movimiento(j, {
     fechaHora: now.toISOString(),
@@ -537,12 +546,62 @@ export function ajustarEfectivo(
     concepto: "Ajuste de efectivo",
     currency: input.currency,
     amount: diferencia,
-    motivo: input.motivo,
     saldoAntes: antes,
-    ...(input.observaciones?.trim() ? { observaciones: input.observaciones.trim() } : {}),
   });
   registrarSolicitudes(derivar(j));
   return { ok: true, value: m };
+}
+
+/** El motivo de un ajuste recién contado. Solo quien lo contó, en su jornada abierta, y una vez. */
+export function explicarAjuste(
+  ctx: ContextoDeCaja,
+  movimientoId: string,
+  input: { motivo?: string; observaciones?: string },
+): CajaResult<MovimientoDeJornada> {
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada>;
+  const m = propia.value.movimientos.find((x) => x.id === movimientoId && x.concepto === "Ajuste de efectivo");
+  if (!m || m.motivo) return no("ajuste-sin-explicacion-pendiente");
+  const r = revisarExplicacion(m.amount, input, MOTIVOS_DE_AJUSTE, m.currency);
+  if (!r.ok) return r as CajaResult<MovimientoDeJornada>;
+  const observaciones = input.observaciones?.trim() || undefined;
+  m.motivo = input.motivo;
+  if (observaciones) m.observaciones = observaciones;
+  explicarSolicitud(`SOL-${m.id}`, input.motivo!, observaciones);
+  return { ok: true, value: m };
+}
+
+/** Contar y explicar de una vez. Lo usan las pruebas y el puesto de prueba. */
+export function ajustarEfectivo(
+  ctx: ContextoDeCaja,
+  input: { currency: string; contado: number; motivo: string; observaciones?: string },
+  now = new Date(),
+): CajaResult<MovimientoDeJornada> {
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada>;
+  const antes = saldoEnLibros(propia.value, input.currency);
+  if (monedasHabilitadas(ctx.register.id).has(input.currency) && conteoValido(input.contado)) {
+    const diferencia = redondear(input.contado - antes);
+    if (diferencia === 0) return no("diferencia-cero", input.currency);
+    const r = revisarExplicacion(diferencia, input, MOTIVOS_DE_AJUSTE, input.currency);
+    if (!r.ok) return r as CajaResult<MovimientoDeJornada>;
+  }
+  const c = contarParaAjuste(ctx, input, now);
+  if (!c.ok) return c as CajaResult<MovimientoDeJornada>;
+  if (!c.value) return no("diferencia-cero", input.currency);
+  return explicarAjuste(ctx, c.value.id, input);
+}
+
+/**
+ * Si la caja puede entregar ese importe, **sin decir cuánto tiene**. Lo usan
+ * Remesas y Cobrar giro justo antes de pedir al proveedor externo que dé la
+ * entrega por hecha, para no completar fuera algo que la caja no puede pagar.
+ * Responde solo sí o no (Worker opera a ciegas).
+ */
+export function alcanzaParaEntregar(ctx: ContextoDeCaja, currency: string, importe: number): boolean {
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok || !Number.isFinite(importe) || importe <= 0) return false;
+  return saldoEnLibros(propia.value, currency) >= importe;
 }
 
 /* -- Cierre --------------------------------------------------------------- */

@@ -4,7 +4,6 @@ import * as React from "react";
 import { ArrowRight, CircleCheck, CreditCard, UserRound } from "lucide-react";
 
 import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import { formatMoney } from "@/lib/format";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 import {
   DELIVERY_METHOD_LABEL,
@@ -23,7 +22,8 @@ import {
 import { useCaja } from "@/features/caja/use-caja";
 
 /** Why a looked-up giro cannot be paid right now. `null` means it can. */
-export type PayoutBlock = "estado" | "moneda" | "fondos" | null;
+/** Sin «fondos»: Worker no ve el saldo; si no alcanza, se dice al confirmar. */
+export type PayoutBlock = "estado" | "moneda" | null;
 
 /* -------------------------------------------------------------------------
  * Step 2 — Revisar giro
@@ -33,7 +33,6 @@ export function GiroPayoutReview({
   transfer,
   worker,
   block,
-  availableCash,
   onBack,
   onCancel,
   onContinue,
@@ -41,7 +40,6 @@ export function GiroPayoutReview({
   transfer: TransferPayoutSnapshot;
   worker: string;
   block: PayoutBlock;
-  availableCash?: number;
   onBack: () => void;
   onCancel: () => void;
   onContinue: () => void;
@@ -109,16 +107,6 @@ export function GiroPayoutReview({
           title={`${transfer.payoutCurrency} no está habilitada en esta caja.`}
         >
           No es posible entregar este giro desde la caja actual.
-        </Alert>
-      ) : block === "fondos" ? (
-        <Alert
-          variant="error"
-          title={`La caja no dispone de suficiente ${transfer.payoutCurrency} para entregar este giro.`}
-        >
-          Disponible:{" "}
-          {availableCash === undefined
-            ? "—"
-            : formatMoney({ amount: availableCash, currency: transfer.payoutCurrency })}
         </Alert>
       ) : null}
 

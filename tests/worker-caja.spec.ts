@@ -35,7 +35,7 @@ test.describe("worker caja — render and shell", () => {
   test("renders the page header and marks Caja as the active nav item", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Caja", exact: true })).toBeVisible();
     await expect(
-      page.getByText("Consulta el estado operativo y financiero de tu caja asignada."),
+      page.getByText("Consulta el estado de tu caja, sus monedas y su libro de movimientos."),
     ).toBeVisible();
 
     const nav = page.getByRole("navigation", { name: "Navegación principal" });
@@ -50,30 +50,24 @@ test.describe("worker caja — render and shell", () => {
   });
 });
 
-test.describe("worker caja — balances", () => {
+test.describe("worker caja — monedas, a ciegas", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/worker/caja");
-    // El shell de `/worker` vive detrás de la puerta de vinculación, que es un
-    // componente de cliente: solo existe tras la hidratación (Worker FRD §2.1).
-    // Sin esperarlo, una lectura sincrónica del DOM mide una página vacía.
     await page.getByRole("main").waitFor();
   });
 
-  test("shows CUP, USD, EUR and GBP with SVG flags and canonical amounts", async ({ page }) => {
-    await expect(page.getByText("Saldos de caja")).toBeVisible();
-    const balancesTable = page.getByRole("table").first();
-
-    for (const [currency, amount] of [
-      ["CUP", fmt(CUP_FINAL)],
-      ["USD", "3.850,00"],
-      ["EUR", "2.120,00"],
-      ["GBP", "950,00"],
-    ] as const) {
-      const row = balancesTable.locator("tbody tr").filter({ hasText: currency });
-      await expect(row).toBeVisible();
-      await expect(row.getByText(amount, { exact: true })).toBeVisible();
-      await expect(row.locator("svg[data-currency-flag]")).toHaveCount(1);
+  test("lista las monedas de la caja con su bandera y sin importes", async ({ page }) => {
+    const monedas = page.getByRole("list", { name: "Monedas de la caja" });
+    await expect(page.getByText("Monedas de la caja", { exact: true })).toBeVisible();
+    for (const currency of ["CUP", "USD", "EUR", "GBP", "CHF"]) {
+      const item = monedas.getByRole("listitem").filter({ hasText: currency });
+      await expect(item).toBeVisible();
+      await expect(item.locator("svg[data-currency-flag]")).toHaveCount(1);
     }
+    await expect(page.getByText("Saldos de caja")).toHaveCount(0);
+    await expect(page.getByText("Saldo actual")).toHaveCount(0);
+    await expect(page.getByText("Sin efectivo")).toHaveCount(0);
+    await expect(onScreen(page, fmt(CUP_FINAL))).toHaveCount(0);
   });
 
   test("flags stay decorative SVGs, never emoji", async ({ page }) => {
@@ -88,11 +82,14 @@ test.describe("worker caja — balances", () => {
     expect(hasRegionalIndicator).toBe(false);
   });
 
-  test("el estado de cada saldo es texto, y no inventa un «nivel bajo» sin umbral", async ({ page }) => {
-    const balancesTable = page.getByRole("table").first();
-    const cupRow = balancesTable.locator("tbody tr").filter({ hasText: "CUP" });
-    await expect(cupRow.getByText("Con efectivo")).toBeVisible();
-    await expect(page.getByText("Nivel bajo")).toHaveCount(0);
+  test("el saldo tampoco viaja en los datos de la página", async ({ page }) => {
+    /* Worker opera a ciegas: el saldo no puede leerse ni con las herramientas
+       del navegador. El HTML de la página no lo lleva en ninguna forma. */
+    const html = await page.content();
+    expect(html).not.toContain(String(CUP_FINAL));
+    expect(html).not.toContain("saldoDespues");
+    expect(html).not.toContain("saldoAntes");
+    expect(html).not.toContain("cashSnapshot");
   });
 });
 
@@ -127,7 +124,7 @@ test.describe("worker caja — movements", () => {
 
   test("renders the ledger with pagination", async ({ page }) => {
     await expect(page.getByText("Movimientos de caja")).toBeVisible();
-    const movementsTable = page.getByRole("table").nth(1);
+    const movementsTable = page.getByRole("table").first();
     for (const heading of ["Fecha y hora", "Operación", "Tipo", "Concepto", "Moneda", "Importe"]) {
       await expect(movementsTable.getByRole("columnheader", { name: heading })).toBeVisible();
     }
@@ -135,7 +132,7 @@ test.describe("worker caja — movements", () => {
   });
 
   test("filters by Tipo = Entrada", async ({ page }) => {
-    const table = page.getByRole("table").nth(1);
+    const table = page.getByRole("table").first();
     await page.getByLabel("Tipo").click();
     await page.getByRole("option", { name: "Entrada", exact: true }).click();
     /* La fila visible anterior al filtro ya satisface `toBeVisible()`, así que
@@ -148,8 +145,8 @@ test.describe("worker caja — movements", () => {
   });
 
   test("filters by Moneda", async ({ page }) => {
-    const table = page.getByRole("table").nth(1);
-    await page.getByLabel("Moneda").click();
+    const table = page.getByRole("table").first();
+    await page.getByLabel("Moneda", { exact: true }).click();
     await page.getByRole("option", { name: "EUR", exact: true }).click();
     /* La fila visible anterior al filtro ya satisface `toBeVisible()`, así que
        esa espera no demuestra nada y la lectura sincrónica podía medir la tabla
@@ -161,14 +158,14 @@ test.describe("worker caja — movements", () => {
   });
 
   test("a currency with no movements shows the empty state, not an error", async ({ page }) => {
-    await page.getByLabel("Moneda").click();
+    await page.getByLabel("Moneda", { exact: true }).click();
     /* CHF está habilitada en cero: no tiene ningún movimiento. */
     await page.getByRole("option", { name: "CHF", exact: true }).click();
     await expect(page.getByText("No encontramos movimientos")).toBeVisible();
   });
 
   test("searches by operation code", async ({ page }) => {
-    const table = page.getByRole("table").nth(1);
+    const table = page.getByRole("table").first();
     const code = (await table.getByRole("link", { name: /^PC-\d{6}-\d{6}$/ }).first().textContent())!.trim();
     await page.getByPlaceholder("Buscar por operación o concepto").fill(code);
     /* La fila visible anterior al filtro ya satisface `toBeVisible()`, así que
@@ -191,7 +188,7 @@ test.describe("worker caja — movements", () => {
   });
 
   test("an operation code links to its real detail page, never a 404", async ({ page }) => {
-    const table = page.getByRole("table").nth(1);
+    const table = page.getByRole("table").first();
     const link = table.getByRole("link", { name: /^PC-\d{6}-\d{6}$/ }).first();
     const code = (await link.textContent())?.trim();
     await link.click();
@@ -201,7 +198,7 @@ test.describe("worker caja — movements", () => {
   });
 
   test("pagination still works", async ({ page }) => {
-    const table = page.getByRole("table").nth(1);
+    const table = page.getByRole("table").first();
     // Fecha y hora (unlike Operación) is never blank, so it reliably proves
     // page 2 shows a different, older slice of the ledger.
     /* Todo el libro de la prueba cae en el mismo minuto: se compara la fila
@@ -216,22 +213,14 @@ test.describe("worker caja — movements", () => {
   });
 });
 
-test.describe("worker caja — saldos del libro", () => {
-  test("el saldo después del primer giro es el fondeo más ese giro", async ({ page }) => {
+test.describe("worker caja — libro sin saldos", () => {
+  test("el libro muestra el importe de cada movimiento, nunca el saldo después", async ({ page }) => {
     await page.goto("/worker/caja");
-    const row = page
-      .getByRole("table")
-      .nth(1)
-      .locator("tbody tr")
-      .filter({ hasText: "Envío de giro" })
-      .filter({ hasText: `+${fmt(GIROS[0]!)}` });
-    await expect(row.getByText(fmt(245_000 + GIROS[0]!), { exact: true })).toBeVisible();
-  });
-
-  test("el último movimiento de CUP deja el saldo que muestra la caja", async ({ page }) => {
-    await page.goto("/worker/caja");
-    const ultimo = page.getByRole("table").nth(1).locator("tbody tr").filter({ hasText: "CUP" }).first();
-    await expect(ultimo.getByText(fmt(CUP_FINAL), { exact: true })).toBeVisible();
+    const table = page.getByRole("table").first();
+    await expect(table.getByRole("columnheader", { name: "Saldo después" })).toHaveCount(0);
+    const row = table.locator("tbody tr").filter({ hasText: "Envío de giro" }).filter({ hasText: `+${fmt(GIROS[0]!)}` });
+    await expect(row).toBeVisible();
+    await expect(row.getByText(fmt(245_000 + GIROS[0]!), { exact: true })).toHaveCount(0);
   });
 });
 

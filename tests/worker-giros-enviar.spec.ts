@@ -355,8 +355,10 @@ test.describe("External failure", () => {
 
     // The confirm screen has no "Ir a Caja" action — reach Caja via the shell's own nav.
     await page.getByRole("link", { name: "Caja" }).click();
+    /* Sin saldos en Worker: «no se tocó la caja» es que el libro no tiene el envío. */
     const table = page.getByRole("table").first();
-    await expect(table.locator("tr", { hasText: "EUR" })).toContainText("1.200,00");
+    await expect(table).toBeVisible();
+    await expect(table.locator("tbody tr").filter({ hasText: "Envío de giro" })).toHaveCount(0);
   });
 });
 
@@ -367,10 +369,10 @@ test.describe("Success — Caja, Operaciones and result", () => {
 
     // The result screen has no "Ir a Caja" action either — same shell nav.
     await page.getByRole("link", { name: "Caja" }).click();
-    const table = page.getByRole("table").first();
-    await expect(table.locator("tr", { hasText: "EUR" })).toContainText("1.700,00");
+    /* Worker opera a ciegas: el libro lleva el envío, nunca el saldo que deja. */
+    await expect(page.getByText("1.700,00")).toHaveCount(0);
 
-    const movementsTable = page.getByRole("table").nth(1);
+    const movementsTable = page.getByRole("table").first();
     const row = movementsTable.locator("tbody tr").filter({ hasText: "Envío de giro" }).first();
     await expect(row).toContainText("Entrada");
     await expect(row).toContainText("+500,00");

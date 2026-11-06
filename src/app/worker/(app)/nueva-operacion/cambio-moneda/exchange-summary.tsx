@@ -1,9 +1,8 @@
 import * as React from "react";
-import { CircleCheck, FileText, TriangleAlert, Wallet } from "lucide-react";
+import { FileText, Wallet } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { cn } from "@/lib/utils";
 import { formatAppliedRateLine, formatMoney, formatTasa } from "@/lib/format";
 import { findCurrency, type ExchangeQuote } from "@/features/exchange/quote";
 
@@ -119,118 +118,4 @@ export function formatAppliedRate(quote: ExchangeQuote): string {
 
 function currencyNameOf(code: string): string | undefined {
   return findCurrency(code)?.name;
-}
-
-export interface CashCheck {
-  currency: string;
-  available: number;
-  required: number;
-  sufficient: boolean;
-  remaining: number;
-}
-
-/** Availability of the destination currency for this exact operation. */
-export function evaluateCash(available: number, required: number, currency: string): CashCheck {
-  return {
-    currency,
-    available,
-    required,
-    sufficient: available >= required,
-    remaining: available - required,
-  };
-}
-
-/**
- * Cash panel. Shows the arithmetic the worker is accountable for: what the
- * register holds, what leaves it, and what is left.
- */
-export function CashValidationCard({
-  cash,
-  variant = "compact",
-  className,
-}: {
-  cash: CashCheck;
-  /** `detailed` adds the before/after breakdown used on the review step. */
-  variant?: "compact" | "detailed";
-  className?: string;
-}): React.JSX.Element {
-  return (
-    <Card className={className}>
-      <CardHeader>
-        <div className="flex min-w-0 items-center gap-3">
-          <CardGlyph icon={Wallet} />
-          <CardTitle>Validación de caja</CardTitle>
-        </div>
-      </CardHeader>
-
-      <CardContent className="flex flex-col gap-3">
-        <CashRow label="Disponible en Caja 03" value={cash.available} currency={cash.currency} />
-        <CashRow
-          label="Entrega al cliente"
-          value={cash.required}
-          currency={cash.currency}
-          // A deduction states its direction in the sign, not only in colour.
-          signed="negative"
-        />
-
-        {variant === "detailed" || cash.sufficient ? (
-          <CashRow
-            label="Disponible después"
-            value={cash.remaining}
-            currency={cash.currency}
-            tone={cash.sufficient ? "success" : "error"}
-          />
-        ) : null}
-
-        <CashStatus cash={cash} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function CashRow({
-  label,
-  value,
-  currency,
-  tone,
-  signed,
-}: {
-  label: string;
-  value: number;
-  currency: string;
-  tone?: "success" | "error";
-  signed?: "negative";
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-caption text-text-secondary">{label}</span>
-      <span
-        className={cn(
-          "pc-numeric text-body font-semibold",
-          tone === "success" && "text-success-foreground",
-          tone === "error" && "text-error-foreground",
-          !tone && "text-text-primary",
-          signed === "negative" && "text-error-foreground",
-        )}
-      >
-        {signed === "negative" ? "− " : ""}
-        {formatMoney({ amount: Math.abs(value), currency })}
-      </span>
-    </div>
-  );
-}
-
-/** Status is a labelled state, never a bare colour (§20). */
-export function CashStatus({ cash }: { cash: CashCheck }): React.JSX.Element {
-  return cash.sufficient ? (
-    <p className="mt-1 flex items-start gap-2 rounded-control border border-success-border bg-success-subtle px-3 py-2.5 text-label font-semibold text-success-foreground">
-      <CircleCheck className="mt-px size-4 shrink-0" aria-hidden="true" />
-      Fondos suficientes
-    </p>
-  ) : (
-    <p className="mt-1 flex items-start gap-2 rounded-control border border-error-border bg-error-subtle px-3 py-2.5 text-label font-semibold text-error-foreground">
-      <TriangleAlert className="mt-px size-4 shrink-0" aria-hidden="true" />
-      Fondos insuficientes en caja
-    </p>
-  );
 }

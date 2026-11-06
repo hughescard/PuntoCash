@@ -49,7 +49,7 @@ export function AnadirMonedaFlow(): React.JSX.Element {
   const worker = vista.trabajador;
   const jornada = caja.jornadaAbierta ? caja.jornada : null;
   const CAJA_SUMMARY = caja.summary;
-  const CAJA_BALANCES = caja.balances;
+  const MONEDAS = caja.monedas;
 
   // Which screen sent the worker here. `useSyncExternalStore` rather than a
   // lazy `useState` initializer or an effect: this component is still
@@ -143,7 +143,7 @@ export function AnadirMonedaFlow(): React.JSX.Element {
             value={jornada ? "Abierta" : "Sin abrir"}
             valueClassName={jornada ? "text-success-foreground" : undefined}
           />
-          <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(CAJA_BALANCES.length)} />
+          <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(MONEDAS.length)} />
         </CardContent>
       </Card>
 

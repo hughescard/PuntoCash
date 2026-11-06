@@ -47,17 +47,16 @@ test.describe("worker home", () => {
     await expect(page.getByRole("main").getByRole("link", { name: "Nueva operación" })).toBeVisible();
   });
 
-  test("shows the register balances by currency", async ({ page }) => {
+  test("Mi caja lista las monedas de la caja, sin importes", async ({ page }) => {
     const main = page.getByRole("main");
     await expect(main.getByText("Mi caja")).toBeVisible();
-
-    for (const [currency, amount] of [
-      ["CUP", "297.500,00"],
-      ["USD", "3.850,00"],
-      ["EUR", "2.120,00"],
-    ] as const) {
-      await expect(main.getByText(currency, { exact: true }).first()).toBeVisible();
-      await expect(main.getByText(amount, { exact: true })).toBeVisible();
+    const monedas = main.getByRole("list", { name: "Monedas de la caja" });
+    for (const currency of ["CUP", "USD", "EUR"]) {
+      await expect(monedas.getByText(currency, { exact: true })).toBeVisible();
+    }
+    /* Worker opera a ciegas (6/11/2026). */
+    for (const amount of ["297.500,00", "3.850,00", "2.120,00"]) {
+      await expect(main.getByText(amount, { exact: true })).toHaveCount(0);
     }
   });
 

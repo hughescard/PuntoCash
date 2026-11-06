@@ -178,16 +178,22 @@ test.describe("step 1 · cambio", () => {
     });
   }
 
-  test("blocks continuing when the register cannot cover the payout", async ({ page }) => {
-    await setAmount(page, "9000");
-
-    await expect(page.getByText("Fondos insuficientes en caja").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+  /* Worker opera a ciegas (6/11/2026): la pantalla no sabe cuánto hay. Si no
+     alcanza, lo dice el servidor al confirmar y no se registra nada. */
+  test("no enseña el disponible ni lo valida antes de confirmar", async ({ page }) => {
+    await expect(page.getByText("Validación de caja")).toHaveCount(0);
+    await expect(page.getByText(/Disponible/)).toHaveCount(0);
+    await expect(page.getByText("500.000,00")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeEnabled();
   });
 
-  test("allows continuing when funds are sufficient", async ({ page }) => {
-    await expect(page.getByText("Fondos suficientes").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeEnabled();
+  test("si la caja no alcanza, lo dice al confirmar y no registra nada", async ({ page }) => {
+    await setAmount(page, "9000");
+    await goToCliente(page);
+    await goToRevision(page);
+    await page.getByRole("button", { name: "Confirmar cambio" }).click();
+    await expect(page.getByText(/La caja no tiene CUP suficiente para entregar este cambio/)).toBeVisible();
+    await expect(page.getByRole("main").getByText(/PC-\d{6}-\d{6}/)).toHaveCount(0);
   });
 });
 
@@ -203,7 +209,8 @@ test.describe("step 2 · cliente", () => {
 
     // The side summary carries the committed numbers (§14).
     await expect(page.getByText("1.000,00 USD").first()).toBeVisible();
-    await expect(page.getByText("182.000,00 CUP").first()).toBeVisible();
+    await expect(page.getByText("318.000,00 CUP").first()).toBeVisible();
+    await expect(page.getByText("182.000,00 CUP")).toHaveCount(0);
   });
 
   test("finds the seeded client and shows them read-only", async ({ page }) => {
@@ -300,10 +307,10 @@ test.describe("step 3 · revisión", () => {
     await expect(main.getByText("318.000,00 CUP").first()).toBeVisible();
     await expect(main.getByText("1 USD = 318,00 CUP").first()).toBeVisible();
 
-    // Before / deduction / after.
-    await expect(main.getByText("500.000,00 CUP").first()).toBeVisible();
+    // Lo que entra y lo que sale; ni el disponible antes ni el de después.
     await expect(main.getByText("− 318.000,00 CUP").first()).toBeVisible();
-    await expect(main.getByText("182.000,00 CUP").first()).toBeVisible();
+    await expect(main.getByText("500.000,00 CUP")).toHaveCount(0);
+    await expect(main.getByText("182.000,00 CUP")).toHaveCount(0);
   });
 
   test("shows worker and register but allocates no code before confirmation", async ({ page }) => {
@@ -475,7 +482,7 @@ test.describe("result", () => {
     await expect(page.getByRole("heading", { name: `Operación ${code}` })).toBeVisible();
   });
 
-  test("records an entrada and a salida in the open jornada and moves both balances", async ({
+  test("records an entrada and a salida in the open jornada, without balances", async ({
     page,
   }) => {
     const code = (
@@ -489,16 +496,14 @@ test.describe("result", () => {
     const rows = page.getByRole("row").filter({ has: page.getByRole("link", { name: code }) });
     await expect(rows).toHaveCount(2);
     await expect(rows.filter({ hasText: "Entrada" })).toContainText("+1.000,00");
-    await expect(rows.filter({ hasText: "Entrada" })).toContainText("4.850,00");
     await expect(rows.filter({ hasText: "Salida" })).toContainText("−318.000,00");
-    await expect(rows.filter({ hasText: "Salida" })).toContainText("182.000,00");
     /* Cada tramo dice lo que hizo: la casa compró dólares y pagó pesos. */
     await expect(rows.filter({ hasText: "Entrada" })).toContainText("Compra de USD");
     await expect(rows.filter({ hasText: "Salida" })).toContainText("Pago por compra de USD");
 
-    // Live balances reflect the exchange: +1.000 USD, −318.000 CUP.
-    await expect(page.getByRole("row", { name: /USD.*4\.850,00/ }).first()).toBeVisible();
-    await expect(page.getByRole("row", { name: /CUP.*182\.000,00/ }).first()).toBeVisible();
+    // Worker no ve los saldos resultantes.
+    await expect(page.getByText("4.850,00")).toHaveCount(0);
+    await expect(page.getByText("182.000,00")).toHaveCount(0);
   });
 
   test("starting another operation returns to the catalog", async ({ page }) => {

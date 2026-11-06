@@ -75,7 +75,7 @@ export default async function AdminMovimientoPage({
             />
             {m.motivo ? (
               <Dato etiqueta="Motivo" valor={m.motivo} />
-            ) : m.concepto === "Ajuste de cierre" ? (
+            ) : m.concepto === "Ajuste de cierre" || m.concepto === "Ajuste de efectivo" ? (
               <Dato etiqueta="Motivo" valor="Sin explicar" />
             ) : null}
             {m.observaciones ? <Dato etiqueta="Observaciones" valor={m.observaciones} /> : null}

@@ -96,16 +96,13 @@ test.describe("operation detail — Cambio de moneda", () => {
     await expect(onScreen(page, "1 USD = 0,9200 EUR").first()).toBeVisible();
   });
 
-  test("shows the historical cash snapshot, not a live balance", async ({ page }) => {
-    await expect(onScreen(page, "Estado de caja").first()).toBeVisible();
-
-    for (const [label, value] of [
-      ["Disponible antes", "1.250,00 EUR"],
-      ["Entregado al cliente", "920,00 EUR"],
-      ["Disponible después", "330,00 EUR"],
-    ] as const) {
-      await expect(onScreen(page, label).first()).toBeVisible();
-      await expect(onScreen(page, value).first()).toBeVisible();
+  test("shows what entered and left the caja, without any balance", async ({ page }) => {
+    await expect(onScreen(page, "Movimientos de caja").first()).toBeVisible();
+    await expect(onScreen(page, "Salió de caja (entregado al cliente)").first()).toBeVisible();
+    await expect(onScreen(page, "−920,00 EUR").first()).toBeVisible();
+    /* Worker opera a ciegas (6/11/2026). */
+    for (const gone of ["Estado de caja", "Disponible antes", "Disponible después", "1.250,00 EUR", "330,00 EUR"]) {
+      await expect(onScreen(page, gone)).toHaveCount(0);
     }
   });
 
@@ -196,8 +193,11 @@ test.describe("operation detail — Remesa", () => {
 
   test("shows the linked commercial cash-out snapshot and stays read-only", async ({ page }) => {
     await page.goto(`/worker/operaciones/${REMITTANCE_CODE}`);
-    for (const value of ["Movimiento de efectivo", "8.450,00 CUP", "−500,00 CUP", "7.950,00 CUP", "Salida", REMITTANCE_CODE]) {
+    for (const value of ["Movimiento de efectivo", "−500,00 CUP", "Salida", REMITTANCE_CODE]) {
       await expect(onScreen(page, value).first()).toBeVisible();
+    }
+    for (const gone of ["8.450,00 CUP", "7.950,00 CUP", "Saldo anterior", "Saldo resultante"]) {
+      await expect(onScreen(page, gone)).toHaveCount(0);
     }
     for (const action of [/Completar remesa/, /Reintentar/, /Editar/, /Cancelar remesa/]) {
       await expect(page.getByRole("button", { name: action })).toHaveCount(0);

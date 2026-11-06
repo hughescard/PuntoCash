@@ -4,7 +4,10 @@ import {
   abrirJornada,
   abrirJornadaDeclarada,
   aperturaDeclarada,
+  alcanzaParaEntregar,
   cerrarConArqueo,
+  contarParaAjuste,
+  explicarAjuste,
   explicarCierre,
   declararConteoDeApertura,
   ajustarEfectivo,
@@ -169,6 +172,35 @@ test.describe("Arqueo y cierre en un acto; apertura con totales", () => {
 
     /* Quien abre recibe lo contado, no los libros. */
     expect(estadoDeCaja(ctx).apertura.entregado).toEqual([{ currency: "CUP", amount: 9_900 }]);
+  });
+});
+
+test.describe("Worker a ciegas: ajuste en dos pasos y entregas sí o no", () => {
+  test("contar registra el ajuste «Sin explicar»; explicar lo completa una vez", () => {
+    const ctx = puesto({ EUR: 1_200 });
+    const r = contarParaAjuste(ctx, { currency: "EUR", contado: 1_185 });
+    expect(r.ok && r.value).toMatchObject({ concepto: "Ajuste de efectivo", amount: -15 });
+    if (!r.ok || !r.value) return;
+    const m = r.value;
+    const sol = () => solicitudesDeJornada(estadoDeCaja(ctx).jornada!.id).find((x) => x.tipo === "ajuste");
+    expect(sol()?.motivo).toBe("Sin explicar");
+
+    expect(explicarAjuste(ctx, m.id, { motivo: "Sobrante detectado" })).toMatchObject({ ok: false, reason: "motivo-incompatible" });
+    expect(explicarAjuste(ctx, m.id, { motivo: "Faltante detectado", observaciones: "Billete roto" }).ok).toBe(true);
+    expect(sol()).toMatchObject({ motivo: "Faltante detectado", observaciones: "Billete roto" });
+    expect(explicarAjuste(ctx, m.id, { motivo: "Otro", observaciones: "x" })).toMatchObject({ ok: false, reason: "ajuste-sin-explicacion-pendiente" });
+  });
+
+  test("si lo contado coincide, no hay ajuste", () => {
+    const ctx = puesto({ EUR: 1_200 });
+    expect(contarParaAjuste(ctx, { currency: "EUR", contado: 1_200 })).toEqual({ ok: true, value: null });
+  });
+
+  test("alcanzaParaEntregar responde sí o no, sin cifras", () => {
+    const ctx = puesto({ CUP: 1_000 });
+    expect(alcanzaParaEntregar(ctx, "CUP", 1_000)).toBe(true);
+    expect(alcanzaParaEntregar(ctx, "CUP", 1_000.01)).toBe(false);
+    expect(alcanzaParaEntregar(ctx, "USD", 1)).toBe(false);
   });
 });
 

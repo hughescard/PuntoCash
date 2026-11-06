@@ -104,7 +104,7 @@ export function CajaMovementsFilters({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {getCajaMovementCurrencyFilters(caja.balances).map((option) => (
+            {getCajaMovementCurrencyFilters(caja.monedas).map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>

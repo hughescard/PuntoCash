@@ -12,7 +12,6 @@
  */
 
 import type {
-  CajaBalance,
   CajaJornada,
   CajaMovement,
   CajaSummary,
@@ -38,7 +37,14 @@ export interface VistaDeCaja {
   summary: CajaSummary;
   /** La jornada abierta de la caja, sea de quien sea. */
   jornada: (CajaJornada & { id: string; propia: boolean }) | null;
-  saldos: readonly CajaBalance[];
+  /**
+   * Las monedas de la caja, **sin importes**. Worker opera a ciegas (decisión
+   * del 6/11/2026): el trabajador sabe qué monedas tiene su caja, nunca
+   * cuánto. Los saldos no salen del servidor hacia Worker por ningún camino
+   * —ni aquí, ni en los movimientos, ni en las operaciones—, para que no
+   * puedan leerse tampoco desde las herramientas del navegador.
+   */
+  monedas: readonly string[];
   movimientos: readonly CajaMovement[];
   monedasPorAnadir: readonly string[];
   bloqueo: BloqueoDeCaja | null;
@@ -83,10 +89,8 @@ function movimientosDeLibro(registerId: string, now: Date): CajaMovement[] {
         concepto: m.concepto,
         currency: m.currency,
         amount: m.amount,
-        saldoDespues: m.saldoDespues,
         ...(m.motivo ? { motivo: m.motivo } : {}),
         ...(m.observaciones ? { observaciones: m.observaciones } : {}),
-        ...(m.saldoAntes !== undefined ? { saldoAntes: m.saldoAntes } : {}),
         jornada: snap,
       });
     }
@@ -124,7 +128,7 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
       lastUpdated: now.toISOString(),
     },
     jornada: j ? { ...aCajaJornada(j), id: j.id, propia } : null,
-    saldos: estado.saldos.map((s) => ({ currency: s.currency, amount: s.amount })),
+    monedas: estado.saldos.map((s) => s.currency),
     movimientos: movimientosDeLibro(ctx.register.id, now),
     monedasPorAnadir: estado.monedasPorAnadir,
     bloqueo: estado.bloqueo,
@@ -137,9 +141,16 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
   };
 }
 
-/** El registro de una operación como lo ve Worker: lo que es de la red se queda en el servidor. */
+/**
+ * El registro de una operación como lo ve Worker: lo que es de la red se queda
+ * en el servidor, y también **el saldo de la caja antes y después** de la
+ * operación (`cashSnapshot`), que Worker no ve. El importe de la operación sí
+ * viaja: es lo que el cliente entregó o recibió.
+ */
 export function registroDeWorker(o: OperationRecord): OperationRecord {
-  const copia: OperationRecord & Partial<Record<"sedeId" | "registerId" | "workerId" | "jornadaId" | "origenKiosco", unknown>> = { ...o };
+  const amount = { ...o.amount };
+  delete amount.cashSnapshot;
+  const copia: OperationRecord & Partial<Record<"sedeId" | "registerId" | "workerId" | "jornadaId" | "origenKiosco", unknown>> = { ...o, amount };
   delete copia.sedeId;
   delete copia.registerId;
   delete copia.workerId;

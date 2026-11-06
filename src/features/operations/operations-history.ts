@@ -107,7 +107,8 @@ export type OperationAmount =
       destination: Money;
       /** Destination units per one source unit — the operation's rate snapshot. */
       appliedRate: number;
-      cashSnapshot: OperationCashSnapshot;
+      /** Solo en la red y en las consolas: Worker no ve los saldos de su caja. */
+      cashSnapshot?: OperationCashSnapshot;
     };
 
 export interface OperationRecord {

@@ -1,5 +1,4 @@
-import type { CajaBalance } from "@/features/caja/caja-data";
-import { registrarOperacionAction } from "../../../../_actions";
+import { alcanzaParaEntregarAction, registrarOperacionAction } from "../../../../_actions";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 
@@ -32,7 +31,7 @@ export type ConfirmPayoutOutcome =
  * Order of operations, exactly as approved (§49):
  *   1. open Jornada
  *   2. currency enabled in the CURRENT Caja
- *   3. current balance covers the payout
+ *   3. the server says the caja can pay it (yes or no only: Worker never sees balances)
  *   4. the transfer snapshot is still payable
  *   5. invoke the external completion — and require success
  *   6. only then commit the local operation and the commercial Caja Salida
@@ -50,11 +49,11 @@ export async function confirmGiroPayout(params: {
   worker: string;
   caja: string;
   jornadaAbierta: boolean;
-  saldos: readonly CajaBalance[];
+  /** Las monedas de la caja, sin importes: Worker opera a ciegas. */
+  monedas: readonly string[];
 }): Promise<ConfirmPayoutOutcome> {
   const { transfer } = params;
-  const CAJA_BALANCES = params.saldos;
-  const isCurrencyEnabled = (c: string) => CAJA_BALANCES.some((b) => b.currency === c);
+  const isCurrencyEnabled = (c: string) => params.monedas.includes(c);
 
   if (!params.jornadaAbierta) {
     return { ok: false, message: "Debes tener una jornada abierta para entregar el giro." };
@@ -63,15 +62,16 @@ export async function confirmGiroPayout(params: {
     return { ok: false, message: `${transfer.payoutCurrency} ya no está habilitada en esta caja.` };
   }
 
-  const balance = CAJA_BALANCES.find((item) => item.currency === transfer.payoutCurrency);
-  if (!balance || balance.amount < transfer.deliveryAmount) {
-    return {
-      ok: false,
-      message: `La caja ya no dispone de suficiente ${transfer.payoutCurrency} para entregar este giro.`,
-    };
-  }
   if (transfer.status !== "READY") {
     return { ok: false, message: "Este giro ya no está disponible para pago." };
+  }
+  /* El servidor dice si alcanza —solo sí o no— antes de dar el giro por
+     pagado en el proveedor. */
+  if (!(await alcanzaParaEntregarAction(transfer.payoutCurrency, transfer.deliveryAmount))) {
+    return {
+      ok: false,
+      message: `La caja no tiene ${transfer.payoutCurrency} suficiente para entregar este giro. No se registró nada: avisa a tu supervisor.`,
+    };
   }
 
   const external = await transferProvider.completeTransfer(transfer.id);

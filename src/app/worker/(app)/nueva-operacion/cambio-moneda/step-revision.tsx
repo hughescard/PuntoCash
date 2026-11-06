@@ -14,7 +14,7 @@ import {
   documentTypeShortLabel,
   type Customer,
 } from "@/features/customers/customers";
-import { CashStatus, formatAppliedRate, type CashCheck } from "./exchange-summary";
+import { formatAppliedRate } from "./exchange-summary";
 
 function CardGlyph({ icon: Icon }: { icon: typeof Wallet }) {
   return (
@@ -34,13 +34,11 @@ function CardGlyph({ icon: Icon }: { icon: typeof Wallet }) {
 export function StepRevision({
   quote,
   customer,
-  cash,
   worker,
   register,
 }: {
   quote: ExchangeQuote;
   customer: Customer;
-  cash: CashCheck;
   worker: string;
   register: string;
 }): React.JSX.Element {
@@ -134,60 +132,32 @@ export function StepRevision({
         </CardContent>
       </Card>
 
-      {/* ---------------- Cash state ---------------- */}
+      {/* ---------------- Efecto en la caja ----------------
+          Worker opera a ciegas (decisión del 6/11/2026): ni disponible antes
+          ni después. Lo que entra y lo que sale sí, porque es la operación. */}
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader>
             <div className="flex min-w-0 items-center gap-3">
               <CardGlyph icon={Wallet} />
-              <CardTitle>Estado de caja</CardTitle>
+              <CardTitle>Movimientos de caja</CardTitle>
             </div>
           </CardHeader>
 
           <CardContent className="flex flex-col gap-3">
             <LabelledValue label="Caja" value={register} />
             <hr className="border-t border-dashed border-border" />
-            <CashLine
-              label="Disponible antes de la operación"
-              amount={cash.available}
-              currency={cash.currency}
-            />
+            <CashLine label="Entra en caja" amount={quote.sourceAmount} currency={quote.sourceCurrency} />
             <hr className="border-t border-dashed border-border" />
             <CashLine
-              label="Entrega al cliente (esta operación)"
-              amount={cash.required}
-              currency={cash.currency}
+              label="Sale de caja (entrega al cliente)"
+              amount={quote.destinationAmount}
+              currency={quote.destinationCurrency}
               direction="out"
             />
-            <hr className="border-t border-dashed border-border" />
-            <CashLine
-              label="Disponible después de la operación"
-              amount={cash.remaining}
-              currency={cash.currency}
-              tone={cash.sufficient ? "success" : "error"}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex min-w-0 items-center gap-3">
-              <CardGlyph icon={Wallet} />
-              <CardTitle>Validación de caja</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            <CashStatus cash={cash} />
             <p className="text-caption text-text-secondary">
-              {cash.sufficient
-                ? "La caja cuenta con efectivo suficiente para realizar esta operación."
-                : "Vuelve al paso Cambio y ajusta el monto o la moneda destino."}
-            </p>
-            <p className="text-caption text-text-secondary">
-              Al confirmar se registrarán dos movimientos de caja en la jornada abierta: una
-              entrada de {formatMoney({ amount: quote.sourceAmount, currency: quote.sourceCurrency })}{" "}
-              y una salida de{" "}
-              {formatMoney({ amount: quote.destinationAmount, currency: quote.destinationCurrency })}.
+              Si la caja no tiene {quote.destinationCurrency} suficiente para entregar, se dirá al confirmar y la
+              operación no se registrará.
             </p>
           </CardContent>
         </Card>

@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { formatAmount, formatDateTime, formatSignedAmount } from "@/lib/format";
+import { formatDateTime, formatSignedAmount } from "@/lib/format";
 import type { CajaMovement } from "@/features/caja/caja-data";
 
 /** "Entrada"/"Salida" as text plus a directional glyph — never colour alone (§20). */
@@ -52,9 +52,6 @@ export function CajaMovementsTable({
             <TableHead numeric className="whitespace-nowrap">
               Importe
             </TableHead>
-            <TableHead numeric className="whitespace-nowrap">
-              Saldo después
-            </TableHead>
             <TableHead className="pr-6 whitespace-nowrap">Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -62,7 +59,7 @@ export function CajaMovementsTable({
         <TableBody>
           {movements.length === 0 ? (
             <TableEmptyState
-              colSpan={8}
+              colSpan={7}
               icon={<ListChecks aria-hidden="true" />}
               title="No encontramos movimientos"
               description="Prueba ajustando los filtros o el término de búsqueda."
@@ -110,9 +107,6 @@ export function CajaMovementsTable({
                   }
                 >
                   {formatSignedAmount(movement.amount)}
-                </TableCell>
-                <TableCell numeric className="pc-numeric whitespace-nowrap text-text-secondary">
-                  {movement.saldoDespues !== undefined ? formatAmount(movement.saldoDespues) : "—"}
                 </TableCell>
                 <TableCell className="pr-6 whitespace-nowrap">
                   {/* An operation-generated row already links out via its

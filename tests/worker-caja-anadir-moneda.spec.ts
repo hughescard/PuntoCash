@@ -155,7 +155,7 @@ test.describe("añadir moneda — restrained content (no rejected rows)", () => 
 });
 
 test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
-  test("enabling CHF adds it to Caja 03 at 0,00 with no movement", async ({ page }) => {
+  test("enabling CHF adds it to Caja 03's currencies with no movement", async ({ page }) => {
     await page.goto("/worker/caja/anadir-moneda");
     await openPicker(page);
     await page.getByRole("option", { name: /^CHF/ }).click();
@@ -163,12 +163,11 @@ test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
 
     await expect(page).toHaveURL(/\/worker\/caja$/, { timeout: 3000 });
 
-    const balancesTable = page.getByRole("table").first();
-    const cadRow = balancesTable.locator("tbody tr").filter({ hasText: "CHF" });
-    await expect(cadRow.getByText("0,00", { exact: true })).toBeVisible();
-    await expect(balancesTable.locator("tbody tr")).toHaveCount(5);
+    const monedas = page.getByRole("list", { name: "Monedas de la caja" });
+    await expect(monedas.getByRole("listitem").filter({ hasText: "CHF" })).toBeVisible();
+    await expect(monedas.getByRole("listitem")).toHaveCount(5);
 
-    const movementsTable = page.getByRole("table").nth(1);
+    const movementsTable = page.getByRole("table").first();
     await expect(
       movementsTable.locator("tbody tr").filter({ hasText: "CHF" }),
     ).toHaveCount(0);
@@ -230,8 +229,7 @@ test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
     await page.getByRole("link", { name: "Cancelar" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja$/);
-    const balancesTable = page.getByRole("table").first();
-    await expect(balancesTable.locator("tbody tr")).toHaveCount(4);
+    await expect(page.getByRole("list", { name: "Monedas de la caja" }).getByRole("listitem")).toHaveCount(4);
   });
 });
 
@@ -285,9 +283,9 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
 
     await page.getByRole("link", { name: "Ir a Caja" }).click();
     await expect(page).toHaveURL(/\/worker\/caja$/);
-    const balancesTable = page.getByRole("table").first();
-    const cadRow = balancesTable.locator("tbody tr").filter({ hasText: "CHF" });
-    await expect(cadRow.getByText("1.000,00", { exact: true })).toBeVisible();
+    /* En el libro, el fondeo de CHF; el saldo no se ve (Worker opera a ciegas). */
+    const fondeo = page.getByRole("table").first().locator("tbody tr").filter({ hasText: "Fondeo inicial" }).filter({ hasText: "CHF" });
+    await expect(fondeo.getByText("+1.000,00", { exact: true })).toBeVisible();
   });
 
   test("Cancelar from Añadir moneda also returns to Fondeo inicial with the draft intact", async ({

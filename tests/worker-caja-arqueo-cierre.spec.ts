@@ -137,7 +137,7 @@ test.describe("arqueo y cierre — confirmation", () => {
       page.getByText("Con diferencias", { exact: true }).locator("xpath=following-sibling::p[1]"),
     ).toHaveText("1");
     await page.getByRole("link", { name: "Ir a Caja" }).click();
-    const movements = page.getByRole("table").nth(1);
+    const movements = page.getByRole("table").first();
     const row = movements.locator("tbody tr").filter({ hasText: "Ajuste de cierre" }).filter({ hasText: "USD" });
     await expect(row.getByText("Salida", { exact: true })).toBeVisible();
     await expect(row.getByText("−10,00", { exact: true })).toBeVisible();

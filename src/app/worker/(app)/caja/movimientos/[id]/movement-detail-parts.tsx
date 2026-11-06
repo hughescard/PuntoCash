@@ -6,7 +6,7 @@ import { DetailCard, DetailList, DetailRow } from "@/app/worker/(app)/operacione
 import { MovementTypeBadge } from "@/app/worker/(app)/caja/caja-movements-table";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { findCajaCurrency, type CajaMovement } from "@/features/caja/caja-data";
-import { formatDateTime, formatMoney, formatSignedAmount } from "@/lib/format";
+import { formatDateTime, formatSignedAmount } from "@/lib/format";
 
 /**
  * Shared building blocks for Cash Movement Detail — the common cards every
@@ -120,45 +120,16 @@ export function CashJornadaCard({ movement }: { movement: CajaMovement }): React
 }
 
 /**
- * "Resultado del movimiento" — the accounting before/movement/after
- * relationship. Unlike the Ajustar efectivo entry/review form (which
- * deliberately never duplicates "Efectivo contado" as "Saldo después"), this
- * historical ledger detail intentionally shows all three for audit purposes.
- *
- * "Saldo anterior" only renders when the movement actually carries one
- * (`saldoAntes`) — a Fondeo inicial movement has no meaningful "before" (its
- * whole point is that nothing from the previous jornada carries forward), so
- * it shows only the resulting balance rather than fabricating one.
+ * "Movimiento" — lo que entró o salió de la caja con este movimiento. Worker
+ * opera a ciegas (decisión del 6/11/2026): ni saldo anterior ni saldo
+ * resultante, que solo ve la administración.
  */
 export function MovementResultCard({ movement }: { movement: CajaMovement }): React.JSX.Element {
   return (
-    <DetailCard title="Resultado del movimiento" icon={ClipboardList}>
+    <DetailCard title="Movimiento" icon={ClipboardList}>
       <DetailList>
-        {movement.saldoAntes !== undefined ? (
-          <>
-            <DetailRow
-              label="Saldo anterior"
-              value={formatMoney({ amount: movement.saldoAntes, currency: movement.currency })}
-              numeric
-            />
-            <DetailRow
-              label="Movimiento"
-              value={`${formatSignedAmount(movement.amount)} ${movement.currency}`}
-              numeric
-              strong
-            />
-          </>
-        ) : null}
-        <DetailRow
-          label="Saldo resultante"
-          value={
-            movement.saldoDespues !== undefined
-              ? formatMoney({ amount: movement.saldoDespues, currency: movement.currency })
-              : "—"
-          }
-          numeric
-          strong
-        />
+        <DetailRow label="Tipo" value={movement.tipo === "entrada" ? "Entrada" : "Salida"} />
+        <DetailRow label="Importe" value={`${formatSignedAmount(movement.amount)} ${movement.currency}`} numeric strong />
       </DetailList>
     </DetailCard>
   );

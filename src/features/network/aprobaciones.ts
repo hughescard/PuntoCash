@@ -96,7 +96,7 @@ export function derivar(j: Jornada): Solicitud[] {
         referencia: m.saldoAntes,
         contado: m.saldoDespues,
         diferencia: m.amount,
-        motivo: m.motivo ?? "Otro",
+        motivo: m.motivo ?? SIN_EXPLICAR,
         ...(m.observaciones ? { observaciones: m.observaciones } : {}),
         movimientoId: m.id,
         estado: "pendiente",
@@ -191,12 +191,17 @@ const solicitudes: Solicitud[] = (ALMACEN.__puntocashSolicitudes ??= sembrar(new
  */
 export const SIN_EXPLICAR = "Sin explicar";
 
-/** El motivo que el trabajador da, justo después de cerrar, a una diferencia de cierre. */
-export function explicarSolicitudDeCierre(jornadaId: string, currency: string, motivo: string, observaciones?: string): void {
-  const s = solicitudes.find((x) => x.id === `SOL-${jornadaId}-C-${currency}`);
+/** El motivo que el trabajador da, justo después de contar, a una solicitud nacida «Sin explicar». */
+export function explicarSolicitud(id: string, motivo: string, observaciones?: string): void {
+  const s = solicitudes.find((x) => x.id === id);
   if (!s || s.estado !== "pendiente") return;
   s.motivo = motivo;
   if (observaciones) s.observaciones = observaciones;
+}
+
+/** El motivo que el trabajador da, justo después de cerrar, a una diferencia de cierre. */
+export function explicarSolicitudDeCierre(jornadaId: string, currency: string, motivo: string, observaciones?: string): void {
+  explicarSolicitud(`SOL-${jornadaId}-C-${currency}`, motivo, observaciones);
 }
 
 export function registrarSolicitudes(nuevas: readonly Solicitud[]): void {

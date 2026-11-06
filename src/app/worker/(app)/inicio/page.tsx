@@ -82,7 +82,8 @@ export default async function WorkerHomePage() {
   const vista = await getVistaDeCaja();
   if (!vista) return null;
   const worker = { firstName: vista.trabajador.firstName, register: vista.caja.nombre };
-  const CASH_BALANCES = vista.saldos;
+  /* Worker opera a ciegas (decisión del 6/11/2026): las monedas de la caja, nunca cuánto hay. */
+  const MONEDAS = vista.monedas;
   const EXCHANGE_RATES = vista.tasas.map((t) => ({ currency: t.code, buy: t.compra, sell: t.venta }));
   /* Accesos rápidos: los servicios que la caja puede prestar de verdad —
      disponibles en el producto y habilitados por PuntoCash en esta sede. */
@@ -132,22 +133,20 @@ export default async function WorkerHomePage() {
             </CardHeader>
 
             <CardContent className="flex-1">
-              <dl className="flex flex-col">
-                {CASH_BALANCES.map((balance) => (
-                  <div
-                    key={balance.currency}
-                    className="flex items-baseline justify-between gap-4 border-b border-border py-3 last:border-b-0 last:pb-0"
+              <p className="text-body-sm text-text-secondary">
+                {vista.jornada?.propia ? "Jornada abierta" : "Sin jornada abierta"} · {vista.sede.nombre}
+              </p>
+              <ul aria-label="Monedas de la caja" className="mt-3 flex flex-wrap gap-2">
+                {MONEDAS.map((currency) => (
+                  <li
+                    key={currency}
+                    className="flex items-center gap-2 rounded-control border border-border bg-surface-subtle px-3 py-1.5 text-label"
                   >
-                    <dt className="flex items-center gap-2 text-label text-text-secondary">
-                      <CurrencyFlag currency={balance.currency} />
-                      <span className="font-semibold text-text-primary">{balance.currency}</span>
-                    </dt>
-                    <dd className="pc-numeric text-amount text-text-primary">
-                      {formatAmount(balance.amount)}
-                    </dd>
-                  </div>
+                    <CurrencyFlag currency={currency} />
+                    <span className="font-semibold text-text-primary">{currency}</span>
+                  </li>
                 ))}
-              </dl>
+              </ul>
             </CardContent>
 
             <CardFooter>

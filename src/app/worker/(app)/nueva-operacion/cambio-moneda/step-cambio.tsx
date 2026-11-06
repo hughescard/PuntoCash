@@ -5,18 +5,13 @@ import {
   ArrowDownToLine,
   ArrowRightLeft,
   ArrowUpFromLine,
-  CircleCheck,
   Info,
-  TriangleAlert,
-  Wallet,
 } from "lucide-react";
 
 import {
   Alert,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   Field,
   Input,
   Select,
@@ -30,7 +25,7 @@ import {
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatAmount, parseAmountInput } from "@/lib/format";
 import { findCurrency, type ExchangeQuote } from "@/features/exchange/quote";
-import { ExchangeSummaryCard, formatAppliedRate, type CashCheck } from "./exchange-summary";
+import { ExchangeSummaryCard, formatAppliedRate } from "./exchange-summary";
 
 const SOURCE_CURRENCY: FieldSpec = { id: "moneda-origen", label: "Moneda origen" };
 const SOURCE_AMOUNT: FieldSpec = { id: "monto-entregar", label: "Monto a entregar" };
@@ -86,7 +81,6 @@ export interface StepCambioProps {
   destinationCurrency: string;
   amountInput: string;
   quote: ExchangeQuote | null;
-  cash: CashCheck | null;
   amountError: string | undefined;
   onSourceCurrencyChange: (currency: string) => void;
   onDestinationCurrencyChange: (currency: string) => void;
@@ -99,7 +93,6 @@ export function StepCambio({
   destinationCurrency,
   amountInput,
   quote,
-  cash,
   amountError,
   monedasSinTasa,
   monedasCambiables,
@@ -216,8 +209,6 @@ export function StepCambio({
 
         {quote ? <ExchangeSummaryCard quote={quote} className="self-start" /> : null}
       </div>
-
-      {cash ? <CashValidationWide cash={cash} /> : null}
     </div>
   );
 }
@@ -237,93 +228,6 @@ function SideHeading({ icon: Icon, label }: { icon: typeof ArrowDownToLine; labe
         <Icon className="size-[18px]" />
       </span>
       <h2 className="text-card-title text-text-primary">{label}</h2>
-    </div>
-  );
-}
-
-/**
- * Step 1 shows the cash check as one wide band rather than the narrow column
- * used later, matching the approved layout.
- */
-function CashValidationWide({ cash }: { cash: CashCheck }) {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex min-w-0 items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="grid size-9 shrink-0 place-items-center rounded-control bg-primary-subtle text-primary"
-          >
-            <Wallet className="size-[18px]" />
-          </span>
-          <CardTitle>Validación de caja</CardTitle>
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <CashFigure
-            label="Disponible en Caja 03"
-            value={cash.available}
-            currency={cash.currency}
-            hint="Efectivo disponible"
-          />
-          <CashFigure
-            label="Esta operación requiere"
-            value={cash.required}
-            currency={cash.currency}
-            hint="Para entregar al cliente"
-          />
-          <div className="flex flex-col gap-1.5">
-            <span className="text-caption text-text-secondary">Estado de la operación</span>
-            <CashStatusBlock cash={cash} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CashFigure({
-  label,
-  value,
-  currency,
-  hint,
-}: {
-  label: string;
-  value: number;
-  currency: string;
-  hint: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-caption text-text-secondary">{label}</span>
-      <span className="pc-numeric text-amount text-text-primary">
-        {formatAmount(value)} {currency}
-      </span>
-      <span className="text-caption text-text-secondary">{hint}</span>
-    </div>
-  );
-}
-
-function CashStatusBlock({ cash }: { cash: CashCheck }) {
-  return cash.sufficient ? (
-    <div className="rounded-control border border-success-border bg-success-subtle px-4 py-3">
-      <p className="flex items-center gap-2 text-card-title text-success-foreground">
-        <CircleCheck className="size-5 shrink-0" aria-hidden="true" />
-        Fondos suficientes
-      </p>
-      <p className="mt-1 text-caption text-text-secondary">Puedes continuar con la operación.</p>
-    </div>
-  ) : (
-    <div className="rounded-control border border-error-border bg-error-subtle px-4 py-3">
-      <p className="flex items-center gap-2 text-card-title text-error-foreground">
-        <TriangleAlert className="size-5 shrink-0" aria-hidden="true" />
-        Fondos insuficientes en caja
-      </p>
-      <p className="mt-1 text-caption text-text-secondary">
-        Reduce el monto o selecciona otra moneda para continuar.
-      </p>
     </div>
   );
 }

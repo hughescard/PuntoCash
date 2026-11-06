@@ -171,14 +171,14 @@ test.describe("Operation Detail — giro enviado", () => {
     await expect(onScreen(page, "La Habana · Plaza de la Revolución")).toBeVisible();
   });
 
-  test("shows the historical cash entry, not a live balance", async ({ page }) => {
+  test("shows the cash entry, without any balance", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Movimiento de efectivo" })).toBeVisible();
-    await expect(onScreen(page, "Saldo anterior")).toBeVisible();
-    await expect(onScreen(page, "50.000,00 CUP")).toBeVisible();
     await expect(onScreen(page, "Entrada — Giro")).toBeVisible();
     await expect(onScreen(page, "+2.500,00 CUP")).toBeVisible();
-    await expect(onScreen(page, "Saldo resultante")).toBeVisible();
-    await expect(onScreen(page, "52.500,00 CUP")).toBeVisible();
+    /* Worker opera a ciegas (6/11/2026). */
+    await expect(onScreen(page, "Saldo anterior")).toHaveCount(0);
+    await expect(onScreen(page, "Saldo resultante")).toHaveCount(0);
+    await expect(onScreen(page, "52.500,00 CUP")).toHaveCount(0);
     await expect(onScreen(page, "Entrada").last()).toBeVisible();
   });
 
@@ -284,13 +284,12 @@ test.describe("Operation Detail — giro cobrado", () => {
     await expect(onScreen(page, "Completado")).toBeVisible();
   });
 
-  test("shows the historical cash exit", async ({ page }) => {
-    await expect(onScreen(page, "Saldo anterior")).toBeVisible();
-    await expect(onScreen(page, "50.000,00 CUP")).toBeVisible();
+  test("shows the cash exit, without any balance", async ({ page }) => {
     await expect(onScreen(page, "Salida — Giro")).toBeVisible();
     await expect(onScreen(page, "−2.500,00 CUP")).toBeVisible();
-    await expect(onScreen(page, "Saldo resultante")).toBeVisible();
-    await expect(onScreen(page, "47.500,00 CUP")).toBeVisible();
+    await expect(onScreen(page, "Saldo anterior")).toHaveCount(0);
+    await expect(onScreen(page, "Saldo resultante")).toHaveCount(0);
+    await expect(onScreen(page, "47.500,00 CUP")).toHaveCount(0);
     await expect(onScreen(page, "Salida").last()).toBeVisible();
   });
 

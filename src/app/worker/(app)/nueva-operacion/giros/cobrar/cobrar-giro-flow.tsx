@@ -47,8 +47,8 @@ export function CobrarGiroFlow(): React.JSX.Element {
   const caja = useCaja();
   const vista = useVistaDeCaja();
   const worker = vista.trabajador;
-  const CAJA_BALANCES = caja.balances;
-  const isCurrencyEnabled = (c: string) => CAJA_BALANCES.some((b) => b.currency === c);
+  /* Worker opera a ciegas: la pantalla sabe qué monedas tiene la caja, no cuánto. */
+  const isCurrencyEnabled = (c: string) => caja.monedas.includes(c);
 
   // Code handed over by "Buscar solicitud" (kiosk request), if any.
   const [handoffCode] = React.useState(() => readPendingWorkerHandoff("giros-cobrar")?.data.code ?? null);
@@ -73,10 +73,6 @@ export function CobrarGiroFlow(): React.JSX.Element {
    */
   const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
 
-  const availableCash = transfer
-    ? CAJA_BALANCES.find((balance) => balance.currency === transfer.payoutCurrency)?.amount
-    : undefined;
-
   // Only READY authorises a physical payout: COMPLETED was already paid once
   // and must never produce a second delivery of cash.
   const block: PayoutBlock = !transfer
@@ -85,9 +81,7 @@ export function CobrarGiroFlow(): React.JSX.Element {
       ? "estado"
       : !isCurrencyEnabled(transfer.payoutCurrency)
         ? "moneda"
-        : (availableCash ?? 0) < transfer.deliveryAmount
-          ? "fondos"
-          : null;
+        : null;
 
   // From a kiosk request the code is already known: look it up right away,
   // so the worker lands on "Revisar giro" and only has to compare the carné
@@ -145,7 +139,7 @@ export function CobrarGiroFlow(): React.JSX.Element {
       worker: worker.fullName,
       caja: caja.summary.register,
       jornadaAbierta: caja.jornadaAbierta,
-      saldos: CAJA_BALANCES,
+      monedas: caja.monedas,
     });
 
     setSubmitting(false);
@@ -210,7 +204,6 @@ export function CobrarGiroFlow(): React.JSX.Element {
         transfer={transfer}
         worker={worker.fullName}
         block={block}
-        availableCash={availableCash}
         onBack={() => setStep("codigo")}
         onCancel={leaveFlow}
         onContinue={() => setStep("confirmar")}

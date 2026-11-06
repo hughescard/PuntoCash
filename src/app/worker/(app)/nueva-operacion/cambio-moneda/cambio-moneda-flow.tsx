@@ -30,13 +30,7 @@ import {
   documentTypeShortLabel,
   type Customer,
 } from "@/features/customers/customers";
-import {
-  CashValidationCard,
-  ExchangeSummaryCard,
-  evaluateCash,
-  formatAppliedRate,
-  type CashCheck,
-} from "./exchange-summary";
+import { ExchangeSummaryCard, formatAppliedRate } from "./exchange-summary";
 import {
   FLOW_STEPS,
   createInitialState,
@@ -118,7 +112,7 @@ function cashRejectionMessage(outcome: Extract<AccionDeCaja<unknown>, { ok: fals
     case "moneda-no-habilitada":
       return `${outcome.currency ?? "La moneda"} no está habilitada en esta caja.`;
     case "fondos-insuficientes":
-      return `La caja no dispone de suficiente ${outcome.currency ?? "efectivo"} para completar este cambio.`;
+      return `La caja no tiene ${outcome.currency ?? "efectivo"} suficiente para entregar este cambio. No se registró nada: avisa a tu supervisor o propón al cliente un importe menor.`;
     default:
       return "No se pudo registrar el cambio. Revisa los importes e inténtalo de nuevo.";
   }
@@ -129,8 +123,10 @@ function CambioMonedaOperation(): React.JSX.Element {
   const caja = useCaja();
   const vista = useVistaDeCaja();
   const worker = { fullName: vista.trabajador.fullName, register: caja.summary.register };
-  const CAJA_BALANCES = caja.balances;
-  const liveBalance = (currency: string) => CAJA_BALANCES.find((b) => b.currency === currency)?.amount ?? 0;
+  /* Worker opera a ciegas (decisión del 6/11/2026): la pantalla no sabe
+     cuánto hay de cada moneda. Si no alcanza para entregar, lo dice el
+     servidor al confirmar («fondos-insuficientes») y no se registra nada. */
+  const MONEDAS = caja.monedas;
   const [state, dispatch] = React.useReducer(flowReducer, undefined, createInitialState);
   const [cancelOpen, setCancelOpen] = React.useState(false);
   const [confirmError, setConfirmError] = React.useState<string | null>(null);
@@ -165,20 +161,7 @@ function CambioMonedaOperation(): React.JSX.Element {
     return undefined;
   }, [state.amountInput, parsedAmount]);
 
-  /** Cash is always checked against the quote actually in play. */
-  function cashFor(quote: { destinationCurrency: string; destinationAmount: number } | null) {
-    if (!quote) return null;
-    return evaluateCash(
-      liveBalance(quote.destinationCurrency),
-      quote.destinationAmount,
-      quote.destinationCurrency,
-    );
-  }
-
-  const liveCash = cashFor(liveQuote);
-  const committedCash = cashFor(state.quote);
-
-  const canContinueFromCambio = Boolean(liveQuote && liveCash?.sufficient && !amountError);
+  const canContinueFromCambio = Boolean(liveQuote && !amountError);
 
   /* ---- Navigation ---- */
   /* Monedas que la caja tiene habilitadas y este servicio no puede cambiar,
@@ -186,8 +169,8 @@ function CambioMonedaOperation(): React.JSX.Element {
      monedas de una sede no depende de Cambio de moneda). Se calculan aquí y se
      dicen en la pantalla, en vez de desaparecer del selector sin explicación. */
   const cotizables = monedasCotizables(vista.tasas);
-  const monedasCambiables = CAJA_BALANCES.map((b) => b.currency).filter((c) => cotizables.includes(c));
-  const monedasSinTasa = CAJA_BALANCES.map((b) => b.currency).filter((c) => !cotizables.includes(c));
+  const monedasCambiables = MONEDAS.filter((c) => cotizables.includes(c));
+  const monedasSinTasa = MONEDAS.filter((c) => !cotizables.includes(c));
 
   /* Si una de las dos monedas elegidas no se puede cambiar en esta caja, se
      corrige a una que sí, en vez de dejar una cotización imposible en pantalla.
@@ -219,7 +202,7 @@ function CambioMonedaOperation(): React.JSX.Element {
   async function confirmOperation() {
     // Guard against a double submit and against a state that stopped being
     // valid while the worker was reading the review.
-    if (state.submitting || !state.quote || !state.customer || !committedCash?.sufficient) return;
+    if (state.submitting || !state.quote || !state.customer) return;
 
     setConfirmError(null);
     dispatch({ type: "submit-start" });
@@ -334,7 +317,6 @@ function CambioMonedaOperation(): React.JSX.Element {
             destinationCurrency={state.destinationCurrency}
             amountInput={state.amountInput}
             quote={liveQuote}
-            cash={liveCash}
             amountError={amountError}
             onSourceCurrencyChange={(currency) =>
               dispatch({ type: "set-source-currency", currency })
@@ -347,7 +329,7 @@ function CambioMonedaOperation(): React.JSX.Element {
           />
         ) : null}
 
-        {state.step === "cliente" && state.quote && committedCash ? (
+        {state.step === "cliente" && state.quote ? (
           <div className="grid grid-cols-1 gap-6 wide:grid-cols-[minmax(0,1fr)_20rem]">
             <StepCliente
               kioskClient={state.kioskClient}
@@ -360,16 +342,15 @@ function CambioMonedaOperation(): React.JSX.Element {
                 search area; side by side there keeps it one short scroll away
                 instead of a tall stack. */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 wide:grid-cols-1">
-              <ClienteSideSummary quote={state.quote} cash={committedCash} />
+              <ExchangeSummaryCard quote={state.quote} className="self-start" />
             </div>
           </div>
         ) : null}
 
-        {state.step === "revision" && state.quote && state.customer && committedCash ? (
+        {state.step === "revision" && state.quote && state.customer ? (
           <StepRevision
             quote={state.quote}
             customer={state.customer}
-            cash={committedCash}
             worker={worker.fullName}
             register={worker.register}
           />
@@ -435,7 +416,6 @@ function CambioMonedaOperation(): React.JSX.Element {
               {state.step === "revision" ? (
                 <Button
                   loading={state.submitting}
-                  disabled={!committedCash?.sufficient}
                   onClick={() => void confirmOperation()}
                 >
                   {state.submitting ? null : <CircleCheck aria-hidden="true" />}
@@ -462,22 +442,6 @@ function CambioMonedaOperation(): React.JSX.Element {
   );
 }
 
-
-/** Compact context so the worker never loses the numbers on step 2 (§14). */
-function ClienteSideSummary({
-  quote,
-  cash,
-}: {
-  quote: ExchangeQuote;
-  cash: CashCheck;
-}): React.JSX.Element {
-  return (
-    <>
-      <ExchangeSummaryCard quote={quote} className="self-start" />
-      <CashValidationCard cash={cash} className="self-start" />
-    </>
-  );
-}
 
 function CancelDialog({
   open,

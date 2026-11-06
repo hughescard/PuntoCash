@@ -126,10 +126,10 @@ export function EnviarGiroFlow(): React.JSX.Element {
   const caja = useCaja();
   const vista = useVistaDeCaja();
   const worker = vista.trabajador;
-  const CAJA_BALANCES = caja.balances;
+  const MONEDAS = caja.monedas;
   const CAJA_SUMMARY = caja.summary;
 
-  const [initial] = React.useState(() => buildInitialFlow(CAJA_BALANCES.map((b) => b.currency)));
+  const [initial] = React.useState(() => buildInitialFlow(MONEDAS));
   const [step, setStep] = React.useState<Step>(initial.step);
   const [values, setValues] = React.useState<GiroFormValues>(initial.values);
   const [errors, setErrors] = React.useState(NO_ERRORS);
@@ -154,7 +154,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
    */
   const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
 
-  const enabledCurrencies = CAJA_BALANCES.map((balance) => balance.currency);
+  const enabledCurrencies = MONEDAS;
 
   // Live-computed, gates the button only — never surfaces error text before
   // the worker actually tries to continue (§29 vs. the `errors` state below).
@@ -189,7 +189,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
       draft,
       worker: worker.fullName,
       jornadaAbierta: caja.jornadaAbierta,
-      monedasHabilitadas: CAJA_BALANCES.map((b) => b.currency),
+      monedasHabilitadas: MONEDAS,
     });
 
     setSubmitting(false);
@@ -288,7 +288,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
             value="Abierta"
             valueClassName="text-success-foreground"
           />
-          <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(CAJA_BALANCES.length)} />
+          <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(MONEDAS.length)} />
         </CardContent>
       </Card>
 

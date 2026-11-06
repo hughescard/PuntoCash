@@ -1,11 +1,12 @@
 "use client";
 
 import { useVistaDeCaja } from "@/features/worker/caja-context";
-import type { CajaBalance, CajaJornada, CajaMovement, CajaSummary } from "./caja-data";
+import type { CajaJornada, CajaMovement, CajaSummary } from "./caja-data";
 
 export interface EstadoDeCaja {
   summary: CajaSummary;
-  balances: readonly CajaBalance[];
+  /** Las monedas de la caja, sin importes: Worker opera a ciegas. */
+  monedas: readonly string[];
   movimientos: readonly CajaMovement[];
   /** La jornada abierta de esta caja, sea de quien sea; `propia` dice si es de quien opera. */
   jornada: (CajaJornada & { id: string; propia: boolean }) | null;
@@ -23,7 +24,7 @@ export function useCaja(): EstadoDeCaja {
   const v = useVistaDeCaja();
   return {
     summary: v.summary,
-    balances: v.saldos,
+    monedas: v.monedas,
     movimientos: v.movimientos,
     jornada: v.jornada,
     jornadaAbierta: v.jornada?.propia === true,

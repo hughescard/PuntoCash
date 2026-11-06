@@ -25,9 +25,10 @@ export function ServiceDetail({ operation }: { operation: OperationRecord }): Re
 }
 
 /**
- * "Estado de caja" — the register's own arithmetic for this operation, as it
- * stood when it was processed. A historical snapshot read straight off the
- * record, never recomputed from today's Caja balance.
+ * "Movimientos de caja" — lo que entró y lo que salió de la caja con este
+ * cambio. Worker opera a ciegas (decisión del 6/11/2026): ni disponible antes
+ * ni después, que solo ve la administración. Sale de los importes de la
+ * operación, no del saldo.
  *
  * Rendered as its own card (rather than inside `ServiceDetail`) so the page
  * can place it beside the outcome, and so services that move no cash simply
@@ -39,23 +40,13 @@ export function OperationCashCard({
   operation: OperationRecord;
 }): React.JSX.Element | null {
   if (operation.amount.kind !== "exchange") return null;
-  const { cashSnapshot } = operation.amount;
+  const { source, destination } = operation.amount;
 
   return (
-    <DetailCard title="Estado de caja" icon={Wallet}>
+    <DetailCard title="Movimientos de caja" icon={Wallet}>
       <DetailList>
-        <DetailRow label="Disponible antes" value={formatMoney(cashSnapshot.before)} numeric />
-        <DetailRow
-          label="Entregado al cliente"
-          value={formatMoney(cashSnapshot.movement)}
-          numeric
-        />
-        <DetailRow
-          label="Disponible después"
-          value={formatMoney(cashSnapshot.after)}
-          numeric
-          strong
-        />
+        <DetailRow label="Entró en caja" value={`+${formatMoney(source)}`} numeric />
+        <DetailRow label="Salió de caja (entregado al cliente)" value={`−${formatMoney(destination)}`} numeric strong />
       </DetailList>
     </DetailCard>
   );

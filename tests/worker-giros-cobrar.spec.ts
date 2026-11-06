@@ -49,10 +49,14 @@ async function reviewGiro(page: Page, code: string) {
   await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible({ timeout: 5000 });
 }
 
-/** The Caja balances table shows the amount alone; the currency is its own cell. */
-async function expectCupBalance(page: Page, amount: string) {
-  const balances = page.getByRole("table").first();
-  await expect(balances.locator("tbody tr").filter({ hasText: "CUP" })).toContainText(amount);
+/**
+ * Worker opera a ciegas (6/11/2026): Caja no enseña saldos. «La caja no se
+ * tocó» se comprueba en el libro: ningún pago de giro registrado.
+ */
+async function expectSinPagoDeGiro(page: Page) {
+  const libro = page.getByRole("table").first();
+  await expect(libro).toBeVisible();
+  await expect(libro.locator("tbody tr").filter({ hasText: "Pago de giro" })).toHaveCount(0);
 }
 
 /** Operation-code prefix of the two seeded historical Giro records. */
@@ -382,15 +386,19 @@ test.describe("Cobrar giro — blocked payouts", () => {
     await expect(page.getByRole("button", { name: "Continuar a confirmar" })).toBeDisabled();
   });
 
-  test("an insufficient balance blocks the payout and states what is available", async ({ page }) => {
+  test("si la caja no alcanza, se dice al confirmar, sin cifras, y no se paga", async ({ page }) => {
     await goToCobrar(page);
     await reviewGiro(page, "TR-SIN-FONDOS");
+    /* Worker no ve el saldo: la revisión no puede saberlo. */
+    await expect(onScreen(page, /Disponible/)).toHaveCount(0);
+    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await page.getByRole("button", { name: "Confirmar entrega" }).click();
 
-    await expect(
-      onScreen(page, "La caja no dispone de suficiente CUP para entregar este giro."),
-    ).toBeVisible();
-    await expect(onScreen(page, /Disponible: 50\.000,00 CUP/)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Continuar a confirmar" })).toBeDisabled();
+    await expect(onScreen(page, /La caja no tiene CUP suficiente para entregar este giro/)).toBeVisible({ timeout: 10_000 });
+    await expect(onScreen(page, /50\.000,00/)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toHaveCount(0);
+    await page.getByRole("link", { name: "Caja" }).click();
+    await expectSinPagoDeGiro(page);
   });
 
   test("no alternative currency, conversion or split payment is offered", async ({ page }) => {
@@ -448,7 +456,7 @@ test.describe("Cobrar giro — Confirmar entrega", () => {
 
     // No Caja movement was recorded — the balance is untouched.
     await page.getByRole("link", { name: "Caja" }).click();
-    await expectCupBalance(page, "50.000,00");
+    await expectSinPagoDeGiro(page);
   });
 });
 
@@ -469,7 +477,7 @@ test.describe("Cobrar giro — external failures", () => {
     await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toHaveCount(0);
 
     await page.getByRole("link", { name: "Caja" }).click();
-    await expectCupBalance(page, "50.000,00");
+    await expectSinPagoDeGiro(page);
     // Seeded history contributes its own Giro movements (all carrying seeded
     // operation codes), so "no Caja impact" is expressed as: every Giro row
     // present belongs to that seeded history, none to this session.
@@ -565,7 +573,7 @@ test.describe("Cobrar giro — payout completed", () => {
     expect(code).toMatch(/^PC-\d{6}-\d{6}$/);
 
     await page.getByRole("link", { name: "Caja" }).click();
-    const rows = page.getByRole("table").nth(1).locator("tbody tr").filter({ hasText: code });
+    const rows = page.getByRole("table").first().locator("tbody tr").filter({ hasText: code });
     await expect(rows).toHaveCount(1);
 
     const row = rows.first();
@@ -576,8 +584,8 @@ test.describe("Cobrar giro — payout completed", () => {
     // an operation code and no "Ver detalle" action of their own.
     await expect(row.getByRole("link", { name: "Ver detalle" })).toHaveCount(0);
 
-    // saldoAntes → saldoDespués = saldoAntes − importe.
-    await expectCupBalance(page, "47.500,00");
+    // Sin saldos en Worker: el pago está en el libro, no el saldo que dejó.
+    await expect(page.getByText("47.500,00")).toHaveCount(0);
   });
 
   test("registers one payout operation whose client is the beneficiary", async ({ page }) => {

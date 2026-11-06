@@ -87,7 +87,7 @@ export function CajaView(): React.JSX.Element {
     <>
       <PageHeader
         title="Caja"
-        description="Consulta el estado operativo y financiero de tu caja asignada."
+        description="Consulta el estado de tu caja, sus monedas y su libro de movimientos."
       />
 
       <div className="flex flex-col gap-6 print:hidden">
@@ -95,7 +95,7 @@ export function CajaView(): React.JSX.Element {
 
         <AvisoDeCaja />
 
-        <CajaBalancesCard balances={caja.balances} />
+        <CajaBalancesCard monedas={caja.monedas} />
 
         <CajaMetrics metrics={metricasDelDia(caja.movimientos)} />
 
@@ -150,7 +150,7 @@ export function CajaView(): React.JSX.Element {
         />
       </div>
 
-      <CajaPrintableSummary summary={caja.summary} balances={caja.balances} />
+      <CajaPrintableSummary summary={caja.summary} monedas={caja.monedas} />
     </>
   );
 }

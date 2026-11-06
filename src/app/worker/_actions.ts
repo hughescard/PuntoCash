@@ -12,8 +12,10 @@ import {
 import { DEMO_CODE } from "@/features/auth/two-factor";
 import {
   abrirJornadaDeclarada,
-  ajustarEfectivo,
+  alcanzaParaEntregar,
   cerrarConArqueo,
+  contarParaAjuste,
+  explicarAjuste,
   contextoDe,
   explicarCierre,
   declararConteoDeApertura,
@@ -213,36 +215,53 @@ export async function abrirJornadaAction(
   });
 }
 
+/**
+ * Un ajuste de efectivo como lo ve Worker: **sin saldos**. Solo lo que contó,
+ * en qué moneda, y la diferencia que resultó (si la hubo).
+ */
 export interface AjusteRegistrado {
   movementId: string;
   fechaHora: string;
   currency: string;
-  saldoAntes: number;
-  saldoDespues: number;
   diferencia: number;
+  motivo?: string;
+  observaciones?: string;
 }
 
-export async function ajustarEfectivoAction(input: {
+function aAjuste(m: { id: string; fechaHora: string; currency: string; amount: number; motivo?: string; observaciones?: string }): AjusteRegistrado {
+  return {
+    movementId: m.id,
+    fechaHora: m.fechaHora,
+    currency: m.currency,
+    diferencia: m.amount,
+    ...(m.motivo ? { motivo: m.motivo } : {}),
+    ...(m.observaciones ? { observaciones: m.observaciones } : {}),
+  };
+}
+
+/**
+ * Ajustar efectivo, paso 1: lo contado, a ciegas. Queda registrado al
+ * confirmar; `null` si coincide con la caja y no hay nada que ajustar.
+ */
+export async function contarParaAjusteAction(input: {
   currency: string;
   contado: number;
-  motivo: string;
-  observaciones?: string;
-}): Promise<AccionDeCaja<AjusteRegistrado>> {
+}): Promise<AccionDeCaja<AjusteRegistrado | null>> {
   return conCaja((ctx) => {
-    const r = ajustarEfectivo(ctx, input);
+    const r = contarParaAjuste(ctx, input);
     if (!r.ok) return r;
-    const m = r.value;
-    return {
-      ok: true,
-      value: {
-        movementId: m.id,
-        fechaHora: m.fechaHora,
-        currency: m.currency,
-        saldoAntes: m.saldoAntes ?? 0,
-        saldoDespues: m.saldoDespues,
-        diferencia: m.amount,
-      },
-    };
+    return { ok: true, value: r.value ? aAjuste(r.value) : null };
+  });
+}
+
+/** Ajustar efectivo, paso 2: el motivo de la diferencia que se acaba de registrar. */
+export async function explicarAjusteAction(
+  movementId: string,
+  input: { motivo?: string; observaciones?: string },
+): Promise<AccionDeCaja<AjusteRegistrado>> {
+  return conCaja((ctx) => {
+    const r = explicarAjuste(ctx, movementId, input);
+    return r.ok ? { ok: true, value: aAjuste(r.value) } : r;
   });
 }
 
@@ -250,7 +269,8 @@ export interface CierreRegistrado {
   jornadaId: string;
   openedAt: string;
   closedAt: string;
-  monedas: readonly { currency: string; esperado: number; contado: number; diferencia: number; motivo?: string; observaciones?: string }[];
+  /** Lo contado y la diferencia; **sin el esperado**: Worker no ve el saldo en libros. */
+  monedas: readonly { currency: string; contado: number; diferencia: number; motivo?: string; observaciones?: string }[];
 }
 
 function aCierreRegistrado(j: Jornada): CierreRegistrado {
@@ -260,7 +280,13 @@ function aCierreRegistrado(j: Jornada): CierreRegistrado {
     closedAt: j.closedAt!,
     monedas: (j.arqueo?.monedas ?? []).map((a) => {
       const mov = j.movimientos.find((m) => m.concepto === "Ajuste de cierre" && m.currency === a.currency);
-      return { ...a, ...(mov?.observaciones ? { observaciones: mov.observaciones } : {}) };
+      return {
+        currency: a.currency,
+        contado: a.contado,
+        diferencia: a.diferencia,
+        ...(a.motivo ? { motivo: a.motivo } : {}),
+        ...(mov?.observaciones ? { observaciones: mov.observaciones } : {}),
+      };
     }),
   };
 }
@@ -287,6 +313,20 @@ export async function explicarCierreAction(
     const r = explicarCierre(ctx, jornadaId, explicaciones);
     return r.ok ? { ok: true, value: aCierreRegistrado(r.value) } : r;
   });
+}
+
+/**
+ * Sí o no: ¿puede la caja entregar este importe? Se pregunta solo en la
+ * confirmación de una entrega a un proveedor externo (Remesas, Cobrar giro).
+ *
+ * **Para producción:** la llamada al proveedor debe hacerse dentro de la
+ * misma acción de servidor que registra la operación, y esta pregunta
+ * desaparecer: una acción que responde sí o no a cualquier importe permite,
+ * con paciencia, acotar el saldo desde las herramientas del navegador.
+ */
+export async function alcanzaParaEntregarAction(currency: string, importe: number): Promise<boolean> {
+  const ctx = await getContextoDeTrabajo();
+  return ctx ? alcanzaParaEntregar(ctx, currency, importe) : false;
 }
 
 export async function habilitarMonedaAction(currency: string): Promise<AccionDeCaja<string>> {

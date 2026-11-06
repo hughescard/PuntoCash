@@ -43,7 +43,7 @@ export function StepBackLink({ label, onClick }: { label: string; onClick: () =>
 
 /** Caja · Trabajador · Jornada · Monedas habilitadas — the same strip Enviar giro carries. */
 export function ContextStrip({ worker }: { worker: string }): React.JSX.Element {
-  const CAJA_BALANCES = useCaja().balances;
+  const MONEDAS = useCaja().monedas;
   const CAJA_SUMMARY = useCaja().summary;
   return (
     <Card>
@@ -56,7 +56,7 @@ export function ContextStrip({ worker }: { worker: string }): React.JSX.Element 
           value="Abierta"
           valueClassName="text-success-foreground"
         />
-        <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(CAJA_BALANCES.length)} />
+        <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(MONEDAS.length)} />
       </CardContent>
     </Card>
   );

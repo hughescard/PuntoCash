@@ -4,7 +4,7 @@ import { AjustarEfectivoFlow } from "./ajustar-efectivo-flow";
 
 export const metadata: Metadata = {
   title: "Ajustar efectivo",
-  description: "Corrige el saldo de una moneda a partir de un conteo físico.",
+  description: "Registra un conteo de efectivo de una moneda y explica la diferencia, si la hay.",
   robots: { index: false, follow: false },
 };
 

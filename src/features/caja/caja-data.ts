@@ -53,11 +53,9 @@ export interface CajaMovement {
   currency: string;
   /** Positivo en una entrada, negativo en una salida. */
   amount: number;
-  saldoDespues?: number;
-  /** Ajustes y diferencias: el motivo declarado. */
+  /** Ajustes y diferencias: el motivo declarado. Sin él, «Sin explicar». */
   motivo?: string;
   observaciones?: string;
-  saldoAntes?: number;
   /** La jornada a la que pertenece, como era al registrarse. */
   jornada?: CajaMovementJornadaSnapshot;
 }
@@ -99,10 +97,8 @@ export const CAJA_MOVEMENT_TYPE_FILTERS = [
   { value: "salida", label: "Salida" },
 ] as const satisfies readonly { value: string; label: string }[];
 
-export function getCajaMovementCurrencyFilters(
-  balances: readonly CajaBalance[],
-): readonly { value: string; label: string }[] {
-  return [{ value: "todas", label: "Todas" }, ...balances.map((b) => ({ value: b.currency, label: b.currency }))];
+export function getCajaMovementCurrencyFilters(monedas: readonly string[]): readonly { value: string; label: string }[] {
+  return [{ value: "todas", label: "Todas" }, ...monedas.map((c) => ({ value: c, label: c }))];
 }
 
 export const CAJA_MOVEMENT_DATE_FILTERS = [
@@ -204,9 +200,9 @@ export function getValidOpeningReasons(diferencia: number): readonly CajaOpening
  * Cierre
  * ---------------------------------------------------------------------- */
 
+/** Sin «esperado»: Worker no ve el saldo en libros (decisión del 6/11/2026). */
 export interface CajaClosingAuditCurrency {
   currency: string;
-  expected: number;
   counted: number;
   difference: number;
   motivo?: string;
