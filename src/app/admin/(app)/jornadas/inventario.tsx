@@ -28,32 +28,37 @@ export function InventarioDeCaja({ inventario, abiertoSiUna = true }: { inventar
         return (
           <li key={m.currency} className="py-1 first:pt-0 last:pb-0">
             <details open={abiertoSiUna && inventario.length === 1} className="group">
-              <summary className="flex min-h-control-sm cursor-pointer list-none items-center gap-3 rounded-md py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              <summary className="flex min-h-control-sm cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 rounded-md py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
                 <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-secondary transition-transform group-open:rotate-90" />
                 <span className="inline-flex items-center gap-2">
                   <CurrencyFlag currency={m.currency} />
                   <span className="pc-numeric font-semibold">{m.currency}</span>
                 </span>
                 <span className="pc-numeric ml-auto font-semibold">{formatAmount(m.saldo)}</span>
-                <span className="w-32 text-right text-caption text-text-secondary">
+                <span className="basis-full pl-7 text-caption text-text-secondary sm:basis-auto sm:w-28 sm:pl-0 sm:text-right">
                   {unidades === 1 ? "1 unidad" : `${unidades} unidades`}
                 </span>
               </summary>
-              <table className="mb-3 ml-6 w-[calc(100%-1.5rem)] text-body-sm">
+              <table className="mb-3 w-full table-fixed text-body-sm sm:ml-7 sm:w-[calc(100%-1.75rem)]">
                 <caption className="sr-only">Billetes y monedas en {m.currency}</caption>
+                <colgroup>
+                  <col className="w-[30%]" />
+                  <col className="w-[25%]" />
+                  <col className="w-[45%]" />
+                </colgroup>
                 <thead>
                   <tr className="text-left text-caption uppercase tracking-wide text-text-secondary">
-                    <th scope="col" className="pb-1 font-medium">Denominación</th>
-                    <th scope="col" className="pb-1 text-right font-medium">Unidades</th>
-                    <th scope="col" className="pb-1 text-right font-medium">Importe</th>
+                    <th scope="col" className="pb-1 font-medium"><span aria-hidden="true" className="sm:hidden">Valor</span><span className="sr-only sm:not-sr-only">Denominación</span></th>
+                    <th scope="col" className="pb-1 pl-4 text-right font-medium"><span aria-hidden="true" className="sm:hidden">Cant.</span><span className="sr-only sm:not-sr-only">Unidades</span></th>
+                    <th scope="col" className="pb-1 pl-6 text-right font-medium">Importe</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filas.map((l) => (
                     <tr key={l.valor}>
                       <td className="pc-numeric py-1.5">{formatoDeDenominacion(l.valor)}</td>
-                      <td className={`pc-numeric py-1.5 text-right ${l.cantidad < 0 ? "font-semibold text-error-foreground" : ""}`}>{l.cantidad}</td>
-                      <td className="pc-numeric py-1.5 text-right">{formatAmount(l.valor * l.cantidad)}</td>
+                      <td className={`pc-numeric py-1.5 pl-4 text-right ${l.cantidad < 0 ? "font-semibold text-error-foreground" : ""}`}>{l.cantidad}</td>
+                      <td className="pc-numeric py-1.5 pl-6 text-right">{formatAmount(l.valor * l.cantidad)}</td>
                     </tr>
                   ))}
                   {m.sinDesglosar !== 0 ? (
@@ -61,7 +66,7 @@ export function InventarioDeCaja({ inventario, abiertoSiUna = true }: { inventar
                       <td className="py-1.5 text-text-secondary" colSpan={2}>
                         Sin desglosar
                       </td>
-                      <td className="pc-numeric py-1.5 text-right text-text-secondary">{formatAmount(m.sinDesglosar)}</td>
+                      <td className="pc-numeric py-1.5 pl-6 text-right text-text-secondary">{formatAmount(m.sinDesglosar)}</td>
                     </tr>
                   ) : null}
                   {filas.length === 0 && m.sinDesglosar === 0 ? (
