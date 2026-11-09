@@ -189,7 +189,7 @@ function Grupo({
               className={cn(
                 "pc-numeric inline-flex min-h-control-sm min-w-12 items-center justify-center rounded-md border px-3 text-label font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
                 d.retirada
-                  ? "border-dashed border-border bg-transparent text-text-secondary line-through hover:bg-surface-subtle"
+                  ? "border-dashed border-error bg-error-subtle font-semibold text-error-foreground line-through decoration-2 hover:bg-error/5"
                   : "border-border bg-surface-subtle text-text-primary hover:border-primary",
               )}
             >
