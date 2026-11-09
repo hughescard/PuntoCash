@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatAmount } from "@/lib/format";
 import type { Jornada } from "@/features/network/jornadas";
-import { saldosDe } from "@/features/network/jornadas";
+import { inventarioParaMostrar, saldosDe } from "@/features/network/jornadas";
+import { InventarioDeCaja } from "../inventario";
 import type { Solicitud } from "@/features/network/aprobaciones";
 import { diaEnCuba, Diferencia, DiferenciaDeApertura, EstadoBadge, fechaYHora, hora } from "../formato";
 import { MovimientosDeJornada } from "./movimientos-de-jornada";
@@ -172,6 +173,17 @@ export function CuerpoDeJornada({
             ))}
           </tbody>
         </table>
+      </CardContent>
+    </Card>
+  </Section>
+
+  <Section
+    title={j.estado === "abierta" ? "Billetes y monedas" : "Billetes y monedas al cerrar"}
+    description={j.estado === "abierta" ? "Lo que hay ahora en la caja, por denominación." : undefined}
+  >
+    <Card>
+      <CardContent className="pt-6">
+        <InventarioDeCaja inventario={inventarioParaMostrar(j)} />
       </CardContent>
     </Card>
   </Section>

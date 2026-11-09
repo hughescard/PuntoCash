@@ -19,7 +19,8 @@ import { estadoDeSede, historialDeSede } from "@/features/network/assignments";
 import { maskEmail } from "@/features/auth/two-factor";
 import { CATALOGO_MONEDAS } from "@/features/network/currencies";
 import { lineasDeHorario } from "@/features/network/horario";
-import { jornadasDeSede, saldosDe } from "@/features/network/jornadas";
+import { inventarioParaMostrar, jornadasDeSede, saldosDe } from "@/features/network/jornadas";
+import { InventarioDeCaja } from "@/app/admin/(app)/jornadas/inventario";
 import { WORKER_SERVICES } from "@/features/operations/services";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import { fechaCorta, fechaYHora } from "@/app/admin/(app)/jornadas/formato";
@@ -418,6 +419,16 @@ export default async function SuperAdminSedePage({
                       ) : (
                         <Badge variant="neutral">Retirada</Badge>
                       )}
+                      {abierta ? (
+                        <details className="basis-full rounded-md border border-border px-3">
+                          <summary className="flex min-h-control-sm cursor-pointer items-center text-body-sm font-medium text-text-primary outline-none focus-visible:underline">
+                            Billetes y monedas de {caja.name}
+                          </summary>
+                          <div className="pb-3">
+                            <InventarioDeCaja inventario={inventarioParaMostrar(abierta)} abiertoSiUna={false} />
+                          </div>
+                        </details>
+                      ) : null}
                     </li>
                   );
                 })}

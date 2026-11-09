@@ -13,7 +13,8 @@ import { getAdminSession } from "@/features/admin/session-server";
 import { lineasDeHorario } from "@/features/network/horario";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { WORKER_SERVICES } from "@/features/operations/services";
-import { diaEnCuba, saldosDe } from "@/features/network/jornadas";
+import { diaEnCuba, inventarioParaMostrar, saldosDe } from "@/features/network/jornadas";
+import { InventarioDeCaja } from "../../jornadas/inventario";
 import { formatAmount } from "@/lib/format";
 import { desde, EstadoBadge, fechaYHora } from "../../jornadas/formato";
 import { EstadoSede } from "../sedes-list";
@@ -353,6 +354,16 @@ export default async function AdminSedePage({
                       ) : (
                         <Badge variant="neutral">Retirada</Badge>
                       )}
+                      {abierta ? (
+                        <details className="basis-full rounded-md border border-border px-3">
+                          <summary className="flex min-h-control-sm cursor-pointer items-center text-body-sm font-medium text-text-primary outline-none focus-visible:underline">
+                            Billetes y monedas de {caja.name}
+                          </summary>
+                          <div className="pb-3">
+                            <InventarioDeCaja inventario={inventarioParaMostrar(abierta)} abiertoSiUna={false} />
+                          </div>
+                        </details>
+                      ) : null}
                     </li>
                   );
                 })}

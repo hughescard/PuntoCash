@@ -10,6 +10,7 @@ import { formatAmount, formatSignedAmount } from "@/lib/format";
 import { getAdminSession } from "@/features/admin/session-server";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { fechaYHora, nombreDeJornada } from "../../../formato";
+import { formatoDeDenominacion, lineas } from "@/features/caja/billetes";
 
 export const metadata: Metadata = {
   title: "Administración de sede · Movimiento",
@@ -79,6 +80,23 @@ export default async function AdminMovimientoPage({
               <Dato etiqueta="Motivo" valor="Sin explicar" />
             ) : null}
             {m.observaciones ? <Dato etiqueta="Observaciones" valor={m.observaciones} /> : null}
+            <div className="sm:col-span-2">
+              <dt className="text-caption uppercase tracking-wide text-text-secondary">Billetes y monedas</dt>
+              <dd className="mt-1 text-body text-text-primary">
+                {lineas(m.billetes).length === 0 ? (
+                  <span className="text-text-secondary">Sin desglosar</span>
+                ) : (
+                  <ul className="flex flex-wrap gap-2" aria-label="Billetes y monedas del movimiento">
+                    {lineas(m.billetes).map((l) => (
+                      <li key={l.valor} className="pc-numeric rounded-md border border-border bg-surface-subtle px-2.5 py-1 text-body-sm">
+                        {Math.abs(l.cantidad)} × {formatoDeDenominacion(l.valor)}
+                        {l.cantidad > 0 === m.amount < 0 ? <span className="text-text-secondary">{l.cantidad > 0 ? " entra" : " sale"}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </dd>
+            </div>
             {solicitud ? (
               <Dato
                 etiqueta="Aprobación"

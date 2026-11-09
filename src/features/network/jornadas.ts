@@ -23,6 +23,8 @@
  * promociones: una ruta de Next carga los módulos en otro grafo.
  */
 
+import { desglosarDeMayorAMenor, desglosarFondo, entregarHasta, proponerEntrega, restar, sumar, totalDe, type Billetes } from "@/features/caja/billetes";
+import { denominacionesDe } from "./denominaciones";
 import { estaEnAlcance } from "./assignments";
 import { equipoDeCaja, kioscosDeSede } from "./devices";
 import { registrarOperacionSembrada, type OperacionDeRed } from "./operaciones";
@@ -49,6 +51,13 @@ export interface MovimientoDeJornada {
   motivo?: string;
   observaciones?: string;
   saldoAntes?: number;
+  /**
+   * Los billetes que movió, por denominación (decisión del 9/11/2026): clave
+   * el valor en céntimos, cantidad con signo —entra positivo, sale negativo—.
+   * Su suma es `amount`. Falta en lo registrado antes de llevar billetes; lo
+   * que no está desglosado se ve como «sin desglosar».
+   */
+  billetes?: Billetes;
 }
 
 export interface ArqueoMoneda {
@@ -246,11 +255,32 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
         const id = `J-${caja.id.replace("sede-", "").replace(":caja-", "-")}-${fecha.replaceAll("-", "")}`;
         const saldos = new Map<string, number>();
         const movimientos: MovimientoDeJornada[] = [];
+        /* Los billetes de cada caja, para que lo sembrado tenga desglose: lo que
+           entra, como lo trae un cliente (de mayor a menor); lo que sale, de lo
+           que hay, con la propuesta de entrega. */
+        const inventario = new Map<string, Billetes>();
         const mov = (m: Omit<MovimientoDeJornada, "id" | "saldoDespues">) => {
           const despues = (saldos.get(m.currency) ?? 0) + m.amount;
           saldos.set(m.currency, despues);
           secuencia += 1;
-          movimientos.push({ ...m, id: `${id}-M${String(secuencia).padStart(4, "0")}`, saldoDespues: despues });
+          const actual = inventario.get(m.currency) ?? {};
+          const billetes =
+            m.billetes ??
+            (m.amount >= 0
+              ? desglosarDeMayorAMenor(m.amount, denominacionesDe(m.currency)).billetes
+              : (() => {
+                  /* Exacto si se puede; si no (céntimos, o sin billetes pequeños), lo
+                     más que se pueda y el resto queda sin desglosar. */
+                  const p = proponerEntrega(-m.amount, actual) ?? entregarHasta(-m.amount, actual);
+                  return restar({}, p);
+                })());
+          if (billetes) inventario.set(m.currency, sumar(actual, billetes));
+          movimientos.push({
+            ...m,
+            ...(billetes && Object.keys(billetes).length > 0 ? { billetes } : {}),
+            id: `${id}-M${String(secuencia).padStart(4, "0")}`,
+            saldoDespues: despues,
+          });
         };
 
         /* La apertura cuenta contra el cierre anterior. Casi siempre cuadra; a
@@ -258,8 +288,16 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
            cierre sin arqueo de Obispo el conteo destapa un faltante. */
         const apertura = sembrarApertura(anterior, monedas, rnd);
         const fondeo = apertura.monedas.map((m) => ({ currency: m.currency, amount: m.contado }));
+        const heredado = anterior ? inventarioDeJornada(anterior) : null;
         for (const f of fondeo) {
-          mov({ fechaHora: abierta.toISOString(), tipo: "entrada", concepto: "Fondeo inicial", currency: f.currency, amount: f.amount });
+          mov({
+            fechaHora: abierta.toISOString(),
+            tipo: "entrada",
+            concepto: "Fondeo inicial",
+            currency: f.currency,
+            amount: f.amount,
+            billetes: billetesDeApertura(f.currency, f.amount, heredado?.get(f.currency)),
+          });
         }
 
         const fin = sigueAbierta
@@ -513,6 +551,20 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
   return out;
 }
 
+/**
+ * Los billetes con que abre una jornada sembrada: los que dejó la anterior
+ * —ajustados si alguien repuso o retiró entre medias— o, en la primera, un
+ * fondo repartido entre todas las denominaciones.
+ */
+function billetesDeApertura(currency: string, contado: number, dejados: Billetes | undefined): Billetes | undefined {
+  const denominaciones = denominacionesDe(currency);
+  if (!dejados) return desglosarFondo(contado, denominaciones).billetes;
+  const delta = Math.round((contado - totalDe(dejados)) * 100) / 100;
+  if (delta === 0) return dejados;
+  if (delta > 0) return sumar(dejados, desglosarDeMayorAMenor(delta, denominaciones).billetes);
+  return restar(dejados, proponerEntrega(-delta, dejados) ?? entregarHasta(-delta, dejados));
+}
+
 function sembrarApertura(
   anterior: Jornada | null,
   monedas: readonly string[],
@@ -566,7 +618,7 @@ function sembrarApertura(
  * la anterior y se descarta junto con lo que se deriva de él —operaciones y
  * solicitudes—, para no mezclar datos de dos siembras.
  */
-const VERSION_DE_SIEMBRA = "2026-11-03.3";
+const VERSION_DE_SIEMBRA = "2026-11-09.2";
 
 const ALMACEN = globalThis as typeof globalThis & {
   __puntocashJornadas?: Jornada[];
@@ -639,12 +691,61 @@ export function jornadaAbiertaDeCaja(registerId: string): Jornada | null {
   return jornadas.find((j) => j.registerId === registerId && j.estado === "abierta") ?? null;
 }
 
+/**
+ * Cuántas unidades de cada denominación de una moneda hay ahora en las cajas
+ * abiertas de la red, y en cuántas cajas. Para saber qué queda en circulación
+ * al retirar una.
+ */
+export function existenciasEnCajasAbiertas(currency: string): Map<string, { cajas: number; unidades: number }> {
+  const out = new Map<string, { cajas: number; unidades: number }>();
+  for (const j of jornadas) {
+    if (j.estado !== "abierta") continue;
+    const inv = inventarioDeJornada(j).get(currency);
+    if (!inv) continue;
+    for (const [k, n] of Object.entries(inv)) {
+      if (n <= 0) continue;
+      const e = out.get(k) ?? { cajas: 0, unidades: 0 };
+      out.set(k, { cajas: e.cajas + 1, unidades: e.unidades + n });
+    }
+  }
+  return out;
+}
+
 /** La jornada abierta de un trabajador, o `null`. */
 export function jornadaAbiertaDeTrabajador(workerId: string): Jornada | null {
   return jornadas.find((j) => j.workerId === workerId && j.estado === "abierta") ?? null;
 }
 
 /** Saldo por moneda: el guardado si está cerrada; el de libros si sigue abierta. */
+/**
+ * **El inventario por billete** de una jornada: por moneda, cuántos billetes
+ * de cada denominación, sumando lo que movió cada movimiento. Es lo que hay
+ * en la caja si la jornada está abierta, y lo que quedó si está cerrada.
+ */
+export function inventarioDeJornada(j: Jornada): Map<string, Billetes> {
+  const out = new Map<string, Billetes>();
+  for (const m of j.movimientos) {
+    if (!out.has(m.currency)) out.set(m.currency, {});
+    if (m.billetes) out.set(m.currency, sumar(out.get(m.currency), m.billetes));
+  }
+  return out;
+}
+
+/**
+ * El inventario listo para mostrar: por moneda, sus billetes de mayor a menor,
+ * el total y la parte del saldo que no está desglosada —movimientos de antes
+ * de llevar billetes y fracciones menores que el billete más pequeño—.
+ */
+export function inventarioParaMostrar(
+  j: Jornada,
+): readonly { currency: string; billetes: Billetes; saldo: number; sinDesglosar: number }[] {
+  const inv = inventarioDeJornada(j);
+  return saldosDe(j).map((s) => {
+    const billetes = inv.get(s.currency) ?? {};
+    return { currency: s.currency, billetes, saldo: s.amount, sinDesglosar: Math.round((s.amount - totalDe(billetes)) * 100) / 100 };
+  });
+}
+
 export function saldosDe(j: Jornada): readonly { currency: string; amount: number }[] {
   if (j.saldosFinales) return j.saldosFinales;
   const saldos = new Map<string, number>();
