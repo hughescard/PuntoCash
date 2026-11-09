@@ -420,7 +420,7 @@ export default async function SuperAdminSedePage({
                         <Badge variant="neutral">Retirada</Badge>
                       )}
                       {abierta ? (
-                        <details className="basis-full rounded-md border border-border px-3">
+                        <details className="min-w-0 basis-full rounded-md border border-border px-3">
                           <summary className="flex min-h-control-sm cursor-pointer items-center text-body-sm font-medium text-text-primary outline-none focus-visible:underline">
                             Billetes y monedas de {caja.name}
                           </summary>
