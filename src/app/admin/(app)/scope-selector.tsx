@@ -100,6 +100,16 @@ export function ScopeSelector({
     setValue(selectedId ?? ALCANCE_TODAS);
   }
 
+  /* En Sedes el selector no filtra: la lista es siempre «qué sedes administro»
+     y la ficha es la de la sede de la dirección. Un selector activo que dijera
+     una sede mientras la pantalla enseña otra cosa parecería un fallo, así que
+     se desactiva y enseña lo que la pantalla muestra de verdad. La elección
+     guardada no se toca: al salir de Sedes vuelve a aplicarse. */
+  const enSedes = pathname === "/admin/sedes" || pathname.startsWith("/admin/sedes/");
+  const sedeDeLaFicha = enSedes ? sedes.find((s) => pathname.startsWith(`/admin/sedes/${s.id}`))?.id : undefined;
+  const mostrado = enSedes ? (sedeDeLaFicha ?? ALCANCE_TODAS) : value;
+  const aviso = `${id}-aviso`;
+
   function elegir(next: string) {
     setValue(next);
     recordarAlcance(next);
@@ -131,7 +141,10 @@ export function ScopeSelector({
         <select
           id={id}
           name="sede"
-          value={value}
+          value={mostrado}
+          disabled={enSedes}
+          aria-describedby={enSedes ? aviso : undefined}
+          title={enSedes ? "En Sedes no se filtra por sede" : undefined}
           onChange={(event) => elegir(event.currentTarget.value)}
           className={cn(
             "h-control-sm appearance-none rounded-control",
@@ -144,6 +157,7 @@ export function ScopeSelector({
             /* Las opciones las pinta el sistema operativo sobre superficie
                clara, así que su color se fija aparte del control. */
             "[&>option]:bg-surface [&>option]:text-text-primary",
+            "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-white/20 disabled:hover:bg-white/[0.08]",
           )}
         >
           <option value={ALCANCE_TODAS}>Todas mis sedes</option>
@@ -155,9 +169,14 @@ export function ScopeSelector({
         </select>
 
         <ChevronDown
-          className="pointer-events-none absolute right-3 size-[18px] text-text-on-primary-muted"
+          className={cn("pointer-events-none absolute right-3 size-[18px] text-text-on-primary-muted", enSedes && "opacity-60")}
           aria-hidden="true"
         />
+        {enSedes ? (
+          <span id={aviso} className="sr-only">
+            En Sedes no se filtra por sede: la lista muestra siempre todas tus sedes.
+          </span>
+        ) : null}
       </div>
 
       {/* Sin JavaScript el cambio no se envía solo; el botón lo hace posible y

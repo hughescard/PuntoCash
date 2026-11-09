@@ -16,9 +16,11 @@ export const metadata: Metadata = {
  * Sedes — **§6 del FRD**.
  *
  * Es la única sección de la consola que **siempre muestra el alcance completo**
- * (**FR-AD-SCOPE-4**): el selector de la cabecera no la filtra. Tiene sentido —
- * esta pantalla responde «qué sedes administro», y filtrarla por una sede la
- * convertiría en una lista de un elemento que no contesta esa pregunta.
+ * (**FR-AD-SCOPE-4**): el selector de la cabecera no la filtra y aquí aparece
+ * desactivado, mostrando «Todas mis sedes» (en la ficha, la sede de la ficha).
+ * Esta pantalla responde «qué sedes administro»; filtrarla por una sede la
+ * convertiría en una lista de un elemento. Y un selector activo que dijera una
+ * sede sobre una lista de todas parecía un fallo (decisión del 9/11).
  *
  * No hay alta ni baja: las sedes las crea y las cierra PuntoCash (**A3**,
  * **FR-AD-SEDE-2**). Desde aquí solo se editan sus datos de contacto —dirección,

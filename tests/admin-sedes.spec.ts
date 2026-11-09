@@ -174,3 +174,30 @@ test("lo que se guarda llega a la pantalla de la sala", async ({ page, browser }
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await page.waitForURL(/\/admin\/sedes\/sede-cerro\?guardado=1$/);
 });
+
+test.describe("selector de la cabecera", () => {
+  test("en Sedes está desactivado y dice lo que se ve; al salir vuelve la sede elegida", async ({ page }) => {
+    await signInAsAdmin(page, MARTA);
+    const selector = page.getByRole("banner").getByLabel("Sede que estás viendo");
+
+    await page.goto("/admin/jornadas");
+    await selector.selectOption("sede-vedado");
+    await page.waitForLoadState("load");
+    await expect(selector).toHaveValue("sede-vedado");
+
+    await page.goto("/admin/sedes");
+    await expect(selector).toBeDisabled();
+    await expect(selector).toHaveValue("todas");
+    await expect(selector).toHaveAccessibleDescription(/no se filtra por sede/);
+
+    await page.goto("/admin/sedes/sede-habana-vieja");
+    await expect(selector).toBeDisabled();
+    await expect(selector).toHaveValue("sede-habana-vieja");
+
+    await page.goto("/admin/jornadas");
+    await expect(selector).toBeEnabled();
+    await expect(selector).toHaveValue("sede-vedado");
+    await selector.selectOption("todas");
+    await page.waitForLoadState("load");
+  });
+});
