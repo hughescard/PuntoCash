@@ -62,8 +62,9 @@ type Abierto =
   | { accion: "anadir"; fila: FilaDeDenominaciones }
   | { accion: "retirar" | "reincorporar"; fila: FilaDeDenominaciones; d: DenominacionEnTabla };
 
+/** «el billete de 20 USD», «la moneda de 0,25 USD». */
 const nombreDe = (d: { tipo: "billete" | "moneda"; valor: number }, code: string) =>
-  `${d.tipo === "billete" ? "billete" : "moneda"} de ${formatoDeDenominacion(d.valor)} ${code}`;
+  `${d.tipo === "billete" ? "el billete" : "la moneda"} de ${formatoDeDenominacion(d.valor)} ${code}`;
 
 export function TablaDeDenominaciones({ filas }: { filas: readonly FilaDeDenominaciones[] }): React.JSX.Element {
   const hydrated = useHydrated();
@@ -184,7 +185,7 @@ function Grupo({
               type="button"
               disabled={disabled}
               onClick={() => onElegir(d)}
-              aria-label={`${d.retirada ? "Reincorporar" : "Retirar"} el ${nombreDe(d, fila.code)}${d.retirada ? " (retirada)" : ""}`}
+              aria-label={`${d.retirada ? "Reincorporar" : "Retirar"} ${nombreDe(d, fila.code)}${d.retirada ? " (retirada)" : ""}`}
               className={cn(
                 "pc-numeric inline-flex min-h-control-sm min-w-12 items-center justify-center rounded-md border px-3 text-label font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
                 d.retirada
@@ -295,8 +296,8 @@ function RetirarDenominacion({
     <Dialog open onOpenChange={(o) => (o ? undefined : onCerrar())}>
       <DialogContent size="md">
         <DialogHeader>
-          <DialogTitle>Retirar el {nombreDe(d, fila.code)}</DialogTitle>
-          <DialogDescription>Las cajas dejan de aceptarlo del cliente y el sistema deja de proponerlo para pagar.</DialogDescription>
+          <DialogTitle>Retirar {nombreDe(d, fila.code)}</DialogTitle>
+          <DialogDescription>Las cajas dejan de aceptarla del cliente y el sistema deja de proponerla para pagar.</DialogDescription>
         </DialogHeader>
         <form onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="moneda" value={fila.code} />
@@ -360,9 +361,9 @@ function ReincorporarDenominacion({
     <Dialog open onOpenChange={(o) => (o ? undefined : onCerrar())}>
       <DialogContent size="md">
         <DialogHeader>
-          <DialogTitle>Reincorporar el {nombreDe(d, fila.code)}</DialogTitle>
+          <DialogTitle>Reincorporar {nombreDe(d, fila.code)}</DialogTitle>
           <DialogDescription>
-            Las cajas vuelven a aceptarlo y el sistema vuelve a proponerlo para pagar. Retirado el {d.retirada}.
+            Las cajas vuelven a aceptarla y el sistema vuelve a proponerla para pagar. Retirada el {d.retirada}.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={enviarSinReiniciar(accion)} noValidate>

@@ -28,7 +28,7 @@ test.describe("Denominaciones", () => {
 
     const billetesUsd = main.getByRole("list", { name: "Billetes del USD" });
     await expect(billetesUsd.getByRole("button", { name: "Retirar el billete de 100 USD" })).toBeVisible();
-    await expect(main.getByRole("list", { name: "Monedas del USD" }).getByRole("button", { name: "Retirar el moneda de 0,25 USD" })).toBeVisible();
+    await expect(main.getByRole("list", { name: "Monedas del USD" }).getByRole("button", { name: "Retirar la moneda de 0,25 USD" })).toBeVisible();
     if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/sa-denominaciones.png`, fullPage: true });
 
     /* Añadir: valores inválidos y repetidos, rechazados con su motivo. */
@@ -40,7 +40,7 @@ test.describe("Denominaciones", () => {
     await dialogo.getByLabel(/^Valor/).fill(String(valor));
     if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/sa-anadir.png` });
     await dialogo.getByRole("button", { name: "Añadir la denominación" }).click();
-    await expect(main.getByText(`Billete de ${v} CHF añadido al catálogo`, { exact: false })).toBeVisible();
+    await expect(main.getByText(`Billete de ${v} CHF en el catálogo`, { exact: false })).toBeVisible();
     const billetesChf = main.getByRole("list", { name: "Billetes del CHF" });
     await expect(billetesChf.getByRole("button", { name: `Retirar el billete de ${v} CHF` })).toBeVisible();
 
@@ -52,7 +52,7 @@ test.describe("Denominaciones", () => {
     await expect(dialogo.getByText("Escribe el motivo: al menos 10 caracteres.")).toBeVisible();
     await dialogo.getByLabel(/^Motivo/).fill("Añadido por error, no circula");
     await dialogo.getByRole("button", { name: "Retirar la denominación" }).click();
-    await expect(main.getByText(`Billete de ${v} CHF retirado.`, { exact: false })).toBeVisible();
+    await expect(main.getByText(`Billete de ${v} CHF fuera del catálogo`, { exact: false })).toBeVisible();
     await expect(billetesChf.getByRole("button", { name: `Reincorporar el billete de ${v} CHF (retirada)` })).toBeVisible();
 
     /* Una que sí está en cajas lo dice antes de retirarla. */

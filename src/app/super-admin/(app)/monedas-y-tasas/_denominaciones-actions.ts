@@ -67,7 +67,7 @@ export async function anadirDenominacionAction(_p: ResultadoDenominacion, formDa
     after: "Se acepta y se entrega en todas las cajas",
   });
   revalidar();
-  return { ok: true, mensaje: `${nombre(tipo, valor, code)} añadido al catálogo: desde ahora las cajas lo aceptan y lo entregan.` };
+  return { ok: true, mensaje: `${nombre(tipo, valor, code)} en el catálogo: desde ahora las cajas lo aceptan del cliente y lo entregan.` };
 }
 
 export async function retirarDenominacionAction(_p: ResultadoDenominacion, formData: FormData): Promise<ResultadoDenominacion> {
@@ -94,7 +94,7 @@ export async function retirarDenominacionAction(_p: ResultadoDenominacion, formD
   revalidar();
   return {
     ok: true,
-    mensaje: `${nombre(r.value.tipo, valor, code)} retirado. Las cajas que tengan unidades las conservan en su inventario hasta que se retiren de la caja.`,
+    mensaje: `${nombre(r.value.tipo, valor, code)} fuera del catálogo. Las cajas que tengan unidades las conservan en su inventario hasta que se retiren de la caja.`,
   };
 }
 
