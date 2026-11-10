@@ -10,7 +10,8 @@ import { Alert, Button, Card, CardContent } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatAmount } from "@/lib/format";
 import { getAdminSession } from "@/features/admin/session-server";
-import { MOTIVO_RESOLUCION_MIN, TIPO_DE_SOLICITUD, type Solicitud } from "@/features/network/aprobaciones";
+import { MOTIVO_RESOLUCION_MIN, TIPO_DE_SOLICITUD, type Solicitud, quienConfirma } from "@/features/network/aprobaciones";
+import { SUPERVISOR_CAMBIO_BILLETES } from "@/features/network/jornadas";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { DiferenciaDeApertura, EstadoBadge, fechaYHora, nombreDeJornada } from "../../jornadas/formato";
 import { antiguedad, EstadoSolicitudBadge } from "../formato";
@@ -28,6 +29,7 @@ const REFERENCIA: Readonly<Record<Solicitud["tipo"], string>> = {
   apertura: "Dejado al cierre anterior",
   composicion: "Saldo esperado",
   fondos: "Antes del movimiento",
+  recuento: "Saldo en libros",
 };
 
 /**
@@ -58,6 +60,7 @@ export default async function AdminSolicitudPage({
   const sede = session.sedes.find((x) => x.id === s.sedeId);
   const jornada = red.jornada(s.jornadaId);
   const ahora = new Date();
+  const confirma = s.estado === "pendiente" ? quienConfirma(s) : null;
 
   return (
     <>
@@ -123,7 +126,10 @@ export default async function AdminSolicitudPage({
                 }
               />
               <Dato etiqueta={referenciaDe(s)} valor={<span className="pc-numeric">{formatAmount(s.referencia)}</span>} />
-              <Dato etiqueta="Contado" valor={<span className="pc-numeric">{formatAmount(s.contado)}</span>} />
+              <Dato
+                etiqueta={s.origen === "jornada" ? "Después del movimiento" : "Contado"}
+                valor={<span className="pc-numeric">{formatAmount(s.contado)}</span>}
+              />
               {/* FR-AD-APR-6: signo y motivo juntos, sin reinterpretar. */}
               <Dato
                 etiqueta="Diferencia"
@@ -172,16 +178,37 @@ export default async function AdminSolicitudPage({
               ) : null}
             </CardContent>
           </Card>
+        ) : confirma && confirma.id !== session.user.id ? (
+          /* Decisión del 10/11/2026: confirmar es que quien trajo o se llevó el dinero diga que fue así. */
+          <Alert variant="info" title={`Solo ${confirma.nombre} puede confirmarlo`}>
+            Es el supervisor que, según el trabajador, {verboDeFondos(s)}. Hasta que lo confirme o lo rechace desde su consola,
+            queda pendiente.
+          </Alert>
         ) : (
-          <Resolver id={s.id} motivoMin={MOTIVO_RESOLUCION_MIN} />
+          <>
+            {confirma ? (
+              <p className="mb-4 text-body-sm text-text-secondary">
+                El trabajador dice que fuiste tú quien {verboDeFondos(s)}. Confírmalo si fue así; recházalo si no.
+              </p>
+            ) : null}
+            <Resolver id={s.id} motivoMin={MOTIVO_RESOLUCION_MIN} />
+          </>
         )}
       </Section>
     </>
   );
 }
 
+/** Qué hizo el supervisor, para decirlo en una frase. */
+function verboDeFondos(s: Solicitud): string {
+  if (s.fondos === "cambio" || s.motivo === SUPERVISOR_CAMBIO_BILLETES) return "cambió los billetes";
+  if (s.fondos === "retiro" || s.diferencia < 0) return "se llevó el efectivo";
+  return "trajo el efectivo";
+}
+
 /** Al abrir, la referencia es lo dejado por el cierre anterior; al cerrar, lo esperado por los libros. */
 function referenciaDe(s: Solicitud): string {
+  if (s.origen === "recuento") return "Saldo en libros";
   if (s.id.includes(`-A-${s.currency}`)) return "Dejado al cierre anterior";
   if (s.id.includes(`-C-${s.currency}`)) return "Saldo esperado";
   return REFERENCIA[s.tipo];

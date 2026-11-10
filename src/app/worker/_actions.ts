@@ -18,15 +18,24 @@ import {
   explicarCierre,
   declararConteoDeApertura,
   habilitarMoneda,
+  explicarRecuento,
+  proponerCambioDeBilletes,
+  recontar,
   registrarCambio,
+  registrarCambioDeBilletes,
+  registrarFondos,
   registrarOperacionSimple,
   type AperturaDeclarada,
+  type CambioDeBilletesPorRegistrar,
+  type FondosPorRegistrar,
+  type RecuentoRegistrado,
   type CajaDenial,
   type ConteoPorBilletes,
   type ContextoDeCaja,
   type OperacionPorRegistrar,
 } from "@/features/network/caja-operativa";
 import type { Cotizacion } from "@/features/exchange/cotizacion";
+import type { MovimientoDeJornada } from "@/features/network/jornadas";
 import { emitirReto, findTerminalById, resolverTerminal } from "@/features/network/devices";
 import { jornadaAbiertaDeCaja, type Jornada } from "@/features/network/jornadas";
 import type { OperationClienteSnapshot, OperationRecord } from "@/features/operations/operations-history";
@@ -313,4 +322,73 @@ export async function registrarOperacionAction(op: OperacionPorRegistrar): Promi
 
 function sinRed(o: OperationRecord): OperationRecord {
   return registroDeWorker(o);
+}
+
+/* ==========================================================================
+ * Fondos, cambio de billetes y recuento (bloque 3)
+ * ====================================================================== */
+
+/** Lo que vuelve a la pantalla tras registrar: **sin saldos** (Worker opera a ciegas). */
+export interface MovimientoRegistrado {
+  id: string;
+  fechaHora: string;
+  concepto: string;
+  currency: string;
+  amount: number;
+  billetes: Readonly<Record<string, number>>;
+  supervisor?: string;
+  observaciones?: string;
+}
+
+function aRegistrado(m: MovimientoDeJornada): MovimientoRegistrado {
+  return {
+    id: m.id,
+    fechaHora: m.fechaHora,
+    concepto: m.concepto,
+    currency: m.currency,
+    amount: m.amount,
+    billetes: m.billetes ?? {},
+    ...(m.supervisor ? { supervisor: m.supervisor } : {}),
+    ...(m.observaciones ? { observaciones: m.observaciones } : {}),
+  };
+}
+
+/** Reposición o retiro. Si saldrían billetes que los libros no tienen, responde `recuento-necesario`. */
+export async function registrarFondosAction(f: FondosPorRegistrar): Promise<AccionDeCaja<MovimientoRegistrado>> {
+  return conCaja((ctx) => {
+    const r = registrarFondos(ctx, f);
+    return r.ok ? { ok: true, value: aRegistrado(r.value) } : r;
+  });
+}
+
+/** Qué billetes darle a un cliente por los suyos. No registra nada. */
+export async function proponerCambioDeBilletesAction(
+  currency: string,
+  entran: Readonly<Record<string, number>>,
+): Promise<AccionDeCaja<Readonly<Record<string, number>>>> {
+  const ctx = await getContextoDeTrabajo();
+  if (!ctx) return { ok: false, reason: "sin-sesion" };
+  return proponerCambioDeBilletes(ctx, currency, entran);
+}
+
+export async function registrarCambioDeBilletesAction(c: CambioDeBilletesPorRegistrar): Promise<AccionDeCaja<MovimientoRegistrado>> {
+  return conCaja((ctx) => {
+    const r = registrarCambioDeBilletes(ctx, c);
+    return r.ok ? { ok: true, value: aRegistrado(r.value) } : r;
+  });
+}
+
+/** El recuento de una moneda que pidió el sistema. Devuelve la diferencia, nunca lo que decían los libros. */
+export async function recontarAction(conteo: ConteoPorBilletes): Promise<AccionDeCaja<RecuentoRegistrado>> {
+  return conCaja((ctx) => recontar(ctx, conteo));
+}
+
+export async function explicarRecuentoAction(
+  movimientoId: string,
+  e: { motivo?: string; observaciones?: string },
+): Promise<AccionDeCaja<{ motivo: string }>> {
+  return conCaja((ctx) => {
+    const r = explicarRecuento(ctx, movimientoId, e);
+    return r.ok ? { ok: true, value: { motivo: r.value.motivo! } } : r;
+  });
 }

@@ -41,7 +41,10 @@ export interface CajaMetric {
   value: string;
 }
 
-export type CajaMovementType = "entrada" | "salida";
+export type CajaMovementType = "entrada" | "salida" | "cambio";
+
+/** Cómo se dice el tipo de un movimiento. Un cambio de billetes no entra ni sale: cambia billetes por el mismo total. */
+export const TIPO_DE_MOVIMIENTO: Readonly<Record<CajaMovementType, string>> = { entrada: "Entrada", salida: "Salida", cambio: "Cambio" };
 
 export interface CajaMovement {
   id: string;
@@ -60,6 +63,17 @@ export interface CajaMovement {
   billetes?: Readonly<Record<string, number>>;
   /** Reposición, retiro o cambio con supervisor: quién entregó o recibió el efectivo. */
   supervisor?: string;
+  /** Un movimiento de fondos (reposición, retiro o cambio con el supervisor): lo confirma el supervisor. */
+  fondos?: "reposicion" | "retiro" | "cambio";
+  /** Un cambio de billetes: con quién. */
+  cambioCon?: "cliente" | "supervisor";
+  /** El recuento que pidió el sistema: solo la diferencia, nunca lo que decían los libros. */
+  recuento?: { diferencia: number; composicion?: Readonly<Record<string, number>> };
+  /**
+   * Si pasó por Aprobaciones, en qué quedó (decisión del 10/11/2026): no es un
+   * saldo, y así el trabajador sabe si tiene una incidencia.
+   */
+  aprobacion?: { estado: "pendiente" | "aprobada" | "rechazada"; at?: string; por?: string };
   /** La jornada a la que pertenece, como era al registrarse. */
   jornada?: CajaMovementJornadaSnapshot;
   /**
@@ -119,6 +133,7 @@ export const CAJA_MOVEMENT_TYPE_FILTERS = [
   { value: "todos", label: "Todos" },
   { value: "entrada", label: "Entrada" },
   { value: "salida", label: "Salida" },
+  { value: "cambio", label: "Cambio" },
 ] as const satisfies readonly { value: string; label: string }[];
 
 export function getCajaMovementCurrencyFilters(monedas: readonly string[]): readonly { value: string; label: string }[] {
@@ -324,6 +339,22 @@ export function getCajaActions(e: EstadoParaAcciones): readonly CajaAction[] {
       availability: "available",
       href: "/worker/caja/anadir-moneda",
       ...(deOtro ? no("Jornada de otro trabajador") : e.bloqueada ? no("Sede sin operar") : {}),
+    },
+    {
+      id: "fondos",
+      label: "Reposición o retiro",
+      description: "El supervisor trae o se lleva efectivo. Él lo confirma después.",
+      availability: "available",
+      href: "/worker/caja/fondos",
+      ...(!e.propia ? no("Requiere jornada abierta") : e.bloqueada ? no("Sede sin operar") : {}),
+    },
+    {
+      id: "cambio-billetes",
+      label: "Cambio de billetes",
+      description: "Entran unos billetes y salen otros por el mismo total, con un cliente o con el supervisor.",
+      availability: "available",
+      href: "/worker/caja/cambio-de-billetes",
+      ...(!e.propia ? no("Requiere jornada abierta") : e.bloqueada ? no("Sede sin operar") : {}),
     },
     {
       id: "arqueo",

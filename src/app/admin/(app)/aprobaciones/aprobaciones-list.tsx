@@ -57,6 +57,7 @@ const TIPOS: readonly { value: TipoSolicitud | "todos"; label: string }[] = [
   { value: "cierre", label: "Diferencia de cierre" },
   { value: "composicion", label: "Diferencia de composición" },
   { value: "fondos", label: "Movimiento de fondos" },
+  { value: "recuento", label: "Diferencia en recuento" },
 ];
 
 export function AprobacionesList({

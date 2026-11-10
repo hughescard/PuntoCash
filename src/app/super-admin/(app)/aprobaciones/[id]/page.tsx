@@ -37,6 +37,7 @@ const REFERENCIA: Readonly<Record<Solicitud["tipo"], string>> = {
   apertura: "Dejado al cierre anterior",
   composicion: "Saldo esperado",
   fondos: "Antes del movimiento",
+  recuento: "Saldo en libros",
 };
 
 /**
@@ -137,7 +138,10 @@ export default async function SuperAdminSolicitudPage({
                 }
               />
               <Dato etiqueta={referenciaDe(s)} valor={<span className="pc-numeric">{formatAmount(s.referencia)}</span>} />
-              <Dato etiqueta="Contado" valor={<span className="pc-numeric">{formatAmount(s.contado)}</span>} />
+              <Dato
+                etiqueta={s.origen === "jornada" ? "Después del movimiento" : "Contado"}
+                valor={<span className="pc-numeric">{formatAmount(s.contado)}</span>}
+              />
               <Dato
                 etiqueta="Diferencia"
                 valor={<DiferenciaDeApertura currency={s.currency} diferencia={s.diferencia} motivo={s.motivo} />}
@@ -175,6 +179,7 @@ export default async function SuperAdminSolicitudPage({
 
 /** Al abrir, la referencia es lo dejado por el cierre anterior; al cerrar, lo esperado por los libros. */
 function referenciaDe(s: Solicitud): string {
+  if (s.origen === "recuento") return "Saldo en libros";
   if (s.id.includes(`-A-${s.currency}`)) return "Dejado al cierre anterior";
   if (s.id.includes(`-C-${s.currency}`)) return "Saldo esperado";
   return REFERENCIA[s.tipo];

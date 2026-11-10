@@ -5,6 +5,7 @@ import { DetailCard, DetailList, DetailRow } from "@/app/worker/(app)/operacione
 import { cn } from "@/lib/utils";
 import { formatSignedAmount } from "@/lib/format";
 import type { CajaMovement } from "@/features/caja/caja-data";
+import { EstadoDeAprobacion } from "./fund-movement-detail";
 
 /**
  * "Detalle del ajuste" — the specialized detail for `concepto === "Ajuste de
@@ -49,6 +50,14 @@ export function CashAdjustmentDetail({ movement }: { movement: CajaMovement }): 
         {/* El motivo se da justo después de contar; si no llegó, así lo ve también la administración. */}
         <DetailRow label="Motivo" value={movement.motivo ?? "Sin explicar"} strong />
         {movement.observaciones ? <DetailRow label="Observaciones" value={movement.observaciones} /> : null}
+        {movement.aprobacion ? (
+          <div className="flex items-baseline justify-between gap-4 py-2.5">
+            <dt className="text-body-sm text-text-secondary">Aprobación</dt>
+            <dd>
+              <EstadoDeAprobacion aprobacion={movement.aprobacion} deFondos={!!movement.supervisor} />
+            </dd>
+          </div>
+        ) : null}
       </DetailList>
     </DetailCard>
   );

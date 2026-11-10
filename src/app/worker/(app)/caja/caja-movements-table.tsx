@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowDownLeft, ArrowUpRight, ListChecks } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ListChecks } from "lucide-react";
 
 import {
   Badge,
@@ -21,6 +21,13 @@ import type { CajaMovement } from "@/features/caja/caja-data";
 
 /** "Entrada"/"Salida" as text plus a directional glyph — never colour alone (§20). */
 export function MovementTypeBadge({ tipo }: { tipo: CajaMovement["tipo"] }) {
+  if (tipo === "cambio") {
+    return (
+      <Badge variant="neutral" icon={<ArrowLeftRight aria-hidden="true" />}>
+        Cambio
+      </Badge>
+    );
+  }
   return tipo === "entrada" ? (
     <Badge variant="success" icon={<ArrowDownLeft aria-hidden="true" />}>
       Entrada
@@ -103,7 +110,9 @@ export function CajaMovementsTable({
                   className={
                     movement.tipo === "entrada"
                       ? "pc-numeric whitespace-nowrap font-medium text-success-foreground"
-                      : "pc-numeric whitespace-nowrap font-medium text-error-foreground"
+                      : movement.tipo === "cambio"
+                        ? "pc-numeric whitespace-nowrap font-medium text-text-secondary"
+                        : "pc-numeric whitespace-nowrap font-medium text-error-foreground"
                   }
                 >
                   {formatSignedAmount(movement.amount)}

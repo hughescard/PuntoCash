@@ -12,6 +12,7 @@ import { useCaja } from "@/features/caja/use-caja";
 import { BackLink, CashJornadaCard, MovementDetailHeader, MovementInfoCard } from "./movement-detail-parts";
 import { CashAdjustmentDetail } from "./cash-adjustment-detail";
 import { OpeningDifferenceDetail } from "./opening-difference-detail";
+import { FundMovementDetail, RecountDetail } from "./fund-movement-detail";
 import type { Denominacion } from "@/features/caja/billetes";
 import { MovementReceiptSection } from "./movement-receipt-section";
 
@@ -94,9 +95,11 @@ function MovementSpecificDetail({ movement, tipos }: { movement: CajaMovement; t
   if (movement.concepto === "Ajuste de cierre" || movement.concepto === "Ajuste de billetes al cerrar") {
     return <CashAdjustmentDetail movement={movement} />;
   }
+  if (movement.recuento) return <RecountDetail movement={movement} tipos={tipos} />;
+  if (movement.fondos || movement.cambioCon) return <FundMovementDetail movement={movement} />;
   /* El fondeo de una apertura: si lo recibido coincidió con lo entregado y, si no, qué se dijo. */
   if (movement.apertura) {
-    return <OpeningDifferenceDetail apertura={movement.apertura} currency={movement.currency} tipos={tipos} />;
+    return <OpeningDifferenceDetail apertura={movement.apertura} currency={movement.currency} tipos={tipos} aprobacion={movement.aprobacion} />;
   }
   return null;
 }

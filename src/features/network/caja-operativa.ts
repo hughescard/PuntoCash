@@ -38,12 +38,12 @@ import type {
   OperationServiceName,
 } from "@/features/operations/operations-history";
 
-import { desglosarDeMayorAMenor, restar, sumar, totalDe, type Billetes, type Denominacion } from "@/features/caja/billetes";
+import { desglosarDeMayorAMenor, proponerEntrega, restar, sumar, totalDe, type Billetes, type Denominacion } from "@/features/caja/billetes";
 import { almacen } from "./almacen";
-import { derivar, explicarSolicitudDeCierre, registrarSolicitudes } from "./aprobaciones";
+import { derivar, explicarSolicitudDeCierre, explicarSolicitudDeRecuento, registrarSolicitudes } from "./aprobaciones";
 import { estadoDeSede, operadorVigente } from "./assignments";
 import { denominacionesDe, todasLasDenominaciones } from "./denominaciones";
-import { adminUsersOf } from "./operators";
+import { activeAdminUsersOf } from "./operators";
 import { anotarSaldoDeCaja, habilitarMonedaEnCaja, monedasDeCaja, monedasDeSede, sedeManejaMoneda } from "./currencies";
 import { findTerminalById, marcarActividad } from "./devices";
 import {
@@ -267,7 +267,19 @@ export type CajaDenial =
   /** Una moneda sin denominaciones en el catálogo: no se puede contar. */
   | "sin-denominaciones"
   /** Una denominación que no es de esa moneda, o una cantidad que no es un entero. */
-  | "denominacion-invalida";
+  | "denominacion-invalida"
+  /** Saldrían billetes que los libros no tienen: hay que contar esa moneda antes. */
+  | "recuento-necesario"
+  /** Contada la moneda, esos billetes no están en la caja. */
+  | "sin-esos-billetes"
+  | "recuento-no-pedido"
+  | "recuento-sin-explicacion-pendiente"
+  /** La caja no puede dar ese importe exacto sin repetir los billetes que trae el cliente. */
+  | "sin-cambio-exacto"
+  /** Lo que entra y lo que sale no suman lo mismo. */
+  | "cambio-descuadrado"
+  /** Entran y salen los mismos billetes. */
+  | "cambio-sin-efecto";
 
 export type CajaResult<T> = { ok: true; value: T } | { ok: false; reason: CajaDenial; currency?: string };
 
@@ -299,7 +311,7 @@ interface Explicacion {
  */
 export function supervisoresDe(ctx: Pick<ContextoDeCaja, "sede">): readonly { id: string; nombre: string }[] {
   const operador = operadorVigente(ctx.sede.id);
-  return operador ? adminUsersOf(operador).map((u) => ({ id: u.id, nombre: u.fullName })) : [];
+  return operador ? activeAdminUsersOf(operador).map((u) => ({ id: u.id, nombre: u.fullName })) : [];
 }
 
 function supervisorValido(ctx: Pick<ContextoDeCaja, "sede">, id: string | undefined): string | null {
@@ -312,6 +324,7 @@ interface ExplicacionRevisada {
   motivo: string;
   observaciones?: string;
   supervisor?: string;
+  supervisorId?: string;
 }
 
 /**
@@ -340,13 +353,13 @@ function revisarExplicacion(
   }
   const observaciones = e.observaciones?.trim() || undefined;
   if (e.motivo === "Otro" && !observaciones) return no("observaciones-requeridas", currency);
-  let supervisor: string | undefined;
+  let supervisor: { supervisor: string; supervisorId: string } | undefined;
   if (MOTIVOS_DE_FONDOS.has(e.motivo) || e.motivo === SUPERVISOR_CAMBIO_BILLETES) {
     const nombre = supervisorValido(ctx, e.supervisorId);
     if (!nombre) return no("supervisor-requerido", currency);
-    supervisor = nombre;
+    supervisor = { supervisor: nombre, supervisorId: e.supervisorId! };
   }
-  return { ok: true, value: { motivo: e.motivo, ...(observaciones ? { observaciones } : {}), ...(supervisor ? { supervisor } : {}) } };
+  return { ok: true, value: { motivo: e.motivo, ...(observaciones ? { observaciones } : {}), ...(supervisor ?? {}) } };
 }
 
 /* -- Conteos por billete -------------------------------------------------- */
@@ -691,7 +704,7 @@ export function cerrarJornada(
       ...(vacio(a.delta) ? {} : { billetes: a.delta }),
       ...(a.motivo ? { motivo: a.motivo } : {}),
       ...(a.observaciones ? { observaciones: a.observaciones } : {}),
-      ...(a.supervisor ? { supervisor: a.supervisor } : {}),
+      ...(a.supervisor ? { supervisor: a.supervisor, ...(a.supervisorId ? { supervisorId: a.supervisorId } : {}) } : {}),
       saldoAntes: a.esperado,
     });
   }
@@ -786,6 +799,7 @@ export function explicarCierre(
     a.motivo = e.motivo;
     if (e.observaciones) a.observaciones = e.observaciones;
     if (e.supervisor) a.supervisor = e.supervisor;
+    if (e.supervisorId) a.supervisorId = e.supervisorId;
     const mov = j.movimientos.find(
       (m) => (m.concepto === "Ajuste de cierre" || m.concepto === "Ajuste de billetes al cerrar") && m.currency === a.currency,
     );
@@ -793,10 +807,257 @@ export function explicarCierre(
       mov.motivo = e.motivo;
       if (e.observaciones) mov.observaciones = e.observaciones;
       if (e.supervisor) mov.supervisor = e.supervisor;
+      if (e.supervisorId) mov.supervisorId = e.supervisorId;
     }
-    explicarSolicitudDeCierre(j.id, a.currency, e.motivo, e.observaciones, e.supervisor);
+    explicarSolicitudDeCierre(j.id, a.currency, e.motivo, e.observaciones, e.supervisor, e.supervisorId);
   }
   return { ok: true, value: j };
+}
+
+/* -- Fondos, cambio de billetes y recuento (bloque 3) --------------------- */
+
+/**
+ * Las diferencias que se encuentran al recontar una moneda a mitad de jornada.
+ * Con el supervisor delante, una reposición o un retiro se registra como tal,
+ * así que aquí no caben.
+ */
+export const MOTIVOS_DE_RECUENTO = ["Faltante detectado", "Sobrante detectado", "Otro"] as const;
+
+/** Los billetes que se registran: los que entran, de las denominaciones vigentes; los que salen, de las que puede haber en la caja. */
+function revisarBilletes(registerId: string, currency: string, billetes: Billetes, sentido: "entran" | "salen"): CajaResult<Billetes> {
+  const validas = sentido === "entran" ? denominacionesDe(currency) : denominacionesContables(registerId, currency);
+  const permitidas = new Set(validas.map((d) => String(Math.round(d.valor * 100))));
+  if (permitidas.size === 0) return no("sin-denominaciones", currency);
+  const limpio: Record<string, number> = {};
+  for (const [k, n] of Object.entries(billetes ?? {})) {
+    if (!permitidas.has(k) || !Number.isInteger(n) || n < 0) return no("denominacion-invalida", currency);
+    if (n > 0) limpio[k] = n;
+  }
+  if (vacio(limpio)) return no("conteo-invalido", currency);
+  return { ok: true, value: limpio };
+}
+
+/** Por denominación, los billetes que quedarían en negativo: los que saldrían sin que los libros los tengan. */
+function faltanEnLibros(j: Jornada, currency: string, delta: Billetes): Billetes {
+  const despues = sumar(inventarioDeJornada(j).get(currency) ?? {}, delta);
+  const faltan: Record<string, number> = {};
+  for (const [k, n] of Object.entries(despues)) if (n < 0) faltan[k] = -n;
+  return faltan;
+}
+
+/** El recuento que se pidió por caja y moneda: la jornada en la que se pidió. */
+const recuentosPedidos = almacen("recuentos-pedidos", () => new Map<string, string>());
+/** Tras recontar, cuántos movimientos tenía la jornada: si nada cambió, no se pide otro. */
+const recontadas = almacen("recuentos-hechos", () => new Map<string, number>());
+const claveDeRecuento = (registerId: string, currency: string) => `${registerId}|${currency}`;
+
+/**
+ * Salen billetes que los libros no tienen (decisión del 10/11/2026): no se
+ * registra nada todavía. Se pide contar esa moneda, a ciegas, para corregir
+ * el inventario y dejar constancia de la diferencia. Si ya se contó y desde
+ * entonces nada cambió, esos billetes no están en la caja: no se pide otro.
+ */
+function pedirRecuento<T>(j: Jornada, currency: string): CajaResult<T> {
+  const clave = claveDeRecuento(j.registerId, currency);
+  if (recontadas.get(clave) === j.movimientos.length) return no("sin-esos-billetes", currency);
+  recuentosPedidos.set(clave, j.id);
+  return no("recuento-necesario", currency);
+}
+
+export interface FondosPorRegistrar {
+  tipo: "reposicion" | "retiro";
+  currency: string;
+  /** Lo que trae o se lleva el supervisor, en positivo. */
+  billetes: Billetes;
+  supervisorId: string;
+  observaciones?: string;
+}
+
+/**
+ * **Reposición o retiro** (decisión del 9/11/2026). El supervisor trae o se
+ * lleva billetes; el trabajador los registra, contados con él, y elige quién
+ * fue. Entra en los libros en el acto —el dinero ya se movió— y queda
+ * pendiente de que **ese supervisor** lo confirme.
+ */
+export function registrarFondos(ctx: ContextoDeCaja, f: FondosPorRegistrar, now = new Date()): CajaResult<MovimientoDeJornada> {
+  if (bloqueoDe(ctx)) return no("bloqueada");
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada>;
+  const j = propia.value;
+  if (!monedasHabilitadas(ctx.register.id).has(f.currency)) return no("moneda-no-habilitada", f.currency);
+  const retiro = f.tipo === "retiro";
+  const r = revisarBilletes(ctx.register.id, f.currency, f.billetes, retiro ? "salen" : "entran");
+  if (!r.ok) return r as CajaResult<MovimientoDeJornada>;
+  const supervisor = supervisorValido(ctx, f.supervisorId);
+  if (!supervisor) return no("supervisor-requerido", f.currency);
+  const delta = retiro ? restar({}, r.value) : r.value;
+  if (!vacio(faltanEnLibros(j, f.currency, delta))) return pedirRecuento(j, f.currency);
+  const importe = totalDe(r.value);
+  const observaciones = f.observaciones?.trim() || undefined;
+  const m = movimiento(j, {
+    fechaHora: now.toISOString(),
+    tipo: retiro ? "salida" : "entrada",
+    concepto: retiro ? "Retiro de fondos" : "Reposición de fondos",
+    currency: f.currency,
+    amount: retiro ? -importe : importe,
+    billetes: delta,
+    supervisor,
+    supervisorId: f.supervisorId,
+    fondos: f.tipo,
+    ...(observaciones ? { observaciones } : {}),
+  });
+  registrarSolicitudes(derivar(j));
+  marcarActividad(ctx.terminal.id, now);
+  return { ok: true, value: m };
+}
+
+/**
+ * Qué billetes darle a un cliente que cambia los suyos: el mismo total, sin
+ * repetir las denominaciones que trae (le devolvería lo mismo). Hasta el
+ * bloque 4, la combinación de menos billetes. Proponer revela que esos
+ * billetes existen, no cuánto hay (decisión del 9/11/2026).
+ */
+export function proponerCambioDeBilletes(ctx: ContextoDeCaja, currency: string, entran: Billetes): CajaResult<Billetes> {
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok) return propia as CajaResult<Billetes>;
+  if (!monedasHabilitadas(ctx.register.id).has(currency)) return no("moneda-no-habilitada", currency);
+  const r = revisarBilletes(ctx.register.id, currency, entran, "entran");
+  if (!r.ok) return r;
+  const dentro = inventarioDeJornada(propia.value).get(currency) ?? {};
+  const disponibles = Object.fromEntries(Object.entries(dentro).filter(([k]) => !(k in r.value)));
+  const propuesta = proponerEntrega(totalDe(r.value), disponibles);
+  return propuesta ? { ok: true, value: propuesta } : no("sin-cambio-exacto", currency);
+}
+
+export interface CambioDeBilletesPorRegistrar {
+  con: "cliente" | "supervisor";
+  currency: string;
+  /** Los que entran en la caja, en positivo. */
+  entran: Billetes;
+  /** Los que salen, en positivo. */
+  salen: Billetes;
+  /** Con el supervisor: quién. */
+  supervisorId?: string;
+  observaciones?: string;
+}
+
+/**
+ * **Cambio de billetes**: entran unos y salen otros por el mismo total, en la
+ * misma moneda. Con un cliente no se confirma; con el supervisor queda
+ * pendiente de que él lo confirme, como una reposición.
+ */
+export function registrarCambioDeBilletes(
+  ctx: ContextoDeCaja,
+  c: CambioDeBilletesPorRegistrar,
+  now = new Date(),
+): CajaResult<MovimientoDeJornada> {
+  if (bloqueoDe(ctx)) return no("bloqueada");
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada>;
+  const j = propia.value;
+  if (!monedasHabilitadas(ctx.register.id).has(c.currency)) return no("moneda-no-habilitada", c.currency);
+  const entran = revisarBilletes(ctx.register.id, c.currency, c.entran, "entran");
+  if (!entran.ok) return entran as CajaResult<MovimientoDeJornada>;
+  const salen = revisarBilletes(ctx.register.id, c.currency, c.salen, "salen");
+  if (!salen.ok) return salen as CajaResult<MovimientoDeJornada>;
+  if (Math.abs(totalDe(entran.value) - totalDe(salen.value)) >= 0.005) return no("cambio-descuadrado", c.currency);
+  const delta = restar(entran.value, salen.value);
+  if (vacio(delta)) return no("cambio-sin-efecto", c.currency);
+  let supervisor: { supervisor: string; supervisorId: string; fondos: "cambio" } | null = null;
+  if (c.con === "supervisor") {
+    const nombre = supervisorValido(ctx, c.supervisorId);
+    if (!nombre) return no("supervisor-requerido", c.currency);
+    supervisor = { supervisor: nombre, supervisorId: c.supervisorId!, fondos: "cambio" };
+  }
+  if (!vacio(faltanEnLibros(j, c.currency, delta))) return pedirRecuento(j, c.currency);
+  const observaciones = c.observaciones?.trim() || undefined;
+  const m = movimiento(j, {
+    fechaHora: now.toISOString(),
+    tipo: "cambio",
+    concepto: "Cambio de billetes",
+    currency: c.currency,
+    amount: 0,
+    billetes: delta,
+    cambioCon: c.con,
+    ...(supervisor ?? {}),
+    ...(observaciones ? { observaciones } : {}),
+  });
+  registrarSolicitudes(derivar(j));
+  marcarActividad(ctx.terminal.id, now);
+  return { ok: true, value: m };
+}
+
+export interface RecuentoRegistrado {
+  currency: string;
+  /** El movimiento que corrigió el inventario; `null` si lo contado coincidía billete a billete. */
+  movimientoId: string | null;
+  diferencia: number;
+  composicion?: Billetes;
+  /** Si hay una diferencia (de importe o de composición) que explicar. */
+  pideExplicacion: boolean;
+}
+
+/**
+ * El recuento de una moneda que pidió el sistema. Solo si se pidió: no es un
+ * arqueo parcial a voluntad. El inventario queda igual a lo contado; si hay
+ * diferencia, va a Aprobaciones «Sin explicar» hasta que llegue el motivo.
+ */
+export function recontar(ctx: ContextoDeCaja, conteo: ConteoPorBilletes, now = new Date()): CajaResult<RecuentoRegistrado> {
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok) return propia as CajaResult<RecuentoRegistrado>;
+  const j = propia.value;
+  const clave = claveDeRecuento(ctx.register.id, conteo.currency);
+  if (recuentosPedidos.get(clave) !== j.id) return no("recuento-no-pedido", conteo.currency);
+  const r = revisarConteo(ctx.register.id, conteo);
+  if (!r.ok) return r as CajaResult<RecuentoRegistrado>;
+  const currency = conteo.currency;
+  const dentro = inventarioDeJornada(j).get(currency) ?? {};
+  const esperado = saldoEnLibros(j, currency);
+  const contado = totalDe(r.value);
+  const diferencia = redondear(contado - esperado);
+  const delta = restar(r.value, dentro);
+  const composicion = diferencia === 0 && desgloseCompleto(dentro, esperado) && !vacio(delta) ? delta : undefined;
+  recuentosPedidos.delete(clave);
+  let movimientoId: string | null = null;
+  if (diferencia !== 0 || !vacio(delta)) {
+    const m = movimiento(j, {
+      fechaHora: now.toISOString(),
+      tipo: diferencia > 0 ? "entrada" : diferencia < 0 ? "salida" : "cambio",
+      concepto: diferencia !== 0 ? "Ajuste por recuento" : composicion ? "Ajuste de billetes en recuento" : "Desglose del recuento",
+      currency,
+      amount: diferencia,
+      ...(vacio(delta) ? {} : { billetes: delta }),
+      saldoAntes: esperado,
+      recuento: { enLibros: esperado, contado, diferencia, ...(composicion ? { composicion } : {}) },
+    });
+    movimientoId = m.id;
+    registrarSolicitudes(derivar(j));
+  }
+  recontadas.set(clave, j.movimientos.length);
+  marcarActividad(ctx.terminal.id, now);
+  return {
+    ok: true,
+    value: { currency, movimientoId, diferencia, ...(composicion ? { composicion } : {}), pideExplicacion: diferencia !== 0 || composicion !== undefined },
+  };
+}
+
+/** El motivo de la diferencia de un recuento recién hecho. Una sola vez. */
+export function explicarRecuento(ctx: ContextoDeCaja, movimientoId: string, e: Explicacion): CajaResult<MovimientoDeJornada> {
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada>;
+  const m = propia.value.movimientos.find((x) => x.id === movimientoId);
+  if (!m?.recuento || m.motivo) return no("recuento-sin-explicacion-pendiente");
+  const { diferencia, composicion } = m.recuento;
+  if (diferencia === 0 && !composicion) return no("recuento-sin-explicacion-pendiente");
+  if (!e.motivo) return no("motivo-requerido", m.currency);
+  const validos: readonly string[] = composicion ? MOTIVOS_DE_COMPOSICION_CIERRE : MOTIVOS_DE_RECUENTO;
+  if (!validos.includes(e.motivo) || (!composicion && !motivoCompatible(e.motivo, diferencia))) return no("motivo-incompatible", m.currency);
+  const observaciones = e.observaciones?.trim() || undefined;
+  if (e.motivo === "Otro" && !observaciones) return no("observaciones-requeridas", m.currency);
+  m.motivo = e.motivo;
+  if (observaciones) m.observaciones = observaciones;
+  explicarSolicitudDeRecuento(propia.value.id, m.id, e.motivo, observaciones);
+  return { ok: true, value: m };
 }
 
 /* -- Añadir moneda -------------------------------------------------------- */

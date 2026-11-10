@@ -5,12 +5,13 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { PageHeader } from "@/components/shell/app-shell";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
 import { todasLasDenominaciones } from "@/features/network/denominaciones";
 import { formatAmount, formatSignedAmount } from "@/lib/format";
 import { getAdminSession } from "@/features/admin/session-server";
 import { redEnAlcance } from "@/features/network/scoped-reads";
+import { BadgeDeTipo } from "../../movimientos-de-jornada";
 import { DiferenciaDeApertura, fechaYHora, nombreDeJornada } from "../../../formato";
 
 export const metadata: Metadata = {
@@ -60,7 +61,7 @@ export default async function AdminMovimientoPage({
             <Dato etiqueta="Fecha y hora" valor={fechaYHora(m.fechaHora)} />
             <Dato
               etiqueta="Tipo"
-              valor={<Badge variant={m.tipo === "entrada" ? "success" : "error"}>{m.tipo === "entrada" ? "Entrada" : "Salida"}</Badge>}
+              valor={<BadgeDeTipo tipo={m.tipo} />}
             />
             <Dato etiqueta="Importe" valor={`${formatSignedAmount(m.amount)} ${m.currency}`} numerico />
             {m.saldoAntes !== undefined ? (
@@ -80,9 +81,30 @@ export default async function AdminMovimientoPage({
               }
               numerico={Boolean(m.operationCode)}
             />
+            {m.fondos || m.cambioCon ? (
+              <Dato
+                etiqueta="Qué fue"
+                valor={
+                  m.fondos === "reposicion"
+                    ? "Reposición: el supervisor trajo efectivo"
+                    : m.fondos === "retiro"
+                      ? "Retiro: el supervisor se llevó efectivo"
+                      : m.cambioCon === "supervisor"
+                        ? "Cambio de billetes con el supervisor"
+                        : "Cambio de billetes con un cliente (no pasa por aprobación)"
+                }
+              />
+            ) : null}
+            {m.recuento ? (
+              <Dato
+                etiqueta="Recuento"
+                valor={`En libros ${formatAmount(m.recuento.enLibros)} · contado ${formatAmount(m.recuento.contado)} ${m.currency}`}
+                numerico
+              />
+            ) : null}
             {m.motivo ? (
               <Dato etiqueta="Motivo" valor={m.motivo} />
-            ) : m.concepto === "Ajuste de cierre" || m.concepto === "Ajuste de efectivo" ? (
+            ) : m.concepto === "Ajuste de cierre" || (m.recuento && (m.recuento.diferencia !== 0 || m.recuento.composicion)) ? (
               <Dato etiqueta="Motivo" valor="Sin explicar" />
             ) : null}
             {m.supervisor ? <Dato etiqueta="Supervisor" valor={m.supervisor} /> : null}
@@ -93,7 +115,9 @@ export default async function AdminMovimientoPage({
                 valor={
                   <Link href={`/admin/aprobaciones/${solicitud.id}` as Route} className="underline underline-offset-4 hover:text-primary">
                     {solicitud.estado === "pendiente"
-                      ? "Pendiente de aprobación"
+                      ? solicitud.tipo === "fondos" && solicitud.supervisor
+                        ? `Pendiente de que ${solicitud.supervisor} lo confirme`
+                        : "Pendiente de aprobación"
                       : `${solicitud.estado === "aprobada" ? "Aprobada" : "Rechazada"} por ${solicitud.resolucion?.por ?? "la administración"}`}
                   </Link>
                 }

@@ -11,6 +11,7 @@
  * de dónde salen los datos y no cómo se ven.
  */
 
+import { solicitudesDeJornada } from "@/features/network/aprobaciones";
 import type {
   AperturaDelMovimiento,
   CajaJornada,
@@ -91,7 +92,9 @@ function movimientosDeLibro(registerId: string, now: Date): CajaMovement[] {
   for (const j of jornadasDeCaja(registerId)) {
     if (new Date(j.openedAt).getTime() < desde && j.estado !== "abierta") continue;
     const snap = aCajaJornada(j);
+    const solicitudes = solicitudesDeJornada(j.id);
     for (const m of j.movimientos) {
+      const sol = solicitudes.find((x) => x.movimientoId === m.id);
       orden += 1;
       out.push({
         orden,
@@ -106,6 +109,14 @@ function movimientosDeLibro(registerId: string, now: Date): CajaMovement[] {
         ...(m.observaciones ? { observaciones: m.observaciones } : {}),
         ...(m.billetes ? { billetes: m.billetes } : {}),
         ...(m.supervisor ? { supervisor: m.supervisor } : {}),
+        ...(m.fondos ? { fondos: m.fondos } : {}),
+        ...(m.cambioCon ? { cambioCon: m.cambioCon } : {}),
+        ...(m.recuento
+          ? { recuento: { diferencia: m.recuento.diferencia, ...(m.recuento.composicion ? { composicion: m.recuento.composicion } : {}) } }
+          : {}),
+        ...(sol
+          ? { aprobacion: { estado: sol.estado, ...(sol.resolucion ? { at: sol.resolucion.at, por: sol.resolucion.por } : {}) } }
+          : {}),
         ...aperturaDe(j, m.concepto, m.currency),
         jornada: snap,
       });

@@ -5,7 +5,7 @@ import { ArrowLeft, Building2, Zap } from "lucide-react";
 import { DetailCard, DetailList, DetailRow } from "@/app/worker/(app)/operaciones/[codigo]/detail-parts";
 import { MovementTypeBadge } from "@/app/worker/(app)/caja/caja-movements-table";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { findCajaCurrency, type CajaMovement } from "@/features/caja/caja-data";
+import { findCajaCurrency, TIPO_DE_MOVIMIENTO, type CajaMovement } from "@/features/caja/caja-data";
 import { formatDateTime, formatSignedAmount } from "@/lib/format";
 
 /**
@@ -56,7 +56,7 @@ export function MovementInfoCard({ movement }: { movement: CajaMovement }): Reac
         <DetailRow label="Concepto" value={movement.concepto} />
         <DetailRow
           label="Tipo"
-          value={movement.tipo === "entrada" ? "Entrada" : "Salida"}
+          value={TIPO_DE_MOVIMIENTO[movement.tipo]}
           strong
         />
         <DetailRow

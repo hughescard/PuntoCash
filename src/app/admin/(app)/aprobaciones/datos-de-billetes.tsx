@@ -16,6 +16,7 @@ const ORIGEN: Record<NonNullable<Solicitud["origen"]>, string> = {
   jornada: "Durante la jornada",
   apertura: "Al abrir la jornada",
   cierre: "Al cerrar la jornada",
+  recuento: "En un recuento a mitad de jornada",
 };
 
 export function DatosDeBilletes({ s }: { s: Solicitud }): React.JSX.Element {

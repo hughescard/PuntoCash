@@ -34,7 +34,8 @@ import { SEDES } from "./sedes";
 import { workersOf } from "./workers";
 
 export type EstadoJornada = "abierta" | "cerrada" | "forzada";
-export type TipoMovimiento = "entrada" | "salida";
+/** `cambio`: entran unos billetes y salen otros por el mismo total (decisión del 10/11/2026). */
+export type TipoMovimiento = "entrada" | "salida" | "cambio";
 
 export interface MovimientoDeJornada {
   id: string;
@@ -53,6 +54,22 @@ export interface MovimientoDeJornada {
   saldoAntes?: number;
   /** Reposición, retiro o cambio de billetes con supervisor: quién entregó o recibió el efectivo. */
   supervisor?: string;
+  /** Su identificador: solo él confirma el movimiento (decisión del 10/11/2026). */
+  supervisorId?: string;
+  /**
+   * Un movimiento de fondos registrado durante la jornada (bloque 3): la
+   * administración lo confirma. `cambio` es un cambio de billetes con el
+   * supervisor; con un cliente no es de fondos y no se confirma.
+   */
+  fondos?: "reposicion" | "retiro" | "cambio";
+  /** Un cambio de billetes: con quién. */
+  cambioCon?: "cliente" | "supervisor";
+  /**
+   * El recuento de una moneda que pidió el sistema al ver salir billetes que
+   * sus libros no tenían (decisión del 10/11/2026). El movimiento corrige el
+   * inventario a lo contado; la diferencia va a Aprobaciones.
+   */
+  recuento?: { enLibros: number; contado: number; diferencia: number; composicion?: Billetes };
   /**
    * Los billetes que movió, por denominación (decisión del 9/11/2026): clave
    * el valor en céntimos, cantidad con signo —entra positivo, sale negativo—.
@@ -71,6 +88,7 @@ export interface ArqueoMoneda {
   observaciones?: string;
   /** Si la diferencia se explicó como reposición o retiro: el supervisor. */
   supervisor?: string;
+  supervisorId?: string;
   /** Lo contado, billete a billete (decisión del 9/11/2026). */
   billetes?: Billetes;
   /**
@@ -97,6 +115,7 @@ export interface AperturaMoneda {
   observaciones?: string;
   /** Reposición, retiro o cambio de billetes que hizo el supervisor entre el cierre y la apertura. */
   supervisor?: string;
+  supervisorId?: string;
   /** Lo contado, billete a billete. */
   billetes?: Billetes;
   /** El total cuadra con lo dejado pero los billetes no: contado menos dejado, por denominación. */
@@ -511,6 +530,24 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
           }
         }
 
+        /* Hoy, en la primera caja de cada sede, el supervisor repuso 100 USD a
+           media mañana y todavía no lo ha confirmado (bloque 3). Quién fue lo
+           pone Aprobaciones: el primer administrador de la empresa. */
+        if (dia === 0 && indiceCaja === 0 && saldos.has("USD")) {
+          const ultimo = movimientos.at(-1)!;
+          const t = new Date(new Date(ultimo.fechaHora).getTime() + (fin - new Date(ultimo.fechaHora).getTime()) / 2);
+          mov({
+            fechaHora: t.toISOString(),
+            tipo: "entrada",
+            concepto: "Reposición de fondos",
+            currency: "USD",
+            amount: 100,
+            billetes: { "5000": 2 },
+            fondos: "reposicion",
+            observaciones: "Para los cambios de la tarde.",
+          });
+        }
+
         const jornada: Jornada = {
           id,
           sedeId: sede.id,
@@ -666,7 +703,7 @@ function sembrarApertura(
  * la anterior y se descarta junto con lo que se deriva de él —operaciones y
  * solicitudes—, para no mezclar datos de dos siembras.
  */
-const VERSION_DE_SIEMBRA = "2026-11-10.3";
+const VERSION_DE_SIEMBRA = "2026-11-10.4";
 
 const ALMACEN = globalThis as typeof globalThis & {
   __puntocashJornadas?: Jornada[];

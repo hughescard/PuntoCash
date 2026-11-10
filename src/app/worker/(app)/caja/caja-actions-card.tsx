@@ -4,7 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import {
+  ArrowLeftRight,
   Banknote,
+  HandCoins,
   CircleDollarSign,
   ClipboardCheck,
   LayoutGrid,
@@ -23,6 +25,8 @@ const ACTION_ICON: Readonly<Record<string, LucideIcon>> = {
   "fondeo-inicial": Banknote,
   "anadir-moneda": CircleDollarSign,
   arqueo: ClipboardCheck,
+  fondos: HandCoins,
+  "cambio-billetes": ArrowLeftRight,
 };
 
 /**

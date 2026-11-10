@@ -5,7 +5,7 @@ import { FileText, Printer } from "lucide-react";
 
 import { Button, Card, CardContent } from "@/components/ui";
 import { formatDateTime, formatSignedAmount } from "@/lib/format";
-import { type CajaMovement } from "@/features/caja/caja-data";
+import { TIPO_DE_MOVIMIENTO, type CajaMovement } from "@/features/caja/caja-data";
 
 /**
  * "Comprobante" — same `hidden print:block` mechanism as every other
@@ -55,7 +55,7 @@ function PrintableMovementReceipt({ movement }: { movement: CajaMovement }) {
       <dl style={{ marginTop: 16, lineHeight: 1.7 }}>
         <ReceiptLine label="ID de movimiento" value={movement.id} />
         <ReceiptLine label="Concepto" value={movement.concepto} />
-        <ReceiptLine label="Tipo" value={movement.tipo === "entrada" ? "Entrada" : "Salida"} />
+        <ReceiptLine label="Tipo" value={TIPO_DE_MOVIMIENTO[movement.tipo]} />
         <ReceiptLine label="Caja" value={jornada?.register ?? "—"} />
         <ReceiptLine label="Trabajador" value={jornada?.worker ?? "—"} />
         <ReceiptLine label="Fecha y hora" value={formatDateTime(new Date(movement.fechaHora))} />

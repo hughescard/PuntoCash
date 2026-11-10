@@ -5,7 +5,8 @@ import { CircleCheck, DoorOpen, TrendingDown, TrendingUp } from "lucide-react";
 
 import { DetailCard } from "@/app/worker/(app)/operaciones/[codigo]/detail-parts";
 import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
-import type { AperturaDelMovimiento } from "@/features/caja/caja-data";
+import type { AperturaDelMovimiento, CajaMovement } from "@/features/caja/caja-data";
+import { EstadoDeAprobacion } from "./fund-movement-detail";
 import type { Denominacion } from "@/features/caja/billetes";
 import { formatDateTime, formatMoney, formatSignedAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,9 @@ export function OpeningDifferenceDetail({
   apertura,
   currency,
   tipos,
+  aprobacion,
 }: {
+  aprobacion?: CajaMovement["aprobacion"];
   apertura: AperturaDelMovimiento;
   currency: string;
   tipos: readonly Denominacion[];
@@ -80,6 +83,14 @@ export function OpeningDifferenceDetail({
           <Fila etiqueta="Motivo" valor={apertura.motivo ?? "Sin explicar"} fuerte />
           {apertura.supervisor ? <Fila etiqueta="Supervisor" valor={apertura.supervisor} /> : null}
           {apertura.observaciones ? <Fila etiqueta="Observaciones" valor={apertura.observaciones} /> : null}
+          {aprobacion ? (
+            <div className="flex items-baseline justify-between gap-4 border-b border-border py-2.5 last:border-b-0 last:pb-0">
+              <dt className="shrink-0 text-body-sm text-text-secondary">Aprobación</dt>
+              <dd>
+                <EstadoDeAprobacion aprobacion={aprobacion} deFondos={!!apertura.supervisor} />
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </div>
 

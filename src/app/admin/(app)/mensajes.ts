@@ -142,6 +142,7 @@ export const MENSAJES = {
   aprobaciones: {
     "motivo-corto": "Escribe el motivo, con al menos {min} caracteres.",
     "ya-resuelta": "Esta solicitud ya fue resuelta.",
+    "solo-el-supervisor": "Solo el supervisor que nombró el trabajador puede confirmar este movimiento.",
     "error-inesperado": "No se pudo resolver. Vuelve a intentarlo.",
   },
 } as const;

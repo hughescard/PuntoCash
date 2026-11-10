@@ -82,6 +82,7 @@ export function ConteoPorBilletes({
   onChange,
   entregado,
   dosPorFila = false,
+  nombre = "Conteo",
 }: {
   monedas: readonly string[];
   denominaciones: Readonly<Record<string, readonly Denominacion[]>>;
@@ -92,6 +93,8 @@ export function ConteoPorBilletes({
   entregado?: { etiqueta: string; importes: ReadonlyMap<string, number> };
   /** Dos monedas por fila en pantallas anchas; la página crece hacia abajo. */
   dosPorFila?: boolean;
+  /** Cómo se llama cada región: «Conteo de USD», o «Entran de USD» cuando hay dos en la misma pantalla. */
+  nombre?: string;
 }): React.JSX.Element {
   return (
     <div className={dosPorFila ? "grid grid-cols-1 items-start gap-5 lg:grid-cols-2" : "flex flex-col gap-5"}>
@@ -103,6 +106,7 @@ export function ConteoPorBilletes({
           valores={unidades[currency] ?? {}}
           error={errores[currency]}
           onChange={(k, v) => onChange(currency, k, v)}
+          nombre={nombre}
           {...(entregado ? { referencia: { etiqueta: entregado.etiqueta, importe: entregado.importes.get(currency) ?? 0 } } : {})}
         />
       ))}
@@ -117,7 +121,9 @@ function MonedaPorBilletes({
   error,
   onChange,
   referencia,
+  nombre,
 }: {
+  nombre: string;
   currency: string;
   denominaciones: readonly Denominacion[];
   valores: Record<string, string>;
@@ -131,7 +137,7 @@ function MonedaPorBilletes({
     return /^\d+$/.test(t) ? s + Number(t) * d.valor : s;
   }, 0);
   return (
-    <section aria-label={`Conteo de ${currency}`} className="rounded-control border border-border">
+    <section aria-label={`${nombre} de ${currency}`} className="rounded-control border border-border">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-subtle px-4 py-3">
         <span className="flex items-center gap-2">
           <CurrencyFlag currency={currency} />
@@ -144,7 +150,7 @@ function MonedaPorBilletes({
               {referencia.etiqueta}: <span className="pc-numeric font-medium text-text-primary">{formatMoney({ amount: referencia.importe, currency })}</span>
             </span>
           ) : null}
-          <span>Tu conteo: <span className="pc-numeric font-semibold text-text-primary" data-testid={`total-${currency}`}>{formatMoney({ amount: Math.round(total * 100) / 100, currency })}</span></span>
+          <span>{nombre === "Conteo" ? "Tu conteo" : "Total"}: <span className="pc-numeric font-semibold text-text-primary" data-testid={nombre === "Conteo" ? `total-${currency}` : `total-${nombre.toLowerCase().replaceAll(" ", "-")}-${currency}`}>{formatMoney({ amount: Math.round(total * 100) / 100, currency })}</span></span>
         </span>
       </header>
       {denominaciones.length === 0 ? (
@@ -235,24 +241,27 @@ export function ExplicarDiferenciasFilas({
   enviado,
   onChange,
 }: {
-  momento: "apertura" | "cierre";
+  momento: "apertura" | "cierre" | "recuento";
   filas: readonly DiferenciaPorExplicar[];
   explicaciones: Record<string, ExplicacionDeDiferencia>;
   supervisores: readonly { id: string; nombre: string }[];
   enviado: boolean;
   onChange: (currency: string, e: ExplicacionDeDiferencia) => void;
 }): React.JSX.Element {
-  const prefijo = momento === "cierre" ? "cierre" : "apertura";
+  const prefijo = momento;
   return (
     <div className="flex flex-col gap-5">
       {filas.map((f) => {
         const e = explicaciones[f.currency] ?? { motivo: "", observaciones: "", supervisorId: "" };
         const deComposicion = f.diferencia === 0 && f.composicion !== undefined;
         const opciones: readonly string[] = deComposicion
-          ? momento === "cierre"
-            ? CAJA_COMPOSITION_REASONS_CLOSE
-            : CAJA_COMPOSITION_REASONS_OPEN
-          : getValidDifferenceReasons(f.diferencia);
+          ? momento === "apertura"
+            ? CAJA_COMPOSITION_REASONS_OPEN
+            : CAJA_COMPOSITION_REASONS_CLOSE
+          : momento === "recuento"
+            ? /* Con el supervisor delante, una reposición o un retiro se registra como tal: aquí no caben. */
+              getValidDifferenceReasons(f.diferencia).filter((m) => !pideSupervisor(m))
+            : getValidDifferenceReasons(f.diferencia);
         const conSupervisor = pideSupervisor(e.motivo);
         const obligatorias = e.motivo === "Otro";
         const faltaMotivo = enviado && !e.motivo;
@@ -319,7 +328,7 @@ export function ExplicarDiferenciasFilas({
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="mt-1.5 text-caption text-text-secondary">El administrador tendrá que confirmarlo.</p>
+                  <p className="mt-1.5 text-caption text-text-secondary">Ese supervisor tendrá que confirmarlo.</p>
                 </div>
               ) : null}
             </div>

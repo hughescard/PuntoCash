@@ -31,11 +31,11 @@
 import type { Billetes } from "@/features/caja/billetes";
 import { estaEnAlcance, operadorVigente, operadorVigenteEn } from "./assignments";
 import { jornadaPorId, jornadasDeSede, MOTIVOS_DE_FONDOS, SUPERVISOR_CAMBIO_BILLETES, type Jornada } from "./jornadas";
-import { adminUsersOf } from "./operators";
+import { activeAdminUsersOf, adminUsersOf } from "./operators";
 import { isGlobal, requireOperatorScope, type Scope, type ScopeDenial } from "./scope";
 import { SEDES } from "./sedes";
 
-export type TipoSolicitud = "cierre" | "apertura" | "composicion" | "fondos";
+export type TipoSolicitud = "cierre" | "apertura" | "composicion" | "fondos" | "recuento";
 export type EstadoSolicitud = "pendiente" | "aprobada" | "rechazada";
 
 export const TIPO_DE_SOLICITUD: Readonly<Record<TipoSolicitud, string>> = {
@@ -43,6 +43,7 @@ export const TIPO_DE_SOLICITUD: Readonly<Record<TipoSolicitud, string>> = {
   cierre: "Diferencia de cierre",
   composicion: "Diferencia de composición",
   fondos: "Movimiento de fondos",
+  recuento: "Diferencia en recuento",
 };
 
 export interface Solicitud {
@@ -77,8 +78,16 @@ export interface Solicitud {
   billetes?: Billetes;
   /** En un movimiento de fondos: el supervisor que entregó o recibió el efectivo. */
   supervisor?: string;
-  /** En un movimiento de fondos: cuándo se registró. */
-  origen?: "jornada" | "apertura" | "cierre";
+  /** Su identificador: **solo él** confirma el movimiento (decisión del 10/11/2026). */
+  supervisorId?: string;
+  /**
+   * Cuándo se registró: un movimiento de fondos durante la jornada o al
+   * explicar una apertura o un cierre; una diferencia, en el recuento que
+   * pidió el sistema a mitad de jornada.
+   */
+  origen?: "jornada" | "apertura" | "cierre" | "recuento";
+  /** En un movimiento de fondos de la jornada: reposición, retiro o cambio de billetes. */
+  fondos?: "reposicion" | "retiro" | "cambio";
   estado: EstadoSolicitud;
   /** `puntoCash`: la resolvió PuntoCash porque nadie de la sede podía (**FR-SA-APR**). */
   resolucion?: { at: string; por: string; motivo: string; puntoCash?: true };
@@ -113,7 +122,9 @@ export function derivar(j: Jornada): Solicitud[] {
         ...base,
         id: `SOL-${j.id}-C-${a.currency}`,
         tipo: composicion ? "composicion" : fondos ? "fondos" : "cierre",
-        ...(fondos ? { origen: "cierre" as const, ...(a.supervisor ? { supervisor: a.supervisor } : {}) } : {}),
+        ...(fondos
+          ? { origen: "cierre" as const, ...(a.supervisor ? { supervisor: a.supervisor, ...supervisorIdDe(j, a.supervisor, a.supervisorId) } : {}) }
+          : {}),
         fechaHora: j.arqueo.confirmadoAt,
         currency: a.currency,
         referencia: a.esperado,
@@ -140,7 +151,13 @@ export function derivar(j: Jornada): Solicitud[] {
         ...base,
         id: `SOL-${j.id}-A-${a.currency}`,
         tipo: fondos ? "fondos" : composicion ? "composicion" : "apertura",
-        ...(fondos ? { origen: "apertura" as const, supervisor: a.supervisor ?? supervisorDeLaSiembra(j) } : {}),
+        ...(fondos
+          ? {
+              origen: "apertura" as const,
+              supervisor: a.supervisor ?? supervisorDeLaSiembra(j).nombre,
+              ...supervisorIdDe(j, a.supervisor ?? supervisorDeLaSiembra(j).nombre, a.supervisorId),
+            }
+          : {}),
         fechaHora: j.openedAt,
         currency: a.currency,
         referencia: a.dejado ?? 0,
@@ -154,13 +171,70 @@ export function derivar(j: Jornada): Solicitud[] {
       });
     }
   }
+  /* Lo registrado a mitad de jornada (bloque 3): movimientos de fondos y recuentos. */
+  for (const m of j.movimientos) {
+    const antes = Math.round((m.saldoDespues - m.amount) * 100) / 100;
+    if (m.fondos) {
+      /* Lo sembrado no guarda quién fue: el primer administrador de la empresa, que queda anotado en el movimiento. */
+      if (!m.supervisor) {
+        const sup = supervisorDeLaSiembra(j);
+        m.supervisor = sup.nombre;
+        if (sup.id) m.supervisorId = sup.id;
+      }
+      out.push({
+        ...base,
+        id: `SOL-${j.id}-F-${m.id}`,
+        tipo: "fondos",
+        origen: "jornada",
+        fondos: m.fondos,
+        ...(m.supervisor ? { supervisor: m.supervisor, ...supervisorIdDe(j, m.supervisor, m.supervisorId) } : {}),
+        fechaHora: m.fechaHora,
+        currency: m.currency,
+        referencia: antes,
+        contado: m.saldoDespues,
+        diferencia: m.amount,
+        motivo: m.concepto,
+        ...(m.observaciones ? { observaciones: m.observaciones } : {}),
+        movimientoId: m.id,
+        ...(m.billetes ? { billetes: m.billetes } : {}),
+        estado: "pendiente",
+      });
+    }
+    if (m.recuento && (m.recuento.diferencia !== 0 || m.recuento.composicion)) {
+      out.push({
+        ...base,
+        id: `SOL-${j.id}-R-${m.id}`,
+        tipo: m.recuento.composicion ? "composicion" : "recuento",
+        origen: "recuento",
+        fechaHora: m.fechaHora,
+        currency: m.currency,
+        referencia: m.recuento.enLibros,
+        contado: m.recuento.contado,
+        diferencia: m.recuento.diferencia,
+        motivo: m.motivo ?? SIN_EXPLICAR,
+        ...(m.observaciones ? { observaciones: m.observaciones } : {}),
+        movimientoId: m.id,
+        ...(m.recuento.composicion ? { billetes: m.recuento.composicion } : m.billetes ? { billetes: m.billetes } : {}),
+        estado: "pendiente",
+      });
+    }
+  }
   return out;
 }
 
 /** Las reposiciones y retiros sembrados no guardaron quién los hizo: el primer administrador de la empresa de la sede. */
-function supervisorDeLaSiembra(j: Jornada): string {
+function supervisorDeLaSiembra(j: Jornada): { id?: string; nombre: string } {
   const operador = operadorVigenteEn(j.sedeId, new Date(j.openedAt));
-  return (operador ? adminUsersOf(operador)[0]?.fullName : undefined) ?? "Administración";
+  const u = operador ? (activeAdminUsersOf(operador)[0] ?? adminUsersOf(operador)[0]) : undefined;
+  return u ? { id: u.id, nombre: u.fullName } : { nombre: "Administración" };
+}
+
+/** El identificador del supervisor; si solo consta el nombre (lo sembrado), el administrador de la empresa con ese nombre. */
+function supervisorIdDe(j: Jornada, nombre: string, id: string | undefined): { supervisorId?: string } {
+  if (id) return { supervisorId: id };
+  const operador = operadorVigenteEn(j.sedeId, new Date(j.openedAt));
+  const u = operador ? adminUsersOf(operador).find((x) => x.fullName === nombre) : undefined;
+  return u ? { supervisorId: u.id } : {};
 }
 
 const MOTIVOS_APROBADA = [
@@ -222,6 +296,7 @@ export function explicarSolicitudDeCierre(
   motivo: string,
   observaciones?: string,
   supervisor?: string,
+  supervisorId?: string,
 ): void {
   const s = solicitudes.find((x) => x.id === `SOL-${jornadaId}-C-${currency}`);
   if (!s || s.estado !== "pendiente") return;
@@ -231,7 +306,16 @@ export function explicarSolicitudDeCierre(
     s.tipo = "fondos";
     s.origen = "cierre";
     if (supervisor) s.supervisor = supervisor;
+    if (supervisorId) s.supervisorId = supervisorId;
   }
+}
+
+/** El motivo que llega, justo después de recontar, a una diferencia que nació «Sin explicar». */
+export function explicarSolicitudDeRecuento(jornadaId: string, movimientoId: string, motivo: string, observaciones?: string): void {
+  const s = solicitudes.find((x) => x.id === `SOL-${jornadaId}-R-${movimientoId}`);
+  if (!s || s.estado !== "pendiente") return;
+  s.motivo = motivo;
+  if (observaciones) s.observaciones = observaciones;
 }
 
 export function registrarSolicitudes(nuevas: readonly Solicitud[]): void {
@@ -281,16 +365,31 @@ export function solicitudesDeJornada(jornadaId: string): readonly Solicitud[] {
  * Resolver — FR-AD-APR-7 a FR-AD-APR-12
  * ---------------------------------------------------------------------- */
 
-export type ResolverDenial = ScopeDenial | "no-encontrada" | "ya-resuelta" | "motivo-corto" | "no-es-huerfana";
+export type ResolverDenial = ScopeDenial | "no-encontrada" | "ya-resuelta" | "motivo-corto" | "no-es-huerfana" | "solo-el-supervisor";
+
+/**
+ * Quién puede resolver un movimiento de fondos (decisión del 10/11/2026):
+ * **solo el supervisor nombrado**, porque confirmar es que quien trajo o se
+ * llevó el dinero diga que fue así. Si ya no es administrador de la empresa
+ * de la sede, cualquiera de ellos, para que no quede sin dueño. `null`: lo
+ * resuelve cualquier administrador de la sede, como el resto.
+ */
+export function quienConfirma(s: Solicitud): { id: string; nombre: string } | null {
+  if (s.tipo !== "fondos" || !s.supervisorId) return null;
+  const operador = operadorDeLaSolicitud(s);
+  const u = operador ? activeAdminUsersOf(operador).find((x) => x.id === s.supervisorId) : undefined;
+  return u ? { id: u.id, nombre: u.fullName } : null;
+}
 
 export function resolverSolicitud(
   scope: Scope,
   id: string,
   decision: "aprobada" | "rechazada",
   motivo: string,
-  autor: string,
+  autor: string | { id: string; nombre: string },
   now = new Date(),
 ): { ok: true; value: Solicitud } | { ok: false; reason: ResolverDenial } {
+  const quien = typeof autor === "string" ? { id: "", nombre: autor } : autor;
   const s = solicitudPorId(id);
   if (isGlobal(scope)) {
     /* PuntoCash solo resuelve las que no tienen quien las resuelva en la sede. */
@@ -306,6 +405,8 @@ export function resolverSolicitud(
     }
     /* FR-AD-APR-11: si otro administrador la resolvió entretanto, no se pisa. */
     if (s.estado !== "pendiente") return { ok: false, reason: "ya-resuelta" };
+    const confirma = quienConfirma(s);
+    if (confirma && confirma.id !== quien.id) return { ok: false, reason: "solo-el-supervisor" };
   }
   if (motivo.trim().length < MOTIVO_RESOLUCION_MIN) return { ok: false, reason: "motivo-corto" };
 
@@ -313,7 +414,7 @@ export function resolverSolicitud(
   s.estado = decision;
   s.resolucion = {
     at: now.toISOString(),
-    por: autor,
+    por: quien.nombre,
     motivo: motivo.trim(),
     ...(isGlobal(scope) ? { puntoCash: true as const } : {}),
   };

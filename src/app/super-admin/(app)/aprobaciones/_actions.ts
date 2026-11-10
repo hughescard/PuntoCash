@@ -25,7 +25,7 @@ export async function resolverHuerfanaAction(_previo: ResultadoResolver, formDat
   const session = await getSuperAdminSession();
   if (!session) return { ok: false, error: "Tu sesión ha terminado. Vuelve a entrar.", motivo };
 
-  const r = resolverSolicitud(session.scope, id, decision, motivo, session.user.fullName);
+  const r = resolverSolicitud(session.scope, id, decision, motivo, { id: session.user.id, nombre: session.user.fullName });
   if (!r.ok) {
     if (r.reason === "ya-resuelta" || r.reason === "no-es-huerfana") {
       revalidatePath(`/super-admin/aprobaciones/${id}`);

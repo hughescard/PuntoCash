@@ -18,10 +18,18 @@ import {
   habilitarMoneda,
   registrarCambio,
   registrarOperacionSimple,
+  registrarFondos,
+  registrarCambioDeBilletes,
+  proponerCambioDeBilletes,
+  recontar,
+  explicarRecuento,
   tasasVigentes,
   type ContextoDeCaja,
 } from "@/features/network/caja-operativa";
-import { solicitudesDeJornada } from "@/features/network/aprobaciones";
+import { quienConfirma, resolverSolicitud, solicitudesDeJornada } from "@/features/network/aprobaciones";
+import { operadorVigente } from "@/features/network/assignments";
+import { operatorScope } from "@/features/network/scope";
+import { inventarioDeJornada } from "@/features/network/jornadas";
 import { jornadaAbiertaDeCaja, jornadaPorId } from "@/features/network/jornadas";
 import { operacionPorCodigo } from "@/features/network/operaciones";
 import { crearPuestoDePrueba } from "@/features/network/puesto-de-prueba";
@@ -449,5 +457,124 @@ test.describe("Billete a billete", () => {
     expect(r.value.arqueo?.monedas[0]?.composicion).toBeUndefined();
     expect(solicitudesDeJornada(r.value.id)).toHaveLength(0);
     expect(r.value.movimientos.at(-1)).toMatchObject({ concepto: "Desglose del conteo de cierre", amount: 0 });
+  });
+});
+
+test.describe("Fondos, cambio de billetes y recuento", () => {
+  const inv = (ctx: ContextoDeCaja, c: string) => inventarioDeJornada(jornadaAbiertaDeCaja(ctx.register.id)!).get(c);
+
+  test("una reposición entra en el acto y queda pendiente de que la confirme su supervisor, y solo él", () => {
+    const ctx = puesto({ USD: 100 });
+    const [sup, otro] = supervisoresDe(ctx);
+    expect(registrarFondos(ctx, { tipo: "reposicion", currency: "USD", billetes: { "5000": 2 }, supervisorId: "nadie" })).toMatchObject({
+      ok: false,
+      reason: "supervisor-requerido",
+    });
+    const r = registrarFondos(ctx, { tipo: "reposicion", currency: "USD", billetes: { "5000": 2 }, supervisorId: sup!.id });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value).toMatchObject({ concepto: "Reposición de fondos", tipo: "entrada", amount: 100, billetes: { "5000": 2 }, supervisor: sup!.nombre });
+    expect(saldo(ctx, "USD")).toBe(200);
+    const s = solicitudesDeJornada(jornadaAbiertaDeCaja(ctx.register.id)!.id).find((x) => x.movimientoId === r.value.id)!;
+    expect(s).toMatchObject({ tipo: "fondos", origen: "jornada", fondos: "reposicion", supervisorId: sup!.id, estado: "pendiente" });
+    expect(quienConfirma(s)).toEqual({ id: sup!.id, nombre: sup!.nombre });
+    const scope = operatorScope(operadorVigente(ctx.sede.id)!);
+    if (otro) {
+      expect(resolverSolicitud(scope, s.id, "aprobada", "Lo confirmo, sí.", { id: otro.id, nombre: otro.nombre })).toEqual({
+        ok: false,
+        reason: "solo-el-supervisor",
+      });
+    }
+    expect(resolverSolicitud(scope, s.id, "aprobada", "Lo traje yo, correcto.", { id: sup!.id, nombre: sup!.nombre }).ok).toBe(true);
+  });
+
+  test("un retiro que los libros pueden cubrir sale en el acto", () => {
+    const ctx = puesto({ USD: 300 });
+    const sup = supervisoresDe(ctx)[0]!;
+    const r = registrarFondos(ctx, { tipo: "retiro", currency: "USD", billetes: { "10000": 2 }, supervisorId: sup.id });
+    expect(r).toMatchObject({ ok: true, value: { concepto: "Retiro de fondos", tipo: "salida", amount: -200, billetes: { "10000": -2 } } });
+    expect(saldo(ctx, "USD")).toBe(100);
+    expect(inv(ctx, "USD")).toEqual({ "10000": 1 });
+  });
+
+  test("si salen billetes que los libros no tienen, se pide contar esa moneda; el recuento corrige el inventario y deja constancia", () => {
+    const ctx = puesto({ USD: 200 });
+    const sup = supervisoresDe(ctx)[0]!;
+    const pedir = { tipo: "retiro" as const, currency: "USD", billetes: { "5000": 2 }, supervisorId: sup.id };
+    /* Los libros dicen 2 de 100: no hay billetes de 50. Nada se registra. */
+    expect(registrarFondos(ctx, pedir)).toEqual({ ok: false, reason: "recuento-necesario", currency: "USD" });
+    expect(saldo(ctx, "USD")).toBe(200);
+    /* Un recuento que no se pidió, no. */
+    expect(recontar(ctx, { currency: "CUP", billetes: {} })).toMatchObject({ ok: false, reason: "recuento-no-pedido" });
+    /* Contado: un billete de 100 y dos de 50. Mismo total, otros billetes. */
+    const rc = recontar(ctx, { currency: "USD", billetes: { "10000": 1, "5000": 2 } });
+    expect(rc).toMatchObject({ ok: true, value: { diferencia: 0, composicion: { "10000": -1, "5000": 2 }, pideExplicacion: true } });
+    if (!rc.ok) return;
+    expect(inv(ctx, "USD")).toEqual({ "10000": 1, "5000": 2 });
+    const j = jornadaAbiertaDeCaja(ctx.register.id)!;
+    const s = solicitudesDeJornada(j.id).find((x) => x.movimientoId === rc.value.movimientoId)!;
+    expect(s).toMatchObject({ tipo: "composicion", origen: "recuento", motivo: "Sin explicar" });
+    expect(explicarRecuento(ctx, rc.value.movimientoId!, { motivo: "Faltante detectado" })).toMatchObject({ ok: false, reason: "motivo-incompatible" });
+    expect(explicarRecuento(ctx, rc.value.movimientoId!, { motivo: "Hice un cambio de billetes sin registrarlo" }).ok).toBe(true);
+    expect(solicitudesDeJornada(j.id).find((x) => x.id === s.id)?.motivo).toBe("Hice un cambio de billetes sin registrarlo");
+    expect(explicarRecuento(ctx, rc.value.movimientoId!, { motivo: "Otro", observaciones: "x" })).toMatchObject({ ok: false });
+    /* Ahora sí sale. */
+    expect(registrarFondos(ctx, pedir).ok).toBe(true);
+    expect(inv(ctx, "USD")).toEqual({ "10000": 1 });
+  });
+
+  test("contado, si esos billetes no están, no se pide otro recuento", () => {
+    const ctx = puesto({ USD: 100 });
+    const sup = supervisoresDe(ctx)[0]!;
+    const pedir = { tipo: "retiro" as const, currency: "USD", billetes: { "5000": 1 }, supervisorId: sup.id };
+    expect(registrarFondos(ctx, pedir)).toMatchObject({ reason: "recuento-necesario" });
+    const rc = recontar(ctx, { currency: "USD", billetes: { "10000": 1 } });
+    expect(rc).toMatchObject({ ok: true, value: { movimientoId: null, diferencia: 0, pideExplicacion: false } });
+    expect(registrarFondos(ctx, pedir)).toMatchObject({ ok: false, reason: "sin-esos-billetes" });
+  });
+
+  test("un recuento con faltante pide un motivo de importe y nace como diferencia en recuento", () => {
+    const ctx = puesto({ USD: 200 });
+    const sup = supervisoresDe(ctx)[0]!;
+    expect(registrarFondos(ctx, { tipo: "retiro", currency: "USD", billetes: { "2000": 1 }, supervisorId: sup.id })).toMatchObject({
+      reason: "recuento-necesario",
+    });
+    const rc = recontar(ctx, { currency: "USD", billetes: { "10000": 1, "2000": 4 } });
+    expect(rc).toMatchObject({ ok: true, value: { diferencia: -20, pideExplicacion: true } });
+    if (!rc.ok) return;
+    expect(saldo(ctx, "USD")).toBe(180);
+    const j = jornadaAbiertaDeCaja(ctx.register.id)!;
+    expect(j.movimientos.at(-1)).toMatchObject({ concepto: "Ajuste por recuento", amount: -20 });
+    expect(solicitudesDeJornada(j.id).find((x) => x.movimientoId === rc.value.movimientoId)).toMatchObject({ tipo: "recuento", diferencia: -20 });
+    expect(explicarRecuento(ctx, rc.value.movimientoId!, { motivo: "Retiro de fondos" })).toMatchObject({ reason: "motivo-incompatible" });
+    expect(explicarRecuento(ctx, rc.value.movimientoId!, { motivo: "Faltante detectado" }).ok).toBe(true);
+  });
+
+  test("cambio con cliente: el sistema propone sin repetir sus denominaciones; mismo total; no pasa por aprobación", () => {
+    const ctx = puesto({ USD: 300 });
+    /* Inventario: 3 de 100. El cliente trae 5 de 20 y quiere uno de 100. */
+    expect(proponerCambioDeBilletes(ctx, "USD", { "2000": 5 })).toEqual({ ok: true, value: { "10000": 1 } });
+    /* Trae uno de 100: no hay con qué sin devolverle otro de 100. */
+    expect(proponerCambioDeBilletes(ctx, "USD", { "10000": 1 })).toMatchObject({ ok: false, reason: "sin-cambio-exacto" });
+    expect(registrarCambioDeBilletes(ctx, { con: "cliente", currency: "USD", entran: { "2000": 5 }, salen: { "5000": 1 } })).toMatchObject({
+      reason: "cambio-descuadrado",
+    });
+    const r = registrarCambioDeBilletes(ctx, { con: "cliente", currency: "USD", entran: { "2000": 5 }, salen: { "10000": 1 } });
+    expect(r).toMatchObject({ ok: true, value: { tipo: "cambio", concepto: "Cambio de billetes", amount: 0, billetes: { "2000": 5, "10000": -1 }, cambioCon: "cliente" } });
+    expect(saldo(ctx, "USD")).toBe(300);
+    expect(inv(ctx, "USD")).toEqual({ "10000": 2, "2000": 5 });
+    if (r.ok) expect(solicitudesDeJornada(jornadaAbiertaDeCaja(ctx.register.id)!.id).some((x) => x.movimientoId === r.value.id)).toBe(false);
+  });
+
+  test("cambio con el supervisor: pide supervisor y queda pendiente de que lo confirme", () => {
+    const ctx = puesto({ USD: 300 });
+    const sup = supervisoresDe(ctx)[0]!;
+    const c = { con: "supervisor" as const, currency: "USD", entran: { "5000": 2 }, salen: { "10000": 1 } };
+    expect(registrarCambioDeBilletes(ctx, c)).toMatchObject({ reason: "supervisor-requerido" });
+    const r = registrarCambioDeBilletes(ctx, { ...c, supervisorId: sup.id });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const s = solicitudesDeJornada(jornadaAbiertaDeCaja(ctx.register.id)!.id).find((x) => x.movimientoId === r.value.id);
+    expect(s).toMatchObject({ tipo: "fondos", fondos: "cambio", supervisorId: sup.id, diferencia: 0 });
   });
 });

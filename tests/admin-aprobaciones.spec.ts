@@ -10,6 +10,7 @@ import {
   resolverSolicitud,
   solicitudesDeSede,
 } from "../src/features/network";
+import { adminUsersOf } from "../src/features/network/operators";
 import { IDALMIS, MARTA, signInAsAdmin } from "./admin-helpers";
 
 /**
@@ -26,6 +27,8 @@ test.describe("Aprobaciones · dominio", () => {
       for (const j of jornadasDeSede(s.id)) {
         if (j.arqueo) esperadas += j.arqueo.monedas.filter(conDiferencia).length;
         if (j.apertura.cierreAnterior) esperadas += j.apertura.monedas.filter(conDiferencia).length;
+        /* Y lo registrado a mitad de jornada: movimientos de fondos y recuentos con diferencia. */
+        esperadas += j.movimientos.filter((m) => m.fondos || (m.recuento && (m.recuento.diferencia !== 0 || m.recuento.composicion))).length;
       }
       expect(sol.length, s.id).toBe(esperadas);
       expect(new Set(sol.map((x) => x.id)).size).toBe(sol.length);
@@ -48,7 +51,8 @@ test.describe("Aprobaciones · dominio", () => {
 
   test("resolver exige motivo, no pisa una resuelta y no sale del alcance", () => {
     const pendiente = SEDES.flatMap((s) => solicitudesDeSede(s.id)).find(
-      (x) => x.estado === "pendiente" && operadorVigente(x.sedeId),
+      /* Un movimiento de fondos solo lo resuelve su supervisor: aquí, una de las demás. */
+      (x) => x.estado === "pendiente" && x.tipo !== "fondos" && operadorVigente(x.sedeId),
     );
     expect(pendiente).toBeTruthy();
     const p = pendiente!;
@@ -170,6 +174,29 @@ test.describe("Aprobaciones", () => {
 });
 
 test.describe("Aprobaciones · billetes", () => {
+  test("un movimiento de fondos solo lo confirma el supervisor que nombró el trabajador", async ({ page }) => {
+    const s = solicitudesDeSede("sede-vedado").find((x) => x.tipo === "fondos" && x.origen === "jornada" && x.estado === "pendiente");
+    expect(s, "la siembra deja una reposición pendiente hoy en Vedado").toBeTruthy();
+    const marta = adminUsersOf(operadorVigente("sede-vedado")!).find((u) => u.email === MARTA)!;
+    await signInAsAdmin(page, MARTA);
+    const main = page.getByRole("main");
+    await page.goto(`/admin/aprobaciones/${encodeURIComponent(s!.id)}`);
+    await expect(page.getByRole("heading", { name: "Movimiento de fondos", level: 1 })).toBeVisible();
+    await expect(main.getByText("Durante la jornada")).toBeVisible();
+    await expect(main.getByText("Después del movimiento")).toBeVisible();
+    if (s!.supervisorId === marta.id) {
+      await expect(main.getByText("El trabajador dice que fuiste tú quien trajo el efectivo.", { exact: false })).toBeVisible();
+      await expect(main.getByRole("button", { name: "Aprobar" })).toBeVisible();
+    } else {
+      await expect(main.getByText(`Solo ${s!.supervisor} puede confirmarlo`)).toBeVisible();
+      await expect(main.getByRole("button", { name: "Aprobar" })).toHaveCount(0);
+    }
+    /* Y el movimiento dice qué fue y en qué quedó. */
+    await main.getByRole("link", { name: "Ver el movimiento" }).click();
+    await expect(main.getByText("Reposición: el supervisor trajo efectivo")).toBeVisible();
+    await expect(main.getByText(`Pendiente de que ${s!.supervisor} lo confirme`)).toBeVisible();
+  });
+
   test("una diferencia de apertura se ve en el detalle de su Fondeo inicial, con su aprobación", async ({ page }) => {
     await signInAsAdmin(page, MARTA);
     const main = page.getByRole("main");
@@ -209,7 +236,7 @@ test.describe("Aprobaciones · billetes", () => {
     await main.getByRole("link", { name: /^Ver solicitud: Movimiento de fondos/ }).first().click();
     await expect(page.getByRole("heading", { name: "Movimiento de fondos", level: 1 })).toBeVisible();
     await expect(main.getByText("Supervisor", { exact: true })).toBeVisible();
-    await expect(main.getByText("Al abrir la jornada")).toBeVisible();
+    await expect(main.getByText(/^(Al abrir la jornada|Al cerrar la jornada|Durante la jornada)$/)).toBeVisible();
     if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/apr-fondos.png`, fullPage: true });
   });
 });
