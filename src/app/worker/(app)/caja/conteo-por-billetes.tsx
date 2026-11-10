@@ -81,6 +81,7 @@ export function ConteoPorBilletes({
   errores,
   onChange,
   entregado,
+  dosPorFila = false,
 }: {
   monedas: readonly string[];
   denominaciones: Readonly<Record<string, readonly Denominacion[]>>;
@@ -89,9 +90,11 @@ export function ConteoPorBilletes({
   onChange: (currency: string, clave: string, valor: string) => void;
   /** Al abrir: lo que declaró quien cerró, por moneda, para tenerlo a la vista. */
   entregado?: { etiqueta: string; importes: ReadonlyMap<string, number> };
+  /** Dos monedas por fila en pantallas anchas; la página crece hacia abajo. */
+  dosPorFila?: boolean;
 }): React.JSX.Element {
   return (
-    <div className="flex flex-col gap-5">
+    <div className={dosPorFila ? "grid grid-cols-1 items-start gap-5 lg:grid-cols-2" : "flex flex-col gap-5"}>
       {monedas.map((currency) => (
         <MonedaPorBilletes
           key={currency}

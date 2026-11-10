@@ -205,21 +205,13 @@ export function ArqueoCierreFlow(): React.JSX.Element {
       </div>
       <ContextStrip openedAt={jornada?.openedAt} worker={worker.fullName} />
 
-      <form onSubmit={handleContinue} className="grid grid-cols-1 items-start gap-6 wide:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <form onSubmit={handleContinue} className="flex flex-col gap-6">
         <Card>
           <CardHeader><div className="flex items-center gap-3"><span aria-hidden="true" className="grid size-9 place-items-center rounded-control bg-primary-subtle text-primary"><ClipboardCheck className="size-[18px]" /></span><div><CardTitle>Arqueo billete a billete</CardTitle><p className="mt-0.5 text-body-sm text-text-secondary">Escribe cuántas unidades hay de cada billete y moneda. Lo que dejes vacío cuenta como cero.</p></div></div></CardHeader>
           <CardContent className="flex flex-col gap-5 pt-0">
-            <ConteoPorBilletes monedas={MONEDAS} denominaciones={vista.denominaciones} unidades={unidades} errores={errors} onChange={setCounted} />
+            <ConteoPorBilletes monedas={MONEDAS} denominaciones={vista.denominaciones} unidades={unidades} errores={errors} onChange={setCounted} dosPorFila />
             {formError ? <Alert variant="error" title={formError} /> : null}
             <div className="pc-botonera border-t border-border pt-5 sm:justify-end"><Button variant="secondary" type="button" asChild><Link href={CAJA_ROUTE}>Cancelar</Link></Button><Button type="submit">Continuar<ArrowRight aria-hidden="true" /></Button></div>
-          </CardContent>
-        </Card>
-        <Card className="self-start">
-          <CardHeader><CardTitle>Cómo se cierra la caja</CardTitle></CardHeader>
-          <CardContent className="flex flex-col gap-3 text-body-sm text-text-secondary">
-            <p>Cuenta con calma. Cuando continúes, lo que escribiste queda declarado como tu arqueo y ya no se puede cambiar.</p>
-            <p>Al confirmar, la caja queda cerrada. Si algo no coincide con los libros de tu jornada —el total o los billetes—, dirás por qué.</p>
-            <p>Lo que declares es lo que recibirá quien abra la caja la próxima vez.</p>
           </CardContent>
         </Card>
       </form>
