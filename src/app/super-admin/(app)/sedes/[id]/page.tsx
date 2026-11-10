@@ -380,6 +380,9 @@ export default async function SuperAdminSedePage({
                 {cajas.map((caja) => {
                   const equipo = red.equipoDeCaja(caja.id);
                   const abierta = red.jornadaAbiertaDeCaja(caja.id);
+                  /* Cerrada, la caja guarda lo que quedó al cerrar (el efectivo
+                     se queda dentro hasta la próxima apertura). */
+                  const cerrada = abierta ? null : red.ultimaJornadaCerradaDeCaja(caja.id);
                   return (
                     <li key={caja.id} className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
                       <div className="min-w-0">
@@ -409,8 +412,20 @@ export default async function SuperAdminSedePage({
                                   .join(" · ")}
                               </span>
                             </>
+                          ) : cerrada ? (
+                            <>
+                              {cerrada.estado === "forzada"
+                                ? `Cierre forzado el ${fechaYHora(cerrada.closedAt!)}, sin contar`
+                                : `Cerrada el ${fechaYHora(cerrada.closedAt!)} por ${cerrada.workerName}`}
+                              {" · "}
+                              <span className="pc-numeric">
+                                {saldosDe(cerrada)
+                                  .map((m) => `${formatAmount(m.amount)} ${m.currency}`)
+                                  .join(" · ")}
+                              </span>
+                            </>
                           ) : (
-                            "Sin jornada abierta"
+                            "Sin jornadas todavía"
                           )}
                         </p>
                       </div>
@@ -419,13 +434,14 @@ export default async function SuperAdminSedePage({
                       ) : (
                         <Badge variant="neutral">Retirada</Badge>
                       )}
-                      {abierta ? (
+                      {abierta ?? cerrada ? (
                         <details className="min-w-0 basis-full rounded-md border border-border px-3">
                           <summary className="flex min-h-control-sm cursor-pointer items-center text-body-sm font-medium text-text-primary outline-none focus-visible:underline">
                             Billetes y monedas de {caja.name}
+                            {cerrada ? (cerrada.estado === "forzada" ? " (en libros al forzar el cierre)" : " (al cerrar)") : ""}
                           </summary>
                           <div className="pb-3">
-                            <InventarioDeCaja inventario={inventarioParaMostrar(abierta)} abiertoSiUna={false} />
+                            <InventarioDeCaja inventario={inventarioParaMostrar((abierta ?? cerrada)!)} abiertoSiUna={false} />
                           </div>
                         </details>
                       ) : null}

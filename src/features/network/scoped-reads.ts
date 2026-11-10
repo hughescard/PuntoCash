@@ -56,6 +56,7 @@ import {
   diaDeSede,
   diferenciasDelDia,
   jornadaAbiertaDeCaja,
+  ultimaJornadaCerradaDeCaja,
   jornadaAbiertaDeTrabajador,
   jornadaPorId,
   jornadasDeSede,
@@ -138,6 +139,8 @@ export interface RedEnAlcance {
   jornadas(sedeId: string): readonly Jornada[];
   jornada(id: string): Jornada | null;
   jornadaAbiertaDeCaja(registerId: string): Jornada | null;
+  /** La última jornada cerrada de una caja: lo que quedó dentro al cerrarla. */
+  ultimaJornadaCerradaDeCaja(registerId: string): Jornada | null;
   jornadaAbiertaDeTrabajador(workerId: string): Jornada | null;
   /** Las jornadas de un trabajador en sedes del alcance, de la más reciente a la más antigua. */
   jornadasDeTrabajador(workerId: string): readonly Jornada[];
@@ -248,6 +251,10 @@ export function redEnAlcance(scope: Scope): RedEnAlcance {
 
     jornadaAbiertaDeCaja(registerId) {
       return sedeDeCaja(registerId) === null ? null : jornadaAbiertaDeCaja(registerId);
+    },
+
+    ultimaJornadaCerradaDeCaja(registerId) {
+      return sedeDeCaja(registerId) === null ? null : ultimaJornadaCerradaDeCaja(registerId);
     },
 
     jornadaAbiertaDeTrabajador(workerId) {

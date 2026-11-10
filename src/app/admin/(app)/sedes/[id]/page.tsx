@@ -318,6 +318,9 @@ export default async function AdminSedePage({
                   const equipo = red.equipoDeCaja(caja.id);
                   /* FR-AD-SEDE-7: quién tiene la sesión iniciada y, con jornada abierta, su saldo por moneda. */
                   const abierta = red.jornadaAbiertaDeCaja(caja.id);
+                  /* Cerrada, la caja guarda lo que quedó al cerrar (el efectivo
+                     se queda dentro hasta la próxima apertura). */
+                  const cerrada = abierta ? null : red.ultimaJornadaCerradaDeCaja(caja.id);
                   return (
                     <li
                       key={caja.id}
@@ -347,6 +350,18 @@ export default async function AdminSedePage({
                                 .join(" · ")}
                             </span>
                           </p>
+                        ) : cerrada ? (
+                          <p className="mt-0.5 text-body-sm text-text-secondary">
+                            {cerrada.estado === "forzada"
+                              ? `Cierre forzado el ${fechaYHora(cerrada.closedAt!)}, sin contar`
+                              : `Cerrada el ${fechaYHora(cerrada.closedAt!)} por ${cerrada.workerName}`}
+                            {" · "}
+                            <span className="pc-numeric">
+                              {saldosDe(cerrada)
+                                .map((m) => `${formatAmount(m.amount)} ${m.currency}`)
+                                .join(" · ")}
+                            </span>
+                          </p>
                         ) : null}
                       </div>
                       {caja.status === "activa" ? (
@@ -354,13 +369,14 @@ export default async function AdminSedePage({
                       ) : (
                         <Badge variant="neutral">Retirada</Badge>
                       )}
-                      {abierta ? (
+                      {abierta ?? cerrada ? (
                         <details className="min-w-0 basis-full rounded-md border border-border px-3">
                           <summary className="flex min-h-control-sm cursor-pointer items-center text-body-sm font-medium text-text-primary outline-none focus-visible:underline">
                             Billetes y monedas de {caja.name}
+                            {cerrada ? (cerrada.estado === "forzada" ? " (en libros al forzar el cierre)" : " (al cerrar)") : ""}
                           </summary>
                           <div className="pb-3">
-                            <InventarioDeCaja inventario={inventarioParaMostrar(abierta)} abiertoSiUna={false} />
+                            <InventarioDeCaja inventario={inventarioParaMostrar((abierta ?? cerrada)!)} abiertoSiUna={false} />
                           </div>
                         </details>
                       ) : null}
