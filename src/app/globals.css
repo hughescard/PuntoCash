@@ -130,6 +130,33 @@
 }
 
 @layer utilities {
+  /* En pantalla estrecha, un botón de un grupo cuyo texto no cabe en la
+     pantalla («Traspasar la administración principal» a 360 px) pasa a dos
+     líneas dentro del botón en vez de salirse. Conserva el alto mínimo de su
+     tamaño. Va en esta capa y con dos clases para ganar a `h-control` y a
+     `whitespace-nowrap` del propio botón. */
+  @media (max-width: 39.999rem) {
+    .pc-botonera > :is(.h-control, .h-control-sm, .h-control-lg) {
+      max-width: 100%;
+      height: auto;
+      white-space: normal;
+      text-align: center;
+      padding-block: 0.5rem;
+    }
+
+    .pc-botonera > .h-control {
+      min-height: var(--spacing-control);
+    }
+
+    .pc-botonera > .h-control-sm {
+      min-height: var(--spacing-control-sm);
+    }
+
+    .pc-botonera > .h-control-lg {
+      min-height: var(--spacing-control-lg);
+    }
+  }
+
   /* Reusable scroll container for the shell's main area. */
   .pc-scroll-y {
     overflow-y: auto;
