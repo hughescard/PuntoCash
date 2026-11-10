@@ -242,7 +242,7 @@ export function AjustarEfectivoFlow(): React.JSX.Element {
 
             {formError ? <Alert variant="error" title={formError} /> : null}
 
-            <div className="flex items-center justify-end gap-3 border-t border-border pt-5">
+            <div className="pc-botonera border-t border-border pt-5 sm:justify-end">
               <Button variant="secondary" type="button" asChild>
                 <Link href={CAJA_ROUTE}>Cancelar</Link>
               </Button>

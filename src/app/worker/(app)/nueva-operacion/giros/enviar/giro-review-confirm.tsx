@@ -109,7 +109,7 @@ export function GiroReview({
         registrar el giro.
       </Alert>
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" onClick={onCancel}>
           Cancelar
         </Button>
@@ -183,7 +183,7 @@ export function GiroConfirmation({
 
       {error ? <Alert variant="error" title={error} /> : null}
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" type="button" onClick={onCancel} disabled={submitting}>
           Cancelar
         </Button>

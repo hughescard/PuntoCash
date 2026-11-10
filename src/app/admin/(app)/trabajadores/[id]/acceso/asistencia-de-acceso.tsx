@@ -138,7 +138,7 @@ function CambiarCorreo({
             />
           </Field>
 
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <div className="pc-botonera sm:justify-end">
             <Button type="submit" loading={enviando}>
               <Mail aria-hidden="true" />
               Guardar el correo

@@ -147,8 +147,7 @@ function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
   return (
     <div
       className={cn(
-        "flex flex-col items-stretch gap-3 border-t border-border px-6 py-4",
-        "sm:flex-row sm:items-center sm:justify-end",
+        "pc-botonera border-t border-border px-6 py-4 sm:justify-end",
         className,
       )}
       {...props}

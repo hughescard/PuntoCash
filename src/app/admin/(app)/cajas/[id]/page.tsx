@@ -62,7 +62,7 @@ export default async function AdminCajaPage({ params }: { params: Promise<{ id: 
         title={caja.name}
         description={`Caja de ${sede.name}.${caja.retiredReason ? ` Retirada: ${caja.retiredReason}` : ""}`}
         actions={
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+          <div className="pc-botonera">
             <AccionesDeCaja caja={fila} />
             <Button variant="secondary" asChild>
               <Link href="/admin/cajas">

@@ -54,7 +54,7 @@ export default async function AdminJornadaPage({
         title={nombreDeJornada(j)}
         description={`Jornada de ${sede?.name ?? ""}, abierta el ${fechaYHora(j.openedAt)}.`}
         actions={
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+          <div className="pc-botonera">
             {j.estado === "abierta" ? (
               <ForzarCierre
                 id={j.id}

@@ -321,7 +321,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
             }
           />
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="pc-botonera sm:justify-end">
             <Button type="button" variant="secondary" onClick={requestCancel}>
               Cancelar
             </Button>

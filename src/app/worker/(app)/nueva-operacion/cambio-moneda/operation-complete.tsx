@@ -101,7 +101,7 @@ export function OperationComplete({
         </CardContent>
       </Card>
 
-      <div className="mt-8 flex w-full flex-wrap items-center justify-center gap-3">
+      <div className="pc-botonera mt-8 w-full sm:justify-center">
         {/* Browser print against a receipt-only stylesheet; no PDF pipeline. */}
         <Button variant="secondary" onClick={() => window.print()}>
           <Printer aria-hidden="true" />

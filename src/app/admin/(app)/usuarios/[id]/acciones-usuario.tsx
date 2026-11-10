@@ -85,7 +85,7 @@ export function AccionesUsuario({
      el último, y el mismo sitio esté activo o desactivado. */
   return (
     <>
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:flex-wrap">
+      <div className="pc-botonera">
         <Button variant="secondary" asChild>
           <Link href={`/admin/usuarios/${usuario.id}/editar` as Route}>
             <Pencil aria-hidden="true" />

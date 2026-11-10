@@ -50,7 +50,7 @@ export function GiroPayoutResult({ completed }: { completed: GiroPayoutCompleted
           El giro fue entregado correctamente y registrado en PuntoCash.
         </p>
 
-        <div className="mt-7 flex flex-wrap justify-center gap-3">
+        <div className="pc-botonera mt-7 sm:justify-center">
           <Button variant="secondary" onClick={() => window.print()}>
             <Printer aria-hidden="true" />
             Imprimir comprobante

@@ -181,7 +181,7 @@ export function PageHeader({
           <p className="mt-2 max-w-2xl text-body text-text-secondary">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-3">{actions}</div> : null}
+      {actions ? <div className="pc-botonera w-full max-w-full shrink-0 sm:w-auto">{actions}</div> : null}
     </div>
   );
 }

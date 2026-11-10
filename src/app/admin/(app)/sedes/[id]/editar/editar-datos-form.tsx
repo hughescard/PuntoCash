@@ -107,7 +107,7 @@ export function EditarDatosForm({
             diaConError={diaConError}
           />
 
-          <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+          <div className="pc-botonera pt-2 sm:justify-end">
             <Button variant="secondary" asChild>
               <Link href={`/admin/sedes/${sede.id}`}>Cancelar</Link>
             </Button>

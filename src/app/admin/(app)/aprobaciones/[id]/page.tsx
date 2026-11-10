@@ -63,8 +63,8 @@ export default async function AdminSolicitudPage({
         title={TIPO_DE_SOLICITUD[s.tipo]}
         description={jornada ? `Jornada ${nombreDeJornada(jornada)} · ${sede?.name ?? ""}` : (sede?.name ?? "")}
         actions={
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <span className="self-start sm:self-auto">
+          <div className="pc-botonera">
+            <span className="pc-botonera-fija">
               <EstadoSolicitudBadge estado={s.estado} />
             </span>
             <Button variant="secondary" asChild>

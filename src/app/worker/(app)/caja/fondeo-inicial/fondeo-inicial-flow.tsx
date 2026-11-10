@@ -337,7 +337,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
           </CardContent>
         </Card>
 
-        <div className="flex items-center justify-end gap-3">
+        <div className="pc-botonera sm:justify-end">
           <Button type="button" loading={submitting} onClick={() => void handleConfirm()}>
             {submitting ? null : <CircleCheck aria-hidden="true" />}
             {submitting ? "Abriendo…" : "Confirmar y abrir caja"}
@@ -426,7 +426,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
 
             {formError ? <Alert variant="error" title={formError} /> : null}
 
-            <div className="flex items-center justify-end gap-3 border-t border-border pt-5">
+            <div className="pc-botonera border-t border-border pt-5 sm:justify-end">
               <Button variant="secondary" type="button" asChild>
                 <Link href={CAJA_ROUTE}>Cancelar</Link>
               </Button>
@@ -593,7 +593,7 @@ function AperturaCompletada({
           </CardContent>
         </Card>
 
-        <div className="mt-8 flex w-full flex-wrap items-center justify-center gap-3">
+        <div className="pc-botonera mt-8 w-full sm:justify-center">
           <Button variant="secondary" onClick={() => window.print()}>
             <Printer aria-hidden="true" />
             Imprimir comprobante

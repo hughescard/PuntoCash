@@ -273,7 +273,7 @@ export function AnadirMonedaFlow(): React.JSX.Element {
 
             {selectedEntry ? <CurrencyDetails entry={selectedEntry} /> : null}
 
-            <div className="flex items-center justify-end gap-3 border-t border-border pt-5">
+            <div className="pc-botonera border-t border-border pt-5 sm:justify-end">
               <Button variant="secondary" type="button" asChild>
                 <Link href={backHref}>Cancelar</Link>
               </Button>

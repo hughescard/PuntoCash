@@ -616,7 +616,7 @@ function ElegirObjeto({
           del sistema: apiladas a todo lo ancho en estrecho —`/admin` se usa
           desde 360px—, y en fila a la derecha a partir de `sm`. Dejarlas
           envolver cada una con su ancho las escalona contra el borde. */}
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" type="button" disabled={enviando} onClick={onVolver}>
           <RotateCcw aria-hidden="true" />
           Empezar de nuevo
@@ -676,7 +676,7 @@ function Vinculado({
         </CardContent>
       </Card>
 
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" type="button" onClick={onOtro}>
           Vincular otro equipo
         </Button>

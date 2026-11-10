@@ -96,6 +96,39 @@
   }
 }
 
+@layer components {
+  /* Un grupo de botones. En pantalla estrecha van uno al lado del otro
+     repartiéndose el ancho; el que no cabe baja de línea y ocupa la línea
+     entera, en vez de quedarse con su ancho natural flotando a la izquierda.
+     Desde `sm` cada botón recupera su tamaño. Un hijo marcado con
+     `pc-botonera-fija` (una insignia de estado) no se estira nunca. */
+  .pc-botonera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .pc-botonera > * {
+    flex: 1 1 auto;
+  }
+
+  .pc-botonera > .pc-botonera-fija {
+    flex: 0 0 auto;
+    align-self: center;
+  }
+
+  @media (min-width: 40rem) {
+    .pc-botonera {
+      align-items: center;
+    }
+
+    .pc-botonera > * {
+      flex: 0 0 auto;
+    }
+  }
+}
+
 @layer utilities {
   /* Reusable scroll container for the shell's main area. */
   .pc-scroll-y {

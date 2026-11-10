@@ -54,8 +54,8 @@ export default async function AdminOperacionPage({ params }: { params: Promise<{
         title={`Operación ${o.codigo}`}
         description={`${o.servicio}${o.transfer ? (o.transfer.transferAction === "send" ? " · giro enviado" : " · giro pagado") : ""} · ${fechaYHora(o.fechaHora)}`}
         actions={
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <span className="self-start sm:self-auto">
+          <div className="pc-botonera">
+            <span className="pc-botonera-fija">
               <OperationStatusBadge status={o.estado} />
             </span>
             <Button variant="secondary" asChild>

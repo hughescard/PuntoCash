@@ -130,7 +130,7 @@ export function NuevoUsuarioSuperAdminForm(): React.JSX.Element {
             principal, y los demás super administradores no la tendrán.
           </Alert>
 
-          <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+          <div className="pc-botonera pt-2 sm:justify-end">
             <Button variant="secondary" asChild>
               <Link href="/super-admin/usuarios">Cancelar</Link>
             </Button>
@@ -173,7 +173,7 @@ function CredencialInicialSA({
         </CardContent>
       </Card>
 
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" asChild>
           <Link href="/super-admin/usuarios/nuevo">Dar de alta a otro</Link>
         </Button>

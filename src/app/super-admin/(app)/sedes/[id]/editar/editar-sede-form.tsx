@@ -155,7 +155,7 @@ export function EditarSedeForm({
             </p>
           )}
 
-          <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+          <div className="pc-botonera pt-2 sm:justify-end">
             <Button variant="secondary" asChild>
               <Link href={`/super-admin/sedes/${sede.id}` as Route}>Cancelar</Link>
             </Button>

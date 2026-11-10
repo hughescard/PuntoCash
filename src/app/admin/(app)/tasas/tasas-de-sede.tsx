@@ -359,7 +359,7 @@ function AvisoDeAjuste({
         Confírmala o elige otra.
       </p>
       {estado && !estado.ok ? <p className="mt-2 font-semibold">{estado.error}</p> : null}
-      <form action={accion} className="mt-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+      <form action={accion} className="pc-botonera mt-3">
         <input type="hidden" name="sede" value={sede.id} />
         <input type="hidden" name="moneda" value={fila.code} />
         <Button type="submit" size="sm" loading={enviando} disabled={!hydrated}>

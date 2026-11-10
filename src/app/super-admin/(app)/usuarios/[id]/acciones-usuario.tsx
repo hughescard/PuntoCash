@@ -75,7 +75,7 @@ export function AccionesUsuarioSA({
 
   return (
     <>
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="pc-botonera">
         <Button variant="secondary" asChild>
           <Link href={`/super-admin/usuarios/${usuario.id}/editar` as Route}>
             <Pencil aria-hidden="true" />

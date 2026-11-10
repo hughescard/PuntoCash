@@ -84,7 +84,7 @@ export default async function AdminReportesPage({
         actions={
           /* FR-AD-REP-7: los cortes del periodo y el trabajador que hay en pantalla. Enlaces
              corrientes y no `Link`: un archivo no se precarga. */
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="pc-botonera">
             <Button variant="secondary" asChild>
               <a href={exportar("xlsx")} download>
                 <FileSpreadsheet aria-hidden="true" />
