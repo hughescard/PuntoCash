@@ -18,7 +18,16 @@ export interface InventarioDeMoneda {
   sinDesglosar: number;
 }
 
-export function InventarioDeCaja({ inventario, abiertoSiUna = true }: { inventario: readonly InventarioDeMoneda[]; abiertoSiUna?: boolean }): React.JSX.Element {
+export function InventarioDeCaja({
+  inventario,
+  abiertoSiUna = true,
+  todoAbierto = false,
+}: {
+  inventario: readonly InventarioDeMoneda[];
+  abiertoSiUna?: boolean;
+  /** Todas las monedas desplegadas: en la ficha de una caja, que es lo que se viene a ver. */
+  todoAbierto?: boolean;
+}): React.JSX.Element {
   if (inventario.length === 0) return <p className="text-body-sm text-text-secondary">La caja no tiene monedas habilitadas.</p>;
   return (
     <ul className="flex flex-col divide-y divide-border" aria-label="Billetes y monedas por moneda">
@@ -27,7 +36,7 @@ export function InventarioDeCaja({ inventario, abiertoSiUna = true }: { inventar
         const unidades = filas.reduce((s, l) => s + l.cantidad, 0);
         return (
           <li key={m.currency} className="py-1 first:pt-0 last:pb-0">
-            <details open={abiertoSiUna && inventario.length === 1} className="group">
+            <details open={todoAbierto || (abiertoSiUna && inventario.length === 1)} className="group">
               <summary className="flex min-h-control-sm cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 rounded-md py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
                 <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-secondary transition-transform group-open:rotate-90" />
                 <span className="inline-flex items-center gap-2">

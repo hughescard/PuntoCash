@@ -100,14 +100,4 @@ test.describe("Denominaciones", () => {
     await expect(main.getByRole("list", { name: "Billetes y monedas del movimiento" })).toBeVisible();
     if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/ad-movimiento.png`, fullPage: true });
   });
-
-  test("una caja cerrada enseña lo que quedó dentro al cerrarla", async ({ page }) => {
-    await signInAsAdmin(page, MARTA);
-    await page.goto("/admin/sedes/sede-habana-vieja");
-    const main = page.getByRole("main");
-    await expect(main.getByText(/^Cerrada el .+ por /).first()).toBeVisible();
-    const resumen = main.getByText(/^Billetes y monedas de Caja \d+ \(al cerrar\)$/).first();
-    await resumen.click();
-    await expect(main.getByRole("list", { name: "Billetes y monedas por moneda" }).first()).toBeVisible();
-  });
 });

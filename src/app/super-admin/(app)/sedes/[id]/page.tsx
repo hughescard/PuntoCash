@@ -19,8 +19,7 @@ import { estadoDeSede, historialDeSede } from "@/features/network/assignments";
 import { maskEmail } from "@/features/auth/two-factor";
 import { CATALOGO_MONEDAS } from "@/features/network/currencies";
 import { lineasDeHorario } from "@/features/network/horario";
-import { inventarioParaMostrar, jornadasDeSede, saldosDe } from "@/features/network/jornadas";
-import { InventarioDeCaja } from "@/app/admin/(app)/jornadas/inventario";
+import { jornadasDeSede, saldosDe } from "@/features/network/jornadas";
 import { WORKER_SERVICES } from "@/features/operations/services";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import { fechaCorta, fechaYHora } from "@/app/admin/(app)/jornadas/formato";
@@ -386,7 +385,14 @@ export default async function SuperAdminSedePage({
                   return (
                     <li key={caja.id} className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
                       <div className="min-w-0">
-                        <p className="text-body font-medium text-text-primary">{caja.name}</p>
+                        <p className="text-body font-medium">
+                          <Link
+                            href={`/super-admin/sedes/${sede.id}/cajas/${encodeURIComponent(caja.id)}` as Route}
+                            className="text-text-primary underline underline-offset-4 hover:text-primary"
+                          >
+                            {caja.name}
+                          </Link>
+                        </p>
                         <p className="mt-0.5 flex items-center gap-2 text-body-sm text-text-secondary">
                           {equipo ? (
                             <>
@@ -434,17 +440,6 @@ export default async function SuperAdminSedePage({
                       ) : (
                         <Badge variant="neutral">Retirada</Badge>
                       )}
-                      {abierta ?? cerrada ? (
-                        <details className="min-w-0 basis-full rounded-md border border-border px-3">
-                          <summary className="flex min-h-control-sm cursor-pointer items-center text-body-sm font-medium text-text-primary outline-none focus-visible:underline">
-                            Billetes y monedas de {caja.name}
-                            {cerrada ? (cerrada.estado === "forzada" ? " (en libros al forzar el cierre)" : " (al cerrar)") : ""}
-                          </summary>
-                          <div className="pb-3">
-                            <InventarioDeCaja inventario={inventarioParaMostrar((abierta ?? cerrada)!)} abiertoSiUna={false} />
-                          </div>
-                        </details>
-                      ) : null}
                     </li>
                   );
                 })}

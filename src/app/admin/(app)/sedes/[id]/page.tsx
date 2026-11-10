@@ -13,8 +13,7 @@ import { getAdminSession } from "@/features/admin/session-server";
 import { lineasDeHorario } from "@/features/network/horario";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { WORKER_SERVICES } from "@/features/operations/services";
-import { diaEnCuba, inventarioParaMostrar, saldosDe } from "@/features/network/jornadas";
-import { InventarioDeCaja } from "../../jornadas/inventario";
+import { diaEnCuba, saldosDe } from "@/features/network/jornadas";
 import { formatAmount } from "@/lib/format";
 import { desde, EstadoBadge, fechaYHora } from "../../jornadas/formato";
 import { EstadoSede } from "../sedes-list";
@@ -327,7 +326,14 @@ export default async function AdminSedePage({
                       className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
                     >
                       <div className="min-w-0">
-                        <p className="text-body font-medium text-text-primary">{caja.name}</p>
+                        <p className="text-body font-medium">
+                          <Link
+                            href={`/admin/cajas/${encodeURIComponent(caja.id)}` as Route}
+                            className="text-text-primary underline underline-offset-4 hover:text-primary"
+                          >
+                            {caja.name}
+                          </Link>
+                        </p>
                         <p className="mt-0.5 flex items-center gap-2 text-body-sm text-text-secondary">
                           {equipo ? (
                             <>
@@ -369,17 +375,6 @@ export default async function AdminSedePage({
                       ) : (
                         <Badge variant="neutral">Retirada</Badge>
                       )}
-                      {abierta ?? cerrada ? (
-                        <details className="min-w-0 basis-full rounded-md border border-border px-3">
-                          <summary className="flex min-h-control-sm cursor-pointer items-center text-body-sm font-medium text-text-primary outline-none focus-visible:underline">
-                            Billetes y monedas de {caja.name}
-                            {cerrada ? (cerrada.estado === "forzada" ? " (en libros al forzar el cierre)" : " (al cerrar)") : ""}
-                          </summary>
-                          <div className="pb-3">
-                            <InventarioDeCaja inventario={inventarioParaMostrar((abierta ?? cerrada)!)} abiertoSiUna={false} />
-                          </div>
-                        </details>
-                      ) : null}
                     </li>
                   );
                 })}
