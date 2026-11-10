@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { FileSearch, Lock } from "lucide-react";
+import { Banknote, FileSearch, Lock } from "lucide-react";
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import { formatoDeDenominacion, lineas } from "@/features/caja/billetes";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { findInternalCajaMovement, type CajaMovement } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
-import { BackLink, CashJornadaCard, MovementDetailHeader, MovementInfoCard, MovementResultCard } from "./movement-detail-parts";
+import { BackLink, CashJornadaCard, MovementDetailHeader, MovementInfoCard } from "./movement-detail-parts";
 import { CashAdjustmentDetail } from "./cash-adjustment-detail";
 import { MovementReceiptSection } from "./movement-receipt-section";
 
@@ -37,6 +38,7 @@ import { MovementReceiptSection } from "./movement-receipt-section";
  */
 export function CashMovementDetailView({ movementId }: { movementId: string }): React.JSX.Element {
   const caja = useCaja();
+  const vista = useVistaDeCaja();
   const movement = findInternalCajaMovement(caja.movimientos, movementId);
 
   if (!movement) return <MovementNotFound movementId={movementId} />;
@@ -46,18 +48,29 @@ export function CashMovementDetailView({ movementId }: { movementId: string }): 
       <BackLink />
       <MovementDetailHeader movement={movement} />
 
-      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
-        <div className="flex flex-col gap-6">
-          <MovementInfoCard movement={movement} />
-          <CashJornadaCard movement={movement} />
-        </div>
-
-        <div className="flex flex-col gap-6">
-          <MovementSpecificDetail movement={movement} />
-          {movement.billetes && Object.keys(movement.billetes).length > 0 ? <BilletesDelMovimiento billetes={movement.billetes} currency={movement.currency} /> : null}
-          <MovementResultCard movement={movement} />
-        </div>
+      {/* Las dos tarjetas de datos, a la misma altura; debajo, a todo el ancho, lo propio del concepto y los billetes. */}
+      <div className="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-2">
+        <MovementInfoCard movement={movement} />
+        <CashJornadaCard movement={movement} />
       </div>
+
+      <MovementSpecificDetail movement={movement} />
+
+      {movement.billetes && Object.keys(movement.billetes).length > 0 ? (
+        <Card>
+          <CardHeader>
+            <div className="flex min-w-0 items-center gap-3">
+              <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-control bg-primary-subtle text-primary">
+                <Banknote className="size-[18px]" />
+              </span>
+              <CardTitle>Billetes y monedas</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <BilletesDelMovimiento billetes={movement.billetes} currency={movement.currency} tipos={vista.denominaciones[movement.currency] ?? []} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <MovementReceiptSection movement={movement} />
 
@@ -80,32 +93,6 @@ function MovementSpecificDetail({ movement }: { movement: CajaMovement }): React
     return <CashAdjustmentDetail movement={movement} />;
   }
   return null;
-}
-
-/**
- * Los billetes que movió, por denominación (decisión del 9/11/2026): lo que
- * entra con «+» y lo que sale con «−». Es del movimiento, no de la caja: no
- * dice cuántos hay.
- */
-function BilletesDelMovimiento({ billetes, currency }: { billetes: Readonly<Record<string, number>>; currency: string }) {
-  const filas = lineas(billetes).filter((l) => l.cantidad !== 0);
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Billetes y monedas</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <ul className="flex flex-wrap gap-2" aria-label="Billetes y monedas del movimiento">
-          {filas.map((l) => (
-            <li key={l.valor} className="pc-numeric rounded-control border border-border bg-surface-subtle px-3 py-1.5 text-body-sm text-text-primary">
-              {l.cantidad > 0 ? "+" : "−"}
-              {Math.abs(l.cantidad)} × {formatoDeDenominacion(l.valor)} {currency}
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
 }
 
 /**

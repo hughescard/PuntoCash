@@ -25,7 +25,7 @@ export function CashAdjustmentDetail({ movement }: { movement: CajaMovement }): 
 
 
   return (
-    <DetailCard title={movement.concepto === "Ajuste de cierre" ? "Detalle del ajuste de cierre" : "Detalle del ajuste"} icon={Calculator} contentClassName="gap-4">
+    <DetailCard title={movement.concepto === "Ajuste de cierre" ? "Detalle del ajuste de cierre" : "Detalle del ajuste"} icon={Calculator} contentClassName="grid grid-cols-1 items-center gap-6 md:grid-cols-2">
       <div
         className={cn(
           "flex items-center justify-between gap-4 rounded-control border px-4 py-4",

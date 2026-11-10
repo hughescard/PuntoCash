@@ -106,7 +106,8 @@ test.describe("Aprobaciones", () => {
     const contador = main.getByRole("link", { name: /^Pendientes \d+$/ });
     const antes = Number((await contador.textContent())!.replace(/\D/g, ""));
 
-    await main.locator("tbody tr").first().locator("td").nth(1).click();
+    /* Una de importe: la de composición y la de fondos sembradas las necesita la prueba de billetes. */
+    await main.locator("tbody tr").filter({ hasNotText: /composición|fondos/ }).first().locator("td").nth(1).click();
     await page.waitForURL(/\/admin\/aprobaciones\/SOL-/);
     await expect(main.getByRole("heading", { name: "Lo que registró el trabajador" })).toBeVisible();
 
@@ -179,9 +180,9 @@ test.describe("Aprobaciones · billetes", () => {
     await main.getByRole("link", { name: /^Ver solicitud: Diferencia de composición/ }).first().click();
     await expect(page.getByRole("heading", { name: "Diferencia de composición", level: 1 })).toBeVisible();
     await expect(main.getByText("Billetes que cambiaron (total sin diferencia)")).toBeVisible();
-    const billetes = main.getByRole("list", { name: "Billetes de la solicitud" });
-    await expect(billetes.getByText("−1 de 200 CUP")).toBeVisible();
-    await expect(billetes.getByText("+2 de 100 CUP")).toBeVisible();
+    const billetes = main.getByRole("table", { name: "Billetes del movimiento" });
+    await expect(billetes.getByRole("row", { name: /^200 CUP −1/ })).toBeVisible();
+    await expect(billetes.getByRole("row", { name: /^100 CUP \+2/ })).toBeVisible();
     if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/apr-composicion.png`, fullPage: true });
 
     await page.goto("/admin/aprobaciones");

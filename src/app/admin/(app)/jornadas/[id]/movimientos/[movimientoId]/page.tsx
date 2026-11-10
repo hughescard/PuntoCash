@@ -5,12 +5,13 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { PageHeader } from "@/components/shell/app-shell";
-import { Badge, Button, Card, CardContent } from "@/components/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
+import { todasLasDenominaciones } from "@/features/network/denominaciones";
 import { formatAmount, formatSignedAmount } from "@/lib/format";
 import { getAdminSession } from "@/features/admin/session-server";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { fechaYHora, nombreDeJornada } from "../../../formato";
-import { formatoDeDenominacion, lineas } from "@/features/caja/billetes";
 
 export const metadata: Metadata = {
   title: "Administración de sede · Movimiento",
@@ -81,23 +82,6 @@ export default async function AdminMovimientoPage({
             ) : null}
             {m.supervisor ? <Dato etiqueta="Supervisor" valor={m.supervisor} /> : null}
             {m.observaciones ? <Dato etiqueta="Observaciones" valor={m.observaciones} /> : null}
-            <div className="sm:col-span-2">
-              <dt className="text-caption uppercase tracking-wide text-text-secondary">Billetes y monedas</dt>
-              <dd className="mt-1 text-body text-text-primary">
-                {lineas(m.billetes).length === 0 ? (
-                  <span className="text-text-secondary">Sin desglosar</span>
-                ) : (
-                  <ul className="flex flex-wrap gap-2" aria-label="Billetes y monedas del movimiento">
-                    {lineas(m.billetes).map((l) => (
-                      <li key={l.valor} className="pc-numeric rounded-md border border-border bg-surface-subtle px-2.5 py-1 text-body-sm">
-                        {Math.abs(l.cantidad)} × {formatoDeDenominacion(l.valor)}
-                        {l.cantidad > 0 === m.amount < 0 ? <span className="text-text-secondary">{l.cantidad > 0 ? " entra" : " sale"}</span> : null}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </dd>
-            </div>
             {solicitud ? (
               <Dato
                 etiqueta="Aprobación"
@@ -111,6 +95,14 @@ export default async function AdminMovimientoPage({
               />
             ) : null}
           </dl>
+        </CardContent>
+      </Card>
+      <Card className="mt-6 max-w-form-max">
+        <CardHeader>
+          <CardTitle>Billetes y monedas</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <BilletesDelMovimiento billetes={m.billetes} currency={m.currency} tipos={todasLasDenominaciones(m.currency)} />
         </CardContent>
       </Card>
     </>

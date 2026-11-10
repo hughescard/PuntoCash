@@ -544,7 +544,10 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
           } else {
             /* El historial de Miramar cierra siempre con alguna diferencia: son las
                que quedaron sin resolver al traspasar la sede y resuelve PuntoCash. */
-            const conDiferencia = rnd() < 0.25 || (o.sedes?.includes("sede-miramar") ?? false);
+            /* Anteayer, la primera caja de cada sede guarda la diferencia de
+               composición de más abajo: su importe cuadra siempre. */
+            const deComposicion = dia === -2 && indiceCaja === 0;
+            const conDiferencia = (rnd() < 0.25 && !deComposicion) || (o.sedes?.includes("sede-miramar") ?? false);
             const monedasArqueo: ArqueoMoneda[] = [...saldos].map(([currency, esperado]) => {
               const diferencia = conDiferencia && currency === "CUP" ? (rnd() < 0.5 ? -1 : 1) * (100 + Math.floor(rnd() * 9) * 100) : 0;
               return {
@@ -568,7 +571,7 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
                registrarlo. Es la diferencia de composición (decisión del 9/11). */
             const cup = monedasArqueo.find((a) => a.currency === "CUP");
             const invCup = inventario.get("CUP") ?? {};
-            if (dia === -2 && indiceCaja === 0 && cup && cup.diferencia === 0 && (invCup["20000"] ?? 0) > 0) {
+            if (deComposicion && cup && cup.diferencia === 0 && (invCup["20000"] ?? 0) > 0) {
               const composicion = { "20000": -1, "10000": 2 };
               mov({
                 fechaHora: cierre.toISOString(), tipo: "entrada", concepto: "Ajuste de billetes al cerrar",
@@ -663,7 +666,7 @@ function sembrarApertura(
  * la anterior y se descarta junto con lo que se deriva de él —operaciones y
  * solicitudes—, para no mezclar datos de dos siembras.
  */
-const VERSION_DE_SIEMBRA = "2026-11-10.2";
+const VERSION_DE_SIEMBRA = "2026-11-10.3";
 
 const ALMACEN = globalThis as typeof globalThis & {
   __puntocashJornadas?: Jornada[];

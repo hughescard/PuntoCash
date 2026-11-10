@@ -380,7 +380,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
         </CardContent>
       </Card>
 
-      <form onSubmit={(e) => void handleContinue(e)} className="grid grid-cols-1 items-start gap-6 wide:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <form onSubmit={(e) => void handleContinue(e)} className="flex flex-col gap-6">
         <Card>
           <CardHeader>
             <div className="flex min-w-0 items-center gap-3">
@@ -405,6 +405,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
               unidades={unidades}
               errores={errors}
               onChange={setUnidad}
+              dosPorFila
               {...(anterior ? { entregado: { etiqueta: anterior.forzado ? "En libros" : "Entregado", importes: entregado } } : {})}
             />
 
@@ -431,22 +432,6 @@ export function FondeoInicialFlow(): React.JSX.Element {
           </CardContent>
         </Card>
 
-        <Card className="self-start">
-          <CardHeader>
-            <CardTitle>Cómo se abre la caja</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-body-sm text-text-secondary">
-            {anterior ? (
-              <>
-                <p>Ves lo que declaró quien cerró la caja. Comprueba que lo recibes y corrige solo lo que no coincida.</p>
-                <p>Al confirmar, recibes la caja con esas cifras: desde ahí el efectivo es tu responsabilidad, y tu propio cierre lo comprobará contra los libros.</p>
-                <p>Si algo no coincide, dirás por qué; la diferencia llega al administrador de la sede.</p>
-              </>
-            ) : (
-              <p>Es la primera jornada de esta caja: cuenta con calma lo que hay. Cuando continúes, lo que escribiste queda declarado y ya no se puede cambiar.</p>
-            )}
-          </CardContent>
-        </Card>
       </form>
 
       {porDeclarar ? (

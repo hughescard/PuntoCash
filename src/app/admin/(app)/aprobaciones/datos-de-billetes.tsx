@@ -1,6 +1,8 @@
 import * as React from "react";
 
-import { formatoDeDenominacion, lineas } from "@/features/caja/billetes";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
+import { lineas } from "@/features/caja/billetes";
+import { todasLasDenominaciones } from "@/features/network/denominaciones";
 import type { Solicitud } from "@/features/network/aprobaciones";
 
 /**
@@ -31,15 +33,8 @@ export function DatosDeBilletes({ s }: { s: Solicitud }): React.JSX.Element {
           <dt className="text-caption uppercase tracking-wide text-text-secondary">
             {s.tipo === "composicion" || s.diferencia === 0 ? "Billetes que cambiaron (total sin diferencia)" : "Billetes de la diferencia"}
           </dt>
-          <dd className="mt-1">
-            <ul className="flex flex-wrap gap-2" aria-label="Billetes de la solicitud">
-              {filas.map((l) => (
-                <li key={l.valor} className="pc-numeric rounded-control border border-border bg-surface-subtle px-2.5 py-1 text-body-sm text-text-primary">
-                  {l.cantidad > 0 ? "+" : "−"}
-                  {Math.abs(l.cantidad)} de {formatoDeDenominacion(l.valor)} {s.currency}
-                </li>
-              ))}
-            </ul>
+          <dd className="mt-2">
+            <BilletesDelMovimiento billetes={s.billetes} currency={s.currency} tipos={todasLasDenominaciones(s.currency)} />
           </dd>
         </div>
       ) : null}

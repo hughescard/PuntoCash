@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Building2, ClipboardList, Zap } from "lucide-react";
+import { ArrowLeft, Building2, Zap } from "lucide-react";
 
 import { DetailCard, DetailList, DetailRow } from "@/app/worker/(app)/operaciones/[codigo]/detail-parts";
 import { MovementTypeBadge } from "@/app/worker/(app)/caja/caja-movements-table";
@@ -50,7 +50,7 @@ export function MovementInfoCard({ movement }: { movement: CajaMovement }): Reac
   const currency = findCajaCurrency(movement.currency);
 
   return (
-    <DetailCard title="Movimiento" icon={Zap}>
+    <DetailCard title="Movimiento" icon={Zap} className="h-full">
       <DetailList>
         <DetailRow label="ID de movimiento" value={movement.id} numeric />
         <DetailRow label="Concepto" value={movement.concepto} />
@@ -93,7 +93,7 @@ export function CashJornadaCard({ movement }: { movement: CajaMovement }): React
   const jornada = movement.jornada;
 
   return (
-    <DetailCard title="Caja y jornada" icon={Building2}>
+    <DetailCard title="Caja y jornada" icon={Building2} className="h-full">
       <DetailList>
         <DetailRow label="Caja" value={jornada?.register ?? "—"} />
         <DetailRow label="Trabajador" value={jornada?.worker ?? "—"} />
@@ -114,22 +114,6 @@ export function CashJornadaCard({ movement }: { movement: CajaMovement }): React
             }
           />
         ) : null}
-      </DetailList>
-    </DetailCard>
-  );
-}
-
-/**
- * "Movimiento" — lo que entró o salió de la caja con este movimiento. Worker
- * opera a ciegas (decisión del 6/11/2026): ni saldo anterior ni saldo
- * resultante, que solo ve la administración.
- */
-export function MovementResultCard({ movement }: { movement: CajaMovement }): React.JSX.Element {
-  return (
-    <DetailCard title="Movimiento" icon={ClipboardList}>
-      <DetailList>
-        <DetailRow label="Tipo" value={movement.tipo === "entrada" ? "Entrada" : "Salida"} />
-        <DetailRow label="Importe" value={`${formatSignedAmount(movement.amount)} ${movement.currency}`} numeric strong />
       </DetailList>
     </DetailCard>
   );

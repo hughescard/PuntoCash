@@ -97,7 +97,7 @@ test.describe("Denominaciones", () => {
     /* El detalle de un movimiento dice con qué billetes se movió. */
     await main.getByRole("link", { name: "Fondeo inicial" }).first().click();
     await page.waitForURL(/\/movimientos\//);
-    await expect(main.getByRole("list", { name: "Billetes y monedas del movimiento" })).toBeVisible();
+    await expect(main.getByRole("group", { name: "Billetes y monedas del movimiento" })).toBeVisible();
     if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/ad-movimiento.png`, fullPage: true });
   });
 });
