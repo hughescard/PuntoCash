@@ -9,6 +9,7 @@ import { formatAmount } from "@/lib/format";
 import type { Jornada } from "@/features/network/jornadas";
 import { inventarioParaMostrar, saldosDe } from "@/features/network/jornadas";
 import { InventarioDeCaja } from "../inventario";
+import { formatoDeDenominacion, lineas } from "@/features/caja/billetes";
 import type { Solicitud } from "@/features/network/aprobaciones";
 import { diaEnCuba, Diferencia, DiferenciaDeApertura, EstadoBadge, fechaYHora, hora } from "../formato";
 import { MovimientosDeJornada } from "./movimientos-de-jornada";
@@ -45,8 +46,9 @@ export function CuerpoDeJornada({
 }): React.JSX.Element {
   const saldos = saldosDe(j);
   const previo = j.apertura.cierreAnterior;
-  const solicitudDe = (tipo: "cierre" | "apertura", currency: string) =>
-    solicitudes.find((x) => x.tipo === tipo && x.currency === currency) ?? null;
+  /* Una por moneda y momento; su tipo puede ser de importe, de composición o de fondos. */
+  const solicitudDe = (momento: "cierre" | "apertura", currency: string) =>
+    solicitudes.find((x) => x.id === `SOL-${j.id}-${momento === "cierre" ? "C" : "A"}-${currency}`) ?? null;
 
   return (
     <>
@@ -129,11 +131,14 @@ export function CuerpoDeJornada({
               <span className="pc-numeric text-body-sm text-text-secondary">Contado {formatAmount(m.contado)}</span>
               {previo ? (
                 <span className="flex flex-col">
-                  {m.diferencia === 0 ? (
+                  {m.diferencia === 0 && !m.composicion ? (
                     <span className="font-semibold text-text-primary">Coincide</span>
                   ) : (
                     <DiferenciaDeApertura currency={m.currency} diferencia={m.diferencia} motivo={m.motivo} />
                   )}
+                  {m.composicion ? <span className="pc-numeric text-body-sm text-text-secondary">{describir(m.composicion)}</span> : null}
+                  {m.composicion && m.motivo ? <span className="text-body-sm text-text-secondary">{m.motivo}</span> : null}
+                  {m.supervisor ? <span className="text-body-sm text-text-secondary">Supervisor: {m.supervisor}</span> : null}
                   {m.observaciones ? <span className="text-body-sm text-text-secondary">{m.observaciones}</span> : null}
                   <EstadoDeAprobacion solicitud={solicitudDe("apertura", m.currency)} base={base} />
                 </span>
@@ -202,10 +207,18 @@ export function CuerpoDeJornada({
                 <span className="pc-numeric text-body-sm text-text-secondary">Esperado {formatAmount(m.esperado)}</span>
                 <span className="pc-numeric text-body-sm text-text-secondary">Contado {formatAmount(m.contado)}</span>
                 <span className="flex flex-col">
-                  <Diferencia currency={m.currency} diferencia={m.diferencia} />
+                  {m.composicion ? (
+                    <>
+                      <span className="font-semibold text-warning-foreground">Billetes distintos · total sin diferencia</span>
+                      <span className="pc-numeric text-body-sm text-text-secondary">{describir(m.composicion)}</span>
+                    </>
+                  ) : (
+                    <Diferencia currency={m.currency} diferencia={m.diferencia} />
+                  )}
+                  {m.supervisor ? <span className="text-body-sm text-text-secondary">Supervisor: {m.supervisor}</span> : null}
                   {m.motivo ? (
                     <span className="text-body-sm text-text-secondary">{m.motivo}</span>
-                  ) : m.diferencia !== 0 ? (
+                  ) : m.diferencia !== 0 || m.composicion ? (
                     /* La jornada se cierra al confirmar el conteo; el motivo llega después, si llega. */
                     <span className="text-body-sm text-text-secondary">Sin explicar</span>
                   ) : null}
@@ -247,6 +260,14 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: React.ReactNode })
       <dd className="mt-1 text-body text-text-primary">{valor}</dd>
     </div>
   );
+}
+
+/** «+2 de 20 · −1 de 50»: qué cambió en los billetes. */
+function describir(b: Readonly<Record<string, number>>): string {
+  return lineas(b)
+    .filter((l) => l.cantidad !== 0)
+    .map((l) => `${l.cantidad > 0 ? "+" : "−"}${Math.abs(l.cantidad)} de ${formatoDeDenominacion(l.valor)}`)
+    .join(" · ");
 }
 
 /** En qué quedó la solicitud de una diferencia. Con enlace solo donde hay a dónde ir. */

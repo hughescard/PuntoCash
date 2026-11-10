@@ -14,8 +14,6 @@ import {
   abrirJornadaDeclarada,
   alcanzaParaEntregar,
   cerrarConArqueo,
-  contarParaAjuste,
-  explicarAjuste,
   contextoDe,
   explicarCierre,
   declararConteoDeApertura,
@@ -24,6 +22,7 @@ import {
   registrarOperacionSimple,
   type AperturaDeclarada,
   type CajaDenial,
+  type ConteoPorBilletes,
   type ContextoDeCaja,
   type OperacionPorRegistrar,
 } from "@/features/network/caja-operativa";
@@ -198,70 +197,22 @@ async function conCaja<T>(fn: (ctx: ContextoDeCaja) => AccionDeCaja<T>): Promise
   return r;
 }
 
+/** Un conteo por billete, como llega de la pantalla: por moneda, cuántos de cada denominación. */
+type Conteo = readonly ConteoPorBilletes[];
+
+/** La explicación de una diferencia: el supervisor viaja por su identificador de la lista. */
+type Explicaciones = readonly { currency: string; motivo?: string; observaciones?: string; supervisorId?: string }[];
+
 /** Declara el conteo de apertura: desde aquí ya no se cambia. */
-export async function declararAperturaAction(
-  conteos: readonly { currency: string; contado: number }[],
-): Promise<AccionDeCaja<AperturaDeclarada>> {
+export async function declararAperturaAction(conteos: Conteo): Promise<AccionDeCaja<AperturaDeclarada>> {
   return conCaja((ctx) => declararConteoDeApertura(ctx, conteos));
 }
 
 /** Abre con lo declarado; solo viajan los motivos de las diferencias. */
-export async function abrirJornadaAction(
-  explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
-): Promise<AccionDeCaja<{ openedAt: string }>> {
+export async function abrirJornadaAction(explicaciones: Explicaciones): Promise<AccionDeCaja<{ openedAt: string }>> {
   return conCaja((ctx) => {
     const r = abrirJornadaDeclarada(ctx, explicaciones);
     return r.ok ? { ok: true, value: { openedAt: r.value.openedAt } } : r;
-  });
-}
-
-/**
- * Un ajuste de efectivo como lo ve Worker: **sin saldos**. Solo lo que contó,
- * en qué moneda, y la diferencia que resultó (si la hubo).
- */
-export interface AjusteRegistrado {
-  movementId: string;
-  fechaHora: string;
-  currency: string;
-  diferencia: number;
-  motivo?: string;
-  observaciones?: string;
-}
-
-function aAjuste(m: { id: string; fechaHora: string; currency: string; amount: number; motivo?: string; observaciones?: string }): AjusteRegistrado {
-  return {
-    movementId: m.id,
-    fechaHora: m.fechaHora,
-    currency: m.currency,
-    diferencia: m.amount,
-    ...(m.motivo ? { motivo: m.motivo } : {}),
-    ...(m.observaciones ? { observaciones: m.observaciones } : {}),
-  };
-}
-
-/**
- * Ajustar efectivo, paso 1: lo contado, a ciegas. Queda registrado al
- * confirmar; `null` si coincide con la caja y no hay nada que ajustar.
- */
-export async function contarParaAjusteAction(input: {
-  currency: string;
-  contado: number;
-}): Promise<AccionDeCaja<AjusteRegistrado | null>> {
-  return conCaja((ctx) => {
-    const r = contarParaAjuste(ctx, input);
-    if (!r.ok) return r;
-    return { ok: true, value: r.value ? aAjuste(r.value) : null };
-  });
-}
-
-/** Ajustar efectivo, paso 2: el motivo de la diferencia que se acaba de registrar. */
-export async function explicarAjusteAction(
-  movementId: string,
-  input: { motivo?: string; observaciones?: string },
-): Promise<AccionDeCaja<AjusteRegistrado>> {
-  return conCaja((ctx) => {
-    const r = explicarAjuste(ctx, movementId, input);
-    return r.ok ? { ok: true, value: aAjuste(r.value) } : r;
   });
 }
 
@@ -269,8 +220,20 @@ export interface CierreRegistrado {
   jornadaId: string;
   openedAt: string;
   closedAt: string;
-  /** Lo contado y la diferencia; **sin el esperado**: Worker no ve el saldo en libros. */
-  monedas: readonly { currency: string; contado: number; diferencia: number; motivo?: string; observaciones?: string }[];
+  /**
+   * Lo contado y la diferencia; **sin el esperado**: Worker no ve el saldo en
+   * libros. Si el total cuadró pero los billetes no, `composicion` dice qué
+   * cambió por denominación.
+   */
+  monedas: readonly {
+    currency: string;
+    contado: number;
+    diferencia: number;
+    composicion?: Readonly<Record<string, number>>;
+    motivo?: string;
+    observaciones?: string;
+    supervisor?: string;
+  }[];
 }
 
 function aCierreRegistrado(j: Jornada): CierreRegistrado {
@@ -278,26 +241,24 @@ function aCierreRegistrado(j: Jornada): CierreRegistrado {
     jornadaId: j.id,
     openedAt: j.openedAt,
     closedAt: j.closedAt!,
-    monedas: (j.arqueo?.monedas ?? []).map((a) => {
-      const mov = j.movimientos.find((m) => m.concepto === "Ajuste de cierre" && m.currency === a.currency);
-      return {
-        currency: a.currency,
-        contado: a.contado,
-        diferencia: a.diferencia,
-        ...(a.motivo ? { motivo: a.motivo } : {}),
-        ...(mov?.observaciones ? { observaciones: mov.observaciones } : {}),
-      };
-    }),
+    monedas: (j.arqueo?.monedas ?? []).map((a) => ({
+      currency: a.currency,
+      contado: a.contado,
+      diferencia: a.diferencia,
+      ...(a.composicion ? { composicion: a.composicion } : {}),
+      ...(a.motivo ? { motivo: a.motivo } : {}),
+      ...(a.observaciones ? { observaciones: a.observaciones } : {}),
+      ...(a.supervisor ? { supervisor: a.supervisor } : {}),
+    })),
   };
 }
 
 /**
- * Arqueo y cierre en un solo acto: el conteo, hecho a ciegas, cierra la
- * jornada en el momento de confirmarlo. Los motivos van después.
+ * Arqueo y cierre en un solo acto: el conteo, hecho a ciegas y billete a
+ * billete, cierra la jornada en el momento de confirmarlo. Los motivos van
+ * después.
  */
-export async function cerrarConArqueoAction(
-  conteos: readonly { currency: string; contado: number }[],
-): Promise<AccionDeCaja<CierreRegistrado>> {
+export async function cerrarConArqueoAction(conteos: Conteo): Promise<AccionDeCaja<CierreRegistrado>> {
   return conCaja((ctx) => {
     const r = cerrarConArqueo(ctx, conteos);
     return r.ok ? { ok: true, value: aCierreRegistrado(r.value) } : r;
@@ -305,10 +266,7 @@ export async function cerrarConArqueoAction(
 }
 
 /** Los motivos de las diferencias del cierre que se acaba de hacer. */
-export async function explicarCierreAction(
-  jornadaId: string,
-  explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
-): Promise<AccionDeCaja<CierreRegistrado>> {
+export async function explicarCierreAction(jornadaId: string, explicaciones: Explicaciones): Promise<AccionDeCaja<CierreRegistrado>> {
   return conCaja((ctx) => {
     const r = explicarCierre(ctx, jornadaId, explicaciones);
     return r.ok ? { ok: true, value: aCierreRegistrado(r.value) } : r;

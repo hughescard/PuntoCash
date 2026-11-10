@@ -108,15 +108,37 @@ export async function rellenar(campo: Locator, valor: string): Promise<void> {
  * no estén en `funds`, en cero—, revisa y confirma. Es la primera jornada del
  * puesto, así que no hay diferencias que explicar. Se queda en el resultado.
  */
+/**
+ * Rellena el conteo billete a billete (decisión del 9/11/2026) con los
+ * importes dados, desglosados de mayor a menor con las denominaciones que la
+ * pantalla ofrece. Vacía antes cada fila: la apertura viene rellenada. Una
+ * moneda que no está en `funds` queda en cero.
+ */
+export async function rellenarConteo(page: Page, funds: Record<string, string>): Promise<void> {
+  const secciones = page.getByRole("region", { name: /^Conteo de [A-Z]{3}$/ });
+  for (const seccion of await secciones.all()) {
+    const code = /([A-Z]{3})$/.exec((await seccion.getAttribute("aria-label")) ?? "")?.[1] ?? "";
+    const campos = await seccion.getByRole("textbox").all();
+    const valores: { campo: (typeof campos)[number]; centimos: number }[] = [];
+    for (const campo of campos) {
+      const label = (await campo.getAttribute("aria-label")) ?? "";
+      const m = /de ([\d.,]+) [A-Z]{3}$/.exec(label);
+      valores.push({ campo, centimos: m ? Math.round(Number(m[1]!.replaceAll(".", "").replace(",", ".")) * 100) : 0 });
+    }
+    let resto = Math.round(Number((funds[code] ?? "0").replaceAll(".", "").replace(",", ".")) * 100);
+    for (const v of valores.sort((a, b) => b.centimos - a.centimos)) {
+      const n = v.centimos > 0 ? Math.floor(resto / v.centimos) : 0;
+      resto -= n * v.centimos;
+      await v.campo.fill(n > 0 ? String(n) : "");
+    }
+    if (resto !== 0) throw new Error(`${code}: ${funds[code]} no se puede formar con sus denominaciones`);
+  }
+}
+
 export async function abrirPorPantalla(page: Page, funds: Record<string, string>): Promise<void> {
   await page.goto("/worker/caja/fondeo-inicial");
   await esperarFondeoVivo(page);
-  const campos = page.getByLabel(/^Efectivo contado en [A-Z]{3}$/);
-  for (const campo of await campos.all()) {
-    const label = (await campo.getAttribute("aria-label")) ?? (await campo.evaluate((el) => (el as HTMLInputElement).labels?.[0]?.textContent ?? ""));
-    const code = /([A-Z]{3})$/.exec(label.trim())?.[1] ?? "";
-    await rellenar(campo, funds[code] ?? "0");
-  }
+  await rellenarConteo(page, funds);
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Confirmar conteo" }).click();
   await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();

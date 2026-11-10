@@ -16,11 +16,15 @@
  *   · Un servicio que PuntoCash no habilitó en la sede no se presta.
  *   · Un cambio se cotiza con las tasas **en vigor** de la sede, y el servidor
  *     vuelve a cotizarlo al confirmar: la cifra de la pantalla no se cree.
- *   · **Cierre a ciegas, apertura con totales:** quien cierra cuenta sin ver
- *     los libros, así que su diferencia contra ellos es suya; quien abre ve lo
- *     que declaró y dice lo que recibe. Los dos conteos se declaran una vez.
- *     Toda diferencia lleva motivo compatible con su signo y nace como
- *     solicitud. Tras un cierre forzado, lo entregado es el saldo en libros.
+ *   · **Cierre a ciegas, apertura con totales, billete a billete:** quien
+ *     cierra cuenta sin ver los libros, así que su diferencia contra ellos es
+ *     suya; quien abre ve lo que declaró y dice lo que recibe. Los dos conteos
+ *     se declaran una vez y se hacen por denominación (decisión del 9/11). Una
+ *     diferencia de importe lleva motivo compatible con su signo; si el total
+ *     cuadra pero los billetes no, es una diferencia de composición con sus
+ *     propias causas. Todas nacen como solicitud. El inventario de la caja
+ *     queda siempre igual a lo contado. Tras un cierre forzado, lo entregado
+ *     es el saldo en libros.
  *   · **Sede suspendida o cerrada, u operador suspendido:** no se registra
  *     nada nuevo, pero la jornada abierta **sí puede cerrarse**, para que no
  *     quede efectivo en una caja abierta sin salida (decisión del 5/11/2026).
@@ -34,13 +38,17 @@ import type {
   OperationServiceName,
 } from "@/features/operations/operations-history";
 
+import { desglosarDeMayorAMenor, restar, sumar, totalDe, type Billetes, type Denominacion } from "@/features/caja/billetes";
 import { almacen } from "./almacen";
-import { derivar, explicarSolicitud, explicarSolicitudDeCierre, registrarSolicitudes } from "./aprobaciones";
-import { estadoDeSede } from "./assignments";
+import { derivar, explicarSolicitudDeCierre, registrarSolicitudes } from "./aprobaciones";
+import { estadoDeSede, operadorVigente } from "./assignments";
+import { denominacionesDe, todasLasDenominaciones } from "./denominaciones";
+import { adminUsersOf } from "./operators";
 import { anotarSaldoDeCaja, habilitarMonedaEnCaja, monedasDeCaja, monedasDeSede, sedeManejaMoneda } from "./currencies";
 import { findTerminalById, marcarActividad } from "./devices";
 import {
   diaEnCuba,
+  inventarioDeJornada,
   jornadaAbiertaDeCaja,
   jornadaAbiertaDeTrabajador,
   jornadaPorId,
@@ -50,8 +58,12 @@ import {
   type AperturaMoneda,
   type ArqueoMoneda,
   type Jornada,
-  type MotivoDeApertura,
   type MovimientoDeJornada,
+  MOTIVOS_DE_COMPOSICION_APERTURA,
+  MOTIVOS_DE_COMPOSICION_CIERRE,
+  MOTIVOS_DE_DIFERENCIA,
+  MOTIVOS_DE_FONDOS,
+  SUPERVISOR_CAMBIO_BILLETES,
 } from "./jornadas";
 import { registrarOperacion, siguienteCodigoDeOperacion, type OperacionDeRed } from "./operaciones";
 import { motivoFueraDeVigor, tasasDeSede } from "./rates";
@@ -149,7 +161,15 @@ export interface EstadoDeCaja {
     monedas: readonly string[];
     /** Lo entregado por moneda; vacío en la primera jornada. */
     entregado: readonly Saldo[];
+    /** Lo entregado billete a billete: con lo que se rellena el conteo de apertura. */
+    billetesEntregados: Readonly<Record<string, Billetes>>;
   };
+  /**
+   * Las denominaciones que se cuentan en cada moneda de la caja: las del
+   * catálogo y, si alguna se retiró, también la que todavía quede dentro. De
+   * mayor a menor.
+   */
+  denominaciones: Readonly<Record<string, readonly Denominacion[]>>;
   /** Las tasas que puede aplicar ahora la caja: las en vigor de la sede. */
   tasas: readonly TasaVigente[];
   /** Servicios habilitados por PuntoCash en la sede. */
@@ -190,7 +210,9 @@ export function estadoDeCaja(ctx: ContextoDeCaja): EstadoDeCaja {
         : null,
       monedas: ordenar([...saldos.keys()].map((currency) => ({ currency, amount: 0 })), listaDeLaSede).map((s) => s.currency),
       entregado: ultima && !jornada ? ordenar([...saldos].map(([currency, amount]) => ({ currency, amount })), listaDeLaSede) : [],
+      billetesEntregados: ultima && !jornada ? Object.fromEntries(inventarioDeJornada(ultima)) : {},
     },
+    denominaciones: Object.fromEntries([...saldos.keys()].map((c) => [c, denominacionesContables(ctx.register.id, c)])),
     tasas: tasasVigentes(ctx.sede.id),
     servicios: ctx.sede.status === "cerrada" ? [] : ctx.sede.services,
     jornadaEnOtraCaja: (() => {
@@ -240,18 +262,18 @@ export type CajaDenial =
   | "sin-conteo-declarado"
   /** Las diferencias de ese cierre ya se explicaron, o no hay nada que explicar. */
   | "cierre-sin-explicacion-pendiente"
-  /** Ese ajuste ya tiene motivo, o no es un ajuste de esta jornada. */
-  | "ajuste-sin-explicacion-pendiente";
+  /** Reposición, retiro o cambio de billetes sin un supervisor de la lista. */
+  | "supervisor-requerido"
+  /** Una moneda sin denominaciones en el catálogo: no se puede contar. */
+  | "sin-denominaciones"
+  /** Una denominación que no es de esa moneda, o una cantidad que no es un entero. */
+  | "denominacion-invalida";
 
 export type CajaResult<T> = { ok: true; value: T } | { ok: false; reason: CajaDenial; currency?: string };
 
 const no = <T>(reason: CajaDenial, currency?: string): CajaResult<T> => ({ ok: false, reason, ...(currency ? { currency } : {}) });
 
 /* -- Motivos -------------------------------------------------------------- */
-
-/** Durante la jornada o al cerrar: por qué lo contado no es lo registrado [R8]. */
-export const MOTIVOS_DE_AJUSTE = ["Faltante detectado", "Sobrante detectado", "Otro"] as const;
-export type MotivoDeAjuste = (typeof MOTIVOS_DE_AJUSTE)[number];
 
 const SOLO_POSITIVA = new Set(["Sobrante detectado", "Reposición de fondos"]);
 const SOLO_NEGATIVA = new Set(["Faltante detectado", "Retiro de fondos"]);
@@ -267,23 +289,110 @@ export function motivoCompatible(motivo: string, diferencia: number): boolean {
 interface Explicacion {
   motivo?: string;
   observaciones?: string;
+  /** El supervisor de la lista, por su identificador: nunca un nombre escrito a mano. */
+  supervisorId?: string;
 }
 
+/**
+ * Los supervisores que pueden reponer, retirar o cambiar billetes en la caja:
+ * los administradores de la empresa que opera la sede hoy.
+ */
+export function supervisoresDe(ctx: Pick<ContextoDeCaja, "sede">): readonly { id: string; nombre: string }[] {
+  const operador = operadorVigente(ctx.sede.id);
+  return operador ? adminUsersOf(operador).map((u) => ({ id: u.id, nombre: u.fullName })) : [];
+}
+
+function supervisorValido(ctx: Pick<ContextoDeCaja, "sede">, id: string | undefined): string | null {
+  if (!id) return null;
+  return supervisoresDe(ctx).find((s) => s.id === id)?.nombre ?? null;
+}
+
+/** Lo que explica una diferencia, ya revisado: el motivo, sus observaciones y, si toca, el supervisor. */
+interface ExplicacionRevisada {
+  motivo: string;
+  observaciones?: string;
+  supervisor?: string;
+}
+
+/**
+ * Revisa la explicación de una diferencia. Si el total no cuadra, motivos de
+ * importe compatibles con el signo; si cuadra pero los billetes no, los de
+ * composición del momento (abrir o cerrar). Reposición, retiro y «El
+ * supervisor cambió billetes» piden un supervisor de la lista; «Otro», sus
+ * observaciones.
+ */
 function revisarExplicacion(
+  ctx: Pick<ContextoDeCaja, "sede">,
   diferencia: number,
+  composicion: Billetes | undefined,
+  momento: "apertura" | "cierre",
   e: Explicacion | undefined,
-  validos: readonly string[],
   currency: string,
-): CajaResult<null> {
-  if (diferencia === 0) return { ok: true, value: null };
+): CajaResult<ExplicacionRevisada | null> {
+  const deComposicion = diferencia === 0 && composicion !== undefined;
+  if (diferencia === 0 && !deComposicion) return { ok: true, value: null };
   if (!e?.motivo) return no("motivo-requerido", currency);
-  if (!validos.includes(e.motivo) || !motivoCompatible(e.motivo, diferencia)) return no("motivo-incompatible", currency);
-  if (e.motivo === "Otro" && !e.observaciones?.trim()) return no("observaciones-requeridas", currency);
-  return { ok: true, value: null };
+  if (deComposicion) {
+    const validos: readonly string[] = momento === "cierre" ? MOTIVOS_DE_COMPOSICION_CIERRE : MOTIVOS_DE_COMPOSICION_APERTURA;
+    if (!validos.includes(e.motivo)) return no("motivo-incompatible", currency);
+  } else if (!(MOTIVOS_DE_DIFERENCIA as readonly string[]).includes(e.motivo) || !motivoCompatible(e.motivo, diferencia)) {
+    return no("motivo-incompatible", currency);
+  }
+  const observaciones = e.observaciones?.trim() || undefined;
+  if (e.motivo === "Otro" && !observaciones) return no("observaciones-requeridas", currency);
+  let supervisor: string | undefined;
+  if (MOTIVOS_DE_FONDOS.has(e.motivo) || e.motivo === SUPERVISOR_CAMBIO_BILLETES) {
+    const nombre = supervisorValido(ctx, e.supervisorId);
+    if (!nombre) return no("supervisor-requerido", currency);
+    supervisor = nombre;
+  }
+  return { ok: true, value: { motivo: e.motivo, ...(observaciones ? { observaciones } : {}), ...(supervisor ? { supervisor } : {}) } };
 }
 
-function conteoValido(n: number): boolean {
-  return Number.isFinite(n) && n >= 0 && Math.round(n * 100) === n * 100;
+/* -- Conteos por billete -------------------------------------------------- */
+
+/** Lo que cuenta el trabajador en una moneda: cuántos billetes de cada denominación. */
+export interface ConteoPorBilletes {
+  currency: string;
+  /** Clave, el valor en céntimos; cantidad, un entero mayor o igual que cero. */
+  billetes: Billetes;
+}
+
+/**
+ * Las denominaciones que se cuentan en una moneda de la caja: las del
+ * catálogo y las retiradas que todavía estén dentro, de mayor a menor.
+ */
+export function denominacionesContables(registerId: string, currency: string): readonly Denominacion[] {
+  const activas = denominacionesDe(currency);
+  const ultima = jornadaAbiertaDeCaja(registerId) ?? ultimaJornadaCerradaDeCaja(registerId);
+  const dentro = ultima ? inventarioDeJornada(ultima).get(currency) ?? {} : {};
+  const out = new Map(activas.map((d) => [Math.round(d.valor * 100), d]));
+  for (const d of todasLasDenominaciones(currency)) {
+    const k = Math.round(d.valor * 100);
+    if (!out.has(k) && (dentro[String(k)] ?? 0) > 0) out.set(k, { valor: d.valor, tipo: d.tipo });
+  }
+  return [...out.values()].sort((a, b) => b.valor - a.valor);
+}
+
+/** Valida un conteo por billete y lo devuelve limpio (sin ceros). */
+function revisarConteo(registerId: string, c: ConteoPorBilletes): CajaResult<Billetes> {
+  const permitidas = new Set(denominacionesContables(registerId, c.currency).map((d) => String(Math.round(d.valor * 100))));
+  if (permitidas.size === 0) return no("sin-denominaciones", c.currency);
+  const limpio: Record<string, number> = {};
+  for (const [k, n] of Object.entries(c.billetes ?? {})) {
+    if (!permitidas.has(k) || !Number.isInteger(n) || n < 0) return no("denominacion-invalida", c.currency);
+    if (n > 0) limpio[k] = n;
+  }
+  return { ok: true, value: limpio };
+}
+
+function vacio(b: Billetes | undefined): boolean {
+  return !b || Object.values(b).every((n) => n === 0);
+}
+
+/** Si el sistema conoce todos los billetes que deberían estar: el desglose suma el saldo. */
+function desgloseCompleto(billetes: Billetes | undefined, saldo: number): boolean {
+  return Math.abs(totalDe(billetes ?? {}) - saldo) < 0.005;
 }
 
 /* -- Ayudas de libro ------------------------------------------------------ */
@@ -328,15 +437,11 @@ function jornadaPropia(ctx: ContextoDeCaja): CajaResult<Jornada> {
   return { ok: true, value: j };
 }
 
-/* -- Apertura ------------------------------------------------------------- */
-
-export interface ConteoDeApertura {
-  currency: string;
-  contado: number;
-  /** Se valida contra los motivos de apertura y el signo antes de guardarse. */
-  motivo?: string;
-  observaciones?: string;
+function redondear(n: number): number {
+  return Math.round(n * 100) / 100;
 }
+
+/* -- Apertura ------------------------------------------------------------- */
 
 export interface ComparacionDeApertura {
   cierreAnterior: EstadoDeCaja["apertura"]["cierreAnterior"];
@@ -344,35 +449,36 @@ export interface ComparacionDeApertura {
 }
 
 /**
- * Compara lo contado con lo que dejó el cierre anterior, **sin abrir nada**.
- * Con lo comparado, el trabajador explica cada moneda que no coincide.
+ * Compara lo contado con lo que dejó el cierre anterior, **sin abrir nada**:
+ * por importe y, si el importe cuadra y el sistema conocía todos los billetes
+ * dejados, también por composición.
  */
-export function compararApertura(ctx: ContextoDeCaja, conteos: readonly { currency: string; contado: number }[]): CajaResult<ComparacionDeApertura> {
+export function compararApertura(ctx: ContextoDeCaja, conteos: readonly ConteoPorBilletes[]): CajaResult<ComparacionDeApertura> {
   const estado = estadoDeCaja(ctx);
   if (estado.jornada) return no("jornada-abierta");
   if (estado.bloqueo) return no("bloqueada");
   const monedas = estado.apertura.monedas;
-  const porMoneda = new Map(conteos.map((c) => [c.currency, c.contado]));
-  if (monedas.some((c) => !porMoneda.has(c)) || conteos.some((c) => !monedas.includes(c.currency) || !conteoValido(c.contado))) {
-    return no("conteo-invalido");
-  }
+  const porMoneda = new Map(conteos.map((c) => [c.currency, c]));
+  if (monedas.some((c) => !porMoneda.has(c)) || conteos.some((c) => !monedas.includes(c.currency))) return no("conteo-invalido");
   const dejado = saldosQueQuedaron(ctx.register.id);
+  const ultima = ultimaJornadaCerradaDeCaja(ctx.register.id);
+  const dejadosBilletes = ultima ? inventarioDeJornada(ultima) : new Map<string, Billetes>();
   const hayCierre = estado.apertura.cierreAnterior !== null;
-  return {
-    ok: true,
-    value: {
-      cierreAnterior: estado.apertura.cierreAnterior,
-      monedas: monedas.map((currency) => {
-        const contado = porMoneda.get(currency)!;
-        const d = hayCierre ? dejado.get(currency) ?? 0 : null;
-        return { currency, dejado: d, contado, diferencia: d === null ? contado : redondear(contado - d) };
-      }),
-    },
-  };
-}
-
-function redondear(n: number): number {
-  return Math.round(n * 100) / 100;
+  const out: AperturaMoneda[] = [];
+  for (const currency of monedas) {
+    const r = revisarConteo(ctx.register.id, porMoneda.get(currency)!);
+    if (!r.ok) return r as CajaResult<ComparacionDeApertura>;
+    const billetes = r.value;
+    const contado = totalDe(billetes);
+    const d = hayCierre ? dejado.get(currency) ?? 0 : null;
+    const diferencia = d === null ? contado : redondear(contado - d);
+    const dejados = dejadosBilletes.get(currency);
+    const delta = hayCierre && dejados ? restar(billetes, dejados) : undefined;
+    const composicion =
+      hayCierre && diferencia === 0 && d !== null && desgloseCompleto(dejados, d) && !vacio(delta) ? delta : undefined;
+    out.push({ currency, dejado: d, contado, diferencia, billetes, ...(composicion ? { composicion } : {}) });
+  }
+  return { ok: true, value: { cierreAnterior: estado.apertura.cierreAnterior, monedas: out } };
 }
 
 /* -- Conteo de apertura declarado ----------------------------------------- */
@@ -391,10 +497,10 @@ interface ConteoDeclarado {
   registerId: string;
   workerId: string;
   declaradoAt: string;
-  conteos: readonly { currency: string; contado: number }[];
+  conteos: readonly ConteoPorBilletes[];
 }
 
-const declarados = almacen("conteos-de-apertura", () => new Map<string, ConteoDeclarado>());
+const declarados = almacen("conteos-de-apertura-por-billete", () => new Map<string, ConteoDeclarado>());
 const claveDeclarado = (ctx: Pick<ContextoDeCaja, "register" | "worker">) => `${ctx.register.id}|${ctx.worker.id}`;
 
 export interface AperturaDeclarada {
@@ -404,7 +510,7 @@ export interface AperturaDeclarada {
 
 export function declararConteoDeApertura(
   ctx: ContextoDeCaja,
-  conteos: readonly { currency: string; contado: number }[],
+  conteos: readonly ConteoPorBilletes[],
   now = new Date(),
 ): CajaResult<AperturaDeclarada> {
   if (declarados.has(claveDeclarado(ctx))) return no("conteo-ya-declarado");
@@ -416,7 +522,7 @@ export function declararConteoDeApertura(
     registerId: ctx.register.id,
     workerId: ctx.worker.id,
     declaradoAt,
-    conteos: conteos.map((c) => ({ currency: c.currency, contado: c.contado })),
+    conteos: comparada.value.monedas.map((m) => ({ currency: m.currency, billetes: m.billetes ?? {} })),
   });
   return { ok: true, value: { declaradoAt, comparacion: comparada.value } };
 }
@@ -432,7 +538,7 @@ export function aperturaDeclarada(ctx: ContextoDeCaja): AperturaDeclarada | null
 /** Abre la jornada con **el conteo declarado**; del trabajador solo llegan los motivos. */
 export function abrirJornadaDeclarada(
   ctx: ContextoDeCaja,
-  explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
+  explicaciones: readonly ({ currency: string } & Explicacion)[],
   now = new Date(),
 ): CajaResult<Jornada> {
   const d = declarados.get(claveDeclarado(ctx));
@@ -440,10 +546,7 @@ export function abrirJornadaDeclarada(
   const porMoneda = new Map(explicaciones.map((e) => [e.currency, e]));
   return abrirJornada(
     ctx,
-    d.conteos.map((c) => {
-      const e = porMoneda.get(c.currency);
-      return { ...c, ...(e?.motivo ? { motivo: e.motivo } : {}), ...(e?.observaciones ? { observaciones: e.observaciones } : {}) };
-    }),
+    d.conteos.map((c) => ({ ...porMoneda.get(c.currency), ...c })),
     now,
   );
 }
@@ -454,9 +557,10 @@ function descartarDeclarados(registerId: string): void {
 
 /**
  * Abre la jornada con lo contado. Toda diferencia con el cierre anterior
- * necesita su motivo, y cada una nace como solicitud de aprobación.
+ * —de importe o de composición— necesita su motivo, y cada una nace como
+ * solicitud de aprobación. El fondeo entra con los billetes contados.
  */
-export function abrirJornada(ctx: ContextoDeCaja, conteos: readonly ConteoDeApertura[], now = new Date()): CajaResult<Jornada> {
+export function abrirJornada(ctx: ContextoDeCaja, conteos: readonly (ConteoPorBilletes & Explicacion)[], now = new Date()): CajaResult<Jornada> {
   if (jornadaAbiertaDeTrabajador(ctx.worker.id)) return no("trabajador-con-otra-jornada");
   const comparada = compararApertura(ctx, conteos);
   if (!comparada.ok) return comparada;
@@ -465,16 +569,13 @@ export function abrirJornada(ctx: ContextoDeCaja, conteos: readonly ConteoDeAper
   const porMoneda = new Map(conteos.map((c) => [c.currency, c]));
   const monedas: AperturaMoneda[] = [];
   for (const m of comparada.value.monedas) {
-    const c = porMoneda.get(m.currency)!;
+    let explicacion: ExplicacionRevisada | null = null;
     if (hayCierre) {
-      const r = revisarExplicacion(m.diferencia, c, ["Reposición de fondos", "Retiro de fondos", "Faltante detectado", "Sobrante detectado", "Otro"], m.currency);
+      const r = revisarExplicacion(ctx, m.diferencia, m.composicion, "apertura", porMoneda.get(m.currency), m.currency);
       if (!r.ok) return r as CajaResult<Jornada>;
+      explicacion = r.value;
     }
-    monedas.push({
-      ...m,
-      ...(hayCierre && m.diferencia !== 0 && c.motivo ? { motivo: c.motivo as MotivoDeApertura } : {}),
-      ...(hayCierre && m.diferencia !== 0 && c.observaciones?.trim() ? { observaciones: c.observaciones.trim() } : {}),
-    });
+    monedas.push({ ...m, ...(explicacion ?? {}) });
   }
 
   const ca = comparada.value.cierreAnterior;
@@ -502,7 +603,14 @@ export function abrirJornada(ctx: ContextoDeCaja, conteos: readonly ConteoDeAper
   for (const m of monedas) {
     /* Un conteo en cero no es un hecho de efectivo, pero la moneda sigue habilitada. */
     if (m.contado > 0) {
-      movimiento(jornada, { fechaHora: jornada.openedAt, tipo: "entrada", concepto: "Fondeo inicial", currency: m.currency, amount: m.contado });
+      movimiento(jornada, {
+        fechaHora: jornada.openedAt,
+        tipo: "entrada",
+        concepto: "Fondeo inicial",
+        currency: m.currency,
+        amount: m.contado,
+        ...(m.billetes && !vacio(m.billetes) ? { billetes: m.billetes } : {}),
+      });
     } else {
       anotarSaldoDeCaja(ctx.register.id, m.currency, 0);
     }
@@ -512,84 +620,6 @@ export function abrirJornada(ctx: ContextoDeCaja, conteos: readonly ConteoDeAper
   registrarSolicitudes(derivar(jornada));
   marcarActividad(ctx.terminal.id, now);
   return { ok: true, value: jornada };
-}
-
-/* -- Ajuste de efectivo --------------------------------------------------- */
-
-/**
- * **Ajustar efectivo, a ciegas** (decisión del 6/11/2026). El trabajador no
- * ve el saldo de su caja: cuenta una moneda y declara lo contado. El ajuste
- * queda registrado en ese momento, con la diferencia contra los libros y sin
- * motivo; el motivo se pide justo después (`explicarAjuste`). Si no llega, la
- * administración lo ve como «Sin explicar».
- *
- * Si lo contado coincide, no hay ajuste ni movimiento: `value` es `null`.
- */
-export function contarParaAjuste(
-  ctx: ContextoDeCaja,
-  input: { currency: string; contado: number },
-  now = new Date(),
-): CajaResult<MovimientoDeJornada | null> {
-  const propia = jornadaPropia(ctx);
-  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada | null>;
-  const j = propia.value;
-  if (bloqueoDe(ctx)) return no("bloqueada");
-  if (!monedasHabilitadas(ctx.register.id).has(input.currency)) return no("moneda-no-habilitada", input.currency);
-  if (!conteoValido(input.contado)) return no("conteo-invalido", input.currency);
-  const antes = saldoEnLibros(j, input.currency);
-  const diferencia = redondear(input.contado - antes);
-  if (diferencia === 0) return { ok: true, value: null };
-
-  const m = movimiento(j, {
-    fechaHora: now.toISOString(),
-    tipo: diferencia > 0 ? "entrada" : "salida",
-    concepto: "Ajuste de efectivo",
-    currency: input.currency,
-    amount: diferencia,
-    saldoAntes: antes,
-  });
-  registrarSolicitudes(derivar(j));
-  return { ok: true, value: m };
-}
-
-/** El motivo de un ajuste recién contado. Solo quien lo contó, en su jornada abierta, y una vez. */
-export function explicarAjuste(
-  ctx: ContextoDeCaja,
-  movimientoId: string,
-  input: { motivo?: string; observaciones?: string },
-): CajaResult<MovimientoDeJornada> {
-  const propia = jornadaPropia(ctx);
-  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada>;
-  const m = propia.value.movimientos.find((x) => x.id === movimientoId && x.concepto === "Ajuste de efectivo");
-  if (!m || m.motivo) return no("ajuste-sin-explicacion-pendiente");
-  const r = revisarExplicacion(m.amount, input, MOTIVOS_DE_AJUSTE, m.currency);
-  if (!r.ok) return r as CajaResult<MovimientoDeJornada>;
-  const observaciones = input.observaciones?.trim() || undefined;
-  m.motivo = input.motivo;
-  if (observaciones) m.observaciones = observaciones;
-  explicarSolicitud(`SOL-${m.id}`, input.motivo!, observaciones);
-  return { ok: true, value: m };
-}
-
-/** Contar y explicar de una vez. Lo usan las pruebas y el puesto de prueba. */
-export function ajustarEfectivo(
-  ctx: ContextoDeCaja,
-  input: { currency: string; contado: number; motivo: string; observaciones?: string },
-  now = new Date(),
-): CajaResult<MovimientoDeJornada> {
-  const propia = jornadaPropia(ctx);
-  if (!propia.ok) return propia as CajaResult<MovimientoDeJornada>;
-  const antes = saldoEnLibros(propia.value, input.currency);
-  if (monedasHabilitadas(ctx.register.id).has(input.currency) && conteoValido(input.contado)) {
-    const diferencia = redondear(input.contado - antes);
-    if (diferencia === 0) return no("diferencia-cero", input.currency);
-    const r = revisarExplicacion(diferencia, input, MOTIVOS_DE_AJUSTE, input.currency);
-    if (!r.ok) return r as CajaResult<MovimientoDeJornada>;
-  }
-  const c = contarParaAjuste(ctx, input, now);
-  if (!c.ok) return c as CajaResult<MovimientoDeJornada>;
-  if (!c.value) return no("diferencia-cero", input.currency);
-  return explicarAjuste(ctx, c.value.id, input);
 }
 
 /**
@@ -606,9 +636,16 @@ export function alcanzaParaEntregar(ctx: ContextoDeCaja, currency: string, impor
 
 /* -- Cierre --------------------------------------------------------------- */
 
+/**
+ * Cierra la jornada con lo contado billete a billete. Por cada moneda, si el
+ * total no cuadra con los libros hay una diferencia de importe; si cuadra
+ * pero los billetes no —y el sistema conocía todos los de la caja—, una de
+ * composición. **El inventario queda igual a lo contado** en cualquier caso:
+ * el sistema necesita saber qué billetes hay para seguir proponiendo.
+ */
 export function cerrarJornada(
   ctx: ContextoDeCaja,
-  conteos: readonly { currency: string; contado: number; motivo?: string; observaciones?: string }[],
+  conteos: readonly (ConteoPorBilletes & Explicacion)[],
   now = new Date(),
   opciones: { motivosDespues?: boolean } = {},
 ): CajaResult<Jornada> {
@@ -618,35 +655,56 @@ export function cerrarJornada(
   /* Cerrar se permite aunque la caja esté bloqueada: es su única salida. */
   const monedas = [...monedasHabilitadas(ctx.register.id)];
   const porMoneda = new Map(conteos.map((c) => [c.currency, c]));
-  if (!conteoDeCierreCompleto(monedas, conteos)) return no("conteo-invalido");
-  const arqueo: ArqueoMoneda[] = [];
+  if (monedas.some((c) => !porMoneda.has(c)) || conteos.some((c) => !monedas.includes(c.currency))) return no("conteo-invalido");
+  const inventario = inventarioDeJornada(j);
+  const arqueo: (ArqueoMoneda & { delta: Billetes })[] = [];
   for (const currency of monedas) {
     const c = porMoneda.get(currency)!;
+    const r = revisarConteo(ctx.register.id, c);
+    if (!r.ok) return r as CajaResult<Jornada>;
+    const billetes = r.value;
+    const contado = totalDe(billetes);
     const esperado = saldoEnLibros(j, currency);
-    const diferencia = redondear(c.contado - esperado);
+    const diferencia = redondear(contado - esperado);
+    const dentro = inventario.get(currency) ?? {};
+    const delta = restar(billetes, dentro);
+    const composicion = diferencia === 0 && desgloseCompleto(dentro, esperado) && !vacio(delta) ? delta : undefined;
+    let explicacion: ExplicacionRevisada | null = null;
     if (!opciones.motivosDespues) {
-      const r = revisarExplicacion(diferencia, c, MOTIVOS_DE_AJUSTE, currency);
-      if (!r.ok) return r as CajaResult<Jornada>;
+      const e = revisarExplicacion(ctx, diferencia, composicion, "cierre", c, currency);
+      if (!e.ok) return e as CajaResult<Jornada>;
+      explicacion = e.value;
     }
-    arqueo.push({ currency, esperado, contado: c.contado, diferencia, ...(diferencia !== 0 && c.motivo ? { motivo: c.motivo } : {}) });
+    arqueo.push({ currency, esperado, contado, diferencia, billetes, delta, ...(composicion ? { composicion } : {}), ...(explicacion ?? {}) });
   }
   const at = now.toISOString();
-  for (const a of arqueo.filter((x) => x.diferencia !== 0)) {
-    const c = porMoneda.get(a.currency)!;
+  for (const a of arqueo) {
+    if (a.diferencia === 0 && vacio(a.delta)) continue;
     movimiento(j, {
       fechaHora: at,
-      tipo: a.diferencia > 0 ? "entrada" : "salida",
-      concepto: "Ajuste de cierre",
+      tipo: a.diferencia >= 0 ? "entrada" : "salida",
+      /* Sin diferencia de importe, el movimiento solo corrige los billetes:
+         por una diferencia de composición, o porque el sistema no los conocía todos. */
+      concepto: a.diferencia !== 0 ? "Ajuste de cierre" : a.composicion ? "Ajuste de billetes al cerrar" : "Desglose del conteo de cierre",
       currency: a.currency,
       amount: a.diferencia,
+      ...(vacio(a.delta) ? {} : { billetes: a.delta }),
       ...(a.motivo ? { motivo: a.motivo } : {}),
+      ...(a.observaciones ? { observaciones: a.observaciones } : {}),
+      ...(a.supervisor ? { supervisor: a.supervisor } : {}),
       saldoAntes: a.esperado,
-      ...(c.observaciones?.trim() ? { observaciones: c.observaciones.trim() } : {}),
     });
   }
   j.estado = "cerrada";
   j.closedAt = at;
-  j.arqueo = { confirmadoAt: at, monedas: arqueo };
+  j.arqueo = {
+    confirmadoAt: at,
+    monedas: arqueo.map((a) => {
+      const copia: ArqueoMoneda & { delta?: Billetes } = { ...a };
+      delete copia.delta;
+      return copia;
+    }),
+  };
   j.saldosFinales = arqueo.map((a) => ({ currency: a.currency, amount: a.contado }));
   j.sesionActiva = false;
   for (const s of j.saldosFinales) anotarSaldoDeCaja(j.registerId, s.currency, s.amount);
@@ -654,9 +712,24 @@ export function cerrarJornada(
   return { ok: true, value: j };
 }
 
-function conteoDeCierreCompleto(monedas: readonly string[], conteos: readonly { currency: string; contado: number }[]): boolean {
-  const contadas = new Set(conteos.map((c) => c.currency));
-  return monedas.every((c) => contadas.has(c)) && conteos.every((c) => monedas.includes(c.currency) && conteoValido(c.contado));
+/**
+ * **Solo para pruebas y el puesto de prueba:** el conteo que cuadra con lo que
+ * hay, billete a billete. Lo que el sistema no tiene desglosado se completa de
+ * mayor a menor.
+ */
+export function conteoDeLoQueHay(ctx: ContextoDeCaja): ConteoPorBilletes[] {
+  const j = jornadaAbiertaDeCaja(ctx.register.id);
+  const inventario = j ? inventarioDeJornada(j) : new Map<string, Billetes>();
+  return [...monedasHabilitadas(ctx.register.id)].map((currency) => {
+    const dentro = inventario.get(currency) ?? {};
+    const falta = redondear((j ? saldoEnLibros(j, currency) : 0) - totalDe(dentro));
+    return { currency, billetes: falta > 0 ? sumar(dentro, desglosarDeMayorAMenor(falta, denominacionesDe(currency)).billetes) : dentro };
+  });
+}
+
+/** **Solo para pruebas y el puesto de prueba:** un importe en billetes, de mayor a menor. */
+export function billetesDeImporte(currency: string, importe: number): Billetes {
+  return desglosarDeMayorAMenor(importe, denominacionesDe(currency)).billetes;
 }
 
 /* -- Arqueo y cierre a ciegas ---------------------------------------------- */
@@ -676,48 +749,52 @@ function conteoDeCierreCompleto(monedas: readonly string[], conteos: readonly { 
  * —se va la luz, cierra el navegador—, la diferencia llega igual al
  * administrador, como «Sin explicar».
  */
-export function cerrarConArqueo(
-  ctx: ContextoDeCaja,
-  conteos: readonly { currency: string; contado: number }[],
-  now = new Date(),
-): CajaResult<Jornada> {
+export function cerrarConArqueo(ctx: ContextoDeCaja, conteos: readonly ConteoPorBilletes[], now = new Date()): CajaResult<Jornada> {
   return cerrarJornada(
     ctx,
-    conteos.map((c) => ({ currency: c.currency, contado: c.contado })),
+    conteos.map((c) => ({ currency: c.currency, billetes: c.billetes })),
     now,
     { motivosDespues: true },
   );
 }
 
 /**
- * Los motivos de las diferencias de un cierre recién hecho. Solo quien cerró,
- * desde la misma caja, todos a la vez y una sola vez.
+ * Los motivos de las diferencias —de importe o de composición— de un cierre
+ * recién hecho. Solo quien cerró, desde la misma caja, todos a la vez y una
+ * sola vez.
  */
 export function explicarCierre(
   ctx: ContextoDeCaja,
   jornadaId: string,
-  explicaciones: readonly { currency: string; motivo?: string; observaciones?: string }[],
+  explicaciones: readonly ({ currency: string } & Explicacion)[],
 ): CajaResult<Jornada> {
   const j = jornadaPorId(jornadaId);
   if (!j || j.workerId !== ctx.worker.id || j.registerId !== ctx.register.id) return no("jornada-de-otro");
   if (j.estado !== "cerrada" || !j.arqueo) return no("cierre-sin-explicacion-pendiente");
-  const pendientes = j.arqueo.monedas.filter((a) => a.diferencia !== 0 && !a.motivo);
+  const pendientes = j.arqueo.monedas.filter((a) => (a.diferencia !== 0 || a.composicion) && !a.motivo);
   if (pendientes.length === 0) return no("cierre-sin-explicacion-pendiente");
   const porMoneda = new Map(explicaciones.map((e) => [e.currency, e]));
+  const revisadas = new Map<string, ExplicacionRevisada>();
   for (const a of pendientes) {
-    const r = revisarExplicacion(a.diferencia, porMoneda.get(a.currency), MOTIVOS_DE_AJUSTE, a.currency);
+    const r = revisarExplicacion(ctx, a.diferencia, a.composicion, "cierre", porMoneda.get(a.currency), a.currency);
     if (!r.ok) return r as CajaResult<Jornada>;
+    if (r.value) revisadas.set(a.currency, r.value);
   }
   for (const a of pendientes) {
-    const e = porMoneda.get(a.currency)!;
-    const observaciones = e.observaciones?.trim() || undefined;
+    const e = revisadas.get(a.currency);
+    if (!e) continue;
     a.motivo = e.motivo;
-    const mov = j.movimientos.find((m) => m.concepto === "Ajuste de cierre" && m.currency === a.currency);
+    if (e.observaciones) a.observaciones = e.observaciones;
+    if (e.supervisor) a.supervisor = e.supervisor;
+    const mov = j.movimientos.find(
+      (m) => (m.concepto === "Ajuste de cierre" || m.concepto === "Ajuste de billetes al cerrar") && m.currency === a.currency,
+    );
     if (mov) {
       mov.motivo = e.motivo;
-      if (observaciones) mov.observaciones = observaciones;
+      if (e.observaciones) mov.observaciones = e.observaciones;
+      if (e.supervisor) mov.supervisor = e.supervisor;
     }
-    explicarSolicitudDeCierre(j.id, a.currency, e.motivo!, observaciones);
+    explicarSolicitudDeCierre(j.id, a.currency, e.motivo, e.observaciones, e.supervisor);
   }
   return { ok: true, value: j };
 }

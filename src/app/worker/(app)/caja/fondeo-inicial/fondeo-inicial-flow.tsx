@@ -21,39 +21,34 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  fieldAria,
-  type FieldSpec,
 } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
-import { formatDateTime, formatMoney, formatSignedAmount, parseAmountInput } from "@/lib/format";
+import { formatDateTime, formatMoney, formatSignedAmount } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
-import {
-  consumeFondeoInicialDraft,
-  findCajaCurrency,
-  getValidOpeningReasons,
-  saveFondeoInicialDraft,
-} from "@/features/caja/caja-data";
+import { consumeFondeoInicialDraft, saveFondeoInicialDraft } from "@/features/caja/caja-data";
+import type { Billetes } from "@/features/caja/billetes";
 import { useCaja } from "@/features/caja/use-caja";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
 import type { ComparacionDeApertura } from "@/features/network/caja-operativa";
 import { abrirJornadaAction, declararAperturaAction } from "../../../_actions";
+import {
+  aBilletes,
+  aUnidades,
+  ConteoPorBilletes,
+  describirComposicion,
+  explicacionIncompleta,
+  ExplicarDiferenciasFilas,
+  type ExplicacionDeDiferencia,
+  type Unidades,
+} from "../conteo-por-billetes";
 
 const CAJA_ROUTE = "/worker/caja" as Route;
 const ANADIR_MONEDA_ROUTE = "/worker/caja/anadir-moneda?returnTo=fondeo-inicial" as Route;
 
 type Step = "conteo" | "revision" | "completado";
 
-interface Explicacion {
-  motivo?: string;
-  observaciones?: string;
-}
+const conDiferencia = (m: { diferencia: number; composicion?: unknown }) => m.diferencia !== 0 || m.composicion !== undefined;
 
 /**
  * **Abrir jornada — con totales** (decisión del 5/11/2026).
@@ -65,11 +60,15 @@ interface Explicacion {
  * su propio cierre a ciegas lo comprobará contra los libros. Aceptar un total
  * sin comprobarlo no le libra de nada.
  *
+ * Se cuenta **billete a billete** (decisión del 9/11/2026): el formulario
+ * viene rellenado con los billetes que declaró quien cerró.
+ *
  * Al continuar se le avisa de que las cifras no se podrán cambiar; quedan
  * declaradas en el servidor y la apertura solo se confirma con ellas. Cada
- * diferencia pide su motivo («Reposición de fondos», «Retiro de fondos»,
- * «Faltante detectado», «Sobrante detectado» u «Otro» con observaciones) y
- * llega al administrador de la sede como solicitud de aprobación.
+ * diferencia pide su motivo y llega al administrador de la sede como
+ * solicitud de aprobación: si el total no cuadra, «Reposición de fondos» o
+ * «Retiro de fondos» (con el supervisor), «Faltante», «Sobrante» u «Otro»; si
+ * cuadra pero los billetes no, «El supervisor cambió billetes» u «Otro».
  *
  *   · Primera jornada de la caja: no hay totales; solo se cuenta.
  *   · Tras un cierre forzado: lo entregado es el saldo en libros, que nadie
@@ -88,8 +87,8 @@ export function FondeoInicialFlow(): React.JSX.Element {
   const entregado = React.useMemo(() => new Map(vista.apertura.entregado.map((e) => [e.currency, e.amount])), [vista.apertura.entregado]);
   /* Se abre con totales: lo que declaró quien cerró viene escrito, y quien
      abre cambia solo lo que no recibe. */
-  const [amounts, setAmounts] = React.useState<Record<string, string>>(
-    () => consumeFondeoInicialDraft()?.amounts ?? Object.fromEntries(vista.apertura.entregado.map((e) => [e.currency, e.amount.toFixed(2).replace(".", ",")])),
+  const [unidades, setUnidades] = React.useState<Unidades>(
+    () => consumeFondeoInicialDraft()?.unidades ?? aUnidades(vista.apertura.billetesEntregados),
   );
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | undefined>();
@@ -99,9 +98,9 @@ export function FondeoInicialFlow(): React.JSX.Element {
   const step: Step = declarada && pasoElegido === "conteo" ? "revision" : pasoElegido;
   const comparacion = comparacionLocal ?? declarada?.comparacion ?? null;
   /** Lo contado, a la espera de que el trabajador acepte que no se podrá cambiar. */
-  const [porDeclarar, setPorDeclarar] = React.useState<{ currency: string; contado: number }[] | null>(null);
+  const [porDeclarar, setPorDeclarar] = React.useState<{ currency: string; billetes: Billetes; contado: number }[] | null>(null);
 
-  const [explicaciones, setExplicaciones] = React.useState<Record<string, Explicacion>>({});
+  const [explicaciones, setExplicaciones] = React.useState<Record<string, ExplicacionDeDiferencia>>({});
   const [revisionSubmitted, setRevisionSubmitted] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [openedAt, setOpenedAt] = React.useState<string | null>(null);
@@ -110,8 +109,8 @@ export function FondeoInicialFlow(): React.JSX.Element {
      abrir este flujo, no: su pantalla de éxito no puede quedar tapada. */
   const blocked = caja.jornada !== null && openedAt === null;
 
-  function setAmount(currency: string, value: string) {
-    setAmounts((prev) => ({ ...prev, [currency]: value }));
+  function setUnidad(currency: string, k: string, value: string) {
+    setUnidades((prev) => ({ ...prev, [currency]: { ...prev[currency], [k]: value } }));
     setErrors((prev) => {
       const next = { ...prev };
       delete next[currency];
@@ -120,20 +119,12 @@ export function FondeoInicialFlow(): React.JSX.Element {
     setFormError(undefined);
   }
 
-  /** Paso 1 → 2. Todas las monedas se cuentan, también las que están en cero. */
+  /** Paso 1 → 2. Todas las monedas se cuentan; una fila vacía es cero. */
   async function handleContinue(event: React.FormEvent) {
     event.preventDefault();
-    const nextErrors: Record<string, string> = {};
-    const conteos: { currency: string; contado: number }[] = [];
-    for (const currency of monedas) {
-      const raw = amounts[currency]?.trim() ?? "";
-      const parsed = raw === "" ? null : parseAmountInput(raw);
-      if (raw === "") nextErrors[currency] = "Cuenta esta moneda. Si no hay efectivo, escribe 0.";
-      else if (parsed === null || parsed < 0) nextErrors[currency] = "Introduce un monto válido.";
-      else conteos.push({ currency, contado: parsed });
-    }
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
+    const { conteos, errores } = aBilletes(monedas, unidades);
+    if (Object.keys(errores).length > 0) {
+      setErrors(errores);
       return;
     }
     setPorDeclarar(conteos);
@@ -143,7 +134,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
   async function handleDeclarar() {
     if (!porDeclarar || submitting) return;
     setSubmitting(true);
-    const r = await declararAperturaAction(porDeclarar);
+    const r = await declararAperturaAction(porDeclarar.map(({ currency, billetes }) => ({ currency, billetes })));
     setSubmitting(false);
     setPorDeclarar(null);
     if (!r.ok) {
@@ -168,24 +159,25 @@ export function FondeoInicialFlow(): React.JSX.Element {
     router.refresh();
   }
 
-  const diferencias = comparacion && comparacion.cierreAnterior
-    ? comparacion.monedas.filter((m) => m.diferencia !== 0)
-    : [];
-
-  function explicacionIncompleta(currency: string): string | undefined {
-    const e = explicaciones[currency];
-    if (!e?.motivo) return "Indica el motivo de la diferencia.";
-    if (e.motivo === "Otro" && !e.observaciones?.trim()) return "Con «Otro», explica la diferencia en las observaciones.";
-    return undefined;
-  }
+  const diferencias = comparacion && comparacion.cierreAnterior ? comparacion.monedas.filter(conDiferencia) : [];
 
   async function handleConfirm() {
     if (!comparacion || submitting) return;
     setRevisionSubmitted(true);
-    if (diferencias.some((d) => explicacionIncompleta(d.currency))) return;
+    if (diferencias.some((d) => explicacionIncompleta(explicaciones[d.currency]))) return;
     setSubmitting(true);
     const r = await abrirJornadaAction(
-      comparacion.cierreAnterior ? diferencias.map((d) => ({ currency: d.currency, ...explicaciones[d.currency] })) : [],
+      comparacion.cierreAnterior
+        ? diferencias.map((d) => {
+            const e = explicaciones[d.currency]!;
+            return {
+              currency: d.currency,
+              motivo: e.motivo,
+              ...(e.observaciones.trim() ? { observaciones: e.observaciones.trim() } : {}),
+              ...(e.supervisorId ? { supervisorId: e.supervisorId } : {}),
+            };
+          })
+        : [],
     );
     setSubmitting(false);
     if (!r.ok) {
@@ -296,7 +288,6 @@ export function FondeoInicialFlow(): React.JSX.Element {
               </div>
               {comparacion.monedas.map((m) => {
                 const conCierre = comparacion.cierreAnterior !== null;
-                const error = revisionSubmitted && conCierre && m.diferencia !== 0 ? explicacionIncompleta(m.currency) : undefined;
                 return (
                   <div key={m.currency} className="border-b border-border py-3 last:border-b-0">
                     <div className="grid grid-cols-[1fr_repeat(3,9rem)] items-center gap-4 text-body-sm">
@@ -311,31 +302,42 @@ export function FondeoInicialFlow(): React.JSX.Element {
                           "pc-numeric text-right font-semibold",
                           conCierre && m.diferencia < 0 && "text-error-foreground",
                           conCierre && m.diferencia > 0 && "text-success-foreground",
+                          conCierre && m.composicion && "text-warning-foreground",
                         )}
                       >
-                        {!conCierre ? "—" : m.diferencia === 0 ? "Coincide" : `${formatSignedAmount(m.diferencia)} ${m.currency}`}
+                        {!conCierre ? "—" : m.diferencia !== 0 ? `${formatSignedAmount(m.diferencia)} ${m.currency}` : m.composicion ? "Billetes distintos" : "Coincide"}
                       </span>
                     </div>
-                    {conCierre && m.diferencia !== 0 ? (
-                      <ExplicacionDeDiferencia
-                        currency={m.currency}
-                        diferencia={m.diferencia}
-                        value={explicaciones[m.currency] ?? {}}
-                        error={error}
-                        onChange={(e) => setExplicaciones((prev) => ({ ...prev, [m.currency]: e }))}
-                      />
+                    {conCierre && m.composicion ? (
+                      <p className="mt-1 text-right text-caption text-text-secondary">El total coincide; cambian los billetes: <span className="pc-numeric">{describirComposicion(m.composicion)}</span></p>
                     ) : null}
                   </div>
                 );
               })}
             </div>
 
-            {diferencias.length > 0 ? (
-              <Alert variant="info" title="Cada diferencia llega al administrador de la sede para su aprobación." />
-            ) : null}
             {formError ? <Alert variant="error" title={formError} /> : null}
           </CardContent>
         </Card>
+
+        {diferencias.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Explica las diferencias</CardTitle>
+              <p className="mt-0.5 text-body-sm text-text-secondary">Cada diferencia llega al administrador de la sede para su aprobación.</p>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ExplicarDiferenciasFilas
+                momento="apertura"
+                filas={diferencias.map((d) => ({ currency: d.currency, diferencia: d.diferencia, ...(d.composicion ? { composicion: d.composicion } : {}) }))}
+                explicaciones={explicaciones}
+                supervisores={vista.supervisores}
+                enviado={revisionSubmitted}
+                onChange={(currency, e) => setExplicaciones((prev) => ({ ...prev, [currency]: e }))}
+              />
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="pc-botonera sm:justify-end">
           <Button type="button" loading={submitting} onClick={() => void handleConfirm()}>
@@ -356,8 +358,8 @@ export function FondeoInicialFlow(): React.JSX.Element {
           <h1 className="text-screen-title text-text-primary">Abrir jornada</h1>
           <p className="mt-2 max-w-2xl text-body text-text-secondary">
             {anterior
-              ? `Comprueba el efectivo que recibes en ${caja.summary.register}. Si en una moneda no recibes lo entregado, escribe lo que hay.`
-              : `Cuenta el efectivo que hay en ${caja.summary.register}, moneda por moneda, y escribe lo que cuentas.`}
+              ? `Comprueba el efectivo que recibes en ${caja.summary.register}, billete a billete. Si no recibes lo entregado, escribe lo que hay.`
+              : `Cuenta el efectivo que hay en ${caja.summary.register}, moneda por moneda y billete a billete.`}
           </p>
         </div>
         <Badge variant="warning">Pendiente de apertura</Badge>
@@ -389,35 +391,26 @@ export function FondeoInicialFlow(): React.JSX.Element {
                 <CardTitle>{anterior ? "Efectivo recibido" : "Efectivo contado"}</CardTitle>
                 <p className="mt-0.5 text-body-sm text-text-secondary">
                   {anterior
-                    ? "Comprueba cada moneda. Si lo que hay no es lo entregado, escribe lo que hay."
-                    : "Cuenta todas las monedas de la caja. Si en una no hay efectivo, escribe 0."}
+                    ? "Viene escrito lo que declaró quien cerró. Corrige las filas en las que no recibes eso."
+                    : "Escribe cuántas unidades hay de cada billete y moneda. Lo que dejes vacío cuenta como cero."}
                 </p>
               </div>
             </div>
           </CardHeader>
 
           <CardContent className="flex flex-col gap-5">
-            <div>
-              <div className={cn("grid gap-4 border-b border-border pb-2", anterior ? "grid-cols-[1fr_10rem_12rem]" : "grid-cols-[1fr_12rem]")}>
-                <span className="text-label font-medium text-text-secondary">Moneda</span>
-                {anterior ? <span className="text-right text-label font-medium text-text-secondary">{anterior.forzado ? "En libros" : "Entregado"}</span> : null}
-                <span className="text-label font-medium text-text-secondary">{anterior ? "Recibido" : "Contado"}</span>
-              </div>
-              {monedas.map((currency) => (
-                <ConteoRow
-                  key={currency}
-                  currency={currency}
-                  value={amounts[currency] ?? ""}
-                  error={errors[currency]}
-                  entregado={anterior ? entregado.get(currency) ?? 0 : undefined}
-                  onChange={(value) => setAmount(currency, value)}
-                />
-              ))}
-            </div>
+            <ConteoPorBilletes
+              monedas={monedas}
+              denominaciones={vista.denominaciones}
+              unidades={unidades}
+              errores={errors}
+              onChange={setUnidad}
+              {...(anterior ? { entregado: { etiqueta: anterior.forzado ? "En libros" : "Entregado", importes: entregado } } : {})}
+            />
 
             <Link
               href={ANADIR_MONEDA_ROUTE}
-              onClick={() => saveFondeoInicialDraft({ amounts })}
+              onClick={() => saveFondeoInicialDraft({ unidades })}
               className="flex items-center gap-2 rounded-control border border-dashed border-border px-4 py-3 text-body-sm text-text-secondary transition-colors duration-(--duration-fast) ease-(--ease-standard) hover:border-border-navy hover:bg-primary-subtle outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               <Plus className="size-4 shrink-0 text-primary" aria-hidden="true" />
@@ -490,60 +483,6 @@ export function FondeoInicialFlow(): React.JSX.Element {
           </DialogContent>
         </Dialog>
       ) : null}
-    </div>
-  );
-}
-
-function ExplicacionDeDiferencia({
-  currency,
-  diferencia,
-  value,
-  error,
-  onChange,
-}: {
-  currency: string;
-  diferencia: number;
-  value: Explicacion;
-  error: string | undefined;
-  onChange: (e: Explicacion) => void;
-}) {
-  const motivoField: FieldSpec = { id: `apertura-motivo-${currency}`, label: `Motivo de la diferencia en ${currency}`, error };
-  const obsField: FieldSpec = { id: `apertura-obs-${currency}`, label: `Observaciones de ${currency}` };
-  const validos = getValidOpeningReasons(diferencia);
-  return (
-    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[16rem_1fr]">
-      <div>
-        <label htmlFor={motivoField.id} className="text-caption text-text-secondary">
-          Motivo
-        </label>
-        <Select
-          value={value.motivo && validos.includes(value.motivo as never) ? value.motivo : ""}
-          onValueChange={(motivo) => onChange({ ...value, motivo })}
-        >
-          <SelectTrigger {...fieldAria(motivoField)} aria-label={String(motivoField.label)}>
-            <SelectValue placeholder="Elige el motivo" />
-          </SelectTrigger>
-          <SelectContent>
-            {validos.map((m) => (
-              <SelectItem key={m} value={m}>
-                {m}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {error ? <p className="mt-1 text-caption text-error-foreground">{error}</p> : null}
-      </div>
-      <div>
-        <label htmlFor={obsField.id} className="text-caption text-text-secondary">
-          Observaciones {value.motivo === "Otro" ? "" : "(opcional)"}
-        </label>
-        <Input
-          id={obsField.id}
-          value={value.observaciones ?? ""}
-          onChange={(e) => onChange({ ...value, observaciones: e.target.value })}
-          autoComplete="off"
-        />
-      </div>
     </div>
   );
 }
@@ -659,52 +598,6 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-4 border-b border-border py-2.5 last:border-b-0 last:pb-0">
       <dt className="text-body-sm text-text-secondary">{label}</dt>
       <dd className="pc-numeric text-body-sm font-semibold text-text-primary">{value}</dd>
-    </div>
-  );
-}
-
-function ConteoRow({
-  currency,
-  value,
-  error,
-  entregado,
-  onChange,
-}: {
-  currency: string;
-  value: string;
-  error: string | undefined;
-  /** Lo que entregó el cierre anterior; sin él, la fila es un conteo sin referencia. */
-  entregado?: number;
-  onChange: (value: string) => void;
-}) {
-  const field: FieldSpec = { id: `fondeo-${currency}`, label: `Efectivo contado en ${currency}`, error };
-  const currencyName = findCajaCurrency(currency)?.name;
-  return (
-    <div className={cn("grid items-center gap-4 border-b border-border py-3 last:border-b-0", entregado === undefined ? "grid-cols-[1fr_12rem]" : "grid-cols-[1fr_10rem_12rem]")}>
-      <span className="flex min-w-0 items-center gap-2">
-        <CurrencyFlag currency={currency} />
-        <span className="font-semibold text-text-primary">{currency}</span>
-        {currencyName ? <span className="truncate text-body-sm text-text-secondary">· {currencyName}</span> : null}
-      </span>
-      {entregado === undefined ? null : (
-        <span className="pc-numeric text-right text-body-sm font-medium text-text-primary">{formatMoney({ amount: entregado, currency })}</span>
-      )}
-      <div>
-        <label htmlFor={field.id} className="sr-only">
-          {field.label}
-        </label>
-        <Input
-          {...fieldAria(field)}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          invalid={Boolean(error)}
-          inputMode="decimal"
-          autoComplete="off"
-          numeric
-          placeholder="0,00"
-        />
-        {error ? <p className="mt-1 text-caption text-error-foreground">{error}</p> : null}
-      </div>
     </div>
   );
 }

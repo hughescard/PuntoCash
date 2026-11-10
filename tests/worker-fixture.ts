@@ -36,8 +36,8 @@ interface Opciones {
   cerrada: boolean;
   /** Carga el historial de 128 operaciones con que se diseñó la lista. */
   historial: boolean;
-  /** Ajustes de efectivo que la jornada registra al abrir. */
-  ajustes: readonly { currency: string; contado: number; motivo: string; observaciones?: string }[];
+  /** Con `cerrada`: billetes que faltan en el conteo de cierre, con su motivo. */
+  diferenciaAlCerrar: { currency: string; quitar: Record<string, number>; motivo: string; observaciones?: string } | null;
   monedas: readonly string[];
   sede: string;
   conSesion: boolean;
@@ -49,15 +49,15 @@ export const test = base.extend<Opciones & { puesto: Puesto }>({
   giros: [[], { option: true }],
   cerrada: [false, { option: true }],
   historial: [false, { option: true }],
-  ajustes: [[], { option: true }],
+  diferenciaAlCerrar: [null, { option: true }],
   /* Las cuatro con que trabajaba la Caja 03 de la demostración. */
   monedas: [["CUP", "USD", "EUR", "GBP"], { option: true }],
   sede: ["sede-vedado", { option: true }],
   conSesion: [true, { option: true }],
 
   puesto: [
-    async ({ request, context, fondos, monedas, sede, servicios, giros, cerrada, historial, ajustes, conSesion }, use) => {
-      const datos = encodeURIComponent(JSON.stringify({ fondos, monedas, sede, giros, cerrar: cerrada, historial, ajustes, ...(servicios ? { servicios } : {}) }));
+    async ({ request, context, fondos, monedas, sede, servicios, giros, cerrada, historial, diferenciaAlCerrar, conSesion }, use) => {
+      const datos = encodeURIComponent(JSON.stringify({ fondos, monedas, sede, giros, cerrar: cerrada, historial, ...(diferenciaAlCerrar ? { diferenciaAlCerrar } : {}), ...(servicios ? { servicios } : {}) }));
       /* Un reintento: con seis trabajadores pidiendo puestos a la vez, el
          servidor puede cortar alguna conexión. */
       const pedir = () => request.get(`${WORKER_BASE_URL}/pruebas/puesto?datos=${datos}`);

@@ -1,5 +1,5 @@
 import { asignarSede, operadorVigente, sedesEnAlcance as sedesDelAlcance } from "./assignments";
-import { abrirJornada, ajustarEfectivo, cerrarJornada, contextoDe, estadoDeCaja, registrarOperacionSimple } from "./caja-operativa";
+import { abrirJornada, billetesDeImporte, cerrarJornada, conteoDeLoQueHay, contextoDe, registrarOperacionSimple } from "./caja-operativa";
 import { anadirMonedaASede, habilitarMonedaEnCaja, monedasDeSede } from "./currencies";
 import { emitirReto, vincularEquipo } from "./devices";
 import { fijarTasa, rangoDe, tasasDeSede } from "./rates";
@@ -9,6 +9,7 @@ import { crearSede, findSedeById } from "./sedes";
 import { crearTrabajador } from "./workers";
 import { registrarOperacion } from "./operaciones";
 import { OPERATIONS } from "@/features/operations/operations-history";
+import { restar } from "@/features/caja/billetes";
 
 /**
  * **SOLO PARA LAS PRUEBAS.** Un puesto de trabajo nuevo y aislado.
@@ -57,8 +58,8 @@ export interface OpcionesDePuesto {
    * estados. Solo como registros, sin movimientos de caja.
    */
   historial?: boolean;
-  /** Ajustes de efectivo que la jornada registra tras abrir y tras los giros. */
-  ajustes?: readonly { currency: string; contado: number; motivo: string; observaciones?: string }[];
+  /** Con `cerrar`: billetes que faltan en el conteo de cierre, y el motivo que se da. */
+  diferenciaAlCerrar?: { currency: string; quitar: Record<string, number>; motivo: string; observaciones?: string };
 }
 
 let secuencia = 0;
@@ -138,7 +139,8 @@ export function crearPuestoDePrueba(
     if (!c.ok) return { ok: false, error: c.reason };
     const r = abrirJornada(
       c.value,
-      [...monedas].map((currency) => ({ currency, contado: opciones.fondos?.[currency] ?? 0 })),
+      /* Los fondos entran en billetes, de mayor a menor. */
+      [...monedas].map((currency) => ({ currency, billetes: billetesDeImporte(currency, opciones.fondos?.[currency] ?? 0) })),
     );
     if (!r.ok) return { ok: false, error: `apertura: ${r.reason}` };
     for (const [i, importe] of (opciones.giros ?? []).entries()) {
@@ -149,15 +151,14 @@ export function crearPuestoDePrueba(
       });
       if (!g.ok) return { ok: false, error: `giro: ${g.reason}` };
     }
-    for (const a of opciones.ajustes ?? []) {
-      const r2 = ajustarEfectivo(c.value, a);
-      if (!r2.ok) return { ok: false, error: `ajuste: ${r2.reason}` };
-    }
     if (opciones.cerrar) {
-      const cierre = cerrarJornada(
-        c.value,
-        estadoDeCaja(c.value).saldos.map((x) => ({ currency: x.currency, contado: x.amount })),
+      const d = opciones.diferenciaAlCerrar;
+      const conteo = conteoDeLoQueHay(c.value).map((x) =>
+        d && x.currency === d.currency
+          ? { currency: x.currency, billetes: restar(x.billetes, d.quitar), motivo: d.motivo, ...(d.observaciones ? { observaciones: d.observaciones } : {}) }
+          : x,
       );
+      const cierre = cerrarJornada(c.value, conteo);
       if (!cierre.ok) return { ok: false, error: `cierre: ${cierre.reason}` };
     }
   }

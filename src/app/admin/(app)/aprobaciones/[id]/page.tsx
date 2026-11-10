@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata, Route } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { DatosDeBilletes } from "../datos-de-billetes";
 
 import { PageHeader, Section } from "@/components/shell/app-shell";
 import { Alert, Button, Card, CardContent } from "@/components/ui";
@@ -23,9 +24,10 @@ export const metadata: Metadata = {
 
 /** Cómo se llama lo que había antes de contar, según de dónde venga la diferencia. */
 const REFERENCIA: Readonly<Record<Solicitud["tipo"], string>> = {
-  ajuste: "Saldo registrado",
   cierre: "Saldo esperado",
   apertura: "Dejado al cierre anterior",
+  composicion: "Saldo esperado",
+  fondos: "Antes del movimiento",
 };
 
 /**
@@ -120,7 +122,7 @@ export default async function AdminSolicitudPage({
                   </span>
                 }
               />
-              <Dato etiqueta={REFERENCIA[s.tipo]} valor={<span className="pc-numeric">{formatAmount(s.referencia)}</span>} />
+              <Dato etiqueta={referenciaDe(s)} valor={<span className="pc-numeric">{formatAmount(s.referencia)}</span>} />
               <Dato etiqueta="Contado" valor={<span className="pc-numeric">{formatAmount(s.contado)}</span>} />
               {/* FR-AD-APR-6: signo y motivo juntos, sin reinterpretar. */}
               <Dato
@@ -128,6 +130,7 @@ export default async function AdminSolicitudPage({
                 valor={<DiferenciaDeApertura currency={s.currency} diferencia={s.diferencia} motivo={s.motivo} />}
               />
               <Dato etiqueta="Motivo del trabajador" valor={s.motivo} />
+              <DatosDeBilletes s={s} />
               {s.observaciones ? <Dato etiqueta="Observaciones" valor={s.observaciones} /> : null}
               {s.movimientoId && jornada ? (
                 <Dato
@@ -162,7 +165,9 @@ export default async function AdminSolicitudPage({
               </dl>
               {s.estado === "rechazada" ? (
                 <p className="mt-5 text-body-sm text-text-secondary">
-                  La administración no asume esta diferencia: queda para revisarla fuera del sistema.
+                  {s.tipo === "fondos"
+                    ? "La administración no confirma este movimiento: queda como incidencia a nombre del trabajador."
+                    : "La administración no asume esta diferencia: queda como incidencia a nombre del trabajador."}
                 </p>
               ) : null}
             </CardContent>
@@ -173,6 +178,13 @@ export default async function AdminSolicitudPage({
       </Section>
     </>
   );
+}
+
+/** Al abrir, la referencia es lo dejado por el cierre anterior; al cerrar, lo esperado por los libros. */
+function referenciaDe(s: Solicitud): string {
+  if (s.id.includes(`-A-${s.currency}`)) return "Dejado al cierre anterior";
+  if (s.id.includes(`-C-${s.currency}`)) return "Saldo esperado";
+  return REFERENCIA[s.tipo];
 }
 
 function Dato({ etiqueta, valor }: { etiqueta: string; valor: React.ReactNode }) {

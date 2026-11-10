@@ -3,13 +3,18 @@
  * **FR-AD-APR-13**).
  *
  * Toda diferencia de efectivo que un trabajador registra queda pendiente del
- * visto bueno de la administración: un **ajuste de efectivo** durante la
- * jornada, una **diferencia de cierre** y una **diferencia de apertura** —un
- * faltante o un sobrante encontrado al abrir, y también una reposición o un
- * retiro de fondos, porque es dinero que entró o salió de la caja y alguien
- * tiene que confirmar que sabe por qué—. Sin umbral: toda diferencia, por
- * pequeña que sea. Una solicitud por moneda, porque cada una es un hecho con
- * su signo y su motivo.
+ * visto bueno de la administración (decisiones del 9/11/2026):
+ *
+ *   · **Diferencia de apertura** o **de cierre**: el total contado no es el
+ *     esperado.
+ *   · **Diferencia de composición**: el total cuadra pero los billetes no.
+ *   · **Movimiento de fondos**: una reposición o un retiro, o un cambio de
+ *     billetes, que hizo un supervisor. Confirmarlo es aprobarlo; si se
+ *     rechaza, queda como incidencia.
+ *
+ * Sin umbral: toda diferencia, por pequeña que sea. Una solicitud por moneda,
+ * porque cada una es un hecho con su signo y su motivo. «Ajustar efectivo» ya
+ * no existe (decisión del 10/11/2026).
  *
  * Resolverla **no toca nada de lo que el trabajador registró** (**[A6]**,
  * **[A7]**): el saldo ya quedó ajustado cuando él lo registró. Aprobar deja
@@ -23,19 +28,21 @@
  * recientes, pendientes. El almacén vive en `globalThis`.
  */
 
+import type { Billetes } from "@/features/caja/billetes";
 import { estaEnAlcance, operadorVigente, operadorVigenteEn } from "./assignments";
-import { jornadaPorId, jornadasDeSede, type Jornada } from "./jornadas";
+import { jornadaPorId, jornadasDeSede, MOTIVOS_DE_FONDOS, SUPERVISOR_CAMBIO_BILLETES, type Jornada } from "./jornadas";
 import { adminUsersOf } from "./operators";
 import { isGlobal, requireOperatorScope, type Scope, type ScopeDenial } from "./scope";
 import { SEDES } from "./sedes";
 
-export type TipoSolicitud = "ajuste" | "cierre" | "apertura";
+export type TipoSolicitud = "cierre" | "apertura" | "composicion" | "fondos";
 export type EstadoSolicitud = "pendiente" | "aprobada" | "rechazada";
 
 export const TIPO_DE_SOLICITUD: Readonly<Record<TipoSolicitud, string>> = {
-  ajuste: "Ajuste de efectivo",
-  cierre: "Diferencia de cierre",
   apertura: "Diferencia de apertura",
+  cierre: "Diferencia de cierre",
+  composicion: "Diferencia de composición",
+  fondos: "Movimiento de fondos",
 };
 
 export interface Solicitud {
@@ -63,6 +70,15 @@ export interface Solicitud {
   observaciones?: string;
   /** El movimiento que lo registró, si lo hay (una apertura no deja movimiento). */
   movimientoId?: string;
+  /**
+   * Los billetes de la diferencia, por denominación: lo contado menos lo que
+   * había. En una de composición suman cero.
+   */
+  billetes?: Billetes;
+  /** En un movimiento de fondos: el supervisor que entregó o recibió el efectivo. */
+  supervisor?: string;
+  /** En un movimiento de fondos: cuándo se registró. */
+  origen?: "jornada" | "apertura" | "cierre";
   estado: EstadoSolicitud;
   /** `puntoCash`: la resolvió PuntoCash porque nadie de la sede podía (**FR-SA-APR**). */
   resolucion?: { at: string; por: string; motivo: string; puntoCash?: true };
@@ -85,51 +101,44 @@ export function derivar(j: Jornada): Solicitud[] {
   };
   const out: Solicitud[] = [];
 
-  for (const m of j.movimientos) {
-    if (m.concepto === "Ajuste de efectivo" && m.saldoAntes !== undefined) {
-      out.push({
-        ...base,
-        id: `SOL-${m.id}`,
-        tipo: "ajuste",
-        fechaHora: m.fechaHora,
-        currency: m.currency,
-        referencia: m.saldoAntes,
-        contado: m.saldoDespues,
-        diferencia: m.amount,
-        motivo: m.motivo ?? SIN_EXPLICAR,
-        ...(m.observaciones ? { observaciones: m.observaciones } : {}),
-        movimientoId: m.id,
-        estado: "pendiente",
-      });
-    }
-  }
-
   if (j.arqueo) {
-    for (const a of j.arqueo.monedas.filter((x) => x.diferencia !== 0)) {
-      const mov = j.movimientos.find((m) => m.concepto === "Ajuste de cierre" && m.currency === a.currency);
+    for (const a of j.arqueo.monedas) {
+      const composicion = a.diferencia === 0 && a.composicion && Object.keys(a.composicion).length > 0;
+      if (a.diferencia === 0 && !composicion) continue;
+      const mov = j.movimientos.find(
+        (m) => (m.concepto === "Ajuste de cierre" || m.concepto === "Ajuste de billetes al cerrar") && m.currency === a.currency,
+      );
+      const fondos = a.motivo !== undefined && MOTIVOS_DE_FONDOS.has(a.motivo);
       out.push({
         ...base,
         id: `SOL-${j.id}-C-${a.currency}`,
-        tipo: "cierre",
+        tipo: composicion ? "composicion" : fondos ? "fondos" : "cierre",
+        ...(fondos ? { origen: "cierre" as const, ...(a.supervisor ? { supervisor: a.supervisor } : {}) } : {}),
         fechaHora: j.arqueo.confirmadoAt,
         currency: a.currency,
         referencia: a.esperado,
         contado: a.contado,
         diferencia: a.diferencia,
         motivo: a.motivo ?? SIN_EXPLICAR,
-        ...(mov?.observaciones ? { observaciones: mov.observaciones } : {}),
+        ...((a.observaciones ?? mov?.observaciones) ? { observaciones: a.observaciones ?? mov?.observaciones } : {}),
         ...(mov ? { movimientoId: mov.id } : {}),
+        ...(composicion ? { billetes: a.composicion } : mov?.billetes ? { billetes: mov.billetes } : {}),
         estado: "pendiente",
       });
     }
   }
 
   if (j.apertura.cierreAnterior) {
-    for (const a of j.apertura.monedas.filter((x) => x.diferencia !== 0)) {
+    for (const a of j.apertura.monedas) {
+      const composicion = a.diferencia === 0 && a.composicion && Object.keys(a.composicion).length > 0;
+      if (a.diferencia === 0 && !composicion) continue;
+      /* El supervisor que cambió billetes o que repuso o retiró: pasa a confirmación. */
+      const fondos = a.motivo !== undefined && (MOTIVOS_DE_FONDOS.has(a.motivo) || a.motivo === SUPERVISOR_CAMBIO_BILLETES);
       out.push({
         ...base,
         id: `SOL-${j.id}-A-${a.currency}`,
-        tipo: "apertura",
+        tipo: fondos ? "fondos" : composicion ? "composicion" : "apertura",
+        ...(fondos ? { origen: "apertura" as const, supervisor: a.supervisor ?? supervisorDeLaSiembra(j) } : {}),
         fechaHora: j.openedAt,
         currency: a.currency,
         referencia: a.dejado ?? 0,
@@ -137,11 +146,18 @@ export function derivar(j: Jornada): Solicitud[] {
         diferencia: a.diferencia,
         motivo: a.motivo ?? "Otro",
         ...(a.observaciones ? { observaciones: a.observaciones } : {}),
+        ...(composicion ? { billetes: a.composicion } : {}),
         estado: "pendiente",
       });
     }
   }
   return out;
+}
+
+/** Las reposiciones y retiros sembrados no guardaron quién los hizo: el primer administrador de la empresa de la sede. */
+function supervisorDeLaSiembra(j: Jornada): string {
+  const operador = operadorVigenteEn(j.sedeId, new Date(j.openedAt));
+  return (operador ? adminUsersOf(operador)[0]?.fullName : undefined) ?? "Administración";
 }
 
 const MOTIVOS_APROBADA = [
@@ -191,17 +207,28 @@ const solicitudes: Solicitud[] = (ALMACEN.__puntocashSolicitudes ??= sembrar(new
  */
 export const SIN_EXPLICAR = "Sin explicar";
 
-/** El motivo que el trabajador da, justo después de contar, a una solicitud nacida «Sin explicar». */
-export function explicarSolicitud(id: string, motivo: string, observaciones?: string): void {
-  const s = solicitudes.find((x) => x.id === id);
+/**
+ * El motivo que el trabajador da, justo después de cerrar, a una diferencia
+ * que nació «Sin explicar». Si es una reposición o un retiro que hizo el
+ * supervisor al cerrar, la solicitud pasa a ser un movimiento de fondos por
+ * confirmar.
+ */
+export function explicarSolicitudDeCierre(
+  jornadaId: string,
+  currency: string,
+  motivo: string,
+  observaciones?: string,
+  supervisor?: string,
+): void {
+  const s = solicitudes.find((x) => x.id === `SOL-${jornadaId}-C-${currency}`);
   if (!s || s.estado !== "pendiente") return;
   s.motivo = motivo;
   if (observaciones) s.observaciones = observaciones;
-}
-
-/** El motivo que el trabajador da, justo después de cerrar, a una diferencia de cierre. */
-export function explicarSolicitudDeCierre(jornadaId: string, currency: string, motivo: string, observaciones?: string): void {
-  explicarSolicitud(`SOL-${jornadaId}-C-${currency}`, motivo, observaciones);
+  if (MOTIVOS_DE_FONDOS.has(motivo)) {
+    s.tipo = "fondos";
+    s.origen = "cierre";
+    if (supervisor) s.supervisor = supervisor;
+  }
 }
 
 export function registrarSolicitudes(nuevas: readonly Solicitud[]): void {

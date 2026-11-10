@@ -53,9 +53,13 @@ export interface CajaMovement {
   currency: string;
   /** Positivo en una entrada, negativo en una salida. */
   amount: number;
-  /** Ajustes y diferencias: el motivo declarado. Sin él, «Sin explicar». */
+  /** Diferencias de apertura o de cierre: el motivo declarado. Sin él, «Sin explicar». */
   motivo?: string;
   observaciones?: string;
+  /** Los billetes que movió, por denominación (clave en céntimos, cantidad con signo). */
+  billetes?: Readonly<Record<string, number>>;
+  /** Reposición, retiro o cambio con supervisor: quién entregó o recibió el efectivo. */
+  supervisor?: string;
   /** La jornada a la que pertenece, como era al registrarse. */
   jornada?: CajaMovementJornadaSnapshot;
 }
@@ -164,19 +168,37 @@ export function metricasDelDia(movimientos: readonly CajaMovement[], now: Date =
  * Motivos de una diferencia [R8]
  * ---------------------------------------------------------------------- */
 
-/** Durante la jornada y al cerrar. Los mismos que lee la administración. */
-export const CAJA_ADJUSTMENT_REASONS = ["Faltante detectado", "Sobrante detectado", "Otro"] as const;
-export type CajaAdjustmentReason = (typeof CAJA_ADJUSTMENT_REASONS)[number];
-
-/** Al abrir: además, el dinero que alguien repuso o retiró entre jornadas. */
-export const CAJA_OPENING_REASONS = [
-  "Reposición de fondos",
-  "Retiro de fondos",
+/**
+ * Una diferencia de importe, al abrir o al cerrar: los mismos motivos en los
+ * dos momentos (decisión del 9/11/2026). Reposición y retiro son dinero que
+ * trajo o se llevó un supervisor.
+ */
+export const CAJA_DIFFERENCE_REASONS = [
   "Faltante detectado",
   "Sobrante detectado",
+  "Reposición de fondos",
+  "Retiro de fondos",
   "Otro",
 ] as const;
-export type CajaOpeningReason = (typeof CAJA_OPENING_REASONS)[number];
+export type CajaDifferenceReason = (typeof CAJA_DIFFERENCE_REASONS)[number];
+/** @deprecated nombre anterior; es la misma lista. */
+export const CAJA_OPENING_REASONS = CAJA_DIFFERENCE_REASONS;
+export type CajaOpeningReason = CajaDifferenceReason;
+
+/** El total cuadra pero los billetes no, al cerrar. */
+export const CAJA_COMPOSITION_REASONS_CLOSE = [
+  "Entregué o recibí billetes distintos de los registrados",
+  "Hice un cambio de billetes sin registrarlo",
+  "Otro",
+] as const;
+
+/** El total cuadra pero los billetes no, al abrir. */
+export const CAJA_COMPOSITION_REASONS_OPEN = ["El supervisor cambió billetes", "Otro"] as const;
+
+/** Los motivos que piden elegir al supervisor de la lista. */
+export function pideSupervisor(motivo: string): boolean {
+  return motivo === "Reposición de fondos" || motivo === "Retiro de fondos" || motivo === "El supervisor cambió billetes";
+}
 
 const SOLO_POSITIVA = new Set<string>(["Sobrante detectado", "Reposición de fondos"]);
 const SOLO_NEGATIVA = new Set<string>(["Faltante detectado", "Retiro de fondos"]);
@@ -188,13 +210,12 @@ export function isReasonCompatibleWithDifference(motivo: string, diferencia: num
   return true;
 }
 
-export function getValidAdjustmentReasons(diferencia: number): readonly CajaAdjustmentReason[] {
-  return CAJA_ADJUSTMENT_REASONS.filter((r) => isReasonCompatibleWithDifference(r, diferencia));
+/** Los motivos que puede tener una diferencia de importe de ese signo. */
+export function getValidDifferenceReasons(diferencia: number): readonly CajaDifferenceReason[] {
+  return CAJA_DIFFERENCE_REASONS.filter((r) => isReasonCompatibleWithDifference(r, diferencia));
 }
 
-export function getValidOpeningReasons(diferencia: number): readonly CajaOpeningReason[] {
-  return CAJA_OPENING_REASONS.filter((r) => isReasonCompatibleWithDifference(r, diferencia));
-}
+export const getValidOpeningReasons = getValidDifferenceReasons;
 
 /* -------------------------------------------------------------------------
  * Cierre
@@ -214,7 +235,8 @@ export interface CajaClosingAuditCurrency {
  * ---------------------------------------------------------------------- */
 
 export interface FondeoInicialDraft {
-  amounts: Readonly<Record<string, string>>;
+  /** Lo escrito en cada fila del conteo, por moneda y denominación (clave en céntimos). */
+  unidades: Readonly<Record<string, Record<string, string>>>;
 }
 
 let fondeoInicialDraft: FondeoInicialDraft | null = null;
@@ -284,17 +306,9 @@ export function getCajaActions(e: EstadoParaAcciones): readonly CajaAction[] {
       ...(deOtro ? no("Jornada de otro trabajador") : e.bloqueada ? no("Sede sin operar") : {}),
     },
     {
-      id: "ajustar-efectivo",
-      label: "Ajustar efectivo",
-      description: "Corrige un saldo tras un conteo físico.",
-      availability: "available",
-      href: "/worker/caja/ajustar-efectivo",
-      ...(!e.propia ? no("Requiere jornada abierta") : e.bloqueada ? no("Sede sin operar") : {}),
-    },
-    {
       id: "arqueo",
       label: "Arqueo y cierre",
-      description: "Concilia y cierra la caja al final de la jornada.",
+      description: "Cuenta billete a billete y cierra la caja al final de la jornada.",
       availability: "available",
       href: "/worker/caja/arqueo-cierre",
       ...(!e.propia ? no("Requiere jornada abierta") : {}),

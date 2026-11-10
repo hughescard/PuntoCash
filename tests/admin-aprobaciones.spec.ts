@@ -21,15 +21,29 @@ test.describe("Aprobaciones · dominio", () => {
     for (const s of SEDES) {
       const sol = solicitudesDeSede(s.id);
       let esperadas = 0;
+      /* De importe o de composición, al abrir o al cerrar. «Ajustar efectivo» ya no existe. */
+      const conDiferencia = (m: { diferencia: number; composicion?: object }) => m.diferencia !== 0 || (m.composicion && Object.keys(m.composicion).length > 0);
       for (const j of jornadasDeSede(s.id)) {
-        esperadas += j.movimientos.filter((m) => m.concepto === "Ajuste de efectivo").length;
-        if (j.arqueo) esperadas += j.arqueo.monedas.filter((m) => m.diferencia !== 0).length;
-        if (j.apertura.cierreAnterior) esperadas += j.apertura.monedas.filter((m) => m.diferencia !== 0).length;
+        if (j.arqueo) esperadas += j.arqueo.monedas.filter(conDiferencia).length;
+        if (j.apertura.cierreAnterior) esperadas += j.apertura.monedas.filter(conDiferencia).length;
       }
       expect(sol.length, s.id).toBe(esperadas);
       expect(new Set(sol.map((x) => x.id)).size).toBe(sol.length);
-      for (const x of sol) expect(x.diferencia).not.toBe(0);
+      for (const x of sol) {
+        if (x.tipo === "composicion") expect(x.diferencia).toBe(0);
+        else expect(x.diferencia).not.toBe(0);
+      }
+      expect(sol.some((x) => (x.tipo as string) === "ajuste")).toBe(false);
     }
+  });
+
+  test("hay diferencias de composición y movimientos de fondos sembrados, con su detalle", () => {
+    const todas = SEDES.flatMap((s) => solicitudesDeSede(s.id));
+    const composicion = todas.find((x) => x.tipo === "composicion");
+    expect(composicion?.billetes).toEqual({ "20000": -1, "10000": 2 });
+    const fondos = todas.find((x) => x.tipo === "fondos");
+    expect(fondos?.supervisor).toBeTruthy();
+    expect(fondos?.origen).toBe("apertura");
   });
 
   test("resolver exige motivo, no pisa una resuelta y no sale del alcance", () => {
@@ -151,5 +165,36 @@ test.describe("Aprobaciones", () => {
     await signInAsAdmin(page, IDALMIS);
     const respuesta = await page.goto(ruta);
     expect(respuesta?.status()).toBe(404);
+  });
+});
+
+test.describe("Aprobaciones · billetes", () => {
+  test("una diferencia de composición y un movimiento de fondos enseñan su detalle", async ({ page }) => {
+    const CAPTURAS = process.env.CAPTURAS;
+    await signInAsAdmin(page, MARTA);
+    const main = page.getByRole("main");
+
+    await page.goto("/admin/aprobaciones");
+    await main.getByLabel("Tipo").selectOption("composicion");
+    await main.getByRole("link", { name: /^Ver solicitud: Diferencia de composición/ }).first().click();
+    await expect(page.getByRole("heading", { name: "Diferencia de composición", level: 1 })).toBeVisible();
+    await expect(main.getByText("Billetes que cambiaron (total sin diferencia)")).toBeVisible();
+    const billetes = main.getByRole("list", { name: "Billetes de la solicitud" });
+    await expect(billetes.getByText("−1 de 200 CUP")).toBeVisible();
+    await expect(billetes.getByText("+2 de 100 CUP")).toBeVisible();
+    if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/apr-composicion.png`, fullPage: true });
+
+    await page.goto("/admin/aprobaciones");
+    await main.getByLabel("Tipo").selectOption("fondos");
+    const enlace = main.getByRole("link", { name: /^Ver solicitud: Movimiento de fondos/ });
+    if ((await enlace.count()) === 0) {
+      await page.goto("/admin/aprobaciones?pestana=resueltas");
+      await main.getByLabel("Tipo").selectOption("fondos");
+    }
+    await main.getByRole("link", { name: /^Ver solicitud: Movimiento de fondos/ }).first().click();
+    await expect(page.getByRole("heading", { name: "Movimiento de fondos", level: 1 })).toBeVisible();
+    await expect(main.getByText("Supervisor", { exact: true })).toBeVisible();
+    await expect(main.getByText("Al abrir la jornada")).toBeVisible();
+    if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/apr-fondos.png`, fullPage: true });
   });
 });

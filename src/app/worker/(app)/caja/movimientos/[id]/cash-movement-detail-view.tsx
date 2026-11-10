@@ -4,7 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { FileSearch, Lock } from "lucide-react";
 
-import { Button, Card, CardContent } from "@/components/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { formatoDeDenominacion, lineas } from "@/features/caja/billetes";
 import { findInternalCajaMovement, type CajaMovement } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
 import { BackLink, CashJornadaCard, MovementDetailHeader, MovementInfoCard, MovementResultCard } from "./movement-detail-parts";
@@ -18,7 +19,7 @@ import { MovementReceiptSection } from "./movement-receipt-section";
  * (§18); this route only ever resolves the other kind.
  *
  * Client Component for the same reason Operation Detail is one: a movement
- * created moments ago by Ajustar efectivo or Registrar fondeo inicial only
+ * created moments ago by Arqueo y cierre or Abrir jornada only
  * exists in the browser's own copy of the mock ledger, mutated client-side —
  * a Server Component here would render the not-found card for a movement
  * that genuinely exists in this session.
@@ -53,6 +54,7 @@ export function CashMovementDetailView({ movementId }: { movementId: string }): 
 
         <div className="flex flex-col gap-6">
           <MovementSpecificDetail movement={movement} />
+          {movement.billetes && Object.keys(movement.billetes).length > 0 ? <BilletesDelMovimiento billetes={movement.billetes} currency={movement.currency} /> : null}
           <MovementResultCard movement={movement} />
         </div>
       </div>
@@ -74,10 +76,36 @@ export function CashMovementDetailView({ movementId }: { movementId: string }): 
  * common cards already say everything genuinely available (§14).
  */
 function MovementSpecificDetail({ movement }: { movement: CajaMovement }): React.JSX.Element | null {
-  if (movement.concepto === "Ajuste de efectivo" || movement.concepto === "Ajuste de cierre") {
+  if (movement.concepto === "Ajuste de cierre" || movement.concepto === "Ajuste de billetes al cerrar") {
     return <CashAdjustmentDetail movement={movement} />;
   }
   return null;
+}
+
+/**
+ * Los billetes que movió, por denominación (decisión del 9/11/2026): lo que
+ * entra con «+» y lo que sale con «−». Es del movimiento, no de la caja: no
+ * dice cuántos hay.
+ */
+function BilletesDelMovimiento({ billetes, currency }: { billetes: Readonly<Record<string, number>>; currency: string }) {
+  const filas = lineas(billetes).filter((l) => l.cantidad !== 0);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Billetes y monedas</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <ul className="flex flex-wrap gap-2" aria-label="Billetes y monedas del movimiento">
+          {filas.map((l) => (
+            <li key={l.valor} className="pc-numeric rounded-control border border-border bg-surface-subtle px-3 py-1.5 text-body-sm text-text-primary">
+              {l.cantidad > 0 ? "+" : "−"}
+              {Math.abs(l.cantidad)} × {formatoDeDenominacion(l.valor)} {currency}
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
 }
 
 /**

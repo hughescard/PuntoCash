@@ -1,15 +1,15 @@
 import { test, expect } from "./worker-fixture";
 import type { Page } from "@playwright/test";
 
-import { esperarFondeoVivo, rellenar } from "./worker-helpers";
+import { esperarFondeoVivo, rellenarConteo } from "./worker-helpers";
 
 /**
- * Worker Caja — **Abrir jornada** (`/worker/caja/fondeo-inicial`), apertura a
- * ciegas (decisión del 5/11/2026).
+ * Worker Caja — **Abrir jornada** (`/worker/caja/fondeo-inicial`): con los
+ * totales que declaró quien cerró (5/11/2026), billete a billete (9/11/2026).
  *
- * Se cuenta lo que hay en la caja sin ver lo que dejó el cierre anterior;
- * después se compara, y cada diferencia pide un motivo compatible con su
- * signo. La primera jornada de una caja no tiene con qué comparar.
+ * Se comprueba lo recibido y se compara; una diferencia de importe pide un
+ * motivo compatible con su signo, y una de composición, su causa. La primera
+ * jornada de una caja no tiene con qué comparar.
  *
  * Cada prueba opera su propio puesto (`worker-fixture.ts`). Por defecto la
  * caja tiene habilitadas CUP, USD, EUR y GBP y nunca se ha abierto.
@@ -22,9 +22,7 @@ const CUATRO = { CUP: "200000", USD: "4250", EUR: "1185", GBP: "0" };
 async function contar(page: Page, amounts: Record<string, string>) {
   await page.goto("/worker/caja/fondeo-inicial");
   await esperarFondeoVivo(page);
-  for (const [currency, value] of Object.entries(amounts)) {
-    await rellenar(page.getByLabel(`Efectivo contado en ${currency}`), value);
-  }
+  await rellenarConteo(page, amounts);
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Confirmar conteo" }).click();
   await expect(page.getByRole("heading", { name: "Revisión de la apertura" })).toBeVisible();
@@ -56,32 +54,25 @@ test.describe("abrir jornada — conteo", () => {
     await expect(page).toHaveURL(/\/worker\/caja$/);
   });
 
-  test("pide contar todas las monedas de la caja, con banderas SVG", async ({ page }) => {
+  test("pide contar todas las monedas de la caja billete a billete, con banderas SVG", async ({ page }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     for (const currency of ["CUP", "USD", "EUR", "GBP"]) {
-      await expect(page.getByLabel(`Efectivo contado en ${currency}`)).toHaveCount(1);
+      await expect(page.getByRole("region", { name: `Conteo de ${currency}` })).toHaveCount(1);
     }
+    await expect(page.getByLabel("Billetes de 1.000 CUP")).toBeVisible();
     for (const flag of await page.locator("svg[data-currency-flag]").all()) {
       await expect(flag).toHaveAttribute("aria-hidden", "true");
     }
   });
 
-  test("una moneda sin contar no deja seguir: si no hay efectivo, se escribe 0", async ({ page }) => {
+  test("una fila que no es un número entero no deja seguir", async ({ page }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await rellenar(page.getByLabel("Efectivo contado en CUP"), "1000");
+    await page.getByLabel("Billetes de 100 USD").fill("abc");
     await page.getByRole("button", { name: "Continuar" }).click();
-    await expect(page.getByText("Cuenta esta moneda. Si no hay efectivo, escribe 0.").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Revisión de la apertura" })).toHaveCount(0);
-  });
-
-  test("rechaza un importe inválido en su campo", async ({ page }) => {
-    await page.goto("/worker/caja/fondeo-inicial");
-    await esperarFondeoVivo(page);
-    await rellenar(page.getByLabel("Efectivo contado en USD"), "abc");
-    await page.getByRole("button", { name: "Continuar" }).click();
-    await expect(page.getByLabel("Efectivo contado en USD")).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByText("Introduce un monto válido.")).toBeVisible();
+    await expect(page.getByLabel("Billetes de 100 USD")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByText("Escribe cuántas unidades hay, en números enteros.")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
   test("«Añádela a la caja» lleva a Añadir moneda", async ({ page }) => {
@@ -97,20 +88,20 @@ test.describe("abrir jornada — primera jornada de la caja", () => {
     await contar(page, CUATRO);
     await expect(page.getByText(/Es la primera jornada de esta caja/)).toBeVisible();
     await expect(page.getByText("Coincide")).toHaveCount(0);
-    await expect(page.getByLabel(/Motivo de la diferencia/)).toHaveCount(0);
+    await expect(page.getByText("Explica las diferencias")).toHaveCount(0);
   });
 
   test("al continuar avisa de que los valores no podrán cambiarse; «Seguir contando» vuelve al conteo", async ({ page }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    for (const [currency, value] of Object.entries(CUATRO)) await rellenar(page.getByLabel(`Efectivo contado en ${currency}`), value);
+    await rellenarConteo(page, CUATRO);
     await page.getByRole("button", { name: "Continuar" }).click();
     const aviso = page.getByRole("dialog");
     await expect(aviso.getByRole("heading", { name: "Los valores introducidos no podrán ser cambiados" })).toBeVisible();
     await expect(aviso.getByText("4.250,00")).toBeVisible();
     await aviso.getByRole("button", { name: "Seguir contando" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("4250");
+    await expect(page.getByLabel("Billetes de 50 USD")).toHaveValue("1");
   });
 
   test("un conteo declarado no se repite: salir y volver lleva a su revisión", async ({ page }) => {
@@ -119,7 +110,7 @@ test.describe("abrir jornada — primera jornada de la caja", () => {
     await page.goto("/worker/caja");
     await page.goto("/worker/caja/fondeo-inicial");
     await expect(page.getByRole("heading", { name: "Revisión de la apertura" })).toBeVisible();
-    await expect(page.getByLabel("Efectivo contado en USD")).toHaveCount(0);
+    await expect(page.getByLabel("Billetes de 100 USD")).toHaveCount(0);
     await expect(page.getByText("4.250,00 USD")).toBeVisible();
   });
 
@@ -156,20 +147,19 @@ test.describe("abrir jornada — primera jornada de la caja", () => {
     await abrir(page);
     await page.goto("/worker/caja/fondeo-inicial");
     await expect(page.getByText("La caja ya está abierta")).toBeVisible();
-    await expect(page.getByLabel("Efectivo contado en CUP")).toHaveCount(0);
+    await expect(page.getByLabel("Billetes de 1.000 CUP")).toHaveCount(0);
   });
 });
 
 test.describe("abrir jornada — con totales, tras un cierre", () => {
   test.use({ fondos: { CUP: 100_000, USD: 500 }, monedas: [], cerrada: true });
 
-  test("enseña lo entregado al cierre y lo trae escrito como recibido", async ({ page }) => {
+  test("enseña lo entregado al cierre y trae escritos sus billetes", async ({ page }) => {
     await page.goto("/worker/caja/fondeo-inicial");
-    await expect(page.getByText("Entregado", { exact: true })).toBeVisible();
-    await expect(page.getByText("100.000,00 CUP")).toBeVisible();
-    await expect(page.getByText("500,00 USD")).toBeVisible();
-    await expect(page.getByLabel("Efectivo contado en CUP")).toHaveValue("100000,00");
-    await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("500,00");
+    await expect(page.getByRole("region", { name: "Conteo de CUP" }).getByText("100.000,00 CUP").first()).toBeVisible();
+    await expect(page.getByRole("region", { name: "Conteo de USD" }).getByText("500,00 USD").first()).toBeVisible();
+    await expect(page.getByLabel("Billetes de 1.000 CUP")).toHaveValue("100");
+    await expect(page.getByLabel("Billetes de 100 USD")).toHaveValue("5");
   });
 
   test("aceptar lo entregado abre sin diferencias", async ({ page }) => {
@@ -189,7 +179,7 @@ test.describe("abrir jornada — con totales, tras un cierre", () => {
     await expect(page.getByText("−100,00 USD")).toBeVisible();
 
     /* Un faltante no se explica como reposición ni como sobrante. */
-    await page.getByLabel("Motivo de la diferencia en USD").click();
+    await page.locator("#apertura-motivo-USD").click();
     await expect(page.getByRole("option", { name: "Reposición de fondos" })).toHaveCount(0);
     await expect(page.getByRole("option", { name: "Sobrante detectado" })).toHaveCount(0);
     await expect(page.getByRole("option", { name: "Retiro de fondos" })).toBeVisible();
@@ -197,27 +187,56 @@ test.describe("abrir jornada — con totales, tras un cierre", () => {
 
     /* Sin motivo no se abre. */
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-    await expect(page.getByText("Indica el motivo de la diferencia.")).toBeVisible();
+    await expect(page.locator("#apertura-motivo-USD")).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toHaveCount(0);
   });
 
   test("«Otro» exige observaciones", async ({ page }) => {
     await contar(page, { CUP: "100000", USD: "600" });
-    await page.getByLabel("Motivo de la diferencia en USD").click();
+    await page.locator("#apertura-motivo-USD").click();
     await page.getByRole("option", { name: "Otro" }).click();
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-    await expect(page.getByText("Con «Otro», explica la diferencia en las observaciones.")).toBeVisible();
+    await expect(page.locator("#apertura-observaciones-USD")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toHaveCount(0);
   });
 
   test("con el motivo, la jornada abre y avisa de que la diferencia va a aprobación", async ({ page }) => {
     await contar(page, { CUP: "100000", USD: "600" });
     await expect(page.getByText("Cada diferencia llega al administrador de la sede para su aprobación.")).toBeVisible();
-    await page.getByLabel("Motivo de la diferencia en USD").click();
+    await page.locator("#apertura-motivo-USD").click();
     await page.getByRole("option", { name: "Reposición de fondos" }).click();
+    /* Una reposición pide quién la trajo. */
+    await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
+    await expect(page.locator("#apertura-supervisor-USD")).toHaveAttribute("aria-invalid", "true");
+    await page.locator("#apertura-supervisor-USD").click();
+    await page.getByRole("option").first().click();
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
     await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible();
     await page.getByRole("link", { name: "Ir a Caja" }).click();
     await expect(page.getByRole("table").first().getByRole("cell", { name: "600,00" })).toBeVisible();
+  });
+});
+
+test.describe("abrir jornada — billetes distintos de los entregados", () => {
+  test.use({ fondos: { USD: 500 }, monedas: [], cerrada: true });
+
+  test("si el total cuadra pero los billetes no, se pide la causa; el supervisor pasa a confirmación", async ({ page }) => {
+    await page.goto("/worker/caja/fondeo-inicial");
+    await esperarFondeoVivo(page);
+    /* Se entregaron cinco de 100; hay diez de 50. */
+    await page.getByLabel("Billetes de 100 USD").fill("");
+    await page.getByLabel("Billetes de 50 USD").fill("10");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Confirmar conteo" }).click();
+    await expect(page.getByText("Billetes distintos")).toBeVisible();
+    await expect(page.getByText("−5 de 100 · +10 de 50").first()).toBeVisible();
+    await page.locator("#apertura-motivo-USD").click();
+    await expect(page.getByRole("option", { name: "Faltante detectado" })).toHaveCount(0);
+    await page.getByRole("option", { name: "El supervisor cambió billetes" }).click();
+    await page.locator("#apertura-supervisor-USD").click();
+    await page.getByRole("option").first().click();
+    await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
+    await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible();
   });
 });
 

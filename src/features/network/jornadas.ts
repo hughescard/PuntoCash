@@ -47,10 +47,12 @@ export interface MovimientoDeJornada {
   /** Positivo en una entrada, negativo en una salida. */
   amount: number;
   saldoDespues: number;
-  /** Solo en un ajuste de efectivo: el motivo declarado y el saldo previo. */
+  /** En un ajuste de apertura o de cierre: el motivo declarado y el saldo previo. */
   motivo?: string;
   observaciones?: string;
   saldoAntes?: number;
+  /** Reposición, retiro o cambio de billetes con supervisor: quién entregó o recibió el efectivo. */
+  supervisor?: string;
   /**
    * Los billetes que movió, por denominación (decisión del 9/11/2026): clave
    * el valor en céntimos, cantidad con signo —entra positivo, sale negativo—.
@@ -66,6 +68,17 @@ export interface ArqueoMoneda {
   contado: number;
   diferencia: number;
   motivo?: string;
+  observaciones?: string;
+  /** Si la diferencia se explicó como reposición o retiro: el supervisor. */
+  supervisor?: string;
+  /** Lo contado, billete a billete (decisión del 9/11/2026). */
+  billetes?: Billetes;
+  /**
+   * Diferencia de composición: el total cuadra pero los billetes no. Lo
+   * contado menos lo que el sistema tenía, por denominación. Solo se calcula
+   * si el sistema conocía todos los billetes de la caja.
+   */
+  composicion?: Billetes;
 }
 
 /**
@@ -79,8 +92,15 @@ export interface AperturaMoneda {
   contado: number;
   /** `contado − dejado` (o el contado, si no había nada dejado). */
   diferencia: number;
-  motivo?: MotivoDeApertura;
+  /** Un motivo de diferencia de importe o, si solo cambió la composición, uno de composición. */
+  motivo?: string;
   observaciones?: string;
+  /** Reposición, retiro o cambio de billetes que hizo el supervisor entre el cierre y la apertura. */
+  supervisor?: string;
+  /** Lo contado, billete a billete. */
+  billetes?: Billetes;
+  /** El total cuadra con lo dejado pero los billetes no: contado menos dejado, por denominación. */
+  composicion?: Billetes;
 }
 
 export interface AperturaJornada {
@@ -104,6 +124,23 @@ export const MOTIVOS_DE_APERTURA = [
   "Otro",
 ] as const;
 export type MotivoDeApertura = (typeof MOTIVOS_DE_APERTURA)[number];
+
+/** Una diferencia de importe al abrir o al cerrar: los mismos motivos en los dos momentos. */
+export const MOTIVOS_DE_DIFERENCIA = MOTIVOS_DE_APERTURA;
+
+/** Los motivos que son dinero que trajo o se llevó un supervisor: piden su nombre y su confirmación. */
+export const MOTIVOS_DE_FONDOS: ReadonlySet<string> = new Set(["Reposición de fondos", "Retiro de fondos"]);
+
+/** El total cuadra pero los billetes no, al cerrar. No se pide la operación: nadie la recuerda. */
+export const MOTIVOS_DE_COMPOSICION_CIERRE = [
+  "Entregué o recibí billetes distintos de los registrados",
+  "Hice un cambio de billetes sin registrarlo",
+  "Otro",
+] as const;
+
+/** El total cuadra pero los billetes no, al abrir. */
+export const SUPERVISOR_CAMBIO_BILLETES = "El supervisor cambió billetes";
+export const MOTIVOS_DE_COMPOSICION_APERTURA = [SUPERVISOR_CAMBIO_BILLETES, "Otro"] as const;
 
 export interface Jornada {
   id: string;
@@ -308,32 +345,19 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
            nada; alguna nace de una solicitud de kiosco (FR-AD-OPS-4). */
         const kioscos = kioscosDeSede(sede.id);
         const nOps = 4 + Math.floor(rnd() * 7);
-        /* Toda caja tiene un ajuste hace cinco días —ya resuelto en Aprobaciones— y
-           otro ayer —pendiente—; además, alguno más al azar. */
+        /* Antes había ajustes de efectivo a media jornada; se mantienen los
+           sorteos para no mover el resto de la siembra. */
         const conAjuste = rnd() < 0.12 || dia === -5 || dia === -1;
         const kAjuste = conAjuste ? Math.floor(nOps / 2) : -1;
         for (let k = 0; k < nOps; k += 1) {
           const t = new Date(abierta.getTime() + ((fin - abierta.getTime()) * (k + 1)) / (nOps + 1));
-          /* Alguna vez a lo largo del día el trabajador cuenta un cajón y lo
-             ajusta: un ajuste de efectivo con su motivo, que espera el visto
-             bueno del administrador (FR-AD-APR-1). */
           if (k === kAjuste) {
             const faltante = rnd() < 0.6;
             const importe = (1 + Math.floor(rnd() * 9)) * 100;
             const antes = saldos.get("CUP") ?? 0;
-            if (!faltante || antes >= importe) {
-              const motivo = faltante ? (rnd() < 0.7 ? "Faltante detectado" : "Error de registro") : (rnd() < 0.7 ? "Sobrante detectado" : "Otro");
-              mov({
-                fechaHora: new Date(t.getTime() - 60_000).toISOString(),
-                tipo: faltante ? "salida" : "entrada",
-                concepto: "Ajuste de efectivo",
-                currency: "CUP",
-                amount: faltante ? -importe : importe,
-                motivo,
-                saldoAntes: antes,
-                ...(motivo === "Otro" ? { observaciones: "Billete de 1.000 CUP que el cliente no recogió." } : motivo === "Error de registro" ? { observaciones: "Un cambio se registró con el importe de otro." } : {}),
-              });
-            }
+            /* «Ajustar efectivo» ya no existe (decisión del 10/11/2026): se
+               consumen los mismos números para que el resto no cambie. */
+            if (!faltante || antes >= importe) rnd();
           }
           codigo += 1;
           const yy = fecha.slice(2, 4), mm = fecha.slice(5, 7), dd = fecha.slice(8, 10);
@@ -518,7 +542,9 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
               motivo: "El trabajador salió enfermo antes del cierre y la caja quedó abierta.",
             };
           } else {
-            const conDiferencia = rnd() < 0.25;
+            /* El historial de Miramar cierra siempre con alguna diferencia: son las
+               que quedaron sin resolver al traspasar la sede y resuelve PuntoCash. */
+            const conDiferencia = rnd() < 0.25 || (o.sedes?.includes("sede-miramar") ?? false);
             const monedasArqueo: ArqueoMoneda[] = [...saldos].map(([currency, esperado]) => {
               const diferencia = conDiferencia && currency === "CUP" ? (rnd() < 0.5 ? -1 : 1) * (100 + Math.floor(rnd() * 9) * 100) : 0;
               return {
@@ -536,6 +562,25 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
                 concepto: "Ajuste de cierre", currency: a.currency, amount: a.diferencia,
                 motivo: a.motivo, saldoAntes: antes,
               });
+            }
+            /* Un cierre de anteayer en cada sede cuadra en importe pero no en
+               billetes: alguien cambió un billete de 200 por dos de 100 sin
+               registrarlo. Es la diferencia de composición (decisión del 9/11). */
+            const cup = monedasArqueo.find((a) => a.currency === "CUP");
+            const invCup = inventario.get("CUP") ?? {};
+            if (dia === -2 && indiceCaja === 0 && cup && cup.diferencia === 0 && (invCup["20000"] ?? 0) > 0) {
+              const composicion = { "20000": -1, "10000": 2 };
+              mov({
+                fechaHora: cierre.toISOString(), tipo: "entrada", concepto: "Ajuste de billetes al cerrar",
+                currency: "CUP", amount: 0, billetes: composicion,
+                motivo: "Hice un cambio de billetes sin registrarlo",
+              });
+              cup.composicion = composicion;
+              cup.motivo = "Hice un cambio de billetes sin registrarlo";
+            }
+            for (const a of monedasArqueo) {
+              const b = inventario.get(a.currency);
+              if (b) a.billetes = b;
             }
             jornada.estado = "cerrada";
             jornada.closedAt = cierre.toISOString();
@@ -618,7 +663,7 @@ function sembrarApertura(
  * la anterior y se descarta junto con lo que se deriva de él —operaciones y
  * solicitudes—, para no mezclar datos de dos siembras.
  */
-const VERSION_DE_SIEMBRA = "2026-11-09.2";
+const VERSION_DE_SIEMBRA = "2026-11-10.2";
 
 const ALMACEN = globalThis as typeof globalThis & {
   __puntocashJornadas?: Jornada[];

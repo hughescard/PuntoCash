@@ -9,7 +9,6 @@ import {
   ClipboardCheck,
   LayoutGrid,
   Printer,
-  SlidersHorizontal,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -23,7 +22,6 @@ const ACTION_ICON: Readonly<Record<string, LucideIcon>> = {
   "imprimir-resumen": Printer,
   "fondeo-inicial": Banknote,
   "anadir-moneda": CircleDollarSign,
-  "ajustar-efectivo": SlidersHorizontal,
   arqueo: ClipboardCheck,
 };
 

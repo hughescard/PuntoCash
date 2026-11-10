@@ -1,7 +1,7 @@
 import { test, expect } from "./worker-fixture";
 import { type Page } from "@playwright/test";
 
-import { esperarFondeoVivo, openJornada, rellenar } from "./worker-helpers";
+import { esperarFondeoVivo, openJornada } from "./worker-helpers";
 
 /**
  * Worker Caja — Añadir moneda (/worker/caja/anadir-moneda).
@@ -239,8 +239,8 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await rellenar(page.getByLabel("Efectivo contado en CUP"), "200000");
-    await page.getByLabel("Efectivo contado en USD").fill("4000");
+    await page.getByLabel("Billetes de 1.000 CUP").fill("200");
+    await page.getByLabel("Billetes de 100 USD").fill("40");
 
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/anadir-moneda\?returnTo=fondeo-inicial$/);
@@ -250,12 +250,12 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
     await page.getByRole("button", { name: "Añadir moneda" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/, { timeout: 3000 });
-    await expect(page.getByLabel("Efectivo contado en CUP")).toHaveValue("200000");
-    await expect(page.getByLabel("Efectivo contado en USD")).toHaveValue("4000");
+    await expect(page.getByLabel("Billetes de 1.000 CUP")).toHaveValue("200");
+    await expect(page.getByLabel("Billetes de 100 USD")).toHaveValue("40");
 
-    const cadInput = page.getByLabel("Efectivo contado en CHF");
-    await expect(cadInput).toBeVisible();
-    await expect(cadInput).toHaveValue("");
+    const chf = page.getByLabel("Billetes de 100 CHF");
+    await expect(chf).toBeVisible();
+    await expect(chf).toHaveValue("");
   });
 
   test("Fondeo inicial can then accept and register an amount for CHF normally", async ({
@@ -263,16 +263,14 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await page.getByLabel("Efectivo contado en CUP").fill("200000");
+    await page.getByLabel("Billetes de 1.000 CUP").fill("200");
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await openPicker(page);
     await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("button", { name: "Añadir moneda" }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/, { timeout: 3000 });
 
-    await page.getByLabel("Efectivo contado en CHF").fill("1000");
-    /* Se cuentan todas las monedas de la caja: las que no tienen efectivo, en cero. */
-    for (const c of ["USD", "EUR", "GBP"]) await page.getByLabel(`Efectivo contado en ${c}`).fill("0");
+    await page.getByLabel("Billetes de 1.000 CHF").fill("1");
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Confirmar conteo" }).click();
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
@@ -293,13 +291,15 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await page.getByLabel("Efectivo contado en EUR").fill("1500");
+    await page.getByLabel("Billetes de 500 EUR").fill("3");
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
+    /* «Cancelar» sabe a dónde volver cuando la pantalla ha hidratado. */
+    await expect(page.getByRole("link", { name: "Cancelar" })).toHaveAttribute("href", /fondeo-inicial/);
     await page.getByRole("link", { name: "Cancelar" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/);
-    await expect(page.getByLabel("Efectivo contado en EUR")).toHaveValue("1500");
-    await expect(page.getByLabel("Efectivo contado en CHF")).toHaveCount(0);
+    await expect(page.getByLabel("Billetes de 500 EUR")).toHaveValue("3");
+    await expect(page.getByLabel("Billetes de 100 CHF")).toHaveCount(0);
   });
 });
 

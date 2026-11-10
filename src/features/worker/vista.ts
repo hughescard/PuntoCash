@@ -18,7 +18,15 @@ import type {
 } from "@/features/caja/caja-data";
 import type { TasaVigente } from "@/features/exchange/cotizacion";
 import type { OperationRecord } from "@/features/operations/operations-history";
-import { aperturaDeclarada, type AperturaDeclarada, type BloqueoDeCaja, type ContextoDeCaja, type EstadoDeCaja } from "@/features/network/caja-operativa";
+import type { Denominacion } from "@/features/caja/billetes";
+import {
+  aperturaDeclarada,
+  supervisoresDe,
+  type AperturaDeclarada,
+  type BloqueoDeCaja,
+  type ContextoDeCaja,
+  type EstadoDeCaja,
+} from "@/features/network/caja-operativa";
 import { jornadasDeCaja, type Jornada } from "@/features/network/jornadas";
 import { operacionesDeCaja } from "@/features/network/operaciones";
 
@@ -45,6 +53,10 @@ export interface VistaDeCaja {
    * puedan leerse tampoco desde las herramientas del navegador.
    */
   monedas: readonly string[];
+  /** Las denominaciones que se cuentan en cada moneda de la caja, de mayor a menor. Sin cantidades. */
+  denominaciones: Readonly<Record<string, readonly Denominacion[]>>;
+  /** Los supervisores que pueden reponer, retirar o cambiar billetes: los administradores de la empresa de la sede. */
+  supervisores: readonly { id: string; nombre: string }[];
   movimientos: readonly CajaMovement[];
   monedasPorAnadir: readonly string[];
   bloqueo: BloqueoDeCaja | null;
@@ -91,6 +103,8 @@ function movimientosDeLibro(registerId: string, now: Date): CajaMovement[] {
         amount: m.amount,
         ...(m.motivo ? { motivo: m.motivo } : {}),
         ...(m.observaciones ? { observaciones: m.observaciones } : {}),
+        ...(m.billetes ? { billetes: m.billetes } : {}),
+        ...(m.supervisor ? { supervisor: m.supervisor } : {}),
         jornada: snap,
       });
     }
@@ -129,6 +143,8 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
     },
     jornada: j ? { ...aCajaJornada(j), id: j.id, propia } : null,
     monedas: estado.saldos.map((s) => s.currency),
+    denominaciones: estado.denominaciones,
+    supervisores: supervisoresDe(ctx),
     movimientos: movimientosDeLibro(ctx.register.id, now),
     monedasPorAnadir: estado.monedasPorAnadir,
     bloqueo: estado.bloqueo,

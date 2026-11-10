@@ -27,51 +27,19 @@ function onScreen(page: Page, text: string | RegExp) {
 }
 
 /*
- * La jornada abre con 1.200 EUR, paga un giro y registra un ajuste de 15 EUR
- * de faltante, con su nota: la ficha de un ajuste se comprueba sobre él.
+ * La jornada abre con 1.200 EUR, paga un giro y cierra con un faltante de
+ * 200 EUR —falta el billete de 200—, con su nota: la ficha de un ajuste de
+ * cierre se comprueba sobre él. «Ajustar efectivo» ya no existe (10/11/2026).
  */
 test.use({
   fondos: { EUR: 1_200, CUP: 10_000 },
   giros: [1_000],
-  ajustes: [{ currency: "EUR", contado: 1_185, motivo: "Faltante detectado", observaciones: "Conteo verificado nuevamente." }],
+  cerrada: true,
+  diferenciaAlCerrar: { currency: "EUR", quitar: { "20000": 1 }, motivo: "Faltante detectado", observaciones: "Conteo verificado nuevamente." },
 });
 
 async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "1200" }) {
   await abrirPorPantalla(page, fondos);
-}
-
-/** From the Caja main screen, opens the Ajustar efectivo tile. */
-async function goToAjustarEfectivoFromCaja(page: Page) {
-  await page.getByRole("link", { name: /Ajustar efectivo/ }).click();
-  await expect(page.getByRole("heading", { name: "Ajustar efectivo" })).toBeVisible();
-}
-
-/** From the Ajustar efectivo form, fills and confirms one adjustment. */
-async function fillAndConfirmAdjustment(
-  page: Page,
-  opts: { currency?: string; counted: string; motivo?: string; observaciones?: string },
-) {
-  /* A ciegas: se cuenta, se confirma el conteo y, ya registrado, se explica. */
-  await page.locator("#ajuste-moneda").click();
-  await page.getByRole("option", { name: new RegExp(`^${opts.currency ?? "EUR"}`) }).click();
-  await page.getByLabel("Efectivo contado").fill(opts.counted);
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Confirmar conteo" }).click();
-  await page.locator("#ajuste-motivo").click();
-  await page.getByRole("option", { name: opts.motivo ?? "Faltante detectado", exact: true }).click();
-  if (opts.observaciones) await page.locator("#ajuste-observaciones").fill(opts.observaciones);
-  await page.getByRole("button", { name: "Guardar motivo y terminar" }).click();
-  await expect(page.getByRole("heading", { name: "Ajuste registrado" })).toBeVisible({ timeout: 3000 });
-}
-
-/** From the "Caja abierta"/"Ajuste registrado" result screen (has "Ir a Caja"), completes one adjustment. */
-async function makeAdjustment(
-  page: Page,
-  opts: { currency?: string; counted: string; motivo?: string; observaciones?: string },
-) {
-  await page.getByRole("link", { name: "Ir a Caja" }).click();
-  await goToAjustarEfectivoFromCaja(page);
-  await fillAndConfirmAdjustment(page, opts);
 }
 
 /**
@@ -116,7 +84,7 @@ test.describe("caja movements table — Acciones column", () => {
   }) => {
     await page.goto("/worker/caja");
     const movementsTable = page.getByRole("table").first();
-    const row = movementsTable.locator("tbody tr").filter({ hasText: "Ajuste de efectivo" }).first();
+    const row = movementsTable.locator("tbody tr").filter({ hasText: "Ajuste de cierre" }).first();
 
     await expect(row.getByRole("link", { name: "Ver detalle" })).toBeVisible();
     await expect(row.locator("td").nth(1)).toHaveText("—");
@@ -135,7 +103,7 @@ test.describe("caja movements table — Acciones column", () => {
   });
 
   test("Ver detalle navigates to /worker/caja/movimientos/[id]", async ({ page }) => {
-    await openDetailFor(page, "Ajuste de efectivo");
+    await openDetailFor(page, "Ajuste de cierre");
     await expect(page).toHaveURL(/\/worker\/caja\/movimientos\/CM-/);
   });
 });
@@ -151,9 +119,9 @@ test.describe("cash movement detail — unknown id", () => {
   });
 });
 
-test.describe("cash movement detail — Ajuste de efectivo (static fixture)", () => {
+test.describe("cash movement detail — Ajuste de cierre", () => {
   test.beforeEach(async ({ page }) => {
-    await openDetailFor(page, "Ajuste de efectivo");
+    await openDetailFor(page, "Ajuste de cierre");
   });
 
   /**
@@ -172,7 +140,7 @@ test.describe("cash movement detail — Ajuste de efectivo (static fixture)", ()
   test("la ficha de un ajuste muestra todo lo que debe, y nada que no sepa", async ({ page }) => {
     // Identificación: el movimiento, su concepto y su sentido como texto.
     await expect(onScreen(page, /^CM-\d{6}-\d{6}$/).first()).toBeVisible();
-    await expect(onScreen(page, "Ajuste de efectivo").first()).toBeVisible();
+    await expect(onScreen(page, "Ajuste de cierre").first()).toBeVisible();
     /* «Salida» como palabra, no solo como color: un estado no se comunica con
        el color a secas (**FR-A11Y-2**, §20). */
     await expect(onScreen(page, "Salida").first()).toBeVisible();
@@ -187,14 +155,13 @@ test.describe("cash movement detail — Ajuste de efectivo (static fixture)", ()
     expect(hasRegionalIndicator, "hay un emoji de bandera en la pantalla").toBe(false);
 
     // Importe con signo explícito y sello de tiempo en el formato del manual.
-    await expect(onScreen(page, /−15,00 EUR|-15,00 EUR/).first()).toBeVisible();
+    await expect(onScreen(page, /−200,00 EUR|-200,00 EUR/).first()).toBeVisible();
     await expect(onScreen(page, /\d{2}\/\d{2}\/\d{4} · \d{2}:\d{2}/).first()).toBeVisible();
 
     // Contexto: la caja, quién lo registró y la jornada **histórica**, no la de hoy.
     await expect(onScreen(page, "Caja 03").first()).toBeVisible();
     await expect(onScreen(page, "Juan Pérez").first()).toBeVisible();
-    await expect(onScreen(page, "Abierta").first()).toBeVisible();
-    await expect(onScreen(page, /Abierta el: \d{2}\/\d{2}\/\d{4} · \d{2}:\d{2}/)).toBeVisible();
+    await expect(onScreen(page, /Cerrada el: \d{2}\/\d{2}\/\d{4} · \d{2}:\d{2}/)).toBeVisible();
 
     /* Lo propio de un ajuste: la diferencia, el motivo y su nota. **Sin
        saldos**: Worker opera a ciegas (6/11/2026). */
@@ -210,7 +177,7 @@ test.describe("cash movement detail — Ajuste de efectivo (static fixture)", ()
     await expect(page.getByText("Movimiento", { exact: true }).filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText("Saldo anterior")).toHaveCount(0);
     await expect(page.getByText("Saldo resultante")).toHaveCount(0);
-    await expect(page.getByText("1.185,00")).toHaveCount(0);
+    await expect(page.getByText("1.000,00")).toHaveCount(0);
 
     /* Un ajuste no nace de una operación, así que la tarjeta de operación
        relacionada **no** se dibuja: dibujarla vacía afirmaría que hay una. */
@@ -230,20 +197,8 @@ test.describe("cash movement detail — Ajuste de efectivo (static fixture)", ()
   });
 });
 
-test.describe("cash movement detail — a live positive adjustment", () => {
-  test.use({ fondos: null, giros: [], ajustes: [] });
-
-  test("a positive difference keeps its explicit + sign and success semantics", async ({ page }) => {
-    await openJornada(page, { EUR: "1200" });
-    await makeAdjustment(page, { currency: "EUR", counted: "1220", motivo: "Sobrante detectado" });
-    await goToCajaAndOpenDetail(page, "Ajuste de efectivo");
-
-    await expect(onScreen(page, "+20,00 EUR").first()).toBeVisible();
-  });
-});
-
 test.describe("cash movement detail — Fondeo inicial (live)", () => {
-  test.use({ fondos: null, giros: [], ajustes: [] });
+  test.use({ fondos: null, giros: [], cerrada: false, diferenciaAlCerrar: null });
 
   test("resolves and shows only genuinely available common movement information", async ({ page }) => {
     await openJornada(page, { EUR: "1200" });
@@ -265,45 +220,11 @@ test.describe("cash movement detail — Fondeo inicial (live)", () => {
   });
 });
 
-test.describe("cash movement detail — historical immutability", () => {
-  test.use({ fondos: null, giros: [], ajustes: [] });
-
-  test("does not change when the current Caja balance changes later", async ({ page }) => {
-    await openJornada(page, { EUR: "1200" });
-    await makeAdjustment(page, { currency: "EUR", counted: "1185", motivo: "Faltante detectado" });
-
-    await page.getByRole("link", { name: "Ir a Caja" }).click();
-    const movementsTable = page.getByRole("table").first();
-    const firstAdjustmentHref = await movementsTable
-      .locator("tbody tr")
-      .filter({ hasText: "Ajuste de efectivo" })
-      .first()
-      .getByRole("link", { name: "Ver detalle" })
-      .getAttribute("href");
-    expect(firstAdjustmentHref).toBeTruthy();
-
-    // A second adjustment on the same currency changes the CURRENT EUR balance.
-    await goToAjustarEfectivoFromCaja(page);
-    await fillAndConfirmAdjustment(page, { currency: "EUR", counted: "1160", motivo: "Faltante detectado" });
-
-    // The first movement's own historical record must still read as it did —
-    // reached via the same in-page client-side Link, never a hard reload,
-    // since the mutated ledger only ever exists in this page's own JS realm.
-    await page.getByRole("link", { name: "Ir a Caja" }).click();
-    await page.locator(`a[href="${firstAdjustmentHref}"]`).first().click();
-    await expect(page.getByRole("heading", { name: "Movimiento de caja" })).toBeVisible();
-
-    /* Su diferencia sigue siendo la suya; sin saldos que pudieran cambiar. */
-    await expect(onScreen(page, "−15,00 EUR").or(onScreen(page, "-15,00 EUR")).first()).toBeVisible();
-    await expect(page.getByText("1.185,00")).toHaveCount(0);
-  });
-});
-
 test.describe("cash movement detail — layout", () => {
   for (const width of [1440, 1280]) {
     test(`fits without page-level horizontal scroll at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await openDetailFor(page, "Ajuste de efectivo");
+      await openDetailFor(page, "Ajuste de cierre");
 
       const overflows = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -319,7 +240,7 @@ test.describe("cash movement detail — layout", () => {
       if (message.type() === "error") errors.push(message.text());
     });
 
-    await openDetailFor(page, "Ajuste de efectivo");
+    await openDetailFor(page, "Ajuste de cierre");
     await page.getByRole("link", { name: "Volver a Caja" }).click();
 
     expect(errors).toEqual([]);

@@ -79,6 +79,7 @@ export default async function AdminMovimientoPage({
             ) : m.concepto === "Ajuste de cierre" || m.concepto === "Ajuste de efectivo" ? (
               <Dato etiqueta="Motivo" valor="Sin explicar" />
             ) : null}
+            {m.supervisor ? <Dato etiqueta="Supervisor" valor={m.supervisor} /> : null}
             {m.observaciones ? <Dato etiqueta="Observaciones" valor={m.observaciones} /> : null}
             <div className="sm:col-span-2">
               <dt className="text-caption uppercase tracking-wide text-text-secondary">Billetes y monedas</dt>

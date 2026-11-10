@@ -261,9 +261,9 @@ test.describe("worker caja — actions", () => {
     await expect(page).toHaveURL(/\/worker\/caja\/anadir-moneda$/);
   });
 
-  test("Ajustar efectivo y Arqueo y cierre llevan a sus flujos con la jornada abierta", async ({ page }) => {
+  test("Arqueo y cierre lleva a su flujo con la jornada abierta; «Ajustar efectivo» ya no existe", async ({ page }) => {
     await expect(page.getByText("Transferir entre cajas")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /Ajustar efectivo/ })).toBeVisible();
+    await expect(page.getByText("Ajustar efectivo")).toHaveCount(0);
     await page.getByRole("link", { name: /Arqueo y cierre/ }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/arqueo-cierre$/);
   });
@@ -272,9 +272,9 @@ test.describe("worker caja — actions", () => {
 test.describe("worker caja — sin jornada", () => {
   test.use({ fondos: null, giros: [], monedas: ["CUP"] });
 
-  test("Arqueo y cierre y Ajustar efectivo se deshabilitan con su motivo real", async ({ page }) => {
+  test("Arqueo y cierre se deshabilita con su motivo real", async ({ page }) => {
     await page.goto("/worker/caja");
-    for (const name of [/Arqueo y cierre/, /Ajustar efectivo/]) {
+    for (const name of [/Arqueo y cierre/]) {
       const tile = page.getByRole("button", { name });
       await expect(tile).toBeDisabled();
       await expect(tile.getByText("Requiere jornada abierta")).toBeVisible();
