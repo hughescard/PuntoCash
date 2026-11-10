@@ -11,6 +11,8 @@ import { findInternalCajaMovement, type CajaMovement } from "@/features/caja/caj
 import { useCaja } from "@/features/caja/use-caja";
 import { BackLink, CashJornadaCard, MovementDetailHeader, MovementInfoCard } from "./movement-detail-parts";
 import { CashAdjustmentDetail } from "./cash-adjustment-detail";
+import { OpeningDifferenceDetail } from "./opening-difference-detail";
+import type { Denominacion } from "@/features/caja/billetes";
 import { MovementReceiptSection } from "./movement-receipt-section";
 
 /**
@@ -54,7 +56,7 @@ export function CashMovementDetailView({ movementId }: { movementId: string }): 
         <CashJornadaCard movement={movement} />
       </div>
 
-      <MovementSpecificDetail movement={movement} />
+      <MovementSpecificDetail movement={movement} tipos={vista.denominaciones[movement.currency] ?? []} />
 
       {movement.billetes && Object.keys(movement.billetes).length > 0 ? (
         <Card>
@@ -88,9 +90,13 @@ export function CashMovementDetailView({ movementId }: { movementId: string }): 
  * depth. Returns nothing (not a placeholder) for any other concept — the
  * common cards already say everything genuinely available (§14).
  */
-function MovementSpecificDetail({ movement }: { movement: CajaMovement }): React.JSX.Element | null {
+function MovementSpecificDetail({ movement, tipos }: { movement: CajaMovement; tipos: readonly Denominacion[] }): React.JSX.Element | null {
   if (movement.concepto === "Ajuste de cierre" || movement.concepto === "Ajuste de billetes al cerrar") {
     return <CashAdjustmentDetail movement={movement} />;
+  }
+  /* El fondeo de una apertura: si lo recibido coincidió con lo entregado y, si no, qué se dijo. */
+  if (movement.apertura) {
+    return <OpeningDifferenceDetail apertura={movement.apertura} currency={movement.currency} tipos={tipos} />;
   }
   return null;
 }

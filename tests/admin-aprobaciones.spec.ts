@@ -170,6 +170,20 @@ test.describe("Aprobaciones", () => {
 });
 
 test.describe("Aprobaciones · billetes", () => {
+  test("una diferencia de apertura se ve en el detalle de su Fondeo inicial, con su aprobación", async ({ page }) => {
+    await signInAsAdmin(page, MARTA);
+    const main = page.getByRole("main");
+    await page.goto("/admin/aprobaciones?pestana=resueltas");
+    await main.getByLabel("Tipo").selectOption("apertura");
+    await main.getByRole("link", { name: /^Ver solicitud: Diferencia de apertura/ }).first().click();
+    await main.getByRole("link", { name: "Ver el movimiento" }).click();
+    await expect(page.getByRole("heading", { name: "Fondeo inicial", level: 1 })).toBeVisible();
+    await expect(main.getByText("Diferencia con el cierre anterior")).toBeVisible();
+    await expect(main.getByText(/^(Entregado|En libros al forzar el cierre)$/)).toBeVisible();
+    await expect(main.getByText("Recibido", { exact: true })).toBeVisible();
+    await expect(main.getByRole("link", { name: /^(Aprobada|Rechazada) por / })).toBeVisible();
+  });
+
   test("una diferencia de composición y un movimiento de fondos enseñan su detalle", async ({ page }) => {
     const CAPTURAS = process.env.CAPTURAS;
     await signInAsAdmin(page, MARTA);

@@ -12,6 +12,7 @@
  */
 
 import type {
+  AperturaDelMovimiento,
   CajaJornada,
   CajaMovement,
   CajaSummary,
@@ -105,6 +106,7 @@ function movimientosDeLibro(registerId: string, now: Date): CajaMovement[] {
         ...(m.observaciones ? { observaciones: m.observaciones } : {}),
         ...(m.billetes ? { billetes: m.billetes } : {}),
         ...(m.supervisor ? { supervisor: m.supervisor } : {}),
+        ...aperturaDe(j, m.concepto, m.currency),
         jornada: snap,
       });
     }
@@ -119,6 +121,27 @@ function movimientosDeLibro(registerId: string, now: Date): CajaMovement[] {
       delete copia.orden;
       return copia;
     });
+}
+
+/** Para el «Fondeo inicial»: lo recibido frente a lo entregado por quien cerró. */
+function aperturaDe(j: Jornada, concepto: string, currency: string): { apertura: AperturaDelMovimiento } | Record<string, never> {
+  const ca = j.apertura.cierreAnterior;
+  if (concepto !== "Fondeo inicial" || !ca) return {};
+  const a = j.apertura.monedas.find((x) => x.currency === currency);
+  if (!a) return {};
+  const composicion = a.diferencia === 0 && a.composicion && Object.keys(a.composicion).length > 0 ? a.composicion : undefined;
+  return {
+    apertura: {
+      cierreAnterior: { workerName: ca.workerName, closedAt: ca.closedAt, sinArqueo: ca.sinArqueo },
+      entregado: a.dejado ?? 0,
+      recibido: a.contado,
+      diferencia: a.diferencia,
+      ...(composicion ? { composicion } : {}),
+      ...(a.motivo ? { motivo: a.motivo } : {}),
+      ...(a.supervisor ? { supervisor: a.supervisor } : {}),
+      ...(a.observaciones ? { observaciones: a.observaciones } : {}),
+    },
+  };
 }
 
 export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new Date()): VistaDeCaja {

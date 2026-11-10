@@ -34,6 +34,14 @@ async function abrir(page: Page, amounts: Record<string, string> = CUATRO) {
   await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible();
 }
 
+/** Desde la pantalla de éxito, el detalle del Fondeo inicial de una moneda. */
+async function verFondeo(page: import("@playwright/test").Page, currency: string, { yaEnCaja = false } = {}) {
+  if (!yaEnCaja) await page.getByRole("link", { name: "Ir a Caja" }).click();
+  const fila = page.getByRole("table").first().locator("tbody tr").filter({ hasText: "Fondeo inicial" }).filter({ hasText: currency }).first();
+  await fila.getByRole("link", { name: "Ver detalle" }).click();
+  await expect(page.getByRole("heading", { name: "Movimiento de caja" })).toBeVisible();
+}
+
 test.describe("abrir jornada — conteo", () => {
   test("presenta la pantalla y llega desde la acción de Caja", async ({ page }) => {
     await page.goto("/worker/caja");
@@ -171,6 +179,9 @@ test.describe("abrir jornada — con totales, tras un cierre", () => {
     await expect(page.getByText("Coincide")).toHaveCount(2);
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
     await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible();
+    /* El detalle del fondeo deja constancia de que coincidió. */
+    await verFondeo(page, "USD");
+    await expect(page.getByText("Coincidió con lo que entregó quien cerró")).toBeVisible();
   });
 
   test("lo que coincide se dice; una diferencia pide motivo compatible con su signo", async ({ page }) => {
@@ -214,6 +225,12 @@ test.describe("abrir jornada — con totales, tras un cierre", () => {
     await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible();
     await page.getByRole("link", { name: "Ir a Caja" }).click();
     await expect(page.getByRole("table").first().getByRole("cell", { name: "600,00" })).toBeVisible();
+    /* El detalle del fondeo cuenta la diferencia y lo que dijo el trabajador. */
+    await verFondeo(page, "USD", { yaEnCaja: true });
+    await expect(page.getByText("Diferencia con el cierre anterior")).toBeVisible();
+    await expect(page.getByText("+100,00 USD")).toBeVisible();
+    await expect(page.getByText("Reposición de fondos")).toBeVisible();
+    await expect(page.getByText("Supervisor", { exact: true })).toBeVisible();
   });
 });
 
@@ -237,6 +254,12 @@ test.describe("abrir jornada — billetes distintos de los entregados", () => {
     await page.getByRole("option").first().click();
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
     await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible();
+    /* En el detalle del fondeo, los billetes que cambiaron. */
+    await verFondeo(page, "USD");
+    await expect(page.getByText("Total sin diferencia")).toBeVisible();
+    const cambiaron = page.getByRole("table", { name: "Billetes que cambiaron al abrir" });
+    await expect(cambiaron.getByRole("row", { name: /^100 USD −5/ })).toBeVisible();
+    await expect(cambiaron.getByRole("row", { name: /^50 USD \+10/ })).toBeVisible();
   });
 });
 

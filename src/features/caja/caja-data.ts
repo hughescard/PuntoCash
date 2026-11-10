@@ -62,6 +62,26 @@ export interface CajaMovement {
   supervisor?: string;
   /** La jornada a la que pertenece, como era al registrarse. */
   jornada?: CajaMovementJornadaSnapshot;
+  /**
+   * Solo el «Fondeo inicial» de una caja que ya había cerrado antes: cómo
+   * quedó lo recibido frente a lo que declaró quien cerró, y lo que dijo el
+   * trabajador si no coincidía. Lo entregado lo vio al abrir; no es un saldo.
+   */
+  apertura?: AperturaDelMovimiento;
+}
+
+export interface AperturaDelMovimiento {
+  cierreAnterior: { workerName: string; closedAt: string; sinArqueo: boolean };
+  /** Lo que declaró quien cerró (o lo que había en libros, si se forzó el cierre). */
+  entregado: number;
+  recibido: number;
+  /** `recibido − entregado`. */
+  diferencia: number;
+  /** El total cuadra pero los billetes no: recibido menos entregado, por denominación. */
+  composicion?: Readonly<Record<string, number>>;
+  motivo?: string;
+  supervisor?: string;
+  observaciones?: string;
 }
 
 export type CajaJornadaStatus = "OPEN" | "CLOSED";

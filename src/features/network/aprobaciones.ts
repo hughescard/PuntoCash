@@ -134,6 +134,8 @@ export function derivar(j: Jornada): Solicitud[] {
       if (a.diferencia === 0 && !composicion) continue;
       /* El supervisor que cambió billetes o que repuso o retiró: pasa a confirmación. */
       const fondos = a.motivo !== undefined && (MOTIVOS_DE_FONDOS.has(a.motivo) || a.motivo === SUPERVISOR_CAMBIO_BILLETES);
+      /* El fondeo de esa moneda es el movimiento de la apertura: desde su detalle se llega a la solicitud. */
+      const fondeo = j.movimientos.find((m) => m.concepto === "Fondeo inicial" && m.currency === a.currency);
       out.push({
         ...base,
         id: `SOL-${j.id}-A-${a.currency}`,
@@ -146,6 +148,7 @@ export function derivar(j: Jornada): Solicitud[] {
         diferencia: a.diferencia,
         motivo: a.motivo ?? "Otro",
         ...(a.observaciones ? { observaciones: a.observaciones } : {}),
+        ...(fondeo ? { movimientoId: fondeo.id } : {}),
         ...(composicion ? { billetes: a.composicion } : {}),
         estado: "pendiente",
       });

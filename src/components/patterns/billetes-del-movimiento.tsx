@@ -17,10 +17,16 @@ export function BilletesDelMovimiento({
   billetes,
   currency,
   tipos,
+  leyenda = "En positivo lo que entró en la caja; en negativo lo que salió.",
+  nombre = "del movimiento",
 }: {
   billetes: Billetes | undefined;
   currency: string;
   tipos: readonly Denominacion[];
+  /** Qué significa el signo, si no es «entra / sale». */
+  leyenda?: string;
+  /** Completa el nombre accesible: «Billetes y monedas del movimiento». */
+  nombre?: string;
 }): React.JSX.Element {
   const filas = lineas(billetes);
   if (filas.length === 0) return <p className="text-body-sm text-text-secondary">Sin desglosar</p>;
@@ -33,11 +39,11 @@ export function BilletesDelMovimiento({
   const total = totalDe(billetes);
 
   return (
-    <div role="group" aria-label="Billetes y monedas del movimiento" className="flex flex-col gap-4">
+    <div role="group" aria-label={`Billetes y monedas ${nombre}`} className="flex flex-col gap-4">
       <div className={cn("grid grid-cols-1 items-start gap-4", grupos.length > 1 && "md:grid-cols-2")}>
         {grupos.map((g) => (
           <div key={g.titulo} className="rounded-control border border-border">
-            <table className="w-full table-fixed border-collapse text-body-sm" aria-label={`${g.titulo} del movimiento`}>
+            <table className="w-full table-fixed border-collapse text-body-sm" aria-label={`${g.titulo} ${nombre}`}>
               <caption className="border-b border-border bg-surface-subtle px-4 py-2.5 text-left text-label font-semibold text-text-primary">
                 {g.titulo}
               </caption>
@@ -69,7 +75,7 @@ export function BilletesDelMovimiento({
         ))}
       </div>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-border pt-3">
-        <p className="text-caption text-text-secondary">En positivo lo que entró en la caja; en negativo lo que salió.</p>
+        <p className="text-caption text-text-secondary">{leyenda}</p>
         <p className="text-body-sm text-text-secondary">
           Total:{" "}
           <span className="pc-numeric font-semibold text-text-primary">
