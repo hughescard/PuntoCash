@@ -1,4 +1,6 @@
-import { alcanzaParaEntregarAction, registrarOperacionAction } from "../../../../_actions";
+import { alcanzaParaEntregarAction, comprobarOperacionAction, registrarOperacionAction } from "../../../../_actions";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
+import type { OperationLiquidation } from "@/features/operations/operations-history";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 
@@ -18,11 +20,27 @@ export interface GiroPayoutCompleted {
   worker: string;
   /** ISO datetime, captured only once the payout actually succeeded. */
   completedAt: string;
+  /** Resto en CUP y lo que quedó a favor de la casa: consta en el comprobante. */
+  liquidacion?: OperationLiquidation;
 }
 
 export type ConfirmPayoutOutcome =
   | { ok: true; completed: GiroPayoutCompleted }
-  | { ok: false; message: string };
+  | {
+      ok: false;
+      message: string;
+      /** Salen billetes que los libros no tienen: hay que contar esta moneda antes de seguir. */
+      recuento?: string;
+      /** Los billetes ya no valen: hay que volver a marcarlos. */
+      revisarBilletes?: boolean;
+    };
+
+/** Por qué los billetes ya no valen, en palabras del trabajador. */
+const MENSAJE_DE_BILLETES: Readonly<Record<string, string>> = {
+  "sin-salida": "La caja no puede pagar eso entero. No se registró nada: ofrécele al beneficiario otra salida o que vuelva más tarde.",
+  "propuesta-vencida": "Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Revísalos.",
+  "sin-esos-billetes": "Contada la caja, esos billetes no están. No se registró nada: vuelve a marcar con qué billetes se entrega.",
+};
 
 
 /**
@@ -51,6 +69,8 @@ export async function confirmGiroPayout(params: {
   jornadaAbierta: boolean;
   /** Las monedas de la caja, sin importes: Worker opera a ciegas. */
   monedas: readonly string[];
+  /** Los billetes con los que se entrega (bloque 4). */
+  efectivo: EfectivoRegistrado;
 }): Promise<ConfirmPayoutOutcome> {
   const { transfer } = params;
   const isCurrencyEnabled = (c: string) => params.monedas.includes(c);
@@ -74,6 +94,34 @@ export async function confirmGiroPayout(params: {
     };
   }
 
+  const operacion = {
+    cliente: {
+      nombre: transfer.receiverName,
+      documentType: "CI" as const,
+      documentNumber: transfer.receiverIdentification,
+      telefono: transfer.receiverPhone ?? "No disponible",
+      nacionalidad: "No disponible",
+    },
+    servicio: "Giros" as const,
+    tramo: { currency: transfer.payoutCurrency, delta: -transfer.deliveryAmount, concepto: "Pago de giro" },
+    efectivo: params.efectivo,
+  };
+  /* El servidor comprueba, sin escribir nada, que se podría registrar con
+     estos billetes: si hay que contar la moneda o no cuadran, se sabe antes de
+     dar el giro por pagado fuera. */
+  const previa = await comprobarOperacionAction(operacion);
+  if (!previa.ok) {
+    if (previa.reason === "recuento-necesario" && previa.currency) {
+      return { ok: false, message: "Hay que contar la moneda antes de entregar.", recuento: previa.currency };
+    }
+    const mensaje = MENSAJE_DE_BILLETES[previa.reason];
+    return {
+      ok: false,
+      message: mensaje ?? "No se pudo comprobar la entrega. Vuelve a los billetes y revísalos.",
+      revisarBilletes: true,
+    };
+  }
+
   const external = await transferProvider.completeTransfer(transfer.id);
   if (!external.ok) {
     return {
@@ -90,15 +138,7 @@ export async function confirmGiroPayout(params: {
 
   const registrada = await registrarOperacionAction({
     // The beneficiary — not the sender — is the client of a payout.
-    cliente: {
-      nombre: transfer.receiverName,
-      documentType: "CI",
-      documentNumber: transfer.receiverIdentification,
-      telefono: transfer.receiverPhone ?? "No disponible",
-      nacionalidad: "No disponible",
-    },
-    servicio: "Giros",
-    tramo: { currency: transfer.payoutCurrency, delta: -transfer.deliveryAmount, concepto: "Pago de giro" },
+    ...operacion,
     transfer: {
       transferAction: "payout",
       externalId: transfer.id,
@@ -142,6 +182,7 @@ export async function confirmGiroPayout(params: {
       caja: params.caja,
       worker: params.worker,
       completedAt: now.toISOString(),
+      ...(registrada.value.liquidacion ? { liquidacion: registrada.value.liquidacion } : {}),
     },
   };
 }

@@ -11,6 +11,7 @@ import { formatDateTime, formatMoney } from "@/lib/format";
 import { customerFullName } from "@/features/customers/customers";
 import { formatAppliedRate } from "./exchange-summary";
 import type { CompletedOperation } from "./flow-state";
+import { liquidacionComoLineas } from "../liquidacion";
 
 /**
  * Result screen. There is no Back from here — the operation is registered, so
@@ -85,6 +86,15 @@ export function OperationComplete({
                 {formatAppliedRate(quote)}
               </span>
             </ResultRow>
+
+            {liquidacionComoLineas(operation.liquidacion).map((l) => (
+              <React.Fragment key={l.etiqueta}>
+                <hr className="border-t border-dashed border-border" />
+                <ResultRow label={l.etiqueta}>
+                  <span className="pc-numeric text-body font-semibold text-text-primary">{l.valor}</span>
+                </ResultRow>
+              </React.Fragment>
+            ))}
 
             <hr className="border-t border-dashed border-border" />
 

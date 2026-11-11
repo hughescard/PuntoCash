@@ -114,7 +114,7 @@ export async function rellenar(campo: Locator, valor: string): Promise<void> {
  * pantalla ofrece. Vacía antes cada fila: la apertura viene rellenada. Una
  * moneda que no está en `funds` queda en cero.
  */
-export async function rellenarConteo(page: Page, funds: Record<string, string>): Promise<void> {
+export async function rellenarConteo(page: Page, funds: Record<string, string>, conCambio = false): Promise<void> {
   const secciones = page.getByRole("region", { name: /^Conteo de [A-Z]{3}$/ });
   for (const seccion of await secciones.all()) {
     const code = /([A-Z]{3})$/.exec((await seccion.getAttribute("aria-label")) ?? "")?.[1] ?? "";
@@ -125,20 +125,35 @@ export async function rellenarConteo(page: Page, funds: Record<string, string>):
       const m = /de ([\d.,]+) [A-Z]{3}$/.exec(label);
       valores.push({ campo, centimos: m ? Math.round(Number(m[1]!.replaceAll(".", "").replace(",", ".")) * 100) : 0 });
     }
-    let resto = Math.round(Number((funds[code] ?? "0").replaceAll(".", "").replace(",", ".")) * 100);
-    for (const v of valores.sort((a, b) => b.centimos - a.centimos)) {
-      const n = v.centimos > 0 ? Math.floor(resto / v.centimos) : 0;
+    const total = Math.round(Number((funds[code] ?? "0").replaceAll(".", "").replace(",", ".")) * 100);
+    const ordenadas = valores.filter((v) => v.centimos > 0).sort((a, b) => b.centimos - a.centimos);
+    /* Una caja real tiene de todo: se reparte el fondo a partes iguales entre las
+       denominaciones y lo que sobra se completa de mayor a menor. */
+    const cantidades = new Map<string, number>();
+    let resto = total;
+    const parte = ordenadas.length > 0 && conCambio ? Math.floor(total / ordenadas.length) : 0;
+    for (const v of ordenadas) {
+      const n = Math.min(Math.floor(parte / v.centimos), Math.floor(resto / v.centimos));
+      cantidades.set(String(v.centimos), n);
       resto -= n * v.centimos;
+    }
+    for (const v of ordenadas) {
+      const n = Math.floor(resto / v.centimos);
+      cantidades.set(String(v.centimos), (cantidades.get(String(v.centimos)) ?? 0) + n);
+      resto -= n * v.centimos;
+    }
+    for (const v of valores) {
+      const n = cantidades.get(String(v.centimos)) ?? 0;
       await v.campo.fill(n > 0 ? String(n) : "");
     }
     if (resto !== 0) throw new Error(`${code}: ${funds[code]} no se puede formar con sus denominaciones`);
   }
 }
 
-export async function abrirPorPantalla(page: Page, funds: Record<string, string>): Promise<void> {
+export async function abrirPorPantalla(page: Page, funds: Record<string, string>, conCambio = false): Promise<void> {
   await page.goto("/worker/caja/fondeo-inicial");
   await esperarFondeoVivo(page);
-  await rellenarConteo(page, funds);
+  await rellenarConteo(page, funds, conCambio);
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Confirmar conteo" }).click();
   await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
@@ -163,4 +178,55 @@ export async function openJornada(
  */
 export function onScreen(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true });
+}
+
+/**
+ * Marca en una tabla de billetes —por el nombre de su región— un importe,
+ * de mayor a menor con las denominaciones que la pantalla ofrece (bloque 4).
+ */
+export async function marcarBilletes(page: Page, region: string | RegExp, importe: number): Promise<void> {
+  const seccion = page.getByRole("region", { name: region });
+  const campos = await seccion.getByRole("textbox").all();
+  const valores: { campo: (typeof campos)[number]; centimos: number }[] = [];
+  for (const campo of campos) {
+    const label = (await campo.getAttribute("aria-label")) ?? "";
+    const m = /de ([\d.,]+) [A-Z]{3}$/.exec(label);
+    valores.push({ campo, centimos: m ? Math.round(Number(m[1]!.replaceAll(".", "").replace(",", ".")) * 100) : 0 });
+  }
+  let resto = Math.round(importe * 100);
+  for (const v of valores.sort((a, b) => b.centimos - a.centimos)) {
+    const n = v.centimos > 0 ? Math.floor(resto / v.centimos) : 0;
+    resto -= n * v.centimos;
+    await v.campo.fill(n > 0 ? String(n) : "");
+  }
+  if (resto !== 0) throw new Error(`${importe} no se puede formar con las denominaciones de ${String(region)}`);
+}
+
+/**
+ * En el paso de billetes de un cobro o un cambio: el cliente paga justo lo que
+ * se le cobra, con los billetes de mayor a menor. Lee el importe y la moneda de
+ * la propia pantalla, así que sirve para cualquier operación.
+ */
+export async function pagarJusto(page: Page): Promise<void> {
+  const texto = (await page.getByText(/Se le cobran/).first().textContent()) ?? "";
+  const m = /Se le cobran ([\d.]+(?:,\d+)?)\s*([A-Z]{3})/.exec(texto);
+  if (!m) throw new Error(`No encuentro lo que se cobra en: ${texto}`);
+  const importe = Number(m[1]!.replaceAll(".", "").replace(",", "."));
+  await marcarBilletes(page, `Billetes del cliente de ${m[2]}`, importe);
+}
+
+/**
+ * «Continuar a confirmar» en una operación que ya pasa por el paso de billetes:
+ * si aparece, se completa (el cliente paga justo; las propuestas de la caja se
+ * dejan como están) y se continúa.
+ */
+export async function continuarAConfirmar(page: Page): Promise<void> {
+  const boton = page.getByRole("button", { name: "Continuar a confirmar" });
+  await boton.click();
+  const paso = page.getByRole("heading", { name: /^Billetes (de la entrega|del cobro)$/ });
+  if (await paso.isVisible({ timeout: 4_000 }).catch(() => false)) {
+    if (await page.getByText(/Se le cobran/).first().isVisible().catch(() => false)) await pagarJusto(page);
+    await expect(page.getByText("Los billetes cuadran.")).toBeVisible({ timeout: 15_000 });
+    await boton.click();
+  }
 }

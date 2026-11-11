@@ -9,7 +9,13 @@ import { crearSede, findSedeById } from "./sedes";
 import { crearTrabajador } from "./workers";
 import { registrarOperacion } from "./operaciones";
 import { OPERATIONS } from "@/features/operations/operations-history";
-import { restar } from "@/features/caja/billetes";
+import { desglosarFondo, restar } from "@/features/caja/billetes";
+import { denominacionesDe } from "./denominaciones";
+
+/** Un fondo con cambio: billetes de todas las denominaciones, no solo de las grandes. */
+function fondoEnBilletes(currency: string, importe: number) {
+  return desglosarFondo(importe, denominacionesDe(currency)).billetes;
+}
 
 /**
  * **SOLO PARA LAS PRUEBAS.** Un puesto de trabajo nuevo y aislado.
@@ -38,6 +44,8 @@ export interface PuestoDePrueba {
 }
 
 export interface OpcionesDePuesto {
+  /** Billetes de todas las denominaciones en el fondo (lo de las pruebas de pantalla); si no, de mayor a menor. */
+  conCambio?: boolean;
   /** La sede que se copia. */
   sede?: string;
   /** Si se dan, la caja abre su primera jornada con estos importes. */
@@ -139,8 +147,8 @@ export function crearPuestoDePrueba(
     if (!c.ok) return { ok: false, error: c.reason };
     const r = abrirJornada(
       c.value,
-      /* Los fondos entran en billetes, de mayor a menor. */
-      [...monedas].map((currency) => ({ currency, billetes: billetesDeImporte(currency, opciones.fondos?.[currency] ?? 0) })),
+      /* Los fondos entran en billetes de todas las denominaciones, como una caja con cambio. */
+      [...monedas].map((currency) => ({ currency, billetes: opciones.conCambio ? fondoEnBilletes(currency, opciones.fondos?.[currency] ?? 0) : billetesDeImporte(currency, opciones.fondos?.[currency] ?? 0) })),
     );
     if (!r.ok) return { ok: false, error: `apertura: ${r.reason}` };
     for (const [i, importe] of (opciones.giros ?? []).entries()) {

@@ -8,6 +8,7 @@ import { Button, Card, CardContent } from "@/components/ui";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { MoneyWithFlag, currencyLabel } from "./cobrar-giro-parts";
 import type { GiroPayoutCompleted } from "./confirm-payout";
+import { liquidacionComoLineas } from "../../liquidacion";
 
 /** Step 4 — Giro entregado correctamente. */
 export function GiroPayoutResult({ completed }: { completed: GiroPayoutCompleted }): React.JSX.Element {
@@ -39,6 +40,9 @@ export function GiroPayoutResult({ completed }: { completed: GiroPayoutCompleted
                 value={<MoneyWithFlag amount={completed.payoutAmount} currency={completed.payoutCurrency} />}
               />
               <SummaryRow label="Moneda" value={currency} />
+              {liquidacionComoLineas(completed.liquidacion).map((l) => (
+                <SummaryRow key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+              ))}
               <SummaryRow label="Caja" value={completed.caja} />
               <SummaryRow label="Trabajador" value={completed.worker} />
               <SummaryRow label="Fecha y hora" value={formatDateTime(new Date(completed.completedAt))} />
@@ -98,6 +102,9 @@ function PrintablePayoutReceipt({
           value={formatMoney({ amount: completed.payoutAmount, currency: completed.payoutCurrency })}
         />
         <ReceiptLine label="Moneda" value={currency} />
+        {liquidacionComoLineas(completed.liquidacion).map((l) => (
+          <ReceiptLine key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+        ))}
         <ReceiptLine label="Método de entrega" value="Recogida" />
         <ReceiptLine label="Caja" value={completed.caja} />
         <ReceiptLine label="Trabajador" value={completed.worker} />

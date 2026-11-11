@@ -2,6 +2,8 @@ import type { ExchangeQuote } from "@/features/exchange/quote";
 import type { Customer } from "@/features/customers/customers";
 import { readPendingWorkerHandoff, type KioskClientInput } from "@/features/kiosk/self-service-request";
 import { formatAmount } from "@/lib/format";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
+import type { OperationLiquidation } from "@/features/operations/operations-history";
 
 /**
  * State machine for the Cambio de moneda operation.
@@ -13,12 +15,16 @@ import { formatAmount } from "@/lib/format";
  * Going backwards never discards anything — `step` moves, the data does not.
  */
 
-export type StepId = "cambio" | "cliente" | "revision" | "completado";
+export type StepId = "cambio" | "cliente" | "efectivo" | "revision" | "completado";
 
-/** The three steps shown in the stepper; the result is not a step. */
+/** «Cambiar X»: el cliente dice cuánto entrega. «Recibir Y»: dice cuánto quiere recibir. */
+export type ModoDeCambio = "cambiar" | "recibir";
+
+/** The four steps shown in the stepper; the result is not a step. */
 export const FLOW_STEPS = [
   { id: "cambio", label: "Cambio" },
   { id: "cliente", label: "Cliente" },
+  { id: "efectivo", label: "Efectivo" },
   { id: "revision", label: "Revisión" },
 ] as const;
 
@@ -29,6 +35,8 @@ export interface CompletedOperation {
   worker: string;
   register: string;
   completedAt: string;
+  /** Vuelto, resto en CUP y lo que quedó a favor de la casa: consta en el comprobante. */
+  liquidacion?: OperationLiquidation;
 }
 
 export interface FlowState {
@@ -46,6 +54,12 @@ export interface FlowState {
   customer: Customer | null;
   submitting: boolean;
   completed: CompletedOperation | null;
+  /** Qué escribe el trabajador en el primer paso: lo que entrega o lo que quiere recibir el cliente. */
+  modo: ModoDeCambio;
+  /** Los billetes del cambio (bloque 4): paga, vuelto y entrega, cuando cuadran. */
+  efectivo: EfectivoRegistrado | null;
+  /** Sube cuando hay que pedir otra vez la propuesta de billetes (tras un recuento). */
+  recarga: number;
   /**
    * Whether the worker has actually touched anything. The screen opens with
    * demo values, and prefilled defaults are not "entered data" for the purpose
@@ -72,6 +86,9 @@ const DEFAULT_STATE: FlowState = {
   customer: null,
   submitting: false,
   completed: null,
+  modo: "cambiar",
+  efectivo: null,
+  recarga: 0,
   touched: false,
   kioskCode: null,
   kioskClient: null,
@@ -108,6 +125,11 @@ export type FlowAction =
   | { type: "set-destination-currency"; currency: string }
   | { type: "set-amount"; value: string }
   | { type: "swap-currencies" }
+  | { type: "set-modo"; modo: ModoDeCambio }
+  | { type: "set-efectivo"; efectivo: EfectivoRegistrado | null }
+  | { type: "recargar-efectivo" }
+  /** Salida (a): el cliente cambia otro importe, que sí se paga entero. */
+  | { type: "cambiar-otro-importe"; quote: ExchangeQuote }
   | { type: "commit-quote"; quote: ExchangeQuote }
   | { type: "select-customer"; customer: Customer }
   | { type: "clear-customer" }
@@ -151,11 +173,31 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
         destinationCurrency: state.sourceCurrency,
       };
 
+    case "set-modo":
+      return { ...state, touched: true, modo: action.modo, amountInput: "" };
+
+    case "set-efectivo":
+      return { ...state, efectivo: action.efectivo };
+
+    case "recargar-efectivo":
+      return { ...state, recarga: state.recarga + 1 };
+
+    case "cambiar-otro-importe":
+      /* El cliente sigue siendo el mismo; solo cambia el importe y hay que volver a marcar los billetes. */
+      return {
+        ...state,
+        quote: action.quote,
+        modo: "cambiar",
+        amountInput: formatAmount(action.quote.sourceAmount, 2),
+        efectivo: null,
+        step: "efectivo",
+      };
+
     case "commit-quote":
-      return { ...state, quote: action.quote, step: "cliente" };
+      return { ...state, quote: action.quote, efectivo: null, step: "cliente" };
 
     case "select-customer":
-      return { ...state, touched: true, customer: action.customer, step: "revision" };
+      return { ...state, touched: true, customer: action.customer, step: "efectivo" };
 
     case "clear-customer":
       return { ...state, customer: null };

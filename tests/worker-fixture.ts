@@ -41,6 +41,8 @@ interface Opciones {
   monedas: readonly string[];
   sede: string;
   conSesion: boolean;
+  /** El fondo entra en billetes de todas las denominaciones, como una caja con cambio (no de mayor a menor). */
+  conCambio: boolean;
 }
 
 export const test = base.extend<Opciones & { puesto: Puesto }>({
@@ -54,10 +56,11 @@ export const test = base.extend<Opciones & { puesto: Puesto }>({
   monedas: [["CUP", "USD", "EUR", "GBP"], { option: true }],
   sede: ["sede-vedado", { option: true }],
   conSesion: [true, { option: true }],
+  conCambio: [false, { option: true }],
 
   puesto: [
-    async ({ request, context, fondos, monedas, sede, servicios, giros, cerrada, historial, diferenciaAlCerrar, conSesion }, use) => {
-      const datos = encodeURIComponent(JSON.stringify({ fondos, monedas, sede, giros, cerrar: cerrada, historial, ...(diferenciaAlCerrar ? { diferenciaAlCerrar } : {}), ...(servicios ? { servicios } : {}) }));
+    async ({ request, context, fondos, conCambio, monedas, sede, servicios, giros, cerrada, historial, diferenciaAlCerrar, conSesion }, use) => {
+      const datos = encodeURIComponent(JSON.stringify({ fondos, monedas, sede, giros, conCambio, cerrar: cerrada, historial, ...(diferenciaAlCerrar ? { diferenciaAlCerrar } : {}), ...(servicios ? { servicios } : {}) }));
       /* Un reintento: con seis trabajadores pidiendo puestos a la vez, el
          servidor puede cortar alguna conexión. */
       const pedir = () => request.get(`${WORKER_BASE_URL}/pruebas/puesto?datos=${datos}`);

@@ -11,6 +11,8 @@ import { findCajaCurrency } from "@/features/caja/caja-data";
 import { senderFullName, type BeneficiaryValues, type SenderValues } from "./giro-types";
 import { municipalityLabel, provinceLabel } from "./giro-validation";
 import { useCaja } from "@/features/caja/use-caja";
+import type { OperationLiquidation } from "@/features/operations/operations-history";
+import { liquidacionComoLineas } from "../../liquidacion";
 
 /** "🇨🇺 500,00 CUP" — the approved amount treatment for Importe. */
 function MoneyWithFlag({ amount, currency }: { amount: number; currency: string }) {
@@ -33,6 +35,8 @@ export interface GiroCompleted {
   deliveryAmount: number;
   /** ISO datetime, captured only at the moment confirmation succeeded. */
   completedAt: string;
+  /** El vuelto: consta en el comprobante. */
+  liquidacion?: OperationLiquidation;
 }
 
 /** Step 4 — Success. */
@@ -68,6 +72,9 @@ export function GiroResult({ completed }: { completed: GiroCompleted }): React.J
               value={<MoneyWithFlag amount={completed.deliveryAmount} currency={completed.senderCurrency} />}
             />
             <SummaryRow label="Moneda" value={currencyLabel} />
+            {liquidacionComoLineas(completed.liquidacion).map((l) => (
+              <SummaryRow key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+            ))}
             <SummaryRow label="Método de entrega" value="Recogida" />
             <SummaryRow label="Caja" value={CAJA_SUMMARY.register} />
             <SummaryRow label="Trabajador" value={CAJA_SUMMARY.worker} />
@@ -130,6 +137,9 @@ function PrintableGiroReceipt({
           value={formatMoney({ amount: completed.deliveryAmount, currency: completed.senderCurrency })}
         />
         <ReceiptLine label="Moneda" value={currencyLabel} />
+        {liquidacionComoLineas(completed.liquidacion).map((l) => (
+          <ReceiptLine key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+        ))}
         <ReceiptLine label="Método de entrega" value="Recogida" />
         <ReceiptLine label="Caja" value={CAJA_SUMMARY.register} />
         <ReceiptLine label="Trabajador" value={CAJA_SUMMARY.worker} />

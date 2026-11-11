@@ -111,6 +111,18 @@ export type OperationAmount =
       cashSnapshot?: OperationCashSnapshot;
     };
 
+/**
+ * Cómo se movió el efectivo cuando no fue «lo que dice el importe» (bloque 4,
+ * decisión del 9/11/2026): el vuelto, lo que se pagó en CUP por falta de
+ * billetes y lo que quedó a favor de la casa, con su causa. Es lo que consta
+ * en el comprobante. Ninguna cifra es un saldo.
+ */
+export interface OperationLiquidation {
+  vuelto?: { currency: string; importe: number };
+  enCup?: { importe: number; equivale: { currency: string; importe: number } };
+  aFavorDeLaCasa?: readonly { currency: string; importe: number; motivo: "redondeo" | "permiso-del-cliente" }[];
+}
+
 export interface OperationRecord {
   codigo: string;
   /** ISO 8601 datetime — parsed with `new Date()`, formatted with `formatDateTime()`. */
@@ -121,6 +133,7 @@ export interface OperationRecord {
   amount: OperationAmount;
   worker: string;
   caja: string;
+  liquidacion?: OperationLiquidation;
   /** Historical external-remittance snapshot. Kept separate from the generic
    * operation fields until the specialized Remesa detail is approved. */
   remittance?: {

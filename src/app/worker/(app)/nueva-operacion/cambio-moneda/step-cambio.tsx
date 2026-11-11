@@ -26,9 +26,12 @@ import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatAmount, parseAmountInput } from "@/lib/format";
 import { findCurrency, type ExchangeQuote } from "@/features/exchange/quote";
 import { ExchangeSummaryCard, formatAppliedRate } from "./exchange-summary";
+import type { ModoDeCambio } from "./flow-state";
 
 const SOURCE_CURRENCY: FieldSpec = { id: "moneda-origen", label: "Moneda origen" };
 const SOURCE_AMOUNT: FieldSpec = { id: "monto-entregar", label: "Monto a entregar" };
+const SOURCE_AMOUNT_CALC: FieldSpec = { id: "monto-entregar", label: "Monto a entregar (calculado)" };
+const DEST_AMOUNT_INPUT: FieldSpec = { id: "monto-recibir", label: "Monto a recibir" };
 const DEST_CURRENCY: FieldSpec = { id: "moneda-destino", label: "Moneda destino" };
 const DEST_AMOUNT: FieldSpec = { id: "monto-recibir", label: "Monto a recibir (calculado)" };
 
@@ -80,6 +83,9 @@ export interface StepCambioProps {
   sourceCurrency: string;
   destinationCurrency: string;
   amountInput: string;
+  /** «Cambiar X» o «Recibir Y» (decisión del 9/11/2026). */
+  modo: ModoDeCambio;
+  onModoChange: (modo: ModoDeCambio) => void;
   quote: ExchangeQuote | null;
   amountError: string | undefined;
   onSourceCurrencyChange: (currency: string) => void;
@@ -92,6 +98,8 @@ export function StepCambio({
   sourceCurrency,
   destinationCurrency,
   amountInput,
+  modo,
+  onModoChange,
   quote,
   amountError,
   monedasSinTasa,
@@ -122,6 +130,37 @@ export function StepCambio({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card>
           <CardContent className="pt-6">
+            <fieldset className="mb-6">
+              <legend className="mb-2 text-label text-text-primary">Qué dice el cliente</legend>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {(
+                  [
+                    { valor: "cambiar", titulo: "Cambiar un importe", detalle: "Dice cuánto quiere cambiar." },
+                    { valor: "recibir", titulo: "Recibir un importe", detalle: "Dice cuánto quiere recibir." },
+                  ] as const
+                ).map((o) => (
+                  <label
+                    key={o.valor}
+                    className={`flex cursor-pointer items-start gap-3 rounded-control border p-3 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary ${
+                      modo === o.valor ? "border-primary bg-primary-subtle" : "border-border bg-surface hover:border-border-navy"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="modo-de-cambio"
+                      value={o.valor}
+                      checked={modo === o.valor}
+                      onChange={() => onModoChange(o.valor)}
+                      className="mt-1 size-4 accent-primary"
+                    />
+                    <span>
+                      <span className="block text-body-sm font-semibold text-text-primary">{o.titulo}</span>
+                      <span className="block text-caption text-text-secondary">{o.detalle}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
               {/* ---- Cliente entrega ---- */}
               <div className="flex flex-col gap-4">
@@ -136,20 +175,34 @@ export function StepCambio({
                   </Select>
                 </Field>
 
-                <Field {...SOURCE_AMOUNT} error={amountError}>
-                  <Input
-                    {...fieldAria({ ...SOURCE_AMOUNT, error: amountError })}
-                    value={amountInput}
-                    onChange={(event) => onAmountChange(event.target.value)}
-                    onBlur={normalizeAmountOnBlur}
-                    invalid={Boolean(amountError)}
-                    inputMode="decimal"
-                    autoComplete="off"
-                    numeric
-                    className="text-left"
-                    suffix={<CurrencySuffix code={sourceCurrency} />}
-                  />
-                </Field>
+                {modo === "cambiar" ? (
+                  <Field {...SOURCE_AMOUNT} error={amountError}>
+                    <Input
+                      {...fieldAria({ ...SOURCE_AMOUNT, error: amountError })}
+                      value={amountInput}
+                      onChange={(event) => onAmountChange(event.target.value)}
+                      onBlur={normalizeAmountOnBlur}
+                      invalid={Boolean(amountError)}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      numeric
+                      className="text-left"
+                      suffix={<CurrencySuffix code={sourceCurrency} />}
+                    />
+                  </Field>
+                ) : (
+                  <Field {...SOURCE_AMOUNT_CALC}>
+                    <Input
+                      {...fieldAria(SOURCE_AMOUNT_CALC)}
+                      readOnly
+                      tabIndex={-1}
+                      value={quote ? formatAmount(quote.sourceAmount) : "—"}
+                      numeric
+                      className="text-left"
+                      suffix={<CurrencySuffix code={sourceCurrency} />}
+                    />
+                  </Field>
+                )}
               </div>
 
               {/* ---- Swap ---- */}
@@ -177,18 +230,35 @@ export function StepCambio({
                   </Select>
                 </Field>
 
-                {/* Calculated: shown as read-only text in a field, never editable. */}
-                <Field {...DEST_AMOUNT}>
-                  <Input
-                    {...fieldAria(DEST_AMOUNT)}
-                    readOnly
-                    tabIndex={-1}
-                    value={quote ? formatAmount(quote.destinationAmount) : "—"}
-                    numeric
-                    className="text-left"
-                    suffix={<CurrencySuffix code={destinationCurrency} />}
-                  />
-                </Field>
+                {modo === "recibir" ? (
+                  <Field {...DEST_AMOUNT_INPUT} error={amountError}>
+                    <Input
+                      {...fieldAria({ ...DEST_AMOUNT_INPUT, error: amountError })}
+                      value={amountInput}
+                      onChange={(event) => onAmountChange(event.target.value)}
+                      onBlur={normalizeAmountOnBlur}
+                      invalid={Boolean(amountError)}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      numeric
+                      className="text-left"
+                      suffix={<CurrencySuffix code={destinationCurrency} />}
+                    />
+                  </Field>
+                ) : (
+                  /* Calculated: shown as read-only text in a field, never editable. */
+                  <Field {...DEST_AMOUNT}>
+                    <Input
+                      {...fieldAria(DEST_AMOUNT)}
+                      readOnly
+                      tabIndex={-1}
+                      value={quote ? formatAmount(quote.destinationAmount) : "—"}
+                      numeric
+                      className="text-left"
+                      suffix={<CurrencySuffix code={destinationCurrency} />}
+                    />
+                  </Field>
+                )}
               </div>
             </div>
 

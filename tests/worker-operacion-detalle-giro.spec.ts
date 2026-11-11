@@ -1,4 +1,5 @@
 import { test, expect } from "./worker-fixture";
+import { continuarAConfirmar } from "./worker-helpers";
 import { type Page } from "@playwright/test";
 
 /* La caja del puesto carga el historial con que se diseñó la lista. */
@@ -10,7 +11,7 @@ test.use({ historial: true });
  * había aquí: las dieciocho pruebas la necesitan abierta y ninguna trata de
  * abrirla.
  */
-test.use({ fondos: { CUP: 50_000 } });
+test.use({ conCambio: true, fondos: { CUP: 50_000 } });
 
 /**
  * Worker Operaciones — specialized historical detail for
@@ -80,7 +81,7 @@ async function sendGiro(page: Page): Promise<string> {
   await page.locator("#giro-importe").fill("2500");
 
   await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+  await continuarAConfirmar(page);
   await page.getByRole("button", { name: "Confirmar envío" }).click();
   await expect(page.getByRole("heading", { name: "Giro registrado correctamente" })).toBeVisible({
     timeout: 10_000,
@@ -98,7 +99,7 @@ async function payoutGiro(page: Page, code: string) {
   await page.getByLabel("Código del giro").fill(code);
   await page.getByRole("button", { name: "Buscar giro" }).click();
   await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible({ timeout: 5000 });
-  await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+  await continuarAConfirmar(page);
   await page.getByRole("button", { name: "Confirmar entrega" }).click();
   await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toBeVisible({
     timeout: 10_000,
@@ -242,7 +243,7 @@ test.describe("Operation Detail — giro cobrado", () => {
     await page.getByLabel("Código del giro").fill("TR-260901-000245");
     await page.getByRole("button", { name: "Buscar giro" }).click();
     await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible({ timeout: 5000 });
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toBeVisible({
       timeout: 10_000,

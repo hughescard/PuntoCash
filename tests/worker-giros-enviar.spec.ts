@@ -1,14 +1,14 @@
 import { test, expect } from "./worker-fixture";
 import { type Page } from "@playwright/test";
 
-import { abrirPorPantalla } from "./worker-helpers";
+import { abrirPorPantalla, continuarAConfirmar } from "./worker-helpers";
 
 /*
  * La jornada se siembra con 1.200 EUR, que es lo que abría el fondeo que había
  * aquí. El grupo de encaminamiento trata justo de la caja cerrada y de la
  * transición al abrirla, así que se sale de la siembra y abre por la interfaz.
  */
-test.use({ fondos: { EUR: 1_200 } });
+test.use({ conCambio: true, fondos: { EUR: 1_200 } });
 
 /**
  * Worker Nueva operación — Giros — Enviar giro
@@ -91,7 +91,7 @@ async function completeGiro(page: Page, overrides: FillOverrides = {}) {
   await fillValidForm(page, overrides);
   await page.getByRole("button", { name: "Continuar" }).click();
   await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible();
-  await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+  await continuarAConfirmar(page);
   await expect(page.getByRole("heading", { name: "Confirmar envío de giro" })).toBeVisible();
   await page.getByRole("button", { name: "Confirmar envío" }).click();
   await expect(page.getByRole("heading", { name: "Giro registrado correctamente" })).toBeVisible({
@@ -301,7 +301,7 @@ test.describe("Confirmar envío", () => {
     await goToGiros(page);
     await fillValidForm(page);
     await page.getByRole("button", { name: "Continuar" }).click();
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await expect(page.getByRole("heading", { name: "Confirmar envío de giro" })).toBeVisible();
   });
 
@@ -346,7 +346,7 @@ test.describe("External failure", () => {
     await goToGiros(page);
     await fillValidForm(page, { beneficiaryName: "Falla Externa" });
     await page.getByRole("button", { name: "Continuar" }).click();
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar envío" }).click();
 
     await expect(page.getByText("No se pudo registrar el giro. Intenta nuevamente o solicita asistencia.")).toBeVisible();

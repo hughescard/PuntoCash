@@ -96,6 +96,36 @@ export function cotizar(
   };
 }
 
+/**
+ * «Recibir Y»: el cliente dice cuánto quiere recibir y se calcula cuánto tiene
+ * que entregar. Es el menor importe de origen —múltiplo de `paso`, la
+ * denominación más pequeña que se puede cobrar— cuya cotización llega a lo
+ * pedido. Como se cobra y se paga en billetes, el cliente puede acabar
+ * recibiendo unos céntimos más de lo que pidió: lo que se entrega es el
+ * destino de esa cotización.
+ */
+export function cotizarParaRecibir(
+  tasas: readonly TasaVigente[],
+  sourceCurrency: string,
+  destinationCurrency: string,
+  recibir: number,
+  paso = 0.01,
+): { ok: true; value: Cotizacion } | { ok: false; reason: MotivoSinCotizar } {
+  if (!Number.isFinite(recibir) || recibir <= 0) return { ok: false, reason: "importe-invalido" };
+  /* Se sondea con un importe grande: con una unidad, un destino de poco valor (1 CUP en USD)
+     redondea a cero y no cotiza. La tasa aplicada no depende del importe. */
+  const unidad = cotizar(tasas, sourceCurrency, destinationCurrency, 100_000);
+  if (!unidad.ok) return unidad;
+  const p = Number.isFinite(paso) && paso > 0 ? paso : 0.01;
+  /* Un poco por debajo de lo que haría falta y se sube de paso en paso hasta llegar. */
+  let n = Math.max(p, Math.floor(recibir / unidad.value.appliedRate / p) * p);
+  for (let i = 0; i < 20_000; i += 1, n = Math.round((n + p) * 100) / 100) {
+    const q = cotizar(tasas, sourceCurrency, destinationCurrency, n);
+    if (q.ok && q.value.destinationAmount + 1e-9 >= recibir) return q;
+  }
+  return { ok: false, reason: "importe-invalido" };
+}
+
 /** Las monedas que pueden cambiarse con estas tasas: el peso y las que tienen tasa. */
 export function monedasCotizables(tasas: readonly TasaVigente[]): readonly string[] {
   return [MONEDA_LOCAL, ...tasas.map((t) => t.code)];

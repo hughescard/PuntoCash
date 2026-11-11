@@ -14,6 +14,7 @@ import {
   abrirJornadaDeclarada,
   alcanzaParaEntregar,
   cerrarConArqueo,
+  comprobarOperacionSimple,
   contextoDe,
   explicarCierre,
   declararConteoDeApertura,
@@ -358,6 +359,13 @@ export async function proponerPagoAction(input: { currency: string; importe: num
   const ctx = await getContextoDeTrabajo();
   if (!ctx) return { ok: false, reason: "sin-sesion" };
   return proponerPago(ctx, input);
+}
+
+/** Comprueba, sin registrar nada, que la operación se podría registrar ahora: antes de dar nada por hecho en un proveedor externo. */
+export async function comprobarOperacionAction(op: OperacionPorRegistrar): Promise<AccionDeCaja<null>> {
+  const ctx = await getContextoDeTrabajo();
+  if (!ctx) return { ok: false, reason: "sin-sesion" };
+  return comprobarOperacionSimple(ctx, op);
 }
 
 function sinRed(o: OperationRecord): OperationRecord {

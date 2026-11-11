@@ -18,12 +18,15 @@ import { useCaja } from "@/features/caja/use-caja";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import { clearPendingWorkerHandoff, readPendingWorkerHandoff } from "@/features/kiosk/self-service-request";
-import { BackLink, ContextStrip, GIROS_ROUTE, Rows, row } from "./cobrar-giro-parts";
+import { BackLink, ContextStrip, GIROS_ROUTE, Rows, StepBackLink, row } from "./cobrar-giro-parts";
 import { GiroPayoutConfirmation, GiroPayoutReview, type PayoutBlock } from "./cobrar-giro-screens";
 import { GiroPayoutResult } from "./cobrar-giro-result";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
+import { RecuentoDeMoneda } from "../../../caja/recuento-de-moneda";
+import { EfectivoDeOperacion } from "../../efectivo-de-operacion";
 import { confirmGiroPayout, type GiroPayoutCompleted } from "./confirm-payout";
 
-type Step = "codigo" | "revisar" | "confirmar" | "resultado";
+type Step = "codigo" | "revisar" | "efectivo" | "confirmar" | "resultado";
 
 /**
  * "Giros" — Cobrar giro.
@@ -61,6 +64,10 @@ export function CobrarGiroFlow(): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmError, setConfirmError] = React.useState<string | undefined>();
   const [completed, setCompleted] = React.useState<GiroPayoutCompleted | null>(null);
+  /** Los billetes con los que se entrega, cuando cuadran (bloque 4). */
+  const [efectivo, setEfectivo] = React.useState<EfectivoRegistrado | null>(null);
+  const [recontando, setRecontando] = React.useState<string | null>(null);
+  const [recarga, setRecarga] = React.useState(0);
 
   /*
    * Sin jornada abierta esta pantalla no opera — salvo que el flujo ya haya
@@ -130,7 +137,7 @@ export function CobrarGiroFlow(): React.JSX.Element {
   }
 
   async function handleConfirm() {
-    if (!transfer || submitting) return;
+    if (!transfer || submitting || !efectivo) return;
     setSubmitting(true);
     setConfirmError(undefined);
 
@@ -140,11 +147,21 @@ export function CobrarGiroFlow(): React.JSX.Element {
       caja: caja.summary.register,
       jornadaAbierta: caja.jornadaAbierta,
       monedas: caja.monedas,
+      efectivo,
     });
 
     setSubmitting(false);
     if (!outcome.ok) {
+      /* Salen billetes que los libros no tienen: se cuenta esa moneda y se vuelve a intentar. */
+      if (outcome.recuento) {
+        setRecontando(outcome.recuento);
+        return;
+      }
       setConfirmError(outcome.message);
+      if (outcome.revisarBilletes) {
+        setRecarga((n) => n + 1);
+        setStep("efectivo");
+      }
       return;
     }
     setCompleted(outcome.completed);
@@ -184,6 +201,54 @@ export function CobrarGiroFlow(): React.JSX.Element {
     return <GiroPayoutResult completed={completed} />;
   }
 
+  if (recontando) {
+    return (
+      <RecuentoDeMoneda
+        currency={recontando}
+        denominaciones={vista.denominaciones}
+        supervisores={vista.supervisores}
+        onCancelar={() => setRecontando(null)}
+        onListo={() => {
+          setRecontando(null);
+          setRecarga((n) => n + 1);
+          void handleConfirm();
+        }}
+      />
+    );
+  }
+
+  if (step === "efectivo" && transfer) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+        <StepBackLink label="Volver a Revisar giro" onClick={() => setStep("revisar")} />
+        <header>
+          <h1 className="text-screen-title text-text-primary">Billetes de la entrega</h1>
+          <p className="mt-2 text-body text-text-secondary">Marca los billetes con los que se entrega el giro al beneficiario.</p>
+        </header>
+        <EfectivoDeOperacion
+          entrada={{ modo: "pago", currency: transfer.payoutCurrency, importe: transfer.deliveryAmount }}
+          recargar={recarga}
+          onChange={(e) => setEfectivo(e.listo ? e.efectivo : null)}
+        />
+        {confirmError ? <Alert variant="error" title={confirmError} /> : null}
+        <div className="pc-botonera sm:justify-end">
+          <Button variant="secondary" onClick={leaveFlow}>
+            Cancelar
+          </Button>
+          <Button
+            disabled={!efectivo}
+            onClick={() => {
+              setConfirmError(undefined);
+              setStep("confirmar");
+            }}
+          >
+            Continuar a confirmar
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (step === "confirmar" && transfer) {
     return (
       <GiroPayoutConfirmation
@@ -191,7 +256,7 @@ export function CobrarGiroFlow(): React.JSX.Element {
         worker={worker.fullName}
         submitting={submitting}
         error={confirmError}
-        onBack={() => setStep("revisar")}
+        onBack={() => setStep("efectivo")}
         onCancel={leaveFlow}
         onConfirm={() => void handleConfirm()}
       />
@@ -206,7 +271,10 @@ export function CobrarGiroFlow(): React.JSX.Element {
         block={block}
         onBack={() => setStep("codigo")}
         onCancel={leaveFlow}
-        onContinue={() => setStep("confirmar")}
+        onContinue={() => {
+          setEfectivo(null);
+          setStep("efectivo");
+        }}
       />
     );
   }

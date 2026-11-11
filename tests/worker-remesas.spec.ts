@@ -1,4 +1,5 @@
 import { test, expect } from "./worker-fixture";
+import { continuarAConfirmar } from "./worker-helpers";
 import { type Page } from "@playwright/test";
 
 
@@ -7,7 +8,7 @@ import { type Page } from "@playwright/test";
  * aquí. La prueba de la caja cerrada vive ahora en su propio grupo, con la
  * línea de salida sin jornada.
  */
-test.use({ fondos: { CUP: 1_000 } });
+test.use({ conCambio: true, fondos: { CUP: 1_000 } });
 
 async function entrarARemesas(page: Page) {
   await page.goto("/worker/caja");
@@ -52,7 +53,7 @@ test.describe("Remesas", () => {
 
   test("completes once, creates a Remesa operation and cash-out", async ({ page }) => {
     await searchReadyRemittance(page);
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Remesa completada" })).toBeVisible();
     await expect(page.getByText("María Pérez García").first()).toBeVisible();

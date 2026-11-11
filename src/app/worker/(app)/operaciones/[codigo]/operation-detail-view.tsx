@@ -19,6 +19,7 @@ import { ReceiptSection } from "./receipt-section";
 import { OperationCashCard, ServiceDetail } from "./service-detail";
 import { RemittanceDetail } from "./remittance-detail";
 import { GiroDetail } from "./giro-detail";
+import { LiquidacionCard } from "./liquidacion-card";
 
 /**
  * Operation detail.
@@ -77,6 +78,8 @@ export function OperationDetailView({ codigo }: { codigo: string }): React.JSX.E
         </div>
       </div>
 
+      <LiquidacionCard operation={operation} />
+
       <ReceiptSection operation={operation} />
 
       <ConfidentialityNote />
@@ -95,6 +98,7 @@ function GiroOperationDetail({ operation }: { operation: OperationRecord }) {
     <div className="flex flex-col gap-6">
       <BackLink />
       <GiroDetail operation={operation} />
+      <LiquidacionCard operation={operation} />
       <ReceiptSection
         operation={operation}
         description="Puedes imprimir el detalle registrado de esta operación."
@@ -111,6 +115,7 @@ function RemittanceOperationDetail({ operation }: { operation: OperationRecord }
       <BackLink />
       <OperationDetailHeader operation={operation} remittance />
       <RemittanceDetail operation={operation} />
+      <LiquidacionCard operation={operation} />
       <ReceiptSection operation={operation} />
       <ConfidentialityNote />
     </div>

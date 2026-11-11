@@ -8,7 +8,7 @@ import { test, expect } from "./worker-fixture";
  * giros enviados.
  */
 
-test.use({ fondos: { CUP: 245_000, USD: 3_850, EUR: 2_120 }, giros: [50_000, 2_500] });
+test.use({ conCambio: true, fondos: { CUP: 245_000, USD: 3_850, EUR: 2_120 }, giros: [50_000, 2_500] });
 
 test.describe("worker home", () => {
   test.beforeEach(async ({ page }) => {

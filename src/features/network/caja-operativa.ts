@@ -1230,25 +1230,48 @@ function comprobarExistencias(j: Jornada, tramos: readonly Tramo[]): CajaResult<
   return falta ? pedirRecuento<null>(j, falta) : { ok: true, value: null };
 }
 
-/** Remesa pagada, giro enviado o giro pagado: un solo tramo de efectivo, más el vuelto o el resto en CUP. */
-export function registrarOperacionSimple(ctx: ContextoDeCaja, op: OperacionPorRegistrar, now = new Date()): CajaResult<OperacionDeRed> {
+/** Todo lo que hay que comprobar antes de registrar una operación simple; no escribe nada. */
+function prepararOperacionSimple(
+  ctx: ContextoDeCaja,
+  op: OperacionPorRegistrar,
+  now: Date,
+): CajaResult<{ j: Jornada; tramos: Tramo[]; liquidacion: OperacionDeRed["liquidacion"] }> {
   const ok = comprobarOperar(ctx, op.servicio);
-  if (!ok.ok) return ok as CajaResult<OperacionDeRed>;
+  if (!ok.ok) return ok as CajaResult<never>;
   const j = ok.value;
   let tramos: Tramo[] = [op.tramo];
   let liquidacion: OperacionDeRed["liquidacion"];
   if (op.efectivo) {
     const l = op.tramo.delta >= 0 ? liquidarCobro(ctx, op.tramo, op.efectivo) : liquidarPago(ctx, j, op.tramo, op.efectivo, now);
-    if (!l.ok) return l as CajaResult<OperacionDeRed>;
+    if (!l.ok) return l as CajaResult<never>;
     tramos = l.value.tramos;
     liquidacion = l.value.liquidacion;
   }
   const t = comprobarTramos(ctx, j, tramos);
-  if (!t.ok) return t as CajaResult<OperacionDeRed>;
+  if (!t.ok) return t as CajaResult<never>;
   if (op.efectivo) {
     const e = comprobarExistencias(j, tramos);
-    if (!e.ok) return e as CajaResult<OperacionDeRed>;
+    if (!e.ok) return e as CajaResult<never>;
   }
+  return { ok: true, value: { j, tramos, liquidacion } };
+}
+
+/**
+ * Comprueba, sin registrar nada, que la operación se podría registrar ahora.
+ * Remesas y Cobrar giro lo piden **antes** de dar la entrega por hecha en el
+ * proveedor externo: si hay que contar la moneda o los billetes no cuadran, se
+ * sabe antes de completar nada fuera.
+ */
+export function comprobarOperacionSimple(ctx: ContextoDeCaja, op: OperacionPorRegistrar, now = new Date()): CajaResult<null> {
+  const r = prepararOperacionSimple(ctx, op, now);
+  return r.ok ? { ok: true, value: null } : (r as CajaResult<null>);
+}
+
+/** Remesa pagada, giro enviado o giro pagado: un solo tramo de efectivo, más el vuelto o el resto en CUP. */
+export function registrarOperacionSimple(ctx: ContextoDeCaja, op: OperacionPorRegistrar, now = new Date()): CajaResult<OperacionDeRed> {
+  const p = prepararOperacionSimple(ctx, op, now);
+  if (!p.ok) return p as CajaResult<OperacionDeRed>;
+  const { j, tramos, liquidacion } = p.value;
 
   const b = base(ctx, j, now);
   const antes = saldoEnLibros(j, op.tramo.currency);

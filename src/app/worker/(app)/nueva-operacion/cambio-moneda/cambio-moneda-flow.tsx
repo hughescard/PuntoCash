@@ -19,9 +19,12 @@ import {
   DialogTitle,
 } from "@/components/ui";
 import { Stepper } from "@/components/patterns/stepper";
-import { formatDateTime, formatMoney, parseAmountInput } from "@/lib/format";
+import { formatAmount, formatDateTime, formatMoney, parseAmountInput } from "@/lib/format";
 import { type ExchangeQuote } from "@/features/exchange/quote";
-import { cotizar, monedasCotizables } from "@/features/exchange/cotizacion";
+import { cotizar, cotizarParaRecibir, monedasCotizables } from "@/features/exchange/cotizacion";
+import { denominacionMinima } from "@/features/caja/pagos";
+import { RecuentoDeMoneda } from "../../caja/recuento-de-moneda";
+import { EfectivoDeOperacion } from "../efectivo-de-operacion";
 import { useCaja } from "@/features/caja/use-caja";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { registrarCambioAction, type AccionDeCaja } from "../../../_actions";
@@ -43,6 +46,7 @@ import { StepCambio } from "./step-cambio";
 import { StepCliente } from "./step-cliente";
 import { clearPendingWorkerHandoff } from "@/features/kiosk/self-service-request";
 import { StepRevision } from "./step-revision";
+import { liquidacionComoLineas } from "../liquidacion";
 import { OperationComplete } from "./operation-complete";
 
 const CATALOG_ROUTE = "/worker/nueva-operacion";
@@ -113,6 +117,16 @@ function cashRejectionMessage(outcome: Extract<AccionDeCaja<unknown>, { ok: fals
       return `${outcome.currency ?? "La moneda"} no está habilitada en esta caja.`;
     case "fondos-insuficientes":
       return `La caja no tiene ${outcome.currency ?? "efectivo"} suficiente para entregar este cambio. No se registró nada: avisa a tu supervisor o propón al cliente un importe menor.`;
+    case "sin-esos-billetes":
+      return "Contada la caja, esos billetes no están. No se registró nada: vuelve a marcar con qué billetes se entrega.";
+    case "sin-vuelto":
+      return "La caja no tiene billetes para darle el vuelto. No se registró nada: pídele al cliente que pague con otros billetes o con el importe justo.";
+    case "sin-salida":
+      return "La caja no puede pagar eso entero. No se registró nada: vuelve a los billetes y ofrécele al cliente otra salida.";
+    case "propuesta-vencida":
+    case "cobro-insuficiente":
+    case "importe-no-pagable":
+      return "Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Vuelve a los billetes y revísalos.";
     default:
       return "No se pudo registrar el cambio. Revisa los importes e inténtalo de nuevo.";
   }
@@ -130,16 +144,23 @@ function CambioMonedaOperation(): React.JSX.Element {
   const [state, dispatch] = React.useReducer(flowReducer, undefined, createInitialState);
   const [cancelOpen, setCancelOpen] = React.useState(false);
   const [confirmError, setConfirmError] = React.useState<string | null>(null);
+  /** Moneda que hay que contar antes de registrar (salen billetes que los libros no tienen). */
+  const [recontando, setRecontando] = React.useState<string | null>(null);
 
   // The kiosk prefill (if any) was read into the initial state — drop it.
   React.useEffect(() => clearPendingWorkerHandoff(), []);
 
   /* ---- Step 1 derivations: quoted live, committed on Continuar ---- */
   const parsedAmount = parseAmountInput(state.amountInput);
+  /* La denominación más pequeña de la moneda que paga el cliente: el importe se cobra en billetes. */
+  const pasoDeOrigen = denominacionMinima(vista.denominaciones[state.sourceCurrency] ?? []);
 
   const liveQuote = React.useMemo(() => {
     if (parsedAmount === null || parsedAmount <= 0) return null;
-    const result = cotizar(vista.tasas, state.sourceCurrency, state.destinationCurrency, parsedAmount);
+    const result =
+      state.modo === "recibir"
+        ? cotizarParaRecibir(vista.tasas, state.sourceCurrency, state.destinationCurrency, parsedAmount, pasoDeOrigen)
+        : cotizar(vista.tasas, state.sourceCurrency, state.destinationCurrency, parsedAmount);
     if (!result.ok) return null;
     const q: ExchangeQuote = {
       sourceCurrency: result.value.sourceCurrency,
@@ -152,14 +173,18 @@ function CambioMonedaOperation(): React.JSX.Element {
       quotedAt: new Date().toISOString(),
     };
     return q;
-  }, [parsedAmount, state.sourceCurrency, state.destinationCurrency, vista.tasas]);
+  }, [parsedAmount, state.modo, pasoDeOrigen, state.sourceCurrency, state.destinationCurrency, vista.tasas]);
 
   const amountError = React.useMemo(() => {
-    if (state.amountInput.trim() === "") return "Introduce el monto a entregar.";
+    if (state.amountInput.trim() === "") return state.modo === "recibir" ? "Introduce el monto a recibir." : "Introduce el monto a entregar.";
     if (parsedAmount === null) return "Introduce un monto válido.";
     if (parsedAmount <= 0) return "El monto debe ser mayor que cero.";
+    /* Se cobra en billetes: no puede tener fracciones menores que el más pequeño. */
+    if (state.modo === "cambiar" && Number.isFinite(pasoDeOrigen) && Math.abs(Math.round(parsedAmount * 100) % Math.round(pasoDeOrigen * 100)) > 0) {
+      return `Se cobra en billetes: el importe no puede tener fracciones menores que ${formatAmount(pasoDeOrigen)} ${state.sourceCurrency}.`;
+    }
     return undefined;
-  }, [state.amountInput, parsedAmount]);
+  }, [state.amountInput, state.modo, state.sourceCurrency, parsedAmount, pasoDeOrigen]);
 
   const canContinueFromCambio = Boolean(liveQuote && !amountError);
 
@@ -202,7 +227,7 @@ function CambioMonedaOperation(): React.JSX.Element {
   async function confirmOperation() {
     // Guard against a double submit and against a state that stopped being
     // valid while the worker was reading the review.
-    if (state.submitting || !state.quote || !state.customer) return;
+    if (state.submitting || !state.quote || !state.customer || !state.efectivo) return;
 
     setConfirmError(null);
     dispatch({ type: "submit-start" });
@@ -227,10 +252,20 @@ function CambioMonedaOperation(): React.JSX.Element {
       destinationCurrency: quote.destinationCurrency,
       sourceAmount: quote.sourceAmount,
       destinationAmountVisto: quote.destinationAmount,
+      efectivo: state.efectivo,
     });
     if (!cash.ok) {
-      setConfirmError(cashRejectionMessage(cash));
       dispatch({ type: "submit-failure" });
+      /* Salen billetes que los libros no tienen: se cuenta esa moneda y se vuelve a intentar. */
+      if (cash.reason === "recuento-necesario" && cash.currency) {
+        setRecontando(cash.currency);
+        return;
+      }
+      setConfirmError(cashRejectionMessage(cash));
+      if (["propuesta-vencida", "sin-vuelto", "sin-salida", "sin-esos-billetes", "cobro-insuficiente", "importe-no-pagable"].includes(cash.reason)) {
+        dispatch({ type: "recargar-efectivo" });
+        dispatch({ type: "go-to-step", step: "efectivo" });
+      }
       return;
     }
     const code = cash.value.codigo;
@@ -246,6 +281,7 @@ function CambioMonedaOperation(): React.JSX.Element {
         worker: worker.fullName,
         register: worker.register,
         completedAt: completedAt.toISOString(),
+        ...(cash.value.liquidacion ? { liquidacion: cash.value.liquidacion } : {}),
       },
     });
   }
@@ -292,7 +328,9 @@ function CambioMonedaOperation(): React.JSX.Element {
                     ? "Define el cambio que realizará el cliente."
                     : state.step === "cliente"
                       ? "Identifica al cliente para continuar."
-                      : "Revisa los detalles antes de confirmar la operación."}
+                      : state.step === "efectivo"
+                        ? "Marca los billetes que da el cliente y los que se le entregan."
+                        : "Revisa los detalles antes de confirmar la operación."}
                 </p>
               </div>
 
@@ -316,6 +354,8 @@ function CambioMonedaOperation(): React.JSX.Element {
             sourceCurrency={state.sourceCurrency}
             destinationCurrency={state.destinationCurrency}
             amountInput={state.amountInput}
+            modo={state.modo}
+            onModoChange={(modo) => dispatch({ type: "set-modo", modo })}
             quote={liveQuote}
             amountError={amountError}
             onSourceCurrencyChange={(currency) =>
@@ -347,23 +387,72 @@ function CambioMonedaOperation(): React.JSX.Element {
           </div>
         ) : null}
 
-        {state.step === "revision" && state.quote && state.customer ? (
+        {state.step === "efectivo" && state.quote && !recontando ? (
+          <div className="grid grid-cols-1 gap-6 wide:grid-cols-[minmax(0,1fr)_20rem]">
+            <EfectivoDeOperacion
+              entrada={{
+                modo: "cambio",
+                sourceCurrency: state.quote.sourceCurrency,
+                destinationCurrency: state.quote.destinationCurrency,
+                sourceAmount: state.quote.sourceAmount,
+              }}
+              recargar={state.recarga}
+              inicial={state.efectivo?.paga}
+              onChange={(e) => dispatch({ type: "set-efectivo", efectivo: e.listo ? e.efectivo : null })}
+              onOtroImporte={(sourceAmount) => {
+                const q = cotizar(vista.tasas, state.quote!.sourceCurrency, state.quote!.destinationCurrency, sourceAmount);
+                if (!q.ok || !state.quote) return;
+                dispatch({
+                  type: "cambiar-otro-importe",
+                  quote: {
+                    ...state.quote,
+                    sourceAmount: q.value.sourceAmount,
+                    destinationAmount: q.value.destinationAmount,
+                    appliedRate: q.value.appliedRate,
+                    tasasAplicadas: q.value.tasasAplicadas,
+                    quotedAt: new Date().toISOString(),
+                  },
+                });
+              }}
+            />
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 wide:grid-cols-1">
+              <ExchangeSummaryCard quote={state.quote} className="self-start" />
+            </div>
+          </div>
+        ) : null}
+
+        {recontando ? (
+          <RecuentoDeMoneda
+            currency={recontando}
+            denominaciones={vista.denominaciones}
+            supervisores={vista.supervisores}
+            onCancelar={() => setRecontando(null)}
+            onListo={() => {
+              setRecontando(null);
+              void confirmOperation();
+            }}
+          />
+        ) : null}
+
+        {state.step === "revision" && state.quote && state.customer && !recontando ? (
           <StepRevision
             quote={state.quote}
             customer={state.customer}
             worker={worker.fullName}
             register={worker.register}
+            efectivo={state.efectivo}
+            denominaciones={vista.denominaciones}
           />
         ) : null}
 
         {completed && state.completed ? <OperationComplete operation={state.completed} /> : null}
 
-        {state.step === "revision" && confirmError ? (
+        {(state.step === "revision" || state.step === "efectivo") && confirmError && !recontando ? (
           <Alert variant="error" title={confirmError} />
         ) : null}
 
         {/* ---------------- Footer actions ---------------- */}
-        {!completed ? (
+        {!completed && !recontando ? (
           <div className="mt-2 flex items-center justify-between gap-4 border-t border-border pt-6">
             {/* Step 1 has no bottom-left action: "Cancelar operación" already
                 lives once, top-right, and there is no previous step to return
@@ -374,7 +463,7 @@ function CambioMonedaOperation(): React.JSX.Element {
                 onClick={() =>
                   dispatch({
                     type: "go-to-step",
-                    step: state.step === "revision" ? "cliente" : "cambio",
+                    step: state.step === "revision" ? "efectivo" : state.step === "efectivo" ? "cliente" : "cambio",
                   })
                 }
               >
@@ -406,7 +495,20 @@ function CambioMonedaOperation(): React.JSX.Element {
               {state.step === "cliente" ? (
                 <Button
                   disabled={!state.customer}
-                  onClick={() => dispatch({ type: "go-to-step", step: "revision" })}
+                  onClick={() => dispatch({ type: "go-to-step", step: "efectivo" })}
+                >
+                  Continuar a los billetes
+                  <ArrowRight aria-hidden="true" />
+                </Button>
+              ) : null}
+
+              {state.step === "efectivo" ? (
+                <Button
+                  disabled={!state.efectivo}
+                  onClick={() => {
+                    setConfirmError(null);
+                    dispatch({ type: "go-to-step", step: "revision" });
+                  }}
                 >
                   Continuar a revisión
                   <ArrowRight aria-hidden="true" />
@@ -515,6 +617,9 @@ function PrintableReceipt({ operation }: { operation: CompletedOperation }): Rea
           })}
         />
         <ReceiptLine label="Tasa aplicada" value={formatAppliedRate(quote)} />
+        {liquidacionComoLineas(operation.liquidacion).map((l) => (
+          <ReceiptLine key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+        ))}
         <ReceiptLine label="Caja" value={operation.register} />
         <ReceiptLine label="Trabajador" value={operation.worker} />
       </dl>

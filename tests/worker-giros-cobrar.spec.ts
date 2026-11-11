@@ -1,4 +1,5 @@
 import { test, expect } from "./worker-fixture";
+import { continuarAConfirmar } from "./worker-helpers";
 import { type Page } from "@playwright/test";
 
 
@@ -20,7 +21,7 @@ import { type Page } from "@playwright/test";
  * **por enlace**, nunca con un `page.goto` posterior.
  */
 
-test.use({ fondos: { CUP: 50_000 }, historial: true });
+test.use({ conCambio: true, fondos: { CUP: 50_000 }, historial: true });
 
 function onScreen(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true });
@@ -354,7 +355,7 @@ test.describe("Cobrar giro — Revisar giro", () => {
   });
 
   test("Continuar a confirmar reaches the confirmation screen", async ({ page }) => {
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await expect(page.getByRole("heading", { name: "Confirmar entrega del giro" })).toBeVisible();
   });
 });
@@ -392,10 +393,11 @@ test.describe("Cobrar giro — blocked payouts", () => {
     /* Worker no ve el saldo: la revisión no puede saberlo. */
     await expect(onScreen(page, /Disponible/)).toHaveCount(0);
     await page.getByRole("button", { name: "Continuar a confirmar" }).click();
-    await page.getByRole("button", { name: "Confirmar entrega" }).click();
 
-    await expect(onScreen(page, /La caja no tiene CUP suficiente para entregar este giro/)).toBeVisible({ timeout: 10_000 });
-    await expect(onScreen(page, /50\.000,00/)).toHaveCount(0);
+    /* Se dice en el paso de billetes, antes de pedir nada fuera: sin saldos. */
+    await expect(onScreen(page, "La caja no puede pagar eso entero")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("button", { name: "Continuar a confirmar" })).toBeDisabled();
+    await expect(onScreen(page, /Disponible/)).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toHaveCount(0);
     await page.getByRole("link", { name: "Caja" }).click();
     await expectSinPagoDeGiro(page);
@@ -425,7 +427,7 @@ test.describe("Cobrar giro — Confirmar entrega", () => {
   test.beforeEach(async ({ page }) => {
     await goToCobrar(page);
     await reviewGiro(page, "TR-260901-000245");
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await expect(page.getByRole("heading", { name: "Confirmar entrega del giro" })).toBeVisible();
   });
 
@@ -445,6 +447,9 @@ test.describe("Cobrar giro — Confirmar entrega", () => {
   });
 
   test("Volver returns to Revisar giro with the giro intact", async ({ page }) => {
+    /* Confirmar → billetes → Revisar giro. */
+    await page.getByRole("button", { name: /^Volver/ }).click();
+    await expect(page.getByRole("heading", { name: "Billetes de la entrega" })).toBeVisible();
     await page.getByRole("button", { name: /Volver a Revisar giro/ }).click();
     await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible();
     await expect(onScreen(page, "TR-260901-000245")).toBeVisible();
@@ -464,7 +469,7 @@ test.describe("Cobrar giro — external failures", () => {
   async function confirmPayout(page: Page, code: string) {
     await goToCobrar(page);
     await reviewGiro(page, code);
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
   }
 
@@ -524,7 +529,7 @@ test.describe("Cobrar giro — payout completed", () => {
   test.beforeEach(async ({ page }) => {
     await goToCobrar(page);
     await reviewGiro(page, "TR-260901-000245");
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toBeVisible({
       timeout: 10_000,
@@ -650,7 +655,7 @@ test.describe("Enviar giro then Cobrar giro", () => {
     await page.locator("#giro-importe").fill("1000");
 
     await page.getByRole("button", { name: "Continuar" }).click();
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar envío" }).click();
     await expect(page.getByRole("heading", { name: "Giro registrado correctamente" })).toBeVisible({
       timeout: 10_000,

@@ -1,4 +1,5 @@
 import { test, expect } from "./worker-fixture";
+import { pagarJusto } from "./worker-helpers";
 import { type Page } from "@playwright/test";
 
 
@@ -27,7 +28,7 @@ const SEEDED_DOCUMENT = "90010112345";
  * aquí: veintitrés de estas pruebas la necesitan abierta y ninguna trata de
  * abrirla. El único grupo que trata de la caja cerrada se sale de la siembra.
  */
-test.use({ fondos: { CUP: 500_000, USD: 3_850, EUR: 2_120, GBP: 950 } });
+test.use({ conCambio: true, fondos: { CUP: 500_000, USD: 3_850, EUR: 2_120, GBP: 950 } });
 
 /** Entra al flujo de Cambio de moneda por donde entra el trabajador. */
 async function startCambio(page: Page) {
@@ -54,6 +55,14 @@ async function goToRevision(page: Page) {
   await page.getByLabel("Número de documento").fill(SEEDED_DOCUMENT);
   await page.getByRole("button", { name: "Buscar cliente" }).click();
   await page.getByRole("button", { name: /Seleccionar cliente y continuar/ }).click();
+  await pasarPorBilletes(page);
+}
+
+/** Paso de billetes: el cliente paga justo lo que se le cobra y se sigue a la revisión. */
+async function pasarPorBilletes(page: Page) {
+  await pagarJusto(page);
+  await expect(page.getByText("Los billetes cuadran.")).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Continuar a revisión" }).click();
   await expect(page.getByRole("button", { name: "Confirmar cambio" })).toBeVisible();
 }
 
@@ -187,12 +196,16 @@ test.describe("step 1 · cambio", () => {
     await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeEnabled();
   });
 
-  test("si la caja no alcanza, lo dice al confirmar y no registra nada", async ({ page }) => {
+  test("si la caja no alcanza, lo dice en los billetes y no registra nada", async ({ page }) => {
     await setAmount(page, "9000");
     await goToCliente(page);
-    await goToRevision(page);
-    await page.getByRole("button", { name: "Confirmar cambio" }).click();
-    await expect(page.getByText(/La caja no tiene CUP suficiente para entregar este cambio/)).toBeVisible();
+    await page.getByLabel("Número de documento").fill(SEEDED_DOCUMENT);
+    await page.getByRole("button", { name: "Buscar cliente" }).click();
+    await page.getByRole("button", { name: /Seleccionar cliente y continuar/ }).click();
+    await pagarJusto(page);
+    /* La caja lo dice en el paso de billetes, sin cifras, y no deja seguir. */
+    await expect(page.getByText("La caja no puede pagar eso entero")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Continuar a revisión" })).toBeDisabled();
     await expect(page.getByRole("main").getByText(/PC-\d{6}-\d{6}/)).toHaveCount(0);
   });
 });
@@ -270,7 +283,7 @@ test.describe("step 2 · cliente", () => {
     await page.getByLabel("Teléfono").fill("+53 5 999 0000");
     await page.getByRole("button", { name: "Registrar y continuar" }).click();
 
-    await expect(page.getByRole("button", { name: "Confirmar cambio" })).toBeVisible();
+    await pasarPorBilletes(page);
     await expect(page.getByText("Ana Torres Lima").first()).toBeVisible();
   });
 
@@ -387,6 +400,8 @@ test.describe("navigation and cancellation", () => {
     await goToCliente(page);
     await goToRevision(page);
 
+    await page.getByRole("button", { name: "Volver" }).click();
+    await expect(page.getByText("Los billetes cuadran.")).toBeVisible();
     await page.getByRole("button", { name: "Volver" }).click();
     await expect(page.getByText("Carlos Pérez Rodríguez")).toBeVisible();
 
