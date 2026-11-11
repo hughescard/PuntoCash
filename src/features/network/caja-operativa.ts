@@ -39,6 +39,14 @@ import type {
 } from "@/features/operations/operations-history";
 
 import { desglosarDeMayorAMenor, proponerEntrega, restar, sumar, totalDe, type Billetes, type Denominacion } from "@/features/caja/billetes";
+import {
+  denominacionMinima,
+  desglosarExacto,
+  importesPagables,
+  planDeSalida,
+  redondearALaBaja,
+  type CosteDeBillete,
+} from "@/features/caja/pagos";
 import { almacen } from "./almacen";
 import { derivar, explicarSolicitudDeCierre, explicarSolicitudDeRecuento, registrarSolicitudes } from "./aprobaciones";
 import { estadoDeSede, operadorVigente } from "./assignments";
@@ -49,6 +57,7 @@ import { findTerminalById, marcarActividad } from "./devices";
 import {
   diaEnCuba,
   inventarioDeJornada,
+  jornadasDeSede,
   jornadaAbiertaDeCaja,
   jornadaAbiertaDeTrabajador,
   jornadaPorId,
@@ -279,7 +288,17 @@ export type CajaDenial =
   /** Lo que entra y lo que sale no suman lo mismo. */
   | "cambio-descuadrado"
   /** Entran y salen los mismos billetes. */
-  | "cambio-sin-efecto";
+  | "cambio-sin-efecto"
+  /** El cliente da menos de lo que se le cobra. */
+  | "cobro-insuficiente"
+  /** No hay billetes para darle el vuelto: que pague con otros billetes o con el importe justo. */
+  | "sin-vuelto"
+  /** El importe no se puede cobrar en billetes: tiene fracciones menores que el billete más pequeño. */
+  | "importe-no-pagable"
+  /** La caja no tiene billetes para pagar eso exacto, ni en CUP: hay que ofrecer al cliente otras salidas. */
+  | "sin-salida"
+  /** Lo que se entregó no suma lo que toca, o la caja cambió desde que se propuso: hay que proponer de nuevo. */
+  | "propuesta-vencida";
 
 export type CajaResult<T> = { ok: true; value: T } | { ok: false; reason: CajaDenial; currency?: string };
 
@@ -1086,6 +1105,8 @@ export interface Tramo {
   currency: string;
   delta: number;
   concepto: string;
+  /** Los billetes que mueve, con signo y en neto (lo que paga el cliente menos el vuelto). Su suma es `delta`. */
+  billetes?: Billetes;
 }
 
 export interface OperacionPorRegistrar {
@@ -1096,6 +1117,8 @@ export interface OperacionPorRegistrar {
   remittance?: OperationRecord["remittance"];
   transfer?: OperationRecord["transfer"];
   origenKiosco?: OperacionDeRed["origenKiosco"];
+  /** Billete a billete (bloque 4). Sin esto la operación no registra billetes: solo el kiosco, hasta que se adapte. */
+  efectivo?: EfectivoRegistrado;
 }
 
 function comprobarOperar(ctx: ContextoDeCaja, servicio: OperationServiceName): CajaResult<Jornada> {
@@ -1131,31 +1154,124 @@ function base(ctx: ContextoDeCaja, j: Jornada, now: Date) {
   };
 }
 
-/** Remesa pagada, giro enviado o giro pagado: un solo tramo de efectivo. */
+/** Los billetes de una salida, validados; vacío es válido (no salió nada de esa moneda). */
+function revisarSalida(ctx: ContextoDeCaja, currency: string, b: Billetes | undefined): CajaResult<Billetes> {
+  return vacio(b) ? { ok: true, value: {} } : revisarBilletes(ctx.register.id, currency, b ?? {}, "salen");
+}
+
+type Liquidado = { tramos: Tramo[]; liquidacion?: OperacionDeRed["liquidacion"] };
+
+/** Un cobro: paga el cliente y, si pagó de más, se le da el vuelto. */
+function liquidarCobro(ctx: ContextoDeCaja, t: Tramo, e: EfectivoRegistrado): CajaResult<Liquidado> {
+  if (!cobrable(t.currency, t.delta)) return no("importe-no-pagable", t.currency);
+  const paga = revisarPaga(ctx, t.currency, e.paga);
+  if (!paga.ok) return paga as CajaResult<Liquidado>;
+  const vuelto = revisarSalida(ctx, t.currency, e.vuelto);
+  if (!vuelto.ok) return vuelto as CajaResult<Liquidado>;
+  const esperado = aCien(totalDe(paga.value) - t.delta);
+  if (esperado < -0.005) return no("cobro-insuficiente", t.currency);
+  if (Math.abs(totalDe(vuelto.value) - esperado) >= 0.005) return no("propuesta-vencida", t.currency);
+  return {
+    ok: true,
+    value: {
+      tramos: [{ ...t, billetes: netoDeCobro(paga.value, vuelto.value) }],
+      ...(esperado > 0.005 ? { liquidacion: { vuelto: { currency: t.currency, importe: esperado } } } : {}),
+    },
+  };
+}
+
+/**
+ * Lo que se le entrega al cliente, ya planeado: pagado entero, con un resto en
+ * CUP o —con su permiso— dejando sin pagar lo que la caja no puede.
+ */
+function liquidarEntrega(
+  ctx: ContextoDeCaja,
+  plan: PropuestaDePago,
+  e: EfectivoRegistrado,
+  conceptoCup: string,
+): CajaResult<{ tramos: Tramo[]; liquidacion: NonNullable<OperacionDeRed["liquidacion"]> }> {
+  if (plan.tipo === "sin-salida" && (!e.permiso || plan.importe <= 0)) return no("sin-salida", plan.currency);
+  const entrega = revisarSalida(ctx, plan.currency, e.entrega);
+  if (!entrega.ok) return entrega as CajaResult<never>;
+  if (Math.abs(totalDe(entrega.value) - plan.importe) >= 0.005) return no("propuesta-vencida", plan.currency);
+  const tramos: Tramo[] = [];
+  const liquidacion: NonNullable<OperacionDeRed["liquidacion"]> = {};
+  if (plan.importe > 0) tramos.push({ currency: plan.currency, delta: -plan.importe, concepto: "", billetes: salida(entrega.value) });
+  const aFavor: { currency: string; importe: number; motivo: "redondeo" | "permiso-del-cliente" }[] = [];
+  if (plan.redondeo > 0.004) aFavor.push({ currency: plan.currency, importe: plan.redondeo, motivo: "redondeo" });
+  if (plan.tipo === "con-cup") {
+    const cup = revisarSalida(ctx, "CUP", e.entregaCup);
+    if (!cup.ok) return cup as CajaResult<never>;
+    if (Math.abs(totalDe(cup.value) - plan.cup.importe) >= 0.005) return no("propuesta-vencida", "CUP");
+    tramos.push({ currency: "CUP", delta: -plan.cup.importe, concepto: conceptoCup, billetes: salida(cup.value) });
+    liquidacion.enCup = { importe: plan.cup.importe, equivale: { currency: plan.currency, importe: plan.cup.equivale } };
+  } else if (!vacio(e.entregaCup)) {
+    return no("propuesta-vencida", "CUP");
+  }
+  if (plan.tipo === "sin-salida") aFavor.push({ currency: plan.currency, importe: plan.sinPagar, motivo: "permiso-del-cliente" });
+  if (aFavor.length > 0) liquidacion.aFavorDeLaCasa = aFavor;
+  return { ok: true, value: { tramos, liquidacion } };
+}
+
+/** Un pago a un cliente (remesa pagada, giro cobrado). */
+function liquidarPago(ctx: ContextoDeCaja, j: Jornada, t: Tramo, e: EfectivoRegistrado, now: Date): CajaResult<Liquidado> {
+  const plan = planearPago(ctx, j, t.currency, -t.delta, { lado: "compra", now });
+  const r = liquidarEntrega(ctx, plan, e, `Pago en CUP por falta de billetes de ${t.currency}`);
+  if (!r.ok) return r as CajaResult<Liquidado>;
+  const tramos = r.value.tramos.map((x) => (x.currency === t.currency ? { ...x, concepto: t.concepto } : x));
+  return { ok: true, value: { tramos, liquidacion: r.value.liquidacion } };
+}
+
+/** Si en estos tramos salen billetes que los libros no tienen: pide el recuento de esa moneda. */
+function comprobarExistencias(j: Jornada, tramos: readonly Tramo[]): CajaResult<null> {
+  const porMoneda = new Map<string, Billetes>();
+  for (const t of tramos) if (t.billetes) porMoneda.set(t.currency, sumar(porMoneda.get(t.currency), t.billetes));
+  const falta = primeraMonedaConFaltantes(j, porMoneda);
+  return falta ? pedirRecuento<null>(j, falta) : { ok: true, value: null };
+}
+
+/** Remesa pagada, giro enviado o giro pagado: un solo tramo de efectivo, más el vuelto o el resto en CUP. */
 export function registrarOperacionSimple(ctx: ContextoDeCaja, op: OperacionPorRegistrar, now = new Date()): CajaResult<OperacionDeRed> {
   const ok = comprobarOperar(ctx, op.servicio);
   if (!ok.ok) return ok as CajaResult<OperacionDeRed>;
   const j = ok.value;
-  const t = comprobarTramos(ctx, j, [op.tramo]);
+  let tramos: Tramo[] = [op.tramo];
+  let liquidacion: OperacionDeRed["liquidacion"];
+  if (op.efectivo) {
+    const l = op.tramo.delta >= 0 ? liquidarCobro(ctx, op.tramo, op.efectivo) : liquidarPago(ctx, j, op.tramo, op.efectivo, now);
+    if (!l.ok) return l as CajaResult<OperacionDeRed>;
+    tramos = l.value.tramos;
+    liquidacion = l.value.liquidacion;
+  }
+  const t = comprobarTramos(ctx, j, tramos);
   if (!t.ok) return t as CajaResult<OperacionDeRed>;
+  if (op.efectivo) {
+    const e = comprobarExistencias(j, tramos);
+    if (!e.ok) return e as CajaResult<OperacionDeRed>;
+  }
 
   const b = base(ctx, j, now);
   const antes = saldoEnLibros(j, op.tramo.currency);
-  movimiento(j, {
-    fechaHora: b.fechaHora,
-    operationCode: b.codigo,
-    tipo: op.tramo.delta >= 0 ? "entrada" : "salida",
-    concepto: op.tramo.concepto,
-    currency: op.tramo.currency,
-    amount: op.tramo.delta,
-  });
+  for (const tr of tramos) {
+    movimiento(j, {
+      fechaHora: b.fechaHora,
+      operationCode: b.codigo,
+      tipo: tr.delta >= 0 ? "entrada" : "salida",
+      concepto: tr.concepto,
+      currency: tr.currency,
+      amount: tr.delta,
+      ...(tr.billetes ? { billetes: tr.billetes } : {}),
+    });
+  }
+  const principal = tramos.find((x) => x.currency === op.tramo.currency);
+  const movido = principal?.delta ?? 0;
   const amount: OperationAmount = {
     kind: "single",
     money: { amount: Math.abs(op.tramo.delta), currency: op.tramo.currency },
     cashSnapshot: {
       before: { amount: antes, currency: op.tramo.currency },
-      movement: { amount: Math.abs(op.tramo.delta), currency: op.tramo.currency },
-      after: { amount: antes + op.tramo.delta, currency: op.tramo.currency },
+      movement: { amount: Math.abs(movido), currency: op.tramo.currency },
+      after: { amount: antes + movido, currency: op.tramo.currency },
     },
   };
   const registro: OperacionDeRed = {
@@ -1166,6 +1282,7 @@ export function registrarOperacionSimple(ctx: ContextoDeCaja, op: OperacionPorRe
     ...(op.remittance ? { remittance: op.remittance } : {}),
     ...(op.transfer ? { transfer: op.transfer } : {}),
     ...(op.origenKiosco ? { origenKiosco: op.origenKiosco } : {}),
+    ...(liquidacion ? { liquidacion } : {}),
   };
   registrarOperacion(registro);
   marcarActividad(ctx.terminal.id, now);
@@ -1188,6 +1305,8 @@ export function registrarCambio(
     /** Lo que la pantalla enseñó al cliente. */
     destinationAmountVisto: number;
     origenKiosco?: OperacionDeRed["origenKiosco"];
+    /** Billete a billete (bloque 4). Sin esto el cambio no registra billetes: solo el kiosco, hasta que se adapte. */
+    efectivo?: EfectivoRegistrado;
   },
   now = new Date(),
 ): CajaResult<OperacionDeRed> & { cotizacion?: Cotizacion } {
@@ -1200,12 +1319,26 @@ export function registrarCambio(
     return { ok: false, reason: "sin-tasa", cotizacion: q.value };
   }
   const { sourceCurrency: S, destinationCurrency: D, sourceAmount, destinationAmount } = q.value;
-  const tramos: Tramo[] = [
+  let tramos: Tramo[] = [
     { currency: S, delta: sourceAmount, concepto: S === "CUP" ? `Cobro por venta de ${D}` : `Compra de ${S}` },
     { currency: D, delta: -destinationAmount, concepto: D === "CUP" ? `Pago por compra de ${S}` : `Venta de ${D}` },
   ];
+  let liquidacion: OperacionDeRed["liquidacion"];
+  if (input.efectivo) {
+    const cobro = liquidarCobro(ctx, tramos[0]!, input.efectivo);
+    if (!cobro.ok) return cobro as CajaResult<OperacionDeRed>;
+    const plan = planearPago(ctx, j, D, destinationAmount, { lado: "venta", now });
+    const pago = liquidarEntrega(ctx, plan, input.efectivo, `Pago en CUP por falta de billetes de ${D}`);
+    if (!pago.ok) return pago as CajaResult<OperacionDeRed>;
+    tramos = [...cobro.value.tramos, ...pago.value.tramos.map((x) => (x.currency === D ? { ...x, concepto: tramos[1]!.concepto } : x))];
+    liquidacion = { ...cobro.value.liquidacion, ...pago.value.liquidacion };
+  }
   const t = comprobarTramos(ctx, j, tramos);
   if (!t.ok) return t as CajaResult<OperacionDeRed>;
+  if (input.efectivo) {
+    const e = comprobarExistencias(j, tramos);
+    if (!e.ok) return e as CajaResult<OperacionDeRed>;
+  }
 
   const b = base(ctx, j, now);
   const antesDestino = saldoEnLibros(j, D);
@@ -1217,8 +1350,10 @@ export function registrarCambio(
       concepto: tr.concepto,
       currency: tr.currency,
       amount: tr.delta,
+      ...(tr.billetes ? { billetes: tr.billetes } : {}),
     });
   }
+  const pagadoD = -(tramos.find((x) => x.currency === D)?.delta ?? 0);
   const registro: OperacionDeRed = {
     ...b,
     servicio: "Cambio de moneda",
@@ -1230,13 +1365,307 @@ export function registrarCambio(
       appliedRate: q.value.appliedRate,
       cashSnapshot: {
         before: { amount: antesDestino, currency: D },
-        movement: { amount: destinationAmount, currency: D },
-        after: { amount: antesDestino - destinationAmount, currency: D },
+        movement: { amount: pagadoD, currency: D },
+        after: { amount: antesDestino - pagadoD, currency: D },
       },
     },
     ...(input.origenKiosco ? { origenKiosco: input.origenKiosco } : {}),
+    ...(liquidacion && Object.keys(liquidacion).length > 0 ? { liquidacion } : {}),
   };
   registrarOperacion(registro);
   marcarActividad(ctx.terminal.id, now);
   return { ok: true, value: registro };
+}
+
+/* ==========================================================================
+ * Operaciones con billetes (bloque 4)
+ *
+ * El trabajador marca con qué billetes paga el cliente; el sistema propone en
+ * qué billetes entregar y, si hay vuelto, en cuáles darlo. El trabajador puede
+ * cambiar la propuesta mientras el total cuadre: lo que queda registrado es
+ * lo que entregó de verdad. Nada de esto muestra saldos: proponer revela que
+ * existen esos billetes, no cuántos hay (decisión del 9/11/2026).
+ * ====================================================================== */
+
+const DIAS_DE_DEMANDA = 7;
+
+/**
+ * Cuántos billetes de cada denominación se suelen entregar: lo que salió de la
+ * caja en operaciones de los últimos días, desglosado de mayor a menor. Se
+ * deduce de los importes pagados y no de los billetes entregados, así que sirve
+ * también con las operaciones anteriores a llevar billetes.
+ */
+function demandaReciente(sedeId: string, currency: string, now: Date): Map<string, number> {
+  const desde = now.getTime() - DIAS_DE_DEMANDA * 86_400_000;
+  const dens = denominacionesDe(currency);
+  const out = new Map<string, number>();
+  for (const j of jornadasDeSede(sedeId)) {
+    for (const m of j.movimientos) {
+      if (!m.operationCode || m.currency !== currency || m.amount >= 0) continue;
+      if (new Date(m.fechaHora).getTime() < desde) continue;
+      const { billetes } = desglosarDeMayorAMenor(-m.amount, dens);
+      for (const [k, n] of Object.entries(billetes)) out.set(k, (out.get(k) ?? 0) + n);
+    }
+  }
+  return out;
+}
+
+/**
+ * **Reserva según demanda** (decisión del 9/11/2026): usar un billete cuesta
+ * más cuanto más se pide esa denominación y menos queda de ella. Entre las
+ * combinaciones que cuadran gana la más barata; a igual coste, la de menos
+ * billetes.
+ */
+function costeDeReserva(sedeId: string, currency: string, existencias: Billetes, now: Date): CosteDeBillete {
+  const demanda = demandaReciente(sedeId, currency, now);
+  const total = [...demanda.values()].reduce((a, b) => a + b, 0) || 1;
+  return (valorEnCentimos) => {
+    const k = String(valorEnCentimos);
+    return ((demanda.get(k) ?? 0) / total + 0.02) / Math.max(existencias[k] ?? 0, 1);
+  };
+}
+
+/** Lo que hay de cada denominación más lo que acaba de dar el cliente, sin lo negativo. */
+function existenciasPara(j: Jornada, currency: string, extra: Billetes = {}): Billetes {
+  const inv = sumar(inventarioDeJornada(j).get(currency) ?? {}, extra);
+  return Object.fromEntries(Object.entries(inv).filter(([, n]) => n > 0));
+}
+
+const aCien = (n: number): number => Math.round(n * 100) / 100;
+const aLaBajaAlCentimo = (n: number): number => Math.floor(n * 100 + 1e-9) / 100;
+
+/** Cómo se paga un importe a un cliente. */
+export type PropuestaDePago =
+  | { tipo: "completo"; currency: string; billetes: Billetes; importe: number; redondeo: number }
+  | {
+      /** Lo máximo posible en la moneda, y el resto en CUP. */
+      tipo: "con-cup";
+      currency: string;
+      billetes: Billetes;
+      importe: number;
+      redondeo: number;
+      cup: { billetes: Billetes; importe: number; equivale: number };
+    }
+  | {
+      /** Ni así se paga entero: lo que sí se podría pagar y lo que quedaría sin pagar. */
+      tipo: "sin-salida";
+      currency: string;
+      billetes: Billetes;
+      importe: number;
+      sinPagar: number;
+      redondeo: number;
+    };
+
+/**
+ * Cómo pagar `importe` en `currency`: (1) a la baja a la denominación más
+ * pequeña —la fracción no se puede dar y queda a favor de la casa—; (2) lo
+ * máximo posible en la moneda y el resto en CUP; (3) si tampoco, se dice qué
+ * se podría pagar para que el cliente elija. `lado` es la tasa con la que se
+ * convierte el resto a CUP: la venta en un cambio, donde el cliente ya pagó
+ * a esa tasa, y la compra en lo demás.
+ */
+function planearPago(
+  ctx: ContextoDeCaja,
+  j: Jornada,
+  currency: string,
+  importe: number,
+  opts: { extra?: Billetes; lado: "venta" | "compra"; now: Date },
+): PropuestaDePago {
+  const paso = denominacionMinima(denominacionesDe(currency));
+  const aPagar = redondearALaBaja(importe, paso);
+  const redondeo = aCien(importe - aPagar);
+  const existencias = existenciasPara(j, currency, opts.extra);
+  const plan = planDeSalida(aPagar, existencias, costeDeReserva(ctx.sede.id, currency, existencias, opts.now));
+  if (plan.tipo === "completo") return { tipo: "completo", currency, billetes: plan.billetes, importe: aPagar, redondeo };
+
+  if (currency !== "CUP") {
+    const tasa = tasasVigentes(ctx.sede.id).find((t) => t.code === currency);
+    if (tasa) {
+      const exactoEnCup = aLaBajaAlCentimo(plan.resto * (opts.lado === "venta" ? tasa.venta : tasa.compra));
+      const cup = redondearALaBaja(exactoEnCup, denominacionMinima(denominacionesDe("CUP")));
+      if (cup > 0) {
+        const enCaja = existenciasPara(j, "CUP");
+        const planCup = planDeSalida(cup, enCaja, costeDeReserva(ctx.sede.id, "CUP", enCaja, opts.now));
+        if (planCup.tipo === "completo") {
+          return {
+            tipo: "con-cup",
+            currency,
+            billetes: plan.billetes,
+            importe: plan.pagado,
+            redondeo,
+            cup: { billetes: planCup.billetes, importe: cup, equivale: plan.resto },
+          };
+        }
+      }
+    }
+  }
+  return { tipo: "sin-salida", currency, billetes: plan.billetes, importe: plan.pagado, sinPagar: plan.resto, redondeo };
+}
+
+/** El vuelto de un cobro: lo que el cliente da menos lo que se le cobra, con billetes de la caja y de lo que acaba de dar. */
+function planearVuelto(
+  ctx: ContextoDeCaja,
+  j: Jornada,
+  currency: string,
+  paga: Billetes,
+  aCobrar: number,
+  now: Date,
+): CajaResult<Billetes> {
+  const v = aCien(totalDe(paga) - aCobrar);
+  if (v < -0.005) return no("cobro-insuficiente", currency);
+  if (v < 0.005) return { ok: true, value: {} };
+  const existencias = existenciasPara(j, currency, paga);
+  const b = proponerEntrega(v, existencias, costeDeReserva(ctx.sede.id, currency, existencias, now)) ?? desglosarExacto(v, existencias);
+  return b ? { ok: true, value: b } : no("sin-vuelto", currency);
+}
+
+/** Lo que se puede cobrar en billetes: un múltiplo de la denominación más pequeña. */
+function cobrable(currency: string, importe: number): boolean {
+  const paso = denominacionMinima(denominacionesDe(currency));
+  return !Number.isFinite(paso) || Math.abs(redondearALaBaja(importe, paso) - importe) < 0.005;
+}
+
+/** Valida y limpia lo que da el cliente. */
+function revisarPaga(ctx: ContextoDeCaja, currency: string, paga: Billetes | undefined): CajaResult<Billetes> {
+  return revisarBilletes(ctx.register.id, currency, paga ?? {}, "entran");
+}
+
+export interface PropuestaDeCobro {
+  /** El vuelto, en la moneda del cobro; vacío si el cliente pagó justo. */
+  vuelto: Billetes;
+}
+
+/**
+ * Propuesta de vuelto para un cobro (giro enviado y otros servicios en los
+ * que el cliente paga). Responde `sin-vuelto` si la caja no puede darlo.
+ */
+export function proponerCobro(
+  ctx: ContextoDeCaja,
+  input: { currency: string; importe: number; paga: Billetes },
+  now = new Date(),
+): CajaResult<PropuestaDeCobro> {
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok) return propia as CajaResult<PropuestaDeCobro>;
+  if (!monedasHabilitadas(ctx.register.id).has(input.currency)) return no("moneda-no-habilitada", input.currency);
+  if (!cobrable(input.currency, input.importe)) return no("importe-no-pagable", input.currency);
+  const paga = revisarPaga(ctx, input.currency, input.paga);
+  if (!paga.ok) return paga as CajaResult<PropuestaDeCobro>;
+  const v = planearVuelto(ctx, propia.value, input.currency, paga.value, input.importe, now);
+  return v.ok ? { ok: true, value: { vuelto: v.value } } : (v as CajaResult<PropuestaDeCobro>);
+}
+
+/** Propuesta de billetes para pagar un importe a un cliente (remesa pagada, giro cobrado). */
+export function proponerPago(
+  ctx: ContextoDeCaja,
+  input: { currency: string; importe: number },
+  now = new Date(),
+): CajaResult<PropuestaDePago> {
+  const propia = jornadaPropia(ctx);
+  if (!propia.ok) return propia as CajaResult<PropuestaDePago>;
+  if (!monedasHabilitadas(ctx.register.id).has(input.currency)) return no("moneda-no-habilitada", input.currency);
+  if (denominacionesDe(input.currency).length === 0) return no("sin-denominaciones", input.currency);
+  return { ok: true, value: planearPago(ctx, propia.value, input.currency, input.importe, { lado: "compra", now }) };
+}
+
+export interface PropuestaDeCambio {
+  cotizacion: Cotizacion;
+  vuelto: Billetes;
+  pago: PropuestaDePago;
+  /**
+   * (a) Cuando no se puede pagar: el importe más cercano, por debajo, que sí
+   * se paga entero, con el vuelto que le tocaría al cliente.
+   */
+  otroImporte?: { cotizacion: Cotizacion; vuelto: Billetes; pago: PropuestaDePago };
+}
+
+/** Una cotización por el importe de origen que se paga entero, o null. */
+function buscarOtroImporte(
+  ctx: ContextoDeCaja,
+  j: Jornada,
+  input: { sourceCurrency: string; destinationCurrency: string; sourceAmount: number; paga: Billetes },
+  now: Date,
+): PropuestaDeCambio["otroImporte"] | undefined {
+  const paso = denominacionMinima(denominacionesDe(input.sourceCurrency));
+  if (!Number.isFinite(paso)) return undefined;
+  const tasas = tasasVigentes(ctx.sede.id);
+  const enCaja = existenciasPara(j, input.destinationCurrency);
+  const tope = cotizar(tasas, input.sourceCurrency, input.destinationCurrency, input.sourceAmount);
+  if (!tope.ok) return undefined;
+  const { unidad, alcanzable } = importesPagables(enCaja, Math.round(tope.value.destinationAmount * 100));
+  const pasoDestino = denominacionMinima(denominacionesDe(input.destinationCurrency));
+  /* De mayor a menor entre los importes de destino que la caja paga enteros: el primero que sirve es el más cercano. */
+  let revisados = 0;
+  for (let x = alcanzable.length - 1; x > 0 && revisados < 4000; x -= 1) {
+    if (!alcanzable[x]) continue;
+    revisados += 1;
+    const dest = (x * unidad) / 100;
+    const n = aCien(Math.ceil(dest / tope.value.appliedRate / paso - 1e-9) * paso);
+    if (n <= 0 || n >= input.sourceAmount) continue;
+    const q = cotizar(tasas, input.sourceCurrency, input.destinationCurrency, n);
+    if (!q.ok || Math.abs(redondearALaBaja(q.value.destinationAmount, pasoDestino) - dest) > 0.004) continue;
+    const vuelto = planearVuelto(ctx, j, input.sourceCurrency, input.paga, n, now);
+    if (!vuelto.ok) continue;
+    const pago = planearPago(ctx, j, input.destinationCurrency, q.value.destinationAmount, { lado: "venta", now });
+    if (pago.tipo !== "completo") continue;
+    return { cotizacion: q.value, vuelto: vuelto.value, pago };
+  }
+  return undefined;
+}
+
+/**
+ * Propuesta para un cambio de moneda: el vuelto en la moneda del cliente y
+ * los billetes a entregar en la de destino. Si no se puede pagar entero,
+ * además propone el importe más cercano que sí se paga (salida a).
+ */
+export function proponerCambio(
+  ctx: ContextoDeCaja,
+  input: { sourceCurrency: string; destinationCurrency: string; sourceAmount: number; paga: Billetes },
+  now = new Date(),
+): CajaResult<PropuestaDeCambio> & { cotizacion?: Cotizacion } {
+  const ok = comprobarOperar(ctx, "Cambio de moneda");
+  if (!ok.ok) return ok as CajaResult<PropuestaDeCambio>;
+  const j = ok.value;
+  const habilitadas = monedasHabilitadas(ctx.register.id);
+  for (const c of [input.sourceCurrency, input.destinationCurrency]) if (!habilitadas.has(c)) return no("moneda-no-habilitada", c);
+  if (denominacionesDe(input.destinationCurrency).length === 0) return no("sin-denominaciones", input.destinationCurrency);
+  if (!cobrable(input.sourceCurrency, input.sourceAmount)) return no("importe-no-pagable", input.sourceCurrency);
+  const paga = revisarPaga(ctx, input.sourceCurrency, input.paga);
+  if (!paga.ok) return paga as CajaResult<PropuestaDeCambio>;
+  const q = cotizar(tasasVigentes(ctx.sede.id), input.sourceCurrency, input.destinationCurrency, input.sourceAmount);
+  if (!q.ok) return no("sin-tasa");
+  const vuelto = planearVuelto(ctx, j, input.sourceCurrency, paga.value, input.sourceAmount, now);
+  if (!vuelto.ok) return vuelto as CajaResult<PropuestaDeCambio>;
+  const pago = planearPago(ctx, j, input.destinationCurrency, q.value.destinationAmount, { lado: "venta", now });
+  const otroImporte = pago.tipo === "sin-salida" ? buscarOtroImporte(ctx, j, { ...input, paga: paga.value }, now) : undefined;
+  return { ok: true, value: { cotizacion: q.value, vuelto: vuelto.value, pago, ...(otroImporte ? { otroImporte } : {}) } };
+}
+
+/** Lo que se entregó y recibió de verdad, billete a billete. */
+export interface EfectivoRegistrado {
+  /** Lo que dio el cliente, en la moneda que cobra la casa. */
+  paga?: Billetes;
+  /** El vuelto, en esa misma moneda. */
+  vuelto?: Billetes;
+  /** Lo que se le entregó, en la moneda del servicio. */
+  entrega?: Billetes;
+  /** Lo que se le entregó en CUP por falta de billetes de esa moneda. */
+  entregaCup?: Billetes;
+  /** Salida (b): el cliente aceptó que lo que no se pueda pagar quede a favor de la casa. */
+  permiso?: boolean;
+}
+
+/** Cobra: lo que paga el cliente menos el vuelto, en neto. */
+function netoDeCobro(paga: Billetes, vuelto: Billetes): Billetes {
+  return restar(paga, vuelto);
+}
+
+/** Los billetes de una salida, con signo negativo. */
+function salida(b: Billetes | undefined): Billetes {
+  return restar({}, b ?? {});
+}
+
+/** Si en `delta` salen billetes que los libros no tienen (contando los que acaban de entrar). */
+function primeraMonedaConFaltantes(j: Jornada, porMoneda: ReadonlyMap<string, Billetes>): string | null {
+  for (const [currency, delta] of porMoneda) if (!vacio(faltanEnLibros(j, currency, delta))) return currency;
+  return null;
 }

@@ -19,7 +19,10 @@ import {
   declararConteoDeApertura,
   habilitarMoneda,
   explicarRecuento,
+  proponerCambio,
   proponerCambioDeBilletes,
+  proponerCobro,
+  proponerPago,
   recontar,
   registrarCambio,
   registrarCambioDeBilletes,
@@ -27,7 +30,11 @@ import {
   registrarOperacionSimple,
   type AperturaDeclarada,
   type CambioDeBilletesPorRegistrar,
+  type EfectivoRegistrado,
   type FondosPorRegistrar,
+  type PropuestaDeCambio,
+  type PropuestaDeCobro,
+  type PropuestaDePago,
   type RecuentoRegistrado,
   type CajaDenial,
   type ConteoPorBilletes,
@@ -306,6 +313,7 @@ export async function registrarCambioAction(input: {
   destinationCurrency: string;
   sourceAmount: number;
   destinationAmountVisto: number;
+  efectivo?: EfectivoRegistrado;
 }): Promise<AccionDeCaja<OperationRecord>> {
   return conCaja((ctx) => {
     const r = registrarCambio(ctx, input);
@@ -318,6 +326,38 @@ export async function registrarOperacionAction(op: OperacionPorRegistrar): Promi
     const r = registrarOperacionSimple(ctx, op);
     return r.ok ? { ok: true, value: sinRed(r.value) } : r;
   });
+}
+
+/* -- Propuestas de billetes (bloque 4): no registran nada ------------------ */
+
+/** Qué billetes dar de vuelto y entregar en un cambio de moneda; si no se paga entero, el importe más cercano que sí. */
+export async function proponerCambioAction(input: {
+  sourceCurrency: string;
+  destinationCurrency: string;
+  sourceAmount: number;
+  paga: Readonly<Record<string, number>>;
+}): Promise<AccionDeCaja<PropuestaDeCambio> & { cotizacion?: Cotizacion }> {
+  const ctx = await getContextoDeTrabajo();
+  if (!ctx) return { ok: false, reason: "sin-sesion" };
+  return proponerCambio(ctx, input);
+}
+
+/** Qué billetes dar de vuelto a un cliente que paga de más. */
+export async function proponerCobroAction(input: {
+  currency: string;
+  importe: number;
+  paga: Readonly<Record<string, number>>;
+}): Promise<AccionDeCaja<PropuestaDeCobro>> {
+  const ctx = await getContextoDeTrabajo();
+  if (!ctx) return { ok: false, reason: "sin-sesion" };
+  return proponerCobro(ctx, input);
+}
+
+/** Con qué billetes pagar un importe a un cliente. */
+export async function proponerPagoAction(input: { currency: string; importe: number }): Promise<AccionDeCaja<PropuestaDePago>> {
+  const ctx = await getContextoDeTrabajo();
+  if (!ctx) return { ok: false, reason: "sin-sesion" };
+  return proponerPago(ctx, input);
 }
 
 function sinRed(o: OperationRecord): OperationRecord {

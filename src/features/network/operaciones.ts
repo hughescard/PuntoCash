@@ -29,6 +29,17 @@ export interface OperacionDeRed extends OperationRecord {
   jornadaId: string;
   /** Si la operación nació de una solicitud de kiosco (**FR-AD-OPS-4**). */
   origenKiosco?: { solicitud: string; kioscoId: string; kioscoLabel: string };
+  /**
+   * Cómo se movió el efectivo, cuando no fue «lo que dice el importe» (bloque
+   * 4, decisión del 9/11/2026): el vuelto, lo que se pagó en CUP por falta de
+   * billetes y lo que quedó a favor de la casa, con su causa. Es lo que consta
+   * en el comprobante. Ninguna cifra es un saldo.
+   */
+  liquidacion?: {
+    vuelto?: { currency: string; importe: number };
+    enCup?: { importe: number; equivale: { currency: string; importe: number } };
+    aFavorDeLaCasa?: readonly { currency: string; importe: number; motivo: "redondeo" | "permiso-del-cliente" }[];
+  };
 }
 
 /** Los servicios que la red opera hoy, en el orden en que se ofrecen. */
