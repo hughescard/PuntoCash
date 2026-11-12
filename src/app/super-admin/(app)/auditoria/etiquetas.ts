@@ -100,6 +100,7 @@ export const AREAS: readonly AreaDeEventos[] = [
       { tipo: "caja.alta", etiqueta: "Caja creada" },
       { tipo: "caja.retirada", etiqueta: "Caja retirada" },
       { tipo: "caja.reactivada", etiqueta: "Caja reactivada" },
+      { tipo: "caja.alertas-definidas", etiqueta: "Alertas de caja de una sede modificadas" },
       { tipo: "equipo-caja.vinculado", etiqueta: "Equipo vinculado a una caja" },
       { tipo: "equipo-caja.desvinculado", etiqueta: "Equipo desvinculado de una caja" },
       { tipo: "equipo-caja.renombrado", etiqueta: "Equipo de caja renombrado" },

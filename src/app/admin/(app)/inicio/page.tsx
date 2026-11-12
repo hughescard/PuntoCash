@@ -14,6 +14,7 @@ import type { Sede } from "@/features/network/sedes";
 import { enHorario } from "@/features/network/horario";
 import type { DiaDeSede, DiferenciaDelDia } from "@/features/network/jornadas";
 import { TIPO_DE_SOLICITUD } from "@/features/network/aprobaciones";
+import { alertasActivas, tituloDeAlerta } from "@/features/network/alertas";
 import { antiguedad } from "../aprobaciones/formato";
 import { diaEnCuba, fechaYHora, hora, jornadaDeCaja } from "../jornadas/formato";
 import { JornadaCelda } from "../cajas/cajas-de-sede";
@@ -127,6 +128,16 @@ export default async function AdminInicioPage() {
       enHorario(fila.sede.horario, ahora),
   );
 
+  /* Bloque 6: las alertas de caja. Una por caja abierta, con todo lo que le
+     pasa: cada una es un estado que se apaga solo cuando la caja se arregla. */
+  const conAlertas = filas.flatMap((fila) =>
+    fila.dia.cajas.flatMap((c) => {
+      if (!c.abierta) return [];
+      const alertas = alertasActivas(c.abierta, ahora);
+      return alertas.length > 0 ? [{ sede: fila.sede, jornada: c.abierta, alertas }] : [];
+    }),
+  );
+
   return (
     <>
       <PageHeader
@@ -165,6 +176,7 @@ export default async function AdminInicioPage() {
         fueraDeHorario.length === 0 &&
         diferencias.length === 0 &&
         fijadas.length === 0 &&
+        conAlertas.length === 0 &&
         sinAbrirEnHorario.length === 0 ? (
           <Card>
             <CardContent className="flex items-center gap-3 pt-6">
@@ -255,6 +267,19 @@ export default async function AdminInicioPage() {
                 {...textoDeDiferencia(d, sede)}
                 href={`/admin/jornadas/${d.jornada.id}`}
                 action="Ver la jornada"
+              />
+            ))}
+            {conAlertas.map(({ sede, jornada, alertas }) => (
+              <AtencionItem
+                key={`alertas-${jornada.registerId}`}
+                title={
+                  alertas.length === 1
+                    ? `${jornada.cajaNombre} de ${sede.name}: ${tituloDeAlerta(alertas[0]!).toLowerCase()}`
+                    : `${jornada.cajaNombre} de ${sede.name} tiene ${alertas.length} alertas`
+                }
+                detail={alertas.map((a) => tituloDeAlerta(a)).join(" · ")}
+                href={`/admin/cajas/${encodeURIComponent(jornada.registerId)}`}
+                action="Ver la caja"
               />
             ))}
             {fijadas.map((f) => (
@@ -501,6 +526,7 @@ function AtencionItem({
      se resuelve (**FR-AD-HOME-4**), y son pocas y conocidas. Enumerarlas deja
      que el compilador avise si alguna deja de existir. */
   href:
+    | `/admin/cajas/${string}`
     | "/admin/cajas"
     | "/admin/equipos"
     | "/admin/monedas"

@@ -16,6 +16,7 @@ import {
 import { useCaja } from "@/features/caja/use-caja";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { AvisoDeCaja } from "../aviso-de-caja";
+import { AlertasDeCaja } from "../alertas-de-caja";
 import { CajaActionsCard } from "./caja-actions-card";
 import { CajaBalancesCard } from "./caja-balances-card";
 import { CajaMetrics } from "./caja-metrics";
@@ -94,6 +95,7 @@ export function CajaView(): React.JSX.Element {
         <CajaSummaryCard summary={caja.summary} />
 
         <AvisoDeCaja />
+        <AlertasDeCaja />
 
         <CajaBalancesCard monedas={caja.monedas} />
 

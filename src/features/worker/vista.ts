@@ -11,6 +11,7 @@
  * de dónde salen los datos y no cómo se ven.
  */
 
+import { alertasParaElTrabajador, type AlertaParaElTrabajador } from "@/features/network/alertas";
 import { solicitudesDeJornada } from "@/features/network/aprobaciones";
 import type {
   AperturaDelMovimiento,
@@ -70,6 +71,8 @@ export interface VistaDeCaja {
   jornadaEnOtraCaja: EstadoDeCaja["jornadaEnOtraCaja"];
   /** La administración forzó el cierre de su jornada y todavía no lo ha visto: se le dice y no puede operar. */
   cierreForzadoPropio: EstadoDeCaja["cierreForzadoPropio"];
+  /** Las alertas de su caja, solo con el título: Worker no ve ninguna cifra (bloque 6). */
+  alertas: readonly AlertaParaElTrabajador[];
   /** Las operaciones de esta caja **[R12]**, de la más reciente a la más antigua. */
   operaciones: readonly OperationRecord[];
 }
@@ -190,6 +193,7 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
     servicios: estado.servicios,
     jornadaEnOtraCaja: estado.jornadaEnOtraCaja,
     cierreForzadoPropio: estado.cierreForzadoPropio,
+    alertas: propia ? alertasParaElTrabajador(j, now) : [],
     operaciones: operacionesDeCaja(ctx.register.id).map(registroDeWorker),
   };
 }

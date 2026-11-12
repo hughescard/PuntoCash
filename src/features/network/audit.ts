@@ -53,6 +53,7 @@ export type AuditEventType =
   | "caja.alta"
   | "caja.retirada"
   | "caja.reactivada"
+  | "caja.alertas-definidas"
   | "equipo-caja.vinculado"
   | "equipo-caja.desvinculado"
   | "equipo-caja.renombrado"

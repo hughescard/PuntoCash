@@ -1,7 +1,7 @@
 import { test, expect } from "./worker-fixture";
 import { pagarJusto } from "./worker-helpers";
 import { WORKER_BASE_URL } from "./storage-state";
-import { type APIRequestContext, type Page } from "@playwright/test";
+import { type APIRequestContext } from "@playwright/test";
 
 /**
  * Cierre forzado visto por el trabajador: el administrador cierra su jornada

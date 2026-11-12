@@ -2,7 +2,7 @@ import * as React from "react";
 import Link from "next/link";
 import type { Metadata, Route } from "next";
 import { notFound, redirect } from "next/navigation";
-import { ArrowRight, Info, Lock, MonitorSmartphone, Pencil } from "lucide-react";
+import { ArrowRight, Bell, Info, Lock, MonitorSmartphone, Pencil } from "lucide-react";
 
 import { PageHeader, Section } from "@/components/shell/app-shell";
 import { Alert, Badge, Button, Card, CardContent } from "@/components/ui";
@@ -15,6 +15,8 @@ import { lineasDeHorario } from "@/features/network/horario";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { WORKER_SERVICES } from "@/features/operations/services";
 import { diaEnCuba, saldosDe } from "@/features/network/jornadas";
+import { reglasVigentes } from "@/features/network/alertas";
+import { formatoDeDenominacion, valorDeClave } from "@/features/caja/billetes";
 import { formatAmount } from "@/lib/format";
 import { desde, EstadoBadge, fechaYHora } from "../../jornadas/formato";
 import { EstadoSede } from "../sedes-list";
@@ -52,13 +54,13 @@ export default async function AdminSedePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ guardado?: string }>;
+  searchParams: Promise<{ guardado?: string; alertas?: string }>;
 }) {
   const session = await getAdminSession();
   if (!session) redirect("/admin/login");
 
   const { id } = await params;
-  const { guardado } = await searchParams;
+  const { guardado, alertas } = await searchParams;
   /* Dos guardas que dicen lo mismo y conviene que lo digan las dos: la sede
      sale de la lista de la sesión, y todo lo que se lee de ella sale de la
      vista con alcance. Si mañana esta pantalla recibiera la sede por otra vía,
@@ -75,6 +77,7 @@ export default async function AdminSedePage({
   const enPantalla = red.promocionesEnPantalla(sede.id);
   const dia = red.diaDeSede(sede.id);
   const hoy = diaEnCuba(new Date());
+  const reglasDeAlerta = reglasVigentes(sede.id);
 
   return (
     <>
@@ -155,6 +158,62 @@ export default async function AdminSedePage({
                 o el nombre no son correctos, pídeselo a PuntoCash.
               </p>
             </div>
+          </CardContent>
+        </Card>
+      </Section>
+
+      {alertas === "1" || alertas === "0" ? (
+        <Alert variant="success" title={alertas === "1" ? "Alertas guardadas" : "Sin cambios en las alertas"} className="mb-8">
+          {alertas === "1"
+            ? "Rigen desde ahora en todas las cajas de la sede. Lo ocurrido antes se sigue leyendo con las reglas de entonces."
+            : "Las alertas eran ya esas."}
+        </Alert>
+      ) : null}
+
+      <Section
+        title="Alertas de caja"
+        description="Avisan cuando una caja abierta se queda con poco efectivo, con demasiado, o sin billetes de una denominación."
+        actions={
+          sede.status !== "cerrada" ? (
+            <Button variant="secondary" size="sm" asChild>
+              <Link href={`/admin/sedes/${sede.id}/alertas`}>
+                <Bell aria-hidden="true" />
+                Configurar alertas
+              </Link>
+            </Button>
+          ) : null
+        }
+      >
+        <Card>
+          <CardContent className="pt-6">
+            {reglasDeAlerta.length === 0 ? (
+              <p className="text-body text-text-secondary">Esta sede no tiene alertas definidas.</p>
+            ) : (
+              <ul className="flex flex-col gap-4" aria-label="Alertas definidas">
+                {reglasDeAlerta.map((r) => (
+                  <li key={r.currency} className="flex flex-col gap-1">
+                    <span className="font-semibold text-text-primary">{r.currency}</span>
+                    <span className="text-body-sm text-text-secondary">
+                      {[
+                        r.minimo !== null ? `Mínimo ${formatAmount(r.minimo)} ${r.currency}` : null,
+                        r.maximo !== null ? `Máximo ${formatAmount(r.maximo)} ${r.currency}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "Sin límites de efectivo"}
+                    </span>
+                    {Object.keys(r.billetesMinimos).length > 0 ? (
+                      <span className="text-body-sm text-text-secondary">
+                        Billetes mínimos:{" "}
+                        {Object.entries(r.billetesMinimos)
+                          .sort(([a], [b]) => Number(b) - Number(a))
+                          .map(([k, n]) => `${formatoDeDenominacion(valorDeClave(k))} × ${n}`)
+                          .join(" · ")}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </Section>

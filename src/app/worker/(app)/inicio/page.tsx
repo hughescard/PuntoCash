@@ -40,6 +40,7 @@ const formatTime = (d: Date) =>
 import { getVistaDeCaja } from "@/features/worker/sesion-servidor";
 import { WORKER_SERVICES } from "@/features/operations/services";
 import { AvisoDeCaja } from "../aviso-de-caja";
+import { AlertasDeCaja } from "../alertas-de-caja";
 
 export const metadata: Metadata = {
   title: "Inicio",
@@ -116,6 +117,7 @@ export default async function WorkerHomePage() {
 
       <div className="flex flex-col gap-6">
         <AvisoDeCaja />
+        <AlertasDeCaja />
 
         {/* ---- Mi caja · Tasas vigentes ------------------------------------ */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

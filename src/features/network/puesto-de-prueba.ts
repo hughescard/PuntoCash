@@ -1,3 +1,4 @@
+import { definirReglas, type ReglaDeMoneda } from "./alertas";
 import { asignarSede, operadorVigente, sedesEnAlcance as sedesDelAlcance } from "./assignments";
 import { abrirJornada, billetesDeImporte, cerrarJornada, conteoDeLoQueHay, contextoDe, registrarOperacionSimple } from "./caja-operativa";
 import { anadirMonedaASede, habilitarMonedaEnCaja, monedasDeSede } from "./currencies";
@@ -236,5 +237,16 @@ export function forzarCierreDePrueba(registerId: string, sedeId: string, motivo:
   const operador = operadorVigente(sedeId);
   if (!j || !operador) return { ok: false, reason: "sin-jornada-o-sin-operador" };
   const r = forzarCierre(operatorScope(operador), j.id, motivo, "Marta Sánchez");
+  return r.ok ? { ok: true } : { ok: false, reason: r.reason };
+}
+
+/**
+ * **Solo para las pruebas.** Fija las alertas de una sede como lo haría su
+ * administrador desde Sedes → Alertas de caja.
+ */
+export function definirAlertasDePrueba(sedeId: string, reglas: readonly ReglaDeMoneda[]): { ok: boolean; reason?: string } {
+  const operador = operadorVigente(sedeId);
+  if (!operador) return { ok: false, reason: "sin-operador" };
+  const r = definirReglas(operatorScope(operador), sedeId, reglas);
   return r.ok ? { ok: true } : { ok: false, reason: r.reason };
 }
