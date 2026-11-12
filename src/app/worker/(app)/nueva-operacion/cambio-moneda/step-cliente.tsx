@@ -199,9 +199,9 @@ export function StepCliente({
                   block
                   loading={scanning}
                   onClick={() => void runScan(scenario.id)}
-                  className="justify-start text-left"
+                  className="h-auto min-h-control justify-start whitespace-normal py-3 text-left"
                 >
-                  <QrCode aria-hidden="true" />
+                  <QrCode aria-hidden="true" className="shrink-0" />
                   {scenario.label}
                 </Button>
               ))}
