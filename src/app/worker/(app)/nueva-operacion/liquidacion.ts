@@ -18,7 +18,7 @@ export function liquidacionComoLineas(l: OperationLiquidation | undefined): { et
   }
   for (const f of l.aFavorDeLaCasa ?? []) {
     out.push({
-      etiqueta: f.motivo === "redondeo" ? "A favor de la casa (redondeo)" : "A favor de la casa (con permiso del cliente)",
+      etiqueta: "A favor de la casa (redondeo)",
       valor: formatMoney({ amount: f.importe, currency: f.currency }),
     });
   }

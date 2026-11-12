@@ -9,9 +9,10 @@
  *  1. Redondear a la baja a la denominación más pequeña del catálogo: lo que
  *     no llega a ella no se puede dar y queda a favor de la casa.
  *  2. Dar lo máximo posible en la moneda y el resto en CUP.
- *  3. Si tampoco se puede, ofrecer al cliente (a) otro importe que sí se
- *     pague entero o (b) cobrar lo que se pueda con el resto a favor de la
- *     casa, con su permiso. Si no acepta ninguna, no se registra nada.
+ *  3. Si tampoco se puede, en un cambio de moneda se ofrece al cliente otro
+ *     importe que sí se pague entero. Si no lo hay o no lo acepta, no se
+ *     registra nada y la operación queda pendiente. El resto nunca se deja a
+ *     favor de la casa: solo el redondeo del paso 1.
  */
 
 import { aCentimos, proponerEntrega, totalDe, type Billetes, type Denominacion } from "./billetes";

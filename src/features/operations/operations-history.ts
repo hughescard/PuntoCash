@@ -120,7 +120,7 @@ export type OperationAmount =
 export interface OperationLiquidation {
   vuelto?: { currency: string; importe: number };
   enCup?: { importe: number; equivale: { currency: string; importe: number } };
-  aFavorDeLaCasa?: readonly { currency: string; importe: number; motivo: "redondeo" | "permiso-del-cliente" }[];
+  aFavorDeLaCasa?: readonly { currency: string; importe: number; motivo: "redondeo" }[];
 }
 
 export interface OperationRecord {

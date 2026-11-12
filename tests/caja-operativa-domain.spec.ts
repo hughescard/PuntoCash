@@ -673,10 +673,10 @@ test.describe("Operaciones con billetes y vuelto", () => {
     expect(saldo(ctx, "CUP")).toBe(500_990 - p.value.cup.importe);
   });
 
-  test("lo que ni así se paga solo se registra con el permiso del cliente, y el resto queda a favor de la casa", () => {
+  test("lo que ni así se paga no se registra: queda pendiente y no se deja nada a favor de la casa", () => {
     const ctx = puesto({ CUP: 5_000 });
     const p = proponerPago(ctx, { currency: "CUP", importe: 2_500 });
-    expect(p).toMatchObject({ ok: true, value: { tipo: "sin-salida", importe: 2_000, sinPagar: 500 } });
+    expect(p).toMatchObject({ ok: true, value: { tipo: "sin-salida", importe: 2_000, sinPagar: 500, intentoEnCup: false } });
     const op = {
       servicio: "Remesa" as const,
       cliente: CLIENTE,
@@ -684,11 +684,12 @@ test.describe("Operaciones con billetes y vuelto", () => {
     };
     expect(registrarOperacionSimple(ctx, { ...op, efectivo: { entrega: { "100000": 2 } } })).toMatchObject({ ok: false, reason: "sin-salida" });
     expect(saldo(ctx, "CUP")).toBe(5_000);
-    const r = registrarOperacionSimple(ctx, { ...op, efectivo: { entrega: { "100000": 2 }, permiso: true } });
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    expect(r.value.liquidacion?.aFavorDeLaCasa).toEqual([{ currency: "CUP", importe: 500, motivo: "permiso-del-cliente" }]);
-    expect(saldo(ctx, "CUP")).toBe(3_000);
+  });
+
+  test("si el cliente paga en CUP, lo que falta de la otra moneda no se completa devolviéndole CUP", () => {
+    const ctx = puesto({ USD: 10, CUP: 100_000 });
+    const p = proponerCambio(ctx, { sourceCurrency: "CUP", destinationCurrency: "USD", sourceAmount: 40_000, paga: { "100000": 40 } });
+    expect(p).toMatchObject({ ok: true, value: { pago: { tipo: "sin-salida", intentoEnCup: false } } });
   });
 
   test("un cobro con vuelto: el cliente paga de más y la caja devuelve lo que sobra", () => {

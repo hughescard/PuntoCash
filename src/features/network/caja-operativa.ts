@@ -1181,8 +1181,8 @@ function liquidarCobro(ctx: ContextoDeCaja, t: Tramo, e: EfectivoRegistrado): Ca
 }
 
 /**
- * Lo que se le entrega al cliente, ya planeado: pagado entero, con un resto en
- * CUP o —con su permiso— dejando sin pagar lo que la caja no puede.
+ * Lo que se le entrega al cliente, ya planeado: pagado entero o con un resto en
+ * CUP. Lo que ni así se paga no se registra: queda pendiente.
  */
 function liquidarEntrega(
   ctx: ContextoDeCaja,
@@ -1190,14 +1190,14 @@ function liquidarEntrega(
   e: EfectivoRegistrado,
   conceptoCup: string,
 ): CajaResult<{ tramos: Tramo[]; liquidacion: NonNullable<OperacionDeRed["liquidacion"]> }> {
-  if (plan.tipo === "sin-salida" && (!e.permiso || plan.importe <= 0)) return no("sin-salida", plan.currency);
+  if (plan.tipo === "sin-salida") return no("sin-salida", plan.currency);
   const entrega = revisarSalida(ctx, plan.currency, e.entrega);
   if (!entrega.ok) return entrega as CajaResult<never>;
   if (Math.abs(totalDe(entrega.value) - plan.importe) >= 0.005) return no("propuesta-vencida", plan.currency);
   const tramos: Tramo[] = [];
   const liquidacion: NonNullable<OperacionDeRed["liquidacion"]> = {};
   if (plan.importe > 0) tramos.push({ currency: plan.currency, delta: -plan.importe, concepto: "", billetes: salida(entrega.value) });
-  const aFavor: { currency: string; importe: number; motivo: "redondeo" | "permiso-del-cliente" }[] = [];
+  const aFavor: { currency: string; importe: number; motivo: "redondeo" }[] = [];
   if (plan.redondeo > 0.004) aFavor.push({ currency: plan.currency, importe: plan.redondeo, motivo: "redondeo" });
   if (plan.tipo === "con-cup") {
     const cup = revisarSalida(ctx, "CUP", e.entregaCup);
@@ -1208,7 +1208,6 @@ function liquidarEntrega(
   } else if (!vacio(e.entregaCup)) {
     return no("propuesta-vencida", "CUP");
   }
-  if (plan.tipo === "sin-salida") aFavor.push({ currency: plan.currency, importe: plan.sinPagar, motivo: "permiso-del-cliente" });
   if (aFavor.length > 0) liquidacion.aFavorDeLaCasa = aFavor;
   return { ok: true, value: { tramos, liquidacion } };
 }
@@ -1350,7 +1349,7 @@ export function registrarCambio(
   if (input.efectivo) {
     const cobro = liquidarCobro(ctx, tramos[0]!, input.efectivo);
     if (!cobro.ok) return cobro as CajaResult<OperacionDeRed>;
-    const plan = planearPago(ctx, j, D, destinationAmount, { lado: "venta", now });
+    const plan = planearPago(ctx, j, D, destinationAmount, { lado: "venta", now, completarEnCup: S !== "CUP" });
     const pago = liquidarEntrega(ctx, plan, input.efectivo, `Pago en CUP por falta de billetes de ${D}`);
     if (!pago.ok) return pago as CajaResult<OperacionDeRed>;
     tramos = [...cobro.value.tramos, ...pago.value.tramos.map((x) => (x.currency === D ? { ...x, concepto: tramos[1]!.concepto } : x))];
@@ -1477,6 +1476,8 @@ export type PropuestaDePago =
       importe: number;
       sinPagar: number;
       redondeo: number;
+      /** Si se intentó completar el resto en CUP (no si se paga en CUP, ni si el cliente pagó en CUP). */
+      intentoEnCup: boolean;
     };
 
 /**
@@ -1492,7 +1493,7 @@ function planearPago(
   j: Jornada,
   currency: string,
   importe: number,
-  opts: { extra?: Billetes; lado: "venta" | "compra"; now: Date },
+  opts: { extra?: Billetes; lado: "venta" | "compra"; now: Date; /** Si el resto se puede completar en CUP (no tiene sentido si el cliente acaba de pagar en CUP). */ completarEnCup?: boolean },
 ): PropuestaDePago {
   const paso = denominacionMinima(denominacionesDe(currency));
   const aPagar = redondearALaBaja(importe, paso);
@@ -1501,7 +1502,8 @@ function planearPago(
   const plan = planDeSalida(aPagar, existencias, costeDeReserva(ctx.sede.id, currency, existencias, opts.now));
   if (plan.tipo === "completo") return { tipo: "completo", currency, billetes: plan.billetes, importe: aPagar, redondeo };
 
-  if (currency !== "CUP") {
+  const completarEnCup = currency !== "CUP" && opts.completarEnCup !== false;
+  if (completarEnCup) {
     const tasa = tasasVigentes(ctx.sede.id).find((t) => t.code === currency);
     if (tasa) {
       const exactoEnCup = aLaBajaAlCentimo(plan.resto * (opts.lado === "venta" ? tasa.venta : tasa.compra));
@@ -1522,7 +1524,7 @@ function planearPago(
       }
     }
   }
-  return { tipo: "sin-salida", currency, billetes: plan.billetes, importe: plan.pagado, sinPagar: plan.resto, redondeo };
+  return { tipo: "sin-salida", currency, billetes: plan.billetes, importe: plan.pagado, sinPagar: plan.resto, redondeo, intentoEnCup: completarEnCup };
 }
 
 /** El vuelto de un cobro: lo que el cliente da menos lo que se le cobra, con billetes de la caja y de lo que acaba de dar. */
@@ -1628,7 +1630,7 @@ function buscarOtroImporte(
     if (!q.ok || Math.abs(redondearALaBaja(q.value.destinationAmount, pasoDestino) - dest) > 0.004) continue;
     const vuelto = planearVuelto(ctx, j, input.sourceCurrency, input.paga, n, now);
     if (!vuelto.ok) continue;
-    const pago = planearPago(ctx, j, input.destinationCurrency, q.value.destinationAmount, { lado: "venta", now });
+    const pago = planearPago(ctx, j, input.destinationCurrency, q.value.destinationAmount, { lado: "venta", now, completarEnCup: false });
     if (pago.tipo !== "completo") continue;
     return { cotizacion: q.value, vuelto: vuelto.value, pago };
   }
@@ -1658,7 +1660,7 @@ export function proponerCambio(
   if (!q.ok) return no("sin-tasa");
   const vuelto = planearVuelto(ctx, j, input.sourceCurrency, paga.value, input.sourceAmount, now);
   if (!vuelto.ok) return vuelto as CajaResult<PropuestaDeCambio>;
-  const pago = planearPago(ctx, j, input.destinationCurrency, q.value.destinationAmount, { lado: "venta", now });
+  const pago = planearPago(ctx, j, input.destinationCurrency, q.value.destinationAmount, { lado: "venta", now, completarEnCup: input.sourceCurrency !== "CUP" });
   const otroImporte = pago.tipo === "sin-salida" ? buscarOtroImporte(ctx, j, { ...input, paga: paga.value }, now) : undefined;
   return { ok: true, value: { cotizacion: q.value, vuelto: vuelto.value, pago, ...(otroImporte ? { otroImporte } : {}) } };
 }
@@ -1674,7 +1676,6 @@ export interface EfectivoRegistrado {
   /** Lo que se le entregó en CUP por falta de billetes de esa moneda. */
   entregaCup?: Billetes;
   /** Salida (b): el cliente aceptó que lo que no se pueda pagar quede a favor de la casa. */
-  permiso?: boolean;
 }
 
 /** Cobra: lo que paga el cliente menos el vuelto, en neto. */

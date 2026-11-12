@@ -63,39 +63,33 @@ function DecidirSinSalida({
   otroImporte,
   moneda,
   onOtroImporte,
-  onPermiso,
 }: {
   pago: Extract<PropuestaDePago, { tipo: "sin-salida" }>;
   otroImporte?: PropuestaDeCambio["otroImporte"];
   moneda: string;
   onOtroImporte?: (sourceAmount: number) => void;
-  onPermiso: () => void;
 }) {
+  const total = formatMoney({ amount: pago.importe + pago.sinPagar, currency: moneda });
   return (
     <Alert variant="warning" title="La caja no puede pagar eso entero">
       <div className="flex flex-col gap-3">
         <p className="text-body-sm">
-          No hay billetes para pagar {formatMoney({ amount: pago.importe + pago.sinPagar, currency: moneda })} ni completando en CUP. Ofrécele al cliente una
-          de estas salidas. Si no acepta ninguna, no se registra nada y la operación queda pendiente para otro momento u otra sede.
+          La caja no tiene billetes para pagar {total}
+          {pago.intentoEnCup ? ", ni siquiera completando con CUP" : ""}.{" "}
+          {otroImporte && onOtroImporte
+            ? "Propónle al cliente cambiar un importe que la caja sí pueda pagar entero."
+            : onOtroImporte
+              ? "Ahora mismo no hay un importe menor que la caja pueda pagar entero. No se registra nada: el cliente puede volver en otro momento o ir a otra sede."
+              : "No se registra nada y la operación queda pendiente: el cliente puede volver en otro momento o ir a otra sede."}
         </p>
-        <div className="pc-botonera">
-          {otroImporte && onOtroImporte ? (
+        {otroImporte && onOtroImporte ? (
+          <div className="pc-botonera">
             <Button variant="secondary" onClick={() => onOtroImporte(otroImporte.cotizacion.sourceAmount)}>
-              (a) Cambiar {formatMoney({ amount: otroImporte.cotizacion.sourceAmount, currency: otroImporte.cotizacion.sourceCurrency })} y entregar{" "}
-              {formatMoney({ amount: otroImporte.cotizacion.destinationAmount, currency: otroImporte.cotizacion.destinationCurrency })}
+              Cambiar {formatMoney({ amount: otroImporte.cotizacion.sourceAmount, currency: otroImporte.cotizacion.sourceCurrency })} y entregar{" "}
+              {formatMoney({ amount: otroImporte.pago.importe, currency: otroImporte.cotizacion.destinationCurrency })}
             </Button>
-          ) : null}
-          {pago.importe > 0 ? (
-            <Button variant="secondary" onClick={onPermiso}>
-              (b) Entregar {formatMoney({ amount: pago.importe, currency: moneda })} y dejar {formatMoney({ amount: pago.sinPagar, currency: moneda })} a favor de la
-              casa
-            </Button>
-          ) : null}
-        </div>
-        <p className="text-caption text-text-secondary">
-          (b) solo con el permiso del cliente: consta en el comprobante.
-          {onOtroImporte ? "" : " En este servicio no se puede cambiar el importe."}
-        </p>
+          </div>
+        ) : null}
       </div>
     </Alert>
   );
@@ -132,7 +126,6 @@ export function EfectivoDeOperacion({
   const [vuelto, setVuelto] = React.useState<Billetes | null>(null);
   const [pago, setPago] = React.useState<PropuestaDePago | null>(null);
   const [otro, setOtro] = React.useState<PropuestaDeCambio["otroImporte"] | undefined>();
-  const [permiso, setPermiso] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [pensando, setPensando] = React.useState(false);
 
@@ -148,7 +141,6 @@ export function EfectivoDeOperacion({
   React.useEffect(() => {
     let viva = true;
     setError(null);
-    setPermiso(false);
     if (!alcanza) {
       setVuelto(null);
       setPago(null);
@@ -219,11 +211,10 @@ export function EfectivoDeOperacion({
 
   const vueltoOk = !cobro || (vuelto !== null && (vueltoEsperado <= REDONDEO || (!errVuelto[pagaCur] && cuadra(totalDe(vueltoBilletes), vueltoEsperado))));
   const entregaImporte = pago ? pago.importe : 0;
-  const necesitaPermiso = pago?.tipo === "sin-salida";
   const entregaOk =
     !destino ||
     (pago !== null &&
-      (!necesitaPermiso || (permiso && pago.importe > 0)) &&
+      pago.tipo !== "sin-salida" &&
       !errEntrega[destino ?? ""] &&
       cuadra(totalDe(entregaBilletes), entregaImporte) &&
       (pago.tipo !== "con-cup" || (!errCup["CUP"] && cuadra(totalDe(cupBilletes), pago.cup.importe))));
@@ -238,11 +229,10 @@ export function EfectivoDeOperacion({
         ...(cobro && vueltoEsperado > REDONDEO ? { vuelto: vueltoBilletes } : {}),
         ...(destino ? { entrega: entregaBilletes } : {}),
         ...(pago?.tipo === "con-cup" ? { entregaCup: cupBilletes } : {}),
-        ...(permiso ? { permiso: true } : {}),
       },
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listo, JSON.stringify(pagaBilletes), JSON.stringify(vueltoBilletes), JSON.stringify(entregaBilletes), JSON.stringify(cupBilletes), permiso, vueltoEsperado]);
+  }, [listo, JSON.stringify(pagaBilletes), JSON.stringify(vueltoBilletes), JSON.stringify(entregaBilletes), JSON.stringify(cupBilletes), vueltoEsperado]);
 
   const onChangeRef = React.useRef(onChange);
   onChangeRef.current = onChange;
@@ -324,7 +314,6 @@ export function EfectivoDeOperacion({
               moneda={destino}
               {...(otro ? { otroImporte: otro } : {})}
               {...(onOtroImporte ? { onOtroImporte } : {})}
-              onPermiso={() => setPermiso(true)}
             />
           ) : null}
           {pago.tipo === "con-cup" ? (
@@ -341,7 +330,7 @@ export function EfectivoDeOperacion({
               No hay billetes ni monedas menores: {formatMoney({ amount: pago.redondeo, currency: destino })} quedan a favor de la casa.
             </p>
           ) : null}
-          {permiso || pago.tipo !== "sin-salida" ? (
+          {pago.tipo !== "sin-salida" ? (
             <Card>
               <CardHeader>
                 <CardTitle>Entrega al cliente</CardTitle>

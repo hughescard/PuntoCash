@@ -198,12 +198,6 @@ export function StepRevision({
                   />
                 </>
               ) : null}
-              {efectivo.permiso ? (
-                <p className="text-caption text-text-secondary">
-                  El cliente aceptó que lo que la caja no puede pagar quede a
-                  favor de la casa.
-                </p>
-              ) : null}
             </CardContent>
           </Card>
         ) : null}
