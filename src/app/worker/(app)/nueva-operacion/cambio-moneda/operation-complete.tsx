@@ -12,6 +12,7 @@ import { customerFullName } from "@/features/customers/customers";
 import { formatAppliedRate } from "./exchange-summary";
 import type { CompletedOperation } from "./flow-state";
 import { liquidacionComoLineas } from "../liquidacion";
+import { entregadoAlCliente } from "@/features/operations/entregado";
 
 /**
  * Result screen. There is no Back from here — the operation is registered, so
@@ -69,13 +70,18 @@ export function OperationComplete({
                 <span aria-hidden="true" className="text-text-secondary">
                   →
                 </span>
-                <CurrencyFlag currency={quote.destinationCurrency} />
-                <span className="pc-numeric text-body font-semibold text-text-primary">
-                  {formatMoney({
-                    amount: quote.destinationAmount,
-                    currency: quote.destinationCurrency,
-                  })}
-                </span>
+                {/* Lo que se llevó, no lo que daba la tasa: si hubo redondeo o
+                    pago en CUP, las líneas de abajo lo explican. */}
+                {entregadoAlCliente(
+                  { amount: quote.destinationAmount, currency: quote.destinationCurrency },
+                  operation.liquidacion,
+                ).map((m, i) => (
+                  <React.Fragment key={m.currency}>
+                    {i > 0 ? <span className="text-text-secondary">+</span> : null}
+                    <CurrencyFlag currency={m.currency} />
+                    <span className="pc-numeric text-body font-semibold text-text-primary">{formatMoney(m)}</span>
+                  </React.Fragment>
+                ))}
               </span>
             </ResultRow>
 

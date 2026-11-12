@@ -18,6 +18,7 @@ import {
   type OperationRecord,
 } from "@/features/operations/operations-history";
 import { CardGlyph, DetailCard, DetailList, DetailRow } from "./detail-parts";
+import { entregadoAlCliente, difiereDeLoDebido } from "@/features/operations/entregado";
 
 /**
  * Specialized historical detail for "Giros".
@@ -172,9 +173,18 @@ function GiroCard({ operation, isPayout }: { operation: OperationRecord; isPayou
                 <DetailRow label="Referencia" value={snapshot.reference} numeric />
               ) : null}
               <DetailRow label="Método de entrega" value={deliveryMethodLabel(snapshot.deliveryMethod)} />
+              {isPayout && difiereDeLoDebido({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency }, operation.liquidacion) ? (
+                <DetailRow label="Importe del giro" value={formatMoney({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency })} numeric />
+              ) : null}
               <DetailRow
                 label={isPayout ? "Importe entregado" : "Importe enviado"}
-                value={formatMoney({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency })}
+                value={
+                  isPayout
+                    ? entregadoAlCliente({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency }, operation.liquidacion)
+                        .map(formatMoney)
+                        .join(" + ")
+                    : formatMoney({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency })
+                }
                 numeric
                 strong
               />
@@ -256,7 +266,11 @@ function CashMovementCard({ operation, isPayout }: { operation: OperationRecord;
     <DetailCard title="Movimiento de efectivo" icon={Wallet} contentClassName="gap-5">
       <MovementBox
         label={isPayout ? "Salida — Giro" : "Entrada — Giro"}
-        value={`${isPayout ? "−" : "+"}${formatMoney(money)}`}
+        value={
+          isPayout
+            ? entregadoAlCliente(money, operation.liquidacion).map((m) => `−${formatMoney(m)}`).join(" · ")
+            : `+${formatMoney(money)}`
+        }
         tone={isPayout ? "negative" : "positive"}
       />
 

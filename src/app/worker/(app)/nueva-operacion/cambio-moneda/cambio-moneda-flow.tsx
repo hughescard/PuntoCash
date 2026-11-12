@@ -1,5 +1,6 @@
 "use client";
 
+import { entregadoAlCliente } from "@/features/operations/entregado";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -611,10 +612,12 @@ function PrintableReceipt({ operation }: { operation: CompletedOperation }): Rea
         />
         <ReceiptLine
           label="Cliente recibe"
-          value={formatMoney({
-            amount: quote.destinationAmount,
-            currency: quote.destinationCurrency,
-          })}
+          value={entregadoAlCliente(
+            { amount: quote.destinationAmount, currency: quote.destinationCurrency },
+            operation.liquidacion,
+          )
+            .map(formatMoney)
+            .join(" + ")}
         />
         <ReceiptLine label="Tasa aplicada" value={formatAppliedRate(quote)} />
         {liquidacionComoLineas(operation.liquidacion).map((l) => (

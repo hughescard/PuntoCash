@@ -23,7 +23,7 @@ import {
 } from "@/features/customers/customers";
 import { formatAppliedRate } from "./exchange-summary";
 import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
-import { restar, type Denominacion } from "@/features/caja/billetes";
+import { restar, totalDe, type Denominacion } from "@/features/caja/billetes";
 import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
 
 function CardGlyph({ icon: Icon }: { icon: typeof Wallet }) {
@@ -141,11 +141,7 @@ export function StepRevision({
               currency={quote.sourceCurrency}
             />
             <hr className="border-t border-dashed border-border" />
-            <ReviewAmount
-              label="Cliente recibe"
-              amount={quote.destinationAmount}
-              currency={quote.destinationCurrency}
-            />
+            <ClienteRecibe quote={quote} efectivo={efectivo} />
             <hr className="border-t border-dashed border-border" />
             <div className="flex flex-col gap-1">
               <span className="text-caption text-text-secondary">
@@ -237,6 +233,35 @@ export function StepRevision({
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Lo que el cliente se lleva de verdad: los billetes de la entrega y, si una
+ * parte se paga en CUP, esa parte (12/11/2026). Si no coincide con lo que da
+ * la tasa —por redondeo o por el pago en CUP— se dice cuánto daba la tasa.
+ */
+function ClienteRecibe({ quote, efectivo }: { quote: ExchangeQuote; efectivo: EfectivoRegistrado | null }) {
+  if (!efectivo) {
+    return <ReviewAmount label="Cliente recibe" amount={quote.destinationAmount} currency={quote.destinationCurrency} />;
+  }
+  const enMoneda = totalDe(efectivo.entrega);
+  const enCup = efectivo.entregaCup ? totalDe(efectivo.entregaCup) : 0;
+  const difiere = enCup > 0 || Math.abs(enMoneda - quote.destinationAmount) >= 0.005;
+  return (
+    <div className="flex flex-col gap-3">
+      {enMoneda > 0 || enCup === 0 ? (
+        <ReviewAmount label="Cliente recibe" amount={enMoneda} currency={quote.destinationCurrency} />
+      ) : null}
+      {enCup > 0 ? (
+        <ReviewAmount label={enMoneda > 0 ? "Y, por falta de billetes, en CUP" : "Cliente recibe, en CUP"} amount={enCup} currency="CUP" />
+      ) : null}
+      {difiere ? (
+        <p className="text-caption text-text-secondary">
+          Según la tasa le corresponden {formatMoney({ amount: quote.destinationAmount, currency: quote.destinationCurrency })}.
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -20,6 +20,9 @@ import {
   row,
 } from "./cobrar-giro-parts";
 import { useCaja } from "@/features/caja/use-caja";
+import { restar, type Denominacion } from "@/features/caja/billetes";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
 
 /** Why a looked-up giro cannot be paid right now. `null` means it can. */
 /** Sin «fondos»: Worker no ve el saldo; si no alcanza, se dice al confirmar. */
@@ -129,6 +132,8 @@ export function GiroPayoutReview({
 
 export function GiroPayoutConfirmation({
   transfer,
+  efectivo,
+  tipos,
   worker,
   submitting,
   error,
@@ -137,6 +142,9 @@ export function GiroPayoutConfirmation({
   onConfirm,
 }: {
   transfer: TransferPayoutSnapshot;
+  /** Los billetes de la entrega, para que se vean antes de confirmar, como en la remesa. */
+  efectivo: EfectivoRegistrado | null;
+  tipos: Readonly<Record<string, readonly Denominacion[]>>;
   worker: string;
   submitting: boolean;
   error?: string;
@@ -147,7 +155,7 @@ export function GiroPayoutConfirmation({
   const CAJA_SUMMARY = useCaja().summary;
   return (
     <div className="flex flex-col gap-6">
-      <StepBackLink label="Volver a Revisar giro" onClick={onBack} />
+      <StepBackLink label="Volver a los billetes" onClick={onBack} />
 
       <div>
         <h1 className="text-screen-title text-text-primary">Confirmar entrega del giro</h1>
@@ -178,6 +186,30 @@ export function GiroPayoutConfirmation({
           />
         </CardContent>
       </Card>
+
+      {efectivo ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Billetes que se entregan</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 pt-0">
+            <BilletesDelMovimiento
+              billetes={restar({}, efectivo.entrega)}
+              currency={transfer.payoutCurrency}
+              tipos={tipos[transfer.payoutCurrency] ?? []}
+              nombre={`${transfer.payoutCurrency} que salen`}
+            />
+            {efectivo.entregaCup ? (
+              <BilletesDelMovimiento
+                billetes={restar({}, efectivo.entregaCup)}
+                currency="CUP"
+                tipos={tipos["CUP"] ?? []}
+                nombre="CUP que salen"
+              />
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Alert variant="warning" title="Acción irreversible">
         Confirma la operación únicamente después de verificar la identidad del beneficiario y

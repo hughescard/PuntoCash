@@ -253,6 +253,8 @@ export function CobrarGiroFlow(): React.JSX.Element {
     return (
       <GiroPayoutConfirmation
         transfer={transfer}
+        efectivo={efectivo}
+        tipos={vista.denominaciones}
         worker={worker.fullName}
         submitting={submitting}
         error={confirmError}

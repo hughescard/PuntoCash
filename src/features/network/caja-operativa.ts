@@ -1205,6 +1205,7 @@ function liquidarEntrega(
     if (Math.abs(totalDe(cup.value) - plan.cup.importe) >= 0.005) return no("propuesta-vencida", "CUP");
     tramos.push({ currency: "CUP", delta: -plan.cup.importe, concepto: conceptoCup, billetes: salida(cup.value) });
     liquidacion.enCup = { importe: plan.cup.importe, equivale: { currency: plan.currency, importe: plan.cup.equivale } };
+    if (plan.cup.redondeo > 0.004) aFavor.push({ currency: "CUP", importe: plan.cup.redondeo, motivo: "redondeo" });
   } else if (!vacio(e.entregaCup)) {
     return no("propuesta-vencida", "CUP");
   }
@@ -1466,7 +1467,8 @@ export type PropuestaDePago =
       billetes: Billetes;
       importe: number;
       redondeo: number;
-      cup: { billetes: Billetes; importe: number; equivale: number };
+      /** `redondeo`: lo que el resto en CUP pierde al bajar a la denominación más pequeña del CUP; queda a favor de la casa. */
+      cup: { billetes: Billetes; importe: number; equivale: number; redondeo: number };
     }
   | {
       /** Ni así se paga entero: lo que sí se podría pagar y lo que quedaría sin pagar. */
@@ -1518,7 +1520,7 @@ function planearPago(
             billetes: plan.billetes,
             importe: plan.pagado,
             redondeo,
-            cup: { billetes: planCup.billetes, importe: cup, equivale: plan.resto },
+            cup: { billetes: planCup.billetes, importe: cup, equivale: plan.resto, redondeo: aCien(exactoEnCup - cup) },
           };
         }
       }

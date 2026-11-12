@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { formatAppliedRateLine, formatMoney, type Money } from "@/lib/format";
 import { findCurrency } from "@/features/exchange/quote";
 import type { OperationRecord } from "@/features/operations/operations-history";
+import { difiereDeLoDebido, entregadoAlCliente } from "@/features/operations/entregado";
 import { DetailCard, DetailList, DetailRow } from "./detail-parts";
 
 /**
@@ -19,7 +20,7 @@ import { DetailCard, DetailList, DetailRow } from "./detail-parts";
  */
 export function ServiceDetail({ operation }: { operation: OperationRecord }): React.JSX.Element {
   if (operation.amount.kind === "exchange") {
-    return <CurrencyExchangeDetail amount={operation.amount} />;
+    return <CurrencyExchangeDetail amount={operation.amount} liquidacion={operation.liquidacion} />;
   }
   return <GenericServiceDetail operation={operation} />;
 }
@@ -41,12 +42,22 @@ export function OperationCashCard({
 }): React.JSX.Element | null {
   if (operation.amount.kind !== "exchange") return null;
   const { source, destination } = operation.amount;
+  /* Lo que salió de verdad (12/11/2026): sin lo que quedó a favor de la casa, y con la parte pagada en CUP. */
+  const salio = entregadoAlCliente(destination, operation.liquidacion);
 
   return (
     <DetailCard title="Movimientos de caja" icon={Wallet}>
       <DetailList>
         <DetailRow label="Entró en caja" value={`+${formatMoney(source)}`} numeric />
-        <DetailRow label="Salió de caja (entregado al cliente)" value={`−${formatMoney(destination)}`} numeric strong />
+        {salio.map((m) => (
+          <DetailRow
+            key={m.currency}
+            label={m.currency === destination.currency ? "Salió de caja (entregado al cliente)" : "Salió de caja en CUP (por falta de billetes)"}
+            value={`−${formatMoney(m)}`}
+            numeric
+            strong
+          />
+        ))}
       </DetailList>
     </DetailCard>
   );
@@ -100,10 +111,13 @@ function ExchangeSide({
  */
 function CurrencyExchangeDetail({
   amount,
+  liquidacion,
 }: {
   amount: Extract<OperationRecord["amount"], { kind: "exchange" }>;
+  liquidacion: OperationRecord["liquidacion"];
 }): React.JSX.Element {
   const { source, destination, appliedRate } = amount;
+  const recibe = entregadoAlCliente(destination, liquidacion);
 
   return (
     <DetailCard title="Detalle del servicio" icon={ArrowLeftRight} contentClassName="gap-4">
@@ -118,7 +132,20 @@ function CurrencyExchangeDetail({
         <ArrowDown className="size-4" />
       </span>
 
-      <ExchangeSide label="Cliente recibe" money={destination} tone="destination" />
+      {/* Lo que se llevó de verdad; si no es lo que daba la tasa, se dice cuánto daba. */}
+      {recibe.map((m, i) => (
+        <ExchangeSide
+          key={m.currency}
+          label={i === 0 ? "Cliente recibe" : "Y, por falta de billetes, en CUP"}
+          money={m}
+          tone="destination"
+        />
+      ))}
+      {difiereDeLoDebido(destination, liquidacion) ? (
+        <p className="text-caption text-text-secondary">
+          Según la tasa le correspondían {formatMoney(destination)}. La diferencia está en «Cómo se movió el efectivo».
+        </p>
+      ) : null}
 
       <hr className="border-t border-dashed border-border" />
 

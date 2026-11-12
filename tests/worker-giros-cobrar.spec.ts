@@ -438,9 +438,11 @@ test.describe("Cobrar giro — Confirmar entrega", () => {
     await expect(onScreen(page, "TR-260901-000245")).toBeVisible();
     await expect(onScreen(page, "María Pérez García")).toBeVisible();
     await expect(onScreen(page, "85010112345")).toBeVisible();
-    await expect(onScreen(page, "2.500,00 CUP")).toBeVisible();
+    await expect(page.getByText("2.500,00 CUP", { exact: true }).filter({ visible: true })).toBeVisible();
     await expect(onScreen(page, "CUP · Peso cubano")).toBeVisible();
     await expect(onScreen(page, "Caja 03").first()).toBeVisible();
+    /* Como en la remesa, los billetes de la entrega se ven antes de confirmar. */
+    await expect(page.getByRole("heading", { name: "Billetes que se entregan" })).toBeVisible();
 
     await expect(onScreen(page, "Acción irreversible")).toBeVisible();
     await expect(onScreen(page, /El giro quedará marcado como completado\./)).toBeVisible();
