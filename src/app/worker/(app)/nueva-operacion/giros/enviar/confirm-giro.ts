@@ -19,6 +19,7 @@ export type ConfirmGiroOutcome =
 /** Por qué los billetes ya no valen, en palabras del trabajador. */
 const MENSAJE_DE_BILLETES: Readonly<Record<string, string>> = {
   "sin-vuelto": "La caja no tiene billetes para darle el vuelto. No se registró nada: pídele al cliente que pague con otros billetes o con el importe justo.",
+  "cierre-forzado": "El administrador cerró tu jornada. Esto no se registró.",
   "cobro-insuficiente": "El cliente da menos de lo que se le cobra. Revisa los billetes.",
   "importe-no-pagable": "El importe tiene fracciones menores que el billete más pequeño: no se puede cobrar en billetes. Cámbialo en el primer paso.",
   "propuesta-vencida": "Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Revísalos.",
@@ -85,7 +86,7 @@ export async function confirmGiro(params: {
     return {
       ok: false,
       message: MENSAJE_DE_BILLETES[previa.reason] ?? "No se pudo comprobar el cobro. Vuelve a los billetes y revísalos.",
-      revisarBilletes: true,
+      revisarBilletes: previa.reason !== "cierre-forzado",
     };
   }
 

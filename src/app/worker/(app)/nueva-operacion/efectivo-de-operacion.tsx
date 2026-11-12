@@ -54,6 +54,7 @@ const MENSAJES: Readonly<Record<string, string>> = {
   "sin-denominaciones": "Esta moneda no tiene billetes en el catálogo. Avisa al supervisor.",
   "moneda-no-habilitada": "Esa moneda no está habilitada en esta caja.",
   bloqueada: "La sede no está operando: no se puede registrar.",
+  "cierre-forzado": "El administrador cerró tu jornada. Esto no se registró.",
   "jornada-no-abierta": "La jornada ya no está abierta: quizá la administración forzó su cierre.",
   "sin-tasa": "La tasa cambió: vuelve al primer paso para cotizar de nuevo.",
 };

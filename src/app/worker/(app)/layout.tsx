@@ -5,6 +5,7 @@ import { AppHeader, AppMain, AppShell } from "@/components/shell/app-shell";
 import { Logo } from "@/components/brand/logo";
 import { CajaProvider } from "@/features/worker/caja-context";
 import { getVistaDeCaja } from "@/features/worker/sesion-servidor";
+import { AvisoDeCierreForzado } from "./aviso-de-cierre-forzado";
 import { WorkerIdentity } from "./worker-identity";
 import { WorkerSidebar } from "./worker-sidebar";
 
@@ -44,6 +45,7 @@ export default async function WorkerAppLayout({ children }: { children: React.Re
       >
         <AppMain>{children}</AppMain>
       </AppShell>
+      <AvisoDeCierreForzado />
     </CajaProvider>
   );
 }

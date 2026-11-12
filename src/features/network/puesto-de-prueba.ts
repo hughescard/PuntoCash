@@ -8,6 +8,7 @@ import { GLOBAL_SCOPE, operatorScope } from "./scope";
 import { crearSede, findSedeById } from "./sedes";
 import { crearTrabajador } from "./workers";
 import { registrarOperacion } from "./operaciones";
+import { forzarCierre, jornadaAbiertaDeCaja } from "./jornadas";
 import { OPERATIONS } from "@/features/operations/operations-history";
 import { desglosarFondo, restar } from "@/features/caja/billetes";
 import { denominacionesDe } from "./denominaciones";
@@ -224,4 +225,16 @@ function copiarSede(
   if (!asignada.ok) return { ok: false, error: `asignacion: ${asignada.reason}` };
   return { ok: true, value: sede.value };
 
+}
+
+/**
+ * **Solo para las pruebas.** Hace lo que haría el administrador de la sede
+ * desde Jornadas: forzar el cierre de la jornada abierta de una caja.
+ */
+export function forzarCierreDePrueba(registerId: string, sedeId: string, motivo: string): { ok: boolean; reason?: string } {
+  const j = jornadaAbiertaDeCaja(registerId);
+  const operador = operadorVigente(sedeId);
+  if (!j || !operador) return { ok: false, reason: "sin-jornada-o-sin-operador" };
+  const r = forzarCierre(operatorScope(operador), j.id, motivo, "Marta Sánchez");
+  return r.ok ? { ok: true } : { ok: false, reason: r.reason };
 }

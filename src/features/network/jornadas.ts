@@ -179,7 +179,8 @@ export interface Jornada {
   /** Instantánea al cerrar: con arqueo, el contado; forzada, el saldo en libros. */
   saldosFinales?: readonly { currency: string; amount: number }[];
   arqueo?: { confirmadoAt: string; monedas: readonly ArqueoMoneda[] };
-  cierreForzado?: { at: string; por: string; motivo: string };
+  /** `visto`: el trabajador de esa jornada ya leyó el aviso en su pantalla. */
+  cierreForzado?: { at: string; por: string; motivo: string; visto?: true };
   /**
    * Si el trabajador tiene ahora la caja abierta en su equipo. En el producto
    * lo sabe el servidor por la sesión del equipo; lo usa la advertencia de

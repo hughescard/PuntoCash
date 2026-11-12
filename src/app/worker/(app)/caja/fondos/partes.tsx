@@ -36,6 +36,7 @@ export const ERRORES: Readonly<Record<string, string>> = {
   "cambio-descuadrado": "Lo que entra y lo que sale tienen que sumar lo mismo.",
   "cambio-sin-efecto": "Entran y salen los mismos billetes: no hay nada que cambiar.",
   bloqueada: "La sede no está operando: no se puede registrar.",
+  "cierre-forzado": "El administrador cerró tu jornada. Esto no se registró.",
   "jornada-no-abierta": "La jornada ya no está abierta: quizá la administración forzó su cierre.",
   "jornada-de-otro": "La jornada de esta caja es de otro trabajador.",
 };

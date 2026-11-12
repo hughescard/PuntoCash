@@ -112,6 +112,8 @@ function cashRejectionMessage(outcome: Extract<AccionDeCaja<unknown>, { ok: fals
       return "La sede no está operando: no se pueden registrar operaciones.";
     case "servicio-no-habilitado":
       return "PuntoCash deshabilitó Cambio de moneda en esta sede.";
+    case "cierre-forzado":
+      return "El administrador cerró tu jornada. Esto no se registró.";
     case "jornada-no-abierta":
       return "La jornada ya no está abierta. Abre una jornada en Caja para registrar la operación.";
     case "moneda-no-habilitada":

@@ -28,6 +28,7 @@ interface Completed { remittance: RemittanceSnapshot; operationCode: string; com
 
 /** Por qué los billetes ya no valen, para el trabajador. */
 const MENSAJE_DE_BILLETES: Readonly<Record<string, string>> = {
+  "cierre-forzado": "El administrador cerró tu jornada. Esto no se registró.",
   "sin-salida": "La caja no puede pagar eso entero. No se registró nada: ofrécele al cliente otra salida o que vuelva más tarde.",
   "propuesta-vencida": "Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Revísalos.",
   "sin-esos-billetes": "Contada la caja, esos billetes no están. No se registró nada: vuelve a marcar con qué billetes se entrega.",
@@ -124,7 +125,7 @@ export function RemesasFlow(): React.JSX.Element {
         setSubmitting(false);
         if (previa.reason === "recuento-necesario" && previa.currency) { setRecontando(previa.currency); return; }
         setError(MENSAJE_DE_BILLETES[previa.reason] ?? "No se pudo comprobar la entrega. Vuelve a los billetes y revísalos.");
-        if (previa.reason in MENSAJE_DE_BILLETES) { setRecarga((n) => n + 1); setStep("efectivo"); }
+        if (previa.reason in MENSAJE_DE_BILLETES && previa.reason !== "cierre-forzado") { setRecarga((n) => n + 1); setStep("efectivo"); }
         return;
       }
       const external = await remittanceProvider.complete(remittance.id);

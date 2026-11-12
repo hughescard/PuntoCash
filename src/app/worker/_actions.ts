@@ -17,7 +17,9 @@ import {
   comprobarOperacionSimple,
   contextoDe,
   explicarCierre,
+  darPorVistoElCierreForzado,
   declararConteoDeApertura,
+  estadoDeCaja,
   habilitarMoneda,
   explicarRecuento,
   proponerCambio,
@@ -210,7 +212,8 @@ async function conCaja<T>(fn: (ctx: ContextoDeCaja) => AccionDeCaja<T>): Promise
   const ctx = await getContextoDeTrabajo();
   if (!ctx) return { ok: false, reason: "sin-sesion" };
   const r = fn(ctx);
-  if (r.ok) revalidatePath("/worker", "layout");
+  /* Tras un cierre forzado, la pantalla vuelve a pedir la foto para que el aviso salga al momento. */
+  if (r.ok || r.reason === "cierre-forzado") revalidatePath("/worker", "layout");
   return r;
 }
 
@@ -219,6 +222,21 @@ type Conteo = readonly ConteoPorBilletes[];
 
 /** La explicación de una diferencia: el supervisor viaja por su identificador de la lista. */
 type Explicaciones = readonly { currency: string; motivo?: string; observaciones?: string; supervisorId?: string }[];
+
+/** El trabajador da por leído el aviso de que la administración cerró su jornada. */
+export async function verCierreForzadoAction(): Promise<AccionDeCaja<null>> {
+  return conCaja((ctx) => darPorVistoElCierreForzado(ctx));
+}
+
+/**
+ * Pregunta, sin escribir nada, si la administración cerró por la fuerza la
+ * jornada de quien opera. Lo consulta la pantalla cada pocos segundos mientras
+ * tiene la jornada abierta, para avisarle al momento aunque esté operando.
+ */
+export async function hayCierreForzadoAction(): Promise<boolean> {
+  const ctx = await getContextoDeTrabajo();
+  return ctx ? estadoDeCaja(ctx).cierreForzadoPropio !== null : false;
+}
 
 /** Declara el conteo de apertura: desde aquí ya no se cambia. */
 export async function declararAperturaAction(conteos: Conteo): Promise<AccionDeCaja<AperturaDeclarada>> {

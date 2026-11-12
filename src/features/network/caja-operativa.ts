@@ -185,6 +185,8 @@ export interface EstadoDeCaja {
   servicios: readonly string[];
   /** Si quien opera tiene abierta una jornada **en otra caja**: no puede abrir otra aquí. */
   jornadaEnOtraCaja: { cajaNombre: string; openedAt: string } | null;
+  /** La administración cerró por la fuerza la jornada de quien opera y él aún no lo ha visto. */
+  cierreForzadoPropio: CierreForzadoPropio | null;
 }
 
 function saldosQueQuedaron(registerId: string): Map<string, number> {
@@ -224,6 +226,10 @@ export function estadoDeCaja(ctx: ContextoDeCaja): EstadoDeCaja {
     denominaciones: Object.fromEntries([...saldos.keys()].map((c) => [c, denominacionesContables(ctx.register.id, c)])),
     tasas: tasasVigentes(ctx.sede.id),
     servicios: ctx.sede.status === "cerrada" ? [] : ctx.sede.services,
+    cierreForzadoPropio: (() => {
+      const f = cierreForzadoSinVer(ctx);
+      return f?.cierreForzado ? { jornadaId: f.id, at: f.cierreForzado.at, por: f.cierreForzado.por, motivo: f.cierreForzado.motivo } : null;
+    })(),
     jornadaEnOtraCaja: (() => {
       const otra = jornadaAbiertaDeTrabajador(ctx.worker.id);
       return otra && otra.registerId !== ctx.register.id ? { cajaNombre: otra.cajaNombre, openedAt: otra.openedAt } : null;
@@ -252,6 +258,8 @@ export type CajaDenial =
   | "bloqueada"
   | "jornada-abierta"
   | "jornada-no-abierta"
+  /** La administración forzó el cierre de la jornada de quien opera y todavía no lo ha visto: lo que tenía a medias no se registra. */
+  | "cierre-forzado"
   /** La caja tiene abierta la jornada de otro trabajador: solo él la cierra, o la administración la fuerza. */
   | "jornada-de-otro"
   | "trabajador-con-otra-jornada"
@@ -464,9 +472,35 @@ function monedasHabilitadas(registerId: string): Set<string> {
 /** La jornada abierta de la caja, si es de quien opera. */
 function jornadaPropia(ctx: ContextoDeCaja): CajaResult<Jornada> {
   const j = jornadaAbiertaDeCaja(ctx.register.id);
-  if (!j) return no("jornada-no-abierta");
+  if (!j) return no(cierreForzadoSinVer(ctx) ? "cierre-forzado" : "jornada-no-abierta");
   if (j.workerId !== ctx.worker.id) return no("jornada-de-otro");
   return { ok: true, value: j };
+}
+
+/**
+ * El cierre forzado de la jornada de quien opera, si la administración la
+ * cerró y él todavía no ha leído el aviso. Mientras tanto, nada de lo que
+ * intente registrar se guarda, y la pantalla se lo dice.
+ */
+function cierreForzadoSinVer(ctx: ContextoDeCaja): Jornada | null {
+  if (jornadaAbiertaDeCaja(ctx.register.id)) return null;
+  const u = ultimaJornadaCerradaDeCaja(ctx.register.id);
+  return u && u.estado === "forzada" && u.workerId === ctx.worker.id && u.cierreForzado && !u.cierreForzado.visto ? u : null;
+}
+
+/** Lo que el trabajador necesita saber de su cierre forzado: cuándo, quién y por qué. Sin saldos. */
+export interface CierreForzadoPropio {
+  jornadaId: string;
+  at: string;
+  por: string;
+  motivo: string;
+}
+
+/** El trabajador da por leído el aviso de su cierre forzado: desde ahí puede abrir otra jornada. */
+export function darPorVistoElCierreForzado(ctx: ContextoDeCaja): CajaResult<null> {
+  const j = cierreForzadoSinVer(ctx);
+  if (j?.cierreForzado) j.cierreForzado.visto = true;
+  return { ok: true, value: null };
 }
 
 function redondear(n: number): number {

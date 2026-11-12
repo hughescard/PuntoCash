@@ -150,7 +150,9 @@ export function ArqueoCierreFlow(): React.JSX.Element {
     setPorDeclarar(null);
     if (!r.ok) {
       setFormError(
-        r.reason === "jornada-no-abierta"
+        r.reason === "cierre-forzado"
+          ? "El administrador cerró tu jornada mientras contabas. El conteo no se registró."
+          : r.reason === "jornada-no-abierta"
           ? "La jornada ya no está abierta: el administrador pudo haber forzado su cierre."
           : "No se pudo cerrar la caja. Revisa las cifras e inténtalo de nuevo.",
       );

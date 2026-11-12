@@ -26,6 +26,7 @@ import {
   proponerPago,
   recontar,
   explicarRecuento,
+  darPorVistoElCierreForzado,
   tasasVigentes,
   type ContextoDeCaja,
 } from "@/features/network/caja-operativa";
@@ -35,7 +36,7 @@ import { operatorScope } from "@/features/network/scope";
 import { inventarioDeJornada } from "@/features/network/jornadas";
 import { jornadaAbiertaDeCaja, jornadaPorId } from "@/features/network/jornadas";
 import { operacionPorCodigo } from "@/features/network/operaciones";
-import { crearPuestoDePrueba } from "@/features/network/puesto-de-prueba";
+import { crearPuestoDePrueba, forzarCierreDePrueba } from "@/features/network/puesto-de-prueba";
 import { cotizar } from "@/features/exchange/cotizacion";
 
 /**
@@ -720,5 +721,41 @@ test.describe("Operaciones con billetes y vuelto", () => {
     expect(otro?.pago.tipo).toBe("completo");
     expect(otro!.cotizacion.sourceAmount).toBeLessThan(40_000);
     expect(otro!.cotizacion.sourceAmount).toBeGreaterThan(6_000);
+  });
+});
+
+test.describe("Cierre forzado visto por el trabajador", () => {
+  test("se le avisa con la hora, quién y por qué; nada de lo que intente se registra; y al leerlo puede abrir otra jornada", () => {
+    const p = crearPuestoDePrueba({ fondos: { USD: 520, CUP: 500_990 } });
+    if (!p.ok) throw new Error(p.error);
+    const c = contextoDe({ workerId: p.value.workerId, terminalId: p.value.terminalId });
+    if (!c.ok) throw new Error(c.reason);
+    const ctx = c.value;
+    expect(estadoDeCaja(ctx).cierreForzadoPropio).toBeNull();
+
+    expect(forzarCierreDePrueba(p.value.registerId, p.value.sedeId, "Nadie vino a cerrar la caja")).toEqual({ ok: true });
+    const aviso = estadoDeCaja(ctx).cierreForzadoPropio;
+    expect(aviso).toMatchObject({ por: "Marta Sánchez", motivo: "Nadie vino a cerrar la caja" });
+    expect(Date.parse(aviso!.at)).not.toBeNaN();
+
+    /* A mitad de una operación: al confirmar, no se registra nada y se dice por qué. */
+    const intento = registrarCambio(ctx, {
+      cliente: CLIENTE,
+      sourceCurrency: "USD",
+      destinationCurrency: "CUP",
+      sourceAmount: 80,
+      destinationAmountVisto: 25_440,
+      efectivo: { paga: { "10000": 1 }, vuelto: { "2000": 1 }, entrega: {} },
+    });
+    expect(intento).toMatchObject({ ok: false, reason: "cierre-forzado" });
+    expect(registrarFondos(ctx, { tipo: "reposicion", currency: "USD", billetes: { "10000": 1 }, supervisorId: "x", observaciones: "" } as never)).toMatchObject({ ok: false, reason: "cierre-forzado" });
+
+    /* Leído el aviso, deja de estar pendiente y el fallo vuelve a ser el de siempre. */
+    expect(darPorVistoElCierreForzado(ctx)).toMatchObject({ ok: true });
+    expect(estadoDeCaja(ctx).cierreForzadoPropio).toBeNull();
+    expect(registrarCambio(ctx, {
+      cliente: CLIENTE, sourceCurrency: "USD", destinationCurrency: "CUP", sourceAmount: 80, destinationAmountVisto: 25_440,
+      efectivo: { paga: { "10000": 1 }, vuelto: { "2000": 1 }, entrega: {} },
+    })).toMatchObject({ ok: false, reason: "jornada-no-abierta" });
   });
 });

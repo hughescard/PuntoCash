@@ -68,6 +68,8 @@ export interface VistaDeCaja {
   tasas: readonly TasaVigente[];
   servicios: readonly string[];
   jornadaEnOtraCaja: EstadoDeCaja["jornadaEnOtraCaja"];
+  /** La administración forzó el cierre de su jornada y todavía no lo ha visto: se le dice y no puede operar. */
+  cierreForzadoPropio: EstadoDeCaja["cierreForzadoPropio"];
   /** Las operaciones de esta caja **[R12]**, de la más reciente a la más antigua. */
   operaciones: readonly OperationRecord[];
 }
@@ -187,6 +189,7 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
     tasas: estado.tasas,
     servicios: estado.servicios,
     jornadaEnOtraCaja: estado.jornadaEnOtraCaja,
+    cierreForzadoPropio: estado.cierreForzadoPropio,
     operaciones: operacionesDeCaja(ctx.register.id).map(registroDeWorker),
   };
 }
