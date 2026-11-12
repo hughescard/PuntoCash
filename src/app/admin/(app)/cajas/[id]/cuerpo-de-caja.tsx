@@ -12,7 +12,7 @@ import { TIPO_DE_SOLICITUD, type Solicitud } from "@/features/network/aprobacion
 import type { Register } from "@/features/network/registers";
 import type { Terminal } from "@/features/network/devices";
 import { InventarioDeCaja } from "../../jornadas/inventario";
-import { Diferencia, EstadoBadge, fechaYHora, hora } from "../../jornadas/formato";
+import { DiferenciaDeApertura, EstadoBadge, fechaYHora, hora } from "../../jornadas/formato";
 import type { BaseDeConsola } from "../../jornadas/[id]/cuerpo-de-jornada";
 
 /**
@@ -164,7 +164,7 @@ export function CuerpoDeCaja({
                       </span>
                       <span className="block text-body-sm text-text-secondary">{fechaYHora(s.fechaHora)}</span>
                     </span>
-                    <Diferencia currency={s.currency} diferencia={s.diferencia} />
+                    <DiferenciaDeApertura currency={s.currency} diferencia={s.diferencia} motivo={s.motivo} />
                   </ElementoDeLista>
                 ))}
               </ul>

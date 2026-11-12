@@ -304,6 +304,8 @@ export function EnviarGiroFlow(): React.JSX.Element {
     stepContent = (
       <GiroConfirmation
         draft={draft}
+        efectivo={efectivo}
+        tipos={vista.denominaciones}
         submitting={submitting}
         error={confirmError}
         onBack={() => setStep("efectivo")}

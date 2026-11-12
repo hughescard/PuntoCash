@@ -11,6 +11,10 @@ import { findCajaCurrency } from "@/features/caja/caja-data";
 import { senderFullName, type GiroDraft } from "./giro-types";
 import { municipalityLabel, provinceLabel } from "./giro-validation";
 import { useCaja } from "@/features/caja/use-caja";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
+import { restar } from "@/features/caja/billetes";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
+import type { Denominacion } from "@/features/caja/billetes";
 
 /** "🇨🇺 500,00 CUP" — the approved amount treatment for Importe (a)/(a entregar). */
 function MoneyWithFlag({ amount, currency }: { amount: number; currency: string }) {
@@ -128,6 +132,8 @@ export function GiroReview({
 
 export function GiroConfirmation({
   draft,
+  efectivo,
+  tipos,
   submitting,
   error,
   onBack,
@@ -135,6 +141,8 @@ export function GiroConfirmation({
   onConfirm,
 }: {
   draft: GiroDraft;
+  efectivo: EfectivoRegistrado | null;
+  tipos: Readonly<Record<string, readonly Denominacion[]>>;
   submitting: boolean;
   error?: string;
   onBack: () => void;
@@ -175,6 +183,23 @@ export function GiroConfirmation({
           <ConfirmRow label="Caja" value={CAJA_SUMMARY.register} />
         </CardContent>
       </Card>
+
+      {efectivo?.paga ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Billetes que da el cliente</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <BilletesDelMovimiento
+              billetes={restar(efectivo.paga, efectivo.vuelto ?? {})}
+              currency={draft.senderCurrency}
+              tipos={tipos[draft.senderCurrency] ?? []}
+              nombre={`${draft.senderCurrency} que entran`}
+              leyenda="En positivo lo que da el cliente; en negativo el vuelto."
+            />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Alert variant="warning" title="Acción irreversible">
         Confirma esta operación solo cuando hayas recibido el efectivo y verificado los datos del

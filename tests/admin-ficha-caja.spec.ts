@@ -15,6 +15,14 @@ const visible = (page: Page, nombre: string) =>
   page.getByRole("main").getByRole("link", { name: new RegExp(`^${nombre}(?!\\d)`) }).locator("visible=true").first();
 
 test.describe("Ficha de caja", () => {
+  test("una reposición pendiente se llama reposición, no sobrante", async ({ page }) => {
+    await signInAsAdmin(page, MARTA);
+    await page.goto("/admin/cajas/sede-vedado%3Acaja-01");
+    const pendientes = page.getByRole("list", { name: "Pendiente de aprobar" });
+    await expect(pendientes).toContainText("Reposición +100,00 USD");
+    await expect(pendientes).not.toContainText(/Sobrante|Faltante/);
+  });
+
   test("Cajas enseña el efectivo de cada caja y lleva a su ficha", async ({ page }) => {
     await signInAsAdmin(page, MARTA);
     await page.goto("/admin/cajas");

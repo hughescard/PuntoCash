@@ -268,7 +268,7 @@ test.describe("Revisar giro", () => {
     await expect(page.getByText("La Habana / Plaza de la Revolución")).toBeVisible();
     await expect(page.getByText("Recogida")).toBeVisible();
     await expect(page.getByText("EUR · Euro")).toBeVisible();
-    await expect(page.getByText("500,00 EUR")).toBeVisible();
+    await expect(page.getByText("500,00 EUR").first()).toBeVisible();
     await expect(page.getByText("Caja 03").first()).toBeVisible();
     await expect(page.getByText("Entrada de efectivo")).toBeVisible();
   });
@@ -313,8 +313,12 @@ test.describe("Confirmar envío", () => {
     await expect(page.getByText("La Habana / Plaza de la Revolución")).toBeVisible();
     await expect(page.getByText("Recogida")).toBeVisible();
     await expect(page.getByText("EUR · Euro")).toBeVisible();
-    await expect(page.getByText("500,00 EUR")).toBeVisible();
+    await expect(page.getByText("500,00 EUR", { exact: true })).toBeVisible();
     await expect(page.getByText("Caja 03").first()).toBeVisible();
+  });
+
+  test("la confirmación enseña los billetes que dio el cliente", async ({ page }) => {
+    await expect(page.getByRole("heading", { name: "Billetes que da el cliente" })).toBeVisible();
   });
 
   test("shows the Acción irreversible warning", async ({ page }) => {
