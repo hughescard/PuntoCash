@@ -391,6 +391,8 @@ function CambioMonedaOperation(): React.JSX.Element {
         {state.step === "efectivo" && state.quote && !recontando ? (
           <div className="grid grid-cols-1 gap-6 wide:grid-cols-[minmax(0,1fr)_20rem]">
             <EfectivoDeOperacion
+              /* Con otro importe, lo que el cliente había marcado ya no vale: se marca de nuevo. */
+              key={state.quote.sourceAmount}
               entrada={{
                 modo: "cambio",
                 sourceCurrency: state.quote.sourceCurrency,

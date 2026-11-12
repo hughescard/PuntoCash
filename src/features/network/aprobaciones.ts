@@ -258,8 +258,8 @@ function sembrar(now: Date): Solicitud[] {
     const por = admins[n % Math.max(admins.length, 1)]?.fullName ?? "Administración";
     n += 1;
     const resueltaAt = new Date(new Date(s.fechaHora).getTime() + 20 * 3600 * 1000).toISOString();
-    /* Una de cada ocho resueltas se rechazó: el faltante no se asume. */
-    if (n % 8 === 0 && s.diferencia < 0) {
+    /* Una de cada cuatro resueltas se rechazó (si es un faltante): el faltante no se asume. */
+    if (n % 4 === 0 && s.diferencia < 0) {
       s.estado = "rechazada";
       s.resolucion = { at: resueltaAt, por, motivo: "No se justifica el faltante; se revisa con el trabajador y con contabilidad." };
     } else {

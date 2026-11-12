@@ -186,6 +186,12 @@ export default async function AdminSolicitudPage({
           </Alert>
         ) : (
           <>
+            {s.estado === "pendiente" && s.tipo === "fondos" && s.supervisor && !confirma ? (
+              <Alert variant="info" title={`${s.supervisor} ya no es administrador activo`} className="mb-4">
+                El trabajador lo nombró como supervisor, pero ya no puede confirmarlo. Por eso puede resolver esta solicitud cualquier
+                administrador de la sede.
+              </Alert>
+            ) : null}
             {confirma ? (
               <p className="mb-4 text-body-sm text-text-secondary">
                 El trabajador dice que fuiste tú quien {verboDeFondos(s)}. Confírmalo si fue así; recházalo si no.

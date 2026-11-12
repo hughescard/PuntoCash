@@ -81,3 +81,33 @@ test.describe("Recibir un importe", () => {
     await expect(entregar).not.toHaveValue("0,00");
   });
 });
+
+test.describe("Aceptar otro importe", () => {
+  test.use({ conCambio: true, fondos: { CUP: 500_000, EUR: 100 } });
+
+  test("al aceptarlo, lo que el cliente había marcado se borra: se marca de nuevo para el importe nuevo", async ({ page }) => {
+    await page.goto("/worker/caja");
+    await page.getByRole("link", { name: "Nueva operación" }).click();
+    await page.getByRole("link", { name: /Cambio de moneda/ }).click();
+    await page.getByLabel("Moneda origen").click();
+    await page.getByRole("option", { name: /^CUP/ }).click();
+    await page.getByLabel("Moneda destino").click();
+    await page.getByRole("option", { name: /^EUR/ }).click();
+    const campo = page.getByLabel("Monto a entregar");
+    await campo.fill("100000");
+    await campo.blur();
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
+    await page.getByLabel("Número de documento").fill(DOCUMENTO);
+    await page.getByRole("button", { name: "Buscar cliente" }).click();
+    await page.getByRole("button", { name: /Seleccionar cliente y continuar/ }).click();
+    await expect(page.getByRole("heading", { name: "Billetes con los que paga el cliente" })).toBeVisible();
+    await marcarBilletes(page, "Billetes del cliente de CUP", 100_000);
+
+    await page.getByRole("button", { name: /^Cambiar .* y entregar/ }).click();
+    await expect(page.getByText("Los billetes cuadran.")).toHaveCount(0);
+    for (const c of await page.getByRole("region", { name: "Billetes del cliente de CUP" }).getByRole("textbox").all()) {
+      await expect(c).toHaveValue("");
+    }
+    await expect(page.getByRole("button", { name: "Continuar a revisión" })).toBeDisabled();
+  });
+});

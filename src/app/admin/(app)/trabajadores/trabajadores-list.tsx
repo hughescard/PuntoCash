@@ -45,6 +45,8 @@ export interface TrabajadorRow {
   alta: string;
   /** Su última jornada, ya formateada: «Abierta ahora» si la tiene abierta. `null` si nunca abrió. */
   ultimaJornada: { id: string; texto: string; abierta: boolean } | null;
+  /** Solicitudes suyas que la administración rechazó: quedan como incidencias a su nombre. */
+  incidencias: number;
 }
 
 const BUSQUEDA: FieldSpec = {
@@ -137,6 +139,18 @@ export function TrabajadoresList({
       hiddenOnCard: true,
     },
     { key: "alta", header: "Alta", cell: (row) => row.alta },
+    {
+      /* Los rechazos de la administración a lo que el trabajador registró; el detalle, en su ficha. */
+      key: "incidencias",
+      header: "Incidencias",
+      numeric: true,
+      cell: (row) =>
+        row.incidencias > 0 ? (
+          <span className="pc-numeric font-semibold text-error-foreground">{row.incidencias}</span>
+        ) : (
+          <span className="text-text-secondary">—</span>
+        ),
+    },
     {
       /* **FR-AD-TRAB-1**: la última jornada que operó, con enlace a ella. */
       key: "ultima-jornada",

@@ -110,7 +110,7 @@ export function FondosFlow(): React.JSX.Element {
       />
     );
   }
-  if (bloqueada) return <Bloqueada />;
+  if (bloqueada) return <Bloqueada sinJornada={!caja.jornadaAbierta} />;
 
   return (
     <div className="flex flex-col gap-6">
@@ -215,12 +215,12 @@ export function FondosFlow(): React.JSX.Element {
   );
 }
 
-function Bloqueada(): React.JSX.Element {
+function Bloqueada({ sinJornada }: { sinJornada: boolean }): React.JSX.Element {
   return (
     <Card className="mx-auto mt-10 w-full max-w-xl">
       <CardContent className="flex flex-col items-center gap-4 pt-8 text-center">
         <Lock className="size-8 text-text-secondary" aria-hidden="true" />
-        <p className="text-body text-text-primary">Hace falta una jornada abierta en esta caja, y que la sede esté operando.</p>
+        <p className="text-body text-text-primary">{sinJornada ? "Hace falta una jornada abierta en esta caja." : "La sede no está operando ahora mismo."}</p>
         <Button asChild>
           <Link href={CAJA_ROUTE}>Ir a Caja</Link>
         </Button>
