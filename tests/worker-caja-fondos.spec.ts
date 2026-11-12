@@ -77,7 +77,7 @@ test.describe("Reposición o retiro", () => {
 
     await expect(page.getByRole("heading", { name: "Retiro registrado" })).toBeVisible();
     await page.getByRole("link", { name: "Ir a Caja" }).click();
-    await expect(page.getByRole("table").first().getByRole("cell", { name: "Ajuste de billetes en recuento" })).toBeVisible();
+    await expect(page.getByRole("table").first().getByRole("cell", { name: "Ajuste de billetes en recuento", exact: true })).toBeVisible();
   });
 });
 

@@ -3,7 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { MonitorSmartphone, Unlink } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Link2, MonitorSmartphone, Tag, Unlink } from "lucide-react";
 
 import {
   Alert,
@@ -17,13 +18,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui";
-import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
+import { ResponsiveTable, type AccionesDeFila, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { useHydrated } from "@/lib/use-hydrated";
 import { JornadaCelda } from "../cajas/cajas-de-sede";
 import type { JornadaDeCaja } from "../jornadas/formato";
 import { desvincularEquipoAction, type ResultadoAccion } from "./_actions";
 import {
-  BotonEditarEtiqueta,
   DialogoEtiqueta,
   type EquipoRenombrable,
 } from "./etiqueta-de-equipo";
@@ -63,6 +63,22 @@ export interface CajaEquipoRow {
 export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): React.JSX.Element {
   const [desvinculando, setDesvinculando] = React.useState<CajaEquipoRow | null>(null);
   const [renombrando, setRenombrando] = React.useState<EquipoRenombrable | null>(null);
+  const hydrated = useHydrated();
+  const router = useRouter();
+
+  /* Sin ficha, las acciones van en «⋯» (regla de tablas, 12/11/2026). Una caja
+     sin equipo no ofrece «desvincular», ofrece vincular: es la única acción
+     que la saca de donde está (**FR-AD-EQ-6**). */
+  const acciones = (fila: CajaEquipoRow): AccionesDeFila => ({
+    label: `Acciones de ${fila.caja}`,
+    disabled: !hydrated,
+    acciones: fila.equipo
+      ? [
+          { key: "etiqueta", label: "Editar etiqueta", icon: <Tag aria-hidden="true" />, onSelect: () => setRenombrando(fila.equipo) },
+          { key: "desvincular", label: "Desvincular", icon: <Unlink aria-hidden="true" />, destructiva: true, onSelect: () => setDesvinculando(fila) },
+        ]
+      : [{ key: "vincular", label: "Vincular un equipo", icon: <Link2 aria-hidden="true" />, onSelect: () => router.push("/admin/equipos/vincular") }],
+  });
 
   const columnas: readonly ResponsiveColumn<CajaEquipoRow>[] = [
     { key: "sede", header: "Sede", cell: (fila) => fila.sede, hiddenOnCard: true },
@@ -110,14 +126,6 @@ export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): R
       cell: (fila) => fila.equipo?.ultimaActividad ?? "—",
     },
     { key: "jornada", header: "Jornada", cell: (fila) => <JornadaCelda caja={fila} /> },
-    {
-      key: "acciones",
-      header: <span className="sr-only">Acciones</span>,
-      cell: (fila) => (
-        <Acciones fila={fila} onDesvincular={setDesvinculando} onRenombrar={setRenombrando} />
-      ),
-      hiddenOnCard: true,
-    },
   ];
 
   return (
@@ -129,9 +137,7 @@ export function CajasYEquipos({ filas }: { filas: readonly CajaEquipoRow[] }): R
         cardTitle={(fila) => fila.caja}
         cardSubtitle={(fila) => fila.sede}
         cardBadge={(fila) => <EstadoVinculo fila={fila} />}
-        cardFooter={(fila) => (
-          <Acciones fila={fila} onDesvincular={setDesvinculando} onRenombrar={setRenombrando} />
-        )}
+        rowActions={acciones}
         empty={
           <p className="text-body text-text-secondary">
             Ninguna de tus sedes tiene cajas todavía. Créalas en Cajas y después vincula sus equipos.
@@ -160,39 +166,6 @@ function EstadoVinculo({ fila }: { fila: CajaEquipoRow }): React.JSX.Element {
     <Badge variant="success">Vinculada</Badge>
   ) : (
     <Badge variant="warning">Sin equipo</Badge>
-  );
-}
-
-function Acciones({
-  fila,
-  onDesvincular,
-  onRenombrar,
-}: {
-  fila: CajaEquipoRow;
-  onDesvincular: (fila: CajaEquipoRow) => void;
-  onRenombrar: (equipo: EquipoRenombrable) => void;
-}): React.JSX.Element {
-  /* Abre un diálogo, así que antes de hidratar no hace nada: el servidor lo
-     pinta y React todavía no escucha. Queda cerrado hasta entonces, por la
-     misma regla que el botón de acceso y el buscador de Nueva operación — no
-     se ofrece un control antes de que funcione (`lib/use-hydrated.ts`). */
-  const hydrated = useHydrated();
-
-  /* Una caja sin equipo no ofrece «desvincular», ofrece vincular: es la única
-     acción que la saca de donde está (**FR-AD-EQ-6**). Y eso es un enlace, que
-     funciona desde el primer pintado. */
-  return fila.equipo ? (
-    <span className="flex flex-wrap items-center gap-1">
-      <BotonEditarEtiqueta equipo={fila.equipo} onElegir={onRenombrar} />
-      <Button variant="tertiary" size="sm" disabled={!hydrated} onClick={() => onDesvincular(fila)}>
-        <Unlink aria-hidden="true" />
-        Desvincular
-      </Button>
-    </span>
-  ) : (
-    <Button variant="secondary" size="sm" asChild>
-      <Link href="/admin/equipos/vincular">Vincular un equipo</Link>
-    </Button>
   );
 }
 

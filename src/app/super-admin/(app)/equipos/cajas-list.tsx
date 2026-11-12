@@ -106,7 +106,7 @@ export function CajasDeRedList({
           <span className="font-medium text-text-primary">{r.nombre}</span>
           <Link
             href={`/super-admin/sedes/${r.sedeId}` as Route}
-            className="text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
+            className="relative z-10 text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
           >
             {r.sede}
           </Link>
@@ -120,7 +120,7 @@ export function CajasDeRedList({
         r.operadorId ? (
           <Link
             href={`/super-admin/operadores/${r.operadorId}` as Route}
-            className="text-text-primary underline-offset-4 hover:underline"
+            className="relative z-10 text-text-primary underline-offset-4 hover:underline"
           >
             {r.operador}
           </Link>
@@ -171,7 +171,7 @@ export function CajasDeRedList({
             <EstadoDeJornadaBadge estado={r.jornada.estado} />
             <Link
               href={`/super-admin/jornadas/${r.jornada.id}` as Route}
-              className="text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
+              className="relative z-10 text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
             >
               {r.jornada.trabajador} · {r.jornada.fecha}
             </Link>
@@ -263,6 +263,7 @@ export function CajasDeRedList({
         rows={visibles}
         columns={columnas}
         rowKey={(r) => r.id}
+        rowLink={(r) => ({ href: `/super-admin/sedes/${r.sedeId}/cajas/${encodeURIComponent(r.id)}`, label: `Ver la caja ${r.nombre} de ${r.sede}` })}
         tablaDesde="xl"
         tarjetasEnDosColumnas
         cardTitle={(r) => <span className="font-medium text-text-primary">{r.nombre}</span>}

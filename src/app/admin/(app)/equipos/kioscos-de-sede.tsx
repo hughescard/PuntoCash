@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { MonitorSmartphone, Unlink } from "lucide-react";
+import { MonitorSmartphone, Tag, Unlink } from "lucide-react";
 
 import {
   Alert,
@@ -14,11 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui";
-import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
+import { ResponsiveTable, type AccionesDeFila, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { useHydrated } from "@/lib/use-hydrated";
 import { desvincularEquipoAction, type ResultadoAccion } from "./_actions";
 import {
-  BotonEditarEtiqueta,
   DialogoEtiqueta,
   type EquipoRenombrable,
 } from "./etiqueta-de-equipo";
@@ -51,6 +50,17 @@ export interface KioscoRow {
 export function KioscosDeSede({ filas }: { filas: readonly KioscoRow[] }): React.JSX.Element {
   const [desvinculando, setDesvinculando] = React.useState<KioscoRow | null>(null);
   const [renombrando, setRenombrando] = React.useState<EquipoRenombrable | null>(null);
+  const hydrated = useHydrated();
+
+  /* Sin ficha, las acciones van en «⋯» (regla de tablas, 12/11/2026). */
+  const acciones = (fila: KioscoRow): AccionesDeFila => ({
+    label: `Acciones de ${fila.label}`,
+    disabled: !hydrated,
+    acciones: [
+      { key: "etiqueta", label: "Editar etiqueta", icon: <Tag aria-hidden="true" />, onSelect: () => setRenombrando(fila) },
+      { key: "desvincular", label: "Desvincular", icon: <Unlink aria-hidden="true" />, destructiva: true, onSelect: () => setDesvinculando(fila) },
+    ],
+  });
 
   const columnas: readonly ResponsiveColumn<KioscoRow>[] = [
     { key: "sede", header: "Sede", cell: (fila) => fila.sede, hiddenOnCard: true },
@@ -82,14 +92,6 @@ export function KioscosDeSede({ filas }: { filas: readonly KioscoRow[] }): React
       ),
     },
     { key: "actividad", header: "Última actividad", cell: (fila) => fila.ultimaActividad ?? "—" },
-    {
-      key: "acciones",
-      header: <span className="sr-only">Acciones</span>,
-      cell: (fila) => (
-        <Acciones fila={fila} onDesvincular={setDesvinculando} onRenombrar={setRenombrando} />
-      ),
-      hiddenOnCard: true,
-    },
   ];
 
   return (
@@ -100,9 +102,7 @@ export function KioscosDeSede({ filas }: { filas: readonly KioscoRow[] }): React
         rowKey={(fila) => fila.id}
         cardTitle={(fila) => fila.label}
         cardSubtitle={(fila) => `${fila.id} · ${fila.sede}`}
-        cardFooter={(fila) => (
-          <Acciones fila={fila} onDesvincular={setDesvinculando} onRenombrar={setRenombrando} />
-        )}
+        rowActions={acciones}
         empty={
           <p className="text-body text-text-secondary">
             Ninguna de tus sedes tiene kioscos vinculados. Un kiosco prepara solicitudes que después
@@ -119,30 +119,6 @@ export function KioscosDeSede({ filas }: { filas: readonly KioscoRow[] }): React
         <DialogoEtiqueta equipo={renombrando} onCerrar={() => setRenombrando(null)} />
       ) : null}
     </>
-  );
-}
-
-function Acciones({
-  fila,
-  onDesvincular,
-  onRenombrar,
-}: {
-  fila: KioscoRow;
-  onDesvincular: (fila: KioscoRow) => void;
-  onRenombrar: (equipo: EquipoRenombrable) => void;
-}): React.JSX.Element {
-  /* Abren diálogos: cerrados hasta que hidrata, por la misma regla que el
-     resto de los controles de cliente (`lib/use-hydrated.ts`). */
-  const hydrated = useHydrated();
-
-  return (
-    <span className="flex flex-wrap items-center gap-1">
-      <BotonEditarEtiqueta equipo={fila} onElegir={onRenombrar} />
-      <Button variant="tertiary" size="sm" disabled={!hydrated} onClick={() => onDesvincular(fila)}>
-        <Unlink aria-hidden="true" />
-        Desvincular
-      </Button>
-    </span>
   );
 }
 

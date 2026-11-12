@@ -587,7 +587,7 @@ test.describe("Cobrar giro — payout completed", () => {
     await expect(row).toContainText("−2.500,00");
     // Commercial movements route through their Operation Detail — they carry
     // an operation code and no "Ver detalle" action of their own.
-    await expect(row.getByRole("link", { name: "Ver detalle" })).toHaveCount(0);
+    await expect(row.getByRole("link", { name: /^Ver el movimiento/ })).toHaveCount(0);
 
     // Sin saldos en Worker: el pago está en el libro, no el saldo que dejó.
     await expect(page.getByText("47.500,00")).toHaveCount(0);
@@ -611,7 +611,7 @@ test.describe("Cobrar giro — payout completed", () => {
       .locator("tbody tr")
       .filter({ hasText: "Giros" })
       .first()
-      .getByRole("link", { name: "Ver detalle" })
+      .getByRole("link", { name: /^Ver (la operación|el movimiento)/ })
       .click();
 
     await expect(page.getByRole("heading", { name: "Detalle de operación" })).toBeVisible();

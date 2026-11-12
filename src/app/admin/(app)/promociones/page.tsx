@@ -200,6 +200,7 @@ export default async function AdminPromocionesPage({
           rows={filas}
           columns={columnas}
           rowKey={(f) => f.id}
+          rowLink={(f) => ({ href: `/admin/promociones/${f.id}`, label: `Ver la promoción ${f.titulo}` })}
           cardTitle={(f) => <TituloEnlace fila={f} />}
           empty={<p className="text-body text-text-secondary">{VACIO[activa.id]}</p>}
         />
@@ -216,12 +217,9 @@ const VACIO: Record<Pestana, string> = {
 
 function TituloEnlace({ fila }: { fila: Fila }): React.JSX.Element {
   return (
-    <Link
-      href={`/admin/promociones/${fila.id}` as Route}
-      className="font-semibold text-text-primary underline-offset-4 hover:underline"
-    >
+    <span className="font-medium text-text-primary">
       {fila.titulo}
-    </Link>
+    </span>
   );
 }
 

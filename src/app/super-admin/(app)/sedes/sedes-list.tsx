@@ -124,7 +124,7 @@ export function SedesList({
           <span className="flex flex-col">
             <Link
               href={`/super-admin/operadores/${r.operadorId}` as Route}
-              className="text-text-primary underline-offset-4 hover:underline"
+              className="relative z-10 text-text-primary underline-offset-4 hover:underline"
             >
               {r.operador}
             </Link>
@@ -229,6 +229,7 @@ export function SedesList({
         rows={visibles}
         columns={columnas}
         rowKey={(r) => r.id}
+        rowLink={(r) => ({ href: `/super-admin/sedes/${r.id}`, label: `Ver la sede ${r.nombre}` })}
         tablaDesde="xl"
         tarjetasEnDosColumnas
         cardTitle={(r) => <EnlaceSede fila={r} />}
@@ -274,9 +275,9 @@ function Conmutador({
 
 function EnlaceSede({ fila }: { fila: SedeRow }): React.JSX.Element {
   return (
-    <Link href={`/super-admin/sedes/${fila.id}` as Route} className="font-medium text-text-primary underline-offset-4 hover:underline">
+    <span className="font-medium text-text-primary">
       {fila.nombre}
-    </Link>
+    </span>
   );
 }
 

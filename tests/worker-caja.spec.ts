@@ -166,7 +166,7 @@ test.describe("worker caja — movements", () => {
 
   test("searches by operation code", async ({ page }) => {
     const table = page.getByRole("table").first();
-    const code = (await table.getByRole("link", { name: /^PC-\d{6}-\d{6}$/ }).first().textContent())!.trim();
+    const code = (await table.getByRole("cell", { name: /^PC-\d{6}-\d{6}$/ }).first().textContent())!.trim();
     await page.getByPlaceholder("Buscar por operación o concepto").fill(code);
     /* La fila visible anterior al filtro ya satisface `toBeVisible()`, así que
        esa espera no demuestra nada y la lectura sincrónica podía medir la tabla
@@ -187,10 +187,10 @@ test.describe("worker caja — movements", () => {
     await expect(page.getByText("No encontramos movimientos")).toHaveCount(0);
   });
 
-  test("an operation code links to its real detail page, never a 404", async ({ page }) => {
+  test("a movement of an operation opens its real detail page, never a 404", async ({ page }) => {
     const table = page.getByRole("table").first();
-    const link = table.getByRole("link", { name: /^PC-\d{6}-\d{6}$/ }).first();
-    const code = (await link.textContent())?.trim();
+    const link = table.getByRole("link", { name: /^Ver la operación PC-\d{6}-\d{6}$/ }).first();
+    const code = (await link.getAttribute("aria-label"))?.replace("Ver la operación ", "");
     await link.click();
 
     await expect(page).toHaveURL(new RegExp(`/worker/operaciones/${code}$`));

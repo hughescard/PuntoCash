@@ -71,8 +71,10 @@ test("la ausencia de equipo se dice, no se deja en blanco", async ({ page }) => 
 });
 
 test("retirar una caja con equipo vinculado no se ofrece: dice qué hacer antes y lleva allí", async ({ page }) => {
-  const fila = page.getByRole("row").filter({ hasText: "Mostrador 1 · Vedado" });
-  await fila.getByRole("button", { name: "Retirar" }).click();
+  /* Se retira desde la ficha de la caja: la lista solo la abre. */
+  await page.getByRole("row").filter({ hasText: "Mostrador 1 · Vedado" }).getByRole("link", { name: /^Ver la caja/ }).click();
+  await page.waitForURL(/\/admin\/cajas\/[^/]+$/);
+  await page.getByRole("main").getByRole("button", { name: "Retirar caja" }).click();
 
   const dialogo = page.getByRole("dialog");
   await expect(dialogo).toBeVisible();
@@ -115,7 +117,9 @@ test("crear una caja encamina a vincularle un equipo, y retirarla pide motivo", 
   await expect(fila.getByText("Sin equipo vinculado")).toBeVisible();
 
   // Y se retira: sin equipo ni jornada, el dominio la deja.
-  await fila.getByRole("button", { name: "Retirar" }).click();
+  await page.getByRole("link", { name: `Ver la caja ${nombre}`, exact: true }).click();
+  await page.waitForURL(/\/admin\/cajas\/[^/]+$/);
+  await page.getByRole("main").getByRole("button", { name: "Retirar caja" }).click();
   const dialogo = page.getByRole("dialog");
 
   // Sin motivo no hay retirada (**FR-AD-CAJA-8**).

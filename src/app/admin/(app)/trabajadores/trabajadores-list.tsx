@@ -112,12 +112,9 @@ export function TrabajadoresList({
       key: "nombre",
       header: "Trabajador",
       cell: (row) => (
-        <Link
-          href={`/admin/trabajadores/${row.id}` as Route}
-          className="font-medium text-text-primary underline-offset-4 hover:underline"
-        >
+        <span className="font-medium text-text-primary">
           {row.fullName}
-        </Link>
+        </span>
       ),
       hiddenOnCard: true,
     },
@@ -218,13 +215,11 @@ export function TrabajadoresList({
         rows={visibles}
         columns={columnas}
         rowKey={(row) => row.id}
+        rowLink={(row) => ({ href: `/admin/trabajadores/${row.id}`, label: `Ver la ficha de ${row.fullName}` })}
         cardTitle={(row) => (
-          <Link
-            href={`/admin/trabajadores/${row.id}` as Route}
-            className="underline-offset-4 hover:underline"
-          >
+          <span className="font-medium text-text-primary">
             {row.fullName}
-          </Link>
+          </span>
         )}
         cardSubtitle={(row) => `${row.identifier} · ${row.sedeName}`}
         cardBadge={(row) => <EstadoTrabajador status={row.status} />}

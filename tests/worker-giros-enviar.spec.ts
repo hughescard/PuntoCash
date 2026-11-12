@@ -376,7 +376,7 @@ test.describe("Success — Caja, Operaciones and result", () => {
     const row = movementsTable.locator("tbody tr").filter({ hasText: "Envío de giro" }).first();
     await expect(row).toContainText("Entrada");
     await expect(row).toContainText("+500,00");
-    await expect(row.getByRole("link", { name: "Ver detalle" })).toHaveCount(0);
+    await expect(row.getByRole("link", { name: /^Ver el movimiento/ })).toHaveCount(0);
   });
 
   test("the new operation appears in Operaciones with the sender as Cliente", async ({ page }) => {
@@ -398,7 +398,7 @@ test.describe("Success — Caja, Operaciones and result", () => {
 
     const table = page.getByRole("table");
     const giroRow = table.locator("tbody tr").filter({ hasText: "Giros" }).first();
-    await giroRow.getByRole("link", { name: "Ver detalle" }).click();
+    await giroRow.getByRole("link", { name: /^Ver (la operación|el movimiento)/ }).click();
 
     // The generic fallback no longer answers for giros — see
     // `worker-operacion-detalle-giro.spec.ts` for the full detail contract.

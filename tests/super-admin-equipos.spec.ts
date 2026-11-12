@@ -24,8 +24,8 @@ test("la pestaña de cajas dice de qué sede y de qué operador es cada una", as
   /* Una caja montada de verdad: la 03 del Vedado tiene equipo y jornadas. */
   const fila = tabla.getByRole("row").filter({ hasText: "CAJ-0001-0003" });
   await expect(fila).toHaveCount(1);
-  await expect(fila.getByRole("link", { name: "PuntoCash Vedado" })).toBeVisible();
-  await expect(fila.getByRole("link", { name: "Malecón Servicios Financieros S.R.L." })).toBeVisible();
+  await expect(fila.getByRole("link", { name: "PuntoCash Vedado", exact: true })).toBeVisible();
+  await expect(fila.getByRole("link", { name: "Malecón Servicios Financieros S.R.L.", exact: true })).toBeVisible();
 });
 
 test("las sedes sin ninguna caja se anuncian aparte y llevan al listado de Sedes", async ({ page }) => {
@@ -76,7 +76,7 @@ test("los kioscos cuentan lo que generan, y se dice que las pantallas no se inve
   await expect(tabla.getByRole("columnheader", { name: /^Operaciones \(30 días\)$/ })).toBeVisible();
   const fila = tabla.getByRole("row").filter({ hasText: "KIO-0001-0001" });
   await expect(fila).toHaveCount(1);
-  await expect(fila.getByRole("link", { name: "PuntoCash Vedado" })).toBeVisible();
+  await expect(fila.getByRole("link", { name: "PuntoCash Vedado", exact: true })).toBeVisible();
 });
 
 /* 1280 es el ancho de escritorio mínimo que soporta el producto y el más

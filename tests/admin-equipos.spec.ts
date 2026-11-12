@@ -74,10 +74,11 @@ test("el diálogo de desvincular dice lo que pasa, lo que no pasa, y la alternat
 }) => {
   /* Una caja con equipo y con su jornada abierta: el aviso de FR-AD-EQ-10 solo
      aparece entonces. Antes de que abra ninguna caja del día no hay ninguna. */
-  const fila = page.getByRole("row").filter({ hasText: "Abierta ·" }).filter({ has: page.getByRole("button", { name: "Desvincular" }) }).first();
+  const fila = page.getByRole("row").filter({ hasText: "Abierta ·" }).filter({ hasNotText: "Sin equipo vinculado" }).first();
   test.skip((await fila.count()) === 0, "ninguna caja con equipo tiene jornada abierta a esta hora");
   const equipo = (await fila.locator(".pc-numeric").first().textContent())!.trim();
-  await fila.getByRole("button", { name: "Desvincular" }).click();
+  await fila.getByRole("button", { name: /^Acciones de/ }).click();
+  await page.getByRole("menuitem", { name: "Desvincular" }).click();
 
   const dialogo = page.getByRole("dialog");
   await expect(dialogo).toBeVisible();
@@ -109,8 +110,10 @@ test("el diálogo de desvincular dice lo que pasa, lo que no pasa, y la alternat
 
 test("una caja sin equipo no ofrece desvincular: ofrece vincular", async ({ page }) => {
   const sinEquipo = page.getByRole("row").filter({ hasText: "Sin equipo vinculado" }).first();
-  await expect(sinEquipo.getByRole("button", { name: "Desvincular" })).toHaveCount(0);
-  await expect(sinEquipo.getByRole("link", { name: "Vincular un equipo" })).toBeVisible();
+  await sinEquipo.getByRole("button", { name: /^Acciones de/ }).click();
+  await expect(page.getByRole("menuitem", { name: "Desvincular" })).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "Vincular un equipo" }).click();
+  await page.waitForURL(/\/admin\/equipos\/vincular$/);
 });
 
 /* -------------------------------------------------------------------------
@@ -146,7 +149,8 @@ test("el diálogo de desvincular un kiosco dice también lo que no ocurre", asyn
   await irAKioscos(page);
 
   const fila = page.getByRole("row").filter({ hasText: "KIO-0001-0001" });
-  await fila.getByRole("button", { name: "Desvincular" }).click();
+  await fila.getByRole("button", { name: /^Acciones de/ }).click();
+  await page.getByRole("menuitem", { name: "Desvincular" }).click();
 
   const dialogo = page.getByRole("dialog");
   await expect(dialogo).toBeVisible();

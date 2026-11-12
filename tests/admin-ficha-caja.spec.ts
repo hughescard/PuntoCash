@@ -10,7 +10,9 @@ import { signInAsSuperAdmin } from "./super-admin-helpers";
  * pendiente y sus jornadas anteriores.
  */
 
-const visible = (page: Page, nombre: string) => page.getByRole("main").getByRole("link", { name: nombre, exact: true }).locator("visible=true").first();
+/* En las listas de la ficha de sede el elemento entero es el enlace: su nombre empieza por el de la caja. */
+const visible = (page: Page, nombre: string) =>
+  page.getByRole("main").getByRole("link", { name: new RegExp(`^${nombre}(?!\\d)`) }).locator("visible=true").first();
 
 test.describe("Ficha de caja", () => {
   test("Cajas enseña el efectivo de cada caja y lleva a su ficha", async ({ page }) => {

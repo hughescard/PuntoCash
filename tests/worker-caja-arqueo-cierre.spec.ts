@@ -173,7 +173,7 @@ test.describe("arqueo y cierre — confirmation", () => {
     const row = movements.locator("tbody tr").filter({ hasText: "Ajuste de cierre" }).filter({ hasText: "USD" });
     await expect(row.getByText("Salida", { exact: true })).toBeVisible();
     await expect(row.getByText("−10,00", { exact: true })).toBeVisible();
-    await row.getByRole("link", { name: "Ver detalle" }).click();
+    await row.getByRole("link", { name: /^Ver (la operación|el movimiento)/ }).click();
     await expect(page.getByText("Detalle del ajuste de cierre")).toBeVisible();
     await expect(page.getByText("Conteo repetido.").filter({ visible: true }).first()).toBeVisible();
   });

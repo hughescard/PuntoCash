@@ -34,7 +34,7 @@ test.beforeEach(async ({ page }) => {
    distingue el listado del control que lo filtra. Como enlace hay una sola, y
    el motor de roles ignora además lo que está oculto a este ancho. */
 const enlaceASede = (page: import("@playwright/test").Page, nombre: string) =>
-  page.getByRole("link", { name: nombre, exact: true });
+  page.getByRole("link", { name: `Ver la sede ${nombre}`, exact: true });
 
 test("lista las sedes del alcance y solo esas", async ({ page }) => {
   await expect(enlaceASede(page, "PuntoCash Vedado")).toBeVisible();

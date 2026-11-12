@@ -58,7 +58,7 @@ test.describe("Remesas", () => {
     await expect(page.getByRole("heading", { name: "Remesa completada" })).toBeVisible();
     await expect(page.getByText("María Pérez García").first()).toBeVisible();
     await page.getByRole("link", { name: "Ir a Operaciones" }).click();
-    await expect(page.getByText("Remesa", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Remesa", { exact: true }).locator("visible=true").first()).toBeVisible();
   });
 
   test("has no horizontal overflow at desktop widths", async ({ page }) => {

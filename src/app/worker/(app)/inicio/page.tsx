@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui";
 import { PageHeader } from "@/components/shell/app-shell";
+import { ClickableRow } from "@/components/patterns/clickable-row";
 import { OperationStatusBadge } from "@/components/patterns/operation-status-badge";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
@@ -269,12 +270,15 @@ export default async function WorkerHomePage() {
                     <TableHead numeric className="whitespace-nowrap">
                       Importe
                     </TableHead>
-                    <TableHead className="pr-6 whitespace-nowrap">Estado</TableHead>
+                    <TableHead className="whitespace-nowrap">Estado</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Abrir</span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {RECENT_OPERATIONS.map((operation) => (
-                    <TableRow key={operation.code}>
+                    <ClickableRow key={operation.code} href={`/worker/operaciones/${operation.code}`}>
                       <TableCell className="pl-6 whitespace-nowrap">
                         <span className="pc-numeric font-medium">{operation.code}</span>
                       </TableCell>
@@ -288,10 +292,19 @@ export default async function WorkerHomePage() {
                       <TableCell numeric className="whitespace-nowrap font-medium">
                         {formatMoney(operation.amount)}
                       </TableCell>
-                      <TableCell className="pr-6 whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap">
                         <OperationStatusBadge status={operation.status} />
                       </TableCell>
-                    </TableRow>
+                      <TableCell className="w-10 pr-4 text-right">
+                        <Link
+                          href={`/worker/operaciones/${operation.code}` as Route}
+                          aria-label={`Ver la operación ${operation.code}`}
+                          className="inline-flex size-8 items-center justify-center rounded-control text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        >
+                          <ChevronRight aria-hidden="true" className="size-5" />
+                        </Link>
+                      </TableCell>
+                    </ClickableRow>
                   ))}
                 </TableBody>
               </Table>

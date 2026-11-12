@@ -192,7 +192,10 @@ test.describe("a 360px, los controles se pueden pulsar", () => {
       .filter({ hasNotText: "Sin equipo vinculado" })
       .first();
     await expect(tarjeta, "ninguna «Caja 01» del alcance tiene equipo vinculado").toBeVisible();
-    await tarjeta.getByRole("button", { name: "Retirar" }).click();
+    /* La tarjeta abre la ficha de la caja, que es donde se retira. */
+    await tarjeta.click();
+    await page.waitForURL(/\/admin\/cajas\/[^/]+$/);
+    await page.getByRole("main").getByRole("button", { name: "Retirar caja" }).click();
 
     const dialogo = page.getByRole("dialog");
     await expect(dialogo).toBeVisible();

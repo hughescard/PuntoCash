@@ -300,6 +300,7 @@ export default async function AdminInicioPage() {
         <ResponsiveTable
           rows={filas}
           rowKey={(fila) => fila.sede.id}
+          rowLink={(fila) => ({ href: `/admin/sedes/${fila.sede.id}`, label: `Ver la sede ${fila.sede.name}` })}
           columns={[
             {
               key: "sede",
@@ -395,6 +396,7 @@ function DetalleDeSede({ red, sede, hoy }: { red: RedEnAlcance; sede: Sede; hoy:
       <ResponsiveTable
         rows={cajas}
         rowKey={(c) => c.id}
+        rowLink={(c) => ({ href: `/admin/cajas/${encodeURIComponent(c.id)}`, label: `Ver la caja ${c.nombre}` })}
         columns={[
           { key: "caja", header: "Caja", cell: (c) => <span className="font-medium text-text-primary">{c.nombre}</span>, hiddenOnCard: true },
           {
@@ -416,7 +418,7 @@ function DetalleDeSede({ red, sede, hoy }: { red: RedEnAlcance; sede: Sede; hoy:
         empty={
           <p className="text-body text-text-secondary">
             Esta sede no tiene ninguna caja activa.{" "}
-            <Link href="/admin/cajas" className="font-semibold text-primary underline underline-offset-4">
+            <Link href="/admin/cajas" className="relative z-10 font-semibold text-primary underline underline-offset-4">
               Ir a Cajas
             </Link>
           </p>
@@ -456,14 +458,7 @@ function resumenDeSede(red: RedEnAlcance, sede: Sede): ResumenDeSede {
 
 function EnlaceSede({ fila }: { fila: ResumenDeSede }): React.JSX.Element {
   return (
-    <Link
-      /* Ruta dinámica: `typedRoutes` no puede comprobar un identificador que
-         nace del dominio, así que se afirma igual que en el resto del producto. */
-      href={`/admin/sedes/${fila.sede.id}` as Route}
-      className="font-medium text-text-primary underline-offset-4 hover:underline"
-    >
-      {fila.sede.name}
-    </Link>
+    <span className="font-medium text-text-primary">{fila.sede.name}</span>
   );
 }
 
@@ -533,7 +528,7 @@ function AtencionItem({
           {/* **FR-AD-HOME-4**: cada entrada lleva a donde se resuelve. */}
           <Link
             href={href as Route}
-            className="inline-flex shrink-0 items-center gap-1.5 self-start text-label font-medium text-primary underline-offset-4 hover:underline"
+            className="relative z-10 inline-flex shrink-0 items-center gap-1.5 self-start text-label font-medium text-primary underline-offset-4 hover:underline"
           >
             {action}
             <ArrowRight className="size-4" aria-hidden="true" />

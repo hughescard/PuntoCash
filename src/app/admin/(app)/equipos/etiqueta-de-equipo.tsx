@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Tag } from "lucide-react";
 
 import {
   Alert,
@@ -17,7 +16,6 @@ import {
   fieldAria,
   type FieldSpec,
 } from "@/components/ui";
-import { useHydrated } from "@/lib/use-hydrated";
 import { renombrarEquipoAction, type ResultadoAccion } from "./_actions";
 
 /**
@@ -42,24 +40,6 @@ const ETIQUETA: FieldSpec = {
 export interface EquipoRenombrable {
   id: string;
   label: string;
-}
-
-/** El botón de la fila. Abre un diálogo, así que espera a la hidratación. */
-export function BotonEditarEtiqueta({
-  equipo,
-  onElegir,
-}: {
-  equipo: EquipoRenombrable;
-  onElegir: (equipo: EquipoRenombrable) => void;
-}): React.JSX.Element {
-  const hydrated = useHydrated();
-
-  return (
-    <Button variant="tertiary" size="sm" disabled={!hydrated} onClick={() => onElegir(equipo)}>
-      <Tag aria-hidden="true" />
-      Editar etiqueta
-    </Button>
-  );
 }
 
 export function DialogoEtiqueta({

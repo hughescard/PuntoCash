@@ -113,7 +113,7 @@ async function openNewestGiroDetail(page: Page) {
     .locator("tbody tr")
     .filter({ hasText: "Giros" })
     .first()
-    .getByRole("link", { name: "Ver detalle" })
+    .getByRole("link", { name: /^Ver (la operación|el movimiento)/ })
     .click();
   await expect(page.getByRole("heading", { name: "Detalle de operación" })).toBeVisible({
     timeout: 10_000,
@@ -328,7 +328,7 @@ test.describe("Operation Detail — giro history is frozen", () => {
       .locator("tbody tr")
       .filter({ hasText: "Giros" })
       .nth(1)
-      .getByRole("link", { name: "Ver detalle" })
+      .getByRole("link", { name: /^Ver (la operación|el movimiento)/ })
       .click();
     await expect(onScreen(page, "Giro enviado")).toBeVisible();
     await expect(onScreen(page, "Lista para pago")).toBeVisible();

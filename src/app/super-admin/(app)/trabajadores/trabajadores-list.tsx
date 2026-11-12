@@ -94,12 +94,9 @@ export function TrabajadoresDeRedList({
       hiddenOnCard: true,
       cell: (r) => (
         <span className="flex min-w-40 flex-col">
-          <Link
-            href={`/super-admin/trabajadores/${r.id}` as Route}
-            className="font-medium text-text-primary underline-offset-4 hover:underline"
-          >
+          <span className="font-medium text-text-primary">
             {r.nombre}
-          </Link>
+          </span>
           <span className="pc-numeric text-caption text-text-secondary">{r.identificador}</span>
         </span>
       ),
@@ -111,14 +108,14 @@ export function TrabajadoresDeRedList({
         <span className="flex min-w-40 flex-col">
           <Link
             href={`/super-admin/sedes/${r.sedeId}` as Route}
-            className="text-text-primary underline-offset-4 hover:underline"
+            className="relative z-10 text-text-primary underline-offset-4 hover:underline"
           >
             {r.sede}
           </Link>
           {r.operadorId ? (
             <Link
               href={`/super-admin/operadores/${r.operadorId}` as Route}
-              className="text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
+              className="relative z-10 text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
             >
               {r.operador}
             </Link>
@@ -213,12 +210,13 @@ export function TrabajadoresDeRedList({
         rows={visibles}
         columns={columnas}
         rowKey={(r) => r.id}
+        rowLink={(r) => ({ href: `/super-admin/trabajadores/${r.id}`, label: `Ver la ficha de ${r.nombre}` })}
         tablaDesde="xl"
         tarjetasEnDosColumnas
         cardTitle={(r) => (
-          <Link href={`/super-admin/trabajadores/${r.id}` as Route} className="underline-offset-4 hover:underline">
+          <span className="font-medium text-text-primary">
             {r.nombre}
-          </Link>
+          </span>
         )}
         cardSubtitle={(r) => `${r.identificador} · ${r.sede}`}
         cardBadge={(r) => <EstadoDeAcceso estado={r.estado} bloqueo={r.bloqueo} />}

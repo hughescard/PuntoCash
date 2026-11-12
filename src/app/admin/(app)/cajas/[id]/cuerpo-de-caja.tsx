@@ -5,6 +5,7 @@ import { ArrowRight, MonitorSmartphone } from "lucide-react";
 
 import { Section } from "@/components/shell/app-shell";
 import { Badge, Card, CardContent } from "@/components/ui";
+import { ElementoDeLista } from "@/components/patterns/elemento-de-lista";
 import { formatAmount } from "@/lib/format";
 import { inventarioParaMostrar, type Jornada } from "@/features/network/jornadas";
 import { TIPO_DE_SOLICITUD, type Solicitud } from "@/features/network/aprobaciones";
@@ -151,24 +152,20 @@ export function CuerpoDeCaja({
             <CardContent className="pt-6">
               <ul className="flex flex-col divide-y divide-border" aria-label="Pendiente de aprobar">
                 {pendientes.map((s) => (
-                  <li key={s.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3 first:pt-0 last:pb-0">
+                  <ElementoDeLista
+                    key={s.id}
+                    href={`${base}/aprobaciones/${s.id}`}
+                    label={`${base === "/admin" ? "Resolver" : "Ver"} la ${TIPO_DE_SOLICITUD[s.tipo].toLowerCase()} de ${s.workerName} en ${s.currency}`}
+                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1"
+                  >
                     <span className="min-w-0">
                       <span className="block font-medium text-text-primary">
                         {TIPO_DE_SOLICITUD[s.tipo]} · {s.workerName}
                       </span>
                       <span className="block text-body-sm text-text-secondary">{fechaYHora(s.fechaHora)}</span>
                     </span>
-                    <span className="flex items-center gap-4">
-                      <Diferencia currency={s.currency} diferencia={s.diferencia} />
-                      <Link
-                        href={`${base}/aprobaciones/${s.id}` as Route}
-                        className="font-semibold underline underline-offset-4 hover:text-primary"
-                        aria-label={`Resolver la ${TIPO_DE_SOLICITUD[s.tipo].toLowerCase()} de ${s.workerName} en ${s.currency}`}
-                      >
-                        {base === "/admin" ? "Resolver" : "Ver"}
-                      </Link>
-                    </span>
-                  </li>
+                    <Diferencia currency={s.currency} diferencia={s.diferencia} />
+                  </ElementoDeLista>
                 ))}
               </ul>
             </CardContent>
@@ -191,29 +188,36 @@ export function CuerpoDeCaja({
                 <p className="text-body-sm text-text-secondary">Todavía no hay movimientos en esta jornada.</p>
               ) : (
                 <ul className="flex flex-col divide-y divide-border" aria-label="Últimos movimientos">
-                  {ultimos.map((m) => (
-                    <li key={m.id} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
-                      <span className="flex min-w-0 items-baseline gap-3">
-                        <span className="pc-numeric shrink-0 text-body-sm text-text-secondary">{hora(m.fechaHora)}</span>
-                        {base === "/admin" ? (
-                          <Link
-                            href={`/admin/jornadas/${abierta.id}/movimientos/${m.id}` as Route}
-                            className="truncate text-text-primary underline-offset-4 hover:underline"
-                          >
-                            {m.concepto}
-                          </Link>
-                        ) : (
+                  {ultimos.map((m) => {
+                    const contenido = (
+                      <>
+                        <span className="flex min-w-0 items-baseline gap-3">
+                          <span className="pc-numeric shrink-0 text-body-sm text-text-secondary">{hora(m.fechaHora)}</span>
                           <span className="truncate text-text-primary">{m.concepto}</span>
-                        )}
-                      </span>
-                      <span
-                        className={`pc-numeric shrink-0 font-semibold ${m.amount < 0 ? "text-text-primary" : "text-success-foreground"}`}
+                        </span>
+                        <span
+                          className={`pc-numeric shrink-0 font-semibold ${m.amount < 0 ? "text-text-primary" : "text-success-foreground"}`}
+                        >
+                          {m.amount > 0 ? "+" : ""}
+                          {formatAmount(m.amount)} {m.currency}
+                        </span>
+                      </>
+                    );
+                    /* Super Admin solo consulta y no tiene detalle de movimiento: la fila es plana. */
+                    return base === "/admin" ? (
+                      <ElementoDeLista
+                        key={m.id}
+                        href={`/admin/jornadas/${abierta.id}/movimientos/${m.id}`}
+                        className="flex items-center justify-between gap-4"
                       >
-                        {m.amount > 0 ? "+" : ""}
-                        {formatAmount(m.amount)} {m.currency}
-                      </span>
-                    </li>
-                  ))}
+                        {contenido}
+                      </ElementoDeLista>
+                    ) : (
+                      <li key={m.id} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+                        {contenido}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               <Link
@@ -239,21 +243,22 @@ export function CuerpoDeCaja({
             <CardContent className="pt-6">
               <ul className="flex flex-col divide-y divide-border" aria-label="Jornadas anteriores">
                 {anteriores.map((j) => (
-                  <li key={j.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3 first:pt-0 last:pb-0">
+                  <ElementoDeLista
+                    key={j.id}
+                    href={`${base}/jornadas/${j.id}`}
+                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1"
+                  >
                     <span className="min-w-0">
-                      <Link
-                        href={`${base}/jornadas/${j.id}` as Route}
-                        className="block font-medium text-text-primary underline-offset-4 hover:underline"
-                      >
+                      <span className="block font-medium text-text-primary">
                         {fechaYHora(j.openedAt)} · {j.workerName}
-                      </Link>
+                      </span>
                       <span className="block text-body-sm text-text-secondary">
                         {j.closedAt ? `Hasta el ${fechaYHora(j.closedAt)}` : "Sin cerrar"} · {j.movimientos.length}{" "}
                         {j.movimientos.length === 1 ? "movimiento" : "movimientos"}
                       </span>
                     </span>
                     <EstadoBadge estado={j.estado} />
-                  </li>
+                  </ElementoDeLista>
                 ))}
               </ul>
             </CardContent>

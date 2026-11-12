@@ -9,6 +9,7 @@ import { Alert, Badge, Button, Card, CardContent } from "@/components/ui";
 import { cifraDeTablero, formatDate, formatDateTime } from "@/lib/format";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { ResponsiveTable } from "@/components/patterns/responsive-table";
+import { ElementoDeLista } from "@/components/patterns/elemento-de-lista";
 import { getAdminSession } from "@/features/admin/session-server";
 import { lineasDeHorario } from "@/features/network/horario";
 import { redEnAlcance } from "@/features/network/scoped-reads";
@@ -321,19 +322,13 @@ export default async function AdminSedePage({
                      se queda dentro hasta la próxima apertura). */
                   const cerrada = abierta ? null : red.ultimaJornadaCerradaDeCaja(caja.id);
                   return (
-                    <li
+                    <ElementoDeLista
                       key={caja.id}
-                      className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                      href={`/admin/cajas/${encodeURIComponent(caja.id)}`}
+                      className="flex flex-wrap items-center justify-between gap-3"
                     >
                       <div className="min-w-0">
-                        <p className="text-body font-medium">
-                          <Link
-                            href={`/admin/cajas/${encodeURIComponent(caja.id)}` as Route}
-                            className="text-text-primary underline underline-offset-4 hover:text-primary"
-                          >
-                            {caja.name}
-                          </Link>
-                        </p>
+                        <p className="text-body font-medium text-text-primary">{caja.name}</p>
                         <p className="mt-0.5 flex items-center gap-2 text-body-sm text-text-secondary">
                           {equipo ? (
                             <>
@@ -375,7 +370,7 @@ export default async function AdminSedePage({
                       ) : (
                         <Badge variant="neutral">Retirada</Badge>
                       )}
-                    </li>
+                    </ElementoDeLista>
                   );
                 })}
               </ul>
@@ -522,7 +517,7 @@ export default async function AdminSedePage({
             ) : (
               <ul className="flex flex-col divide-y divide-border">
                 {enPantalla.map((p) => (
-                  <li key={p.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <ElementoDeLista key={p.id} href={`/admin/promociones/${p.id}`} className="flex items-start gap-3">
                     {p.imagen ? (
                       /* eslint-disable-next-line @next/next/no-img-element -- imagen de la promoción */
                       <img
@@ -532,15 +527,10 @@ export default async function AdminSedePage({
                       />
                     ) : null}
                     <div className="min-w-0">
-                      <Link
-                        href={`/admin/promociones/${p.id}` as Route}
-                        className="font-semibold text-text-primary underline-offset-4 hover:underline"
-                      >
-                        {p.titulo}
-                      </Link>
+                      <p className="font-semibold text-text-primary">{p.titulo}</p>
                       <p className="mt-0.5 text-body-sm text-text-secondary">{p.texto}</p>
                     </div>
-                  </li>
+                  </ElementoDeLista>
                 ))}
               </ul>
             )}

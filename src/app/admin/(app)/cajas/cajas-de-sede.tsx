@@ -61,14 +61,16 @@ export interface CajaRow {
 
 type Accion = { tipo: "retirar" | "reactivar"; caja: CajaRow };
 
+/**
+ * Las cajas de la sede. La fila entera abre la ficha de la caja, que es donde
+ * se retira o se reactiva (regla de tablas, 12/11/2026).
+ */
 export function CajasDeSede({ cajas }: { cajas: readonly CajaRow[] }): React.JSX.Element {
-  const [accion, setAccion] = React.useState<Accion | null>(null);
-
   const columnas: readonly ResponsiveColumn<CajaRow>[] = [
     {
       key: "caja",
       header: "Caja",
-      cell: (caja) => <EnlaceACaja caja={caja} />,
+      cell: (caja) => <NombreDeCaja caja={caja} />,
       hiddenOnCard: true,
     },
     {
@@ -122,39 +124,23 @@ export function CajasDeSede({ cajas }: { cajas: readonly CajaRow[] }): React.JSX
         ),
     },
     { key: "alta", header: "Alta", cell: (caja) => caja.alta },
-    {
-      key: "acciones",
-      header: <span className="sr-only">Acciones</span>,
-      cell: (caja) => <Acciones caja={caja} onElegir={setAccion} />,
-      hiddenOnCard: true,
-    },
   ];
 
   return (
-    <>
-      <ResponsiveTable
-        rows={cajas}
-        columns={columnas}
-        rowKey={(caja) => caja.id}
-        cardTitle={(caja) => <EnlaceACaja caja={caja} />}
-        cardSubtitle={(caja) => caja.motivoRetirada ?? null}
-        cardBadge={(caja) => <EstadoCaja caja={caja} />}
-        cardFooter={(caja) => <Acciones caja={caja} onElegir={setAccion} />}
-        empty={<p className="text-body text-text-secondary">Esta sede no tiene cajas.</p>}
-      />
-
-      {accion?.tipo === "retirar" ? (
-        <DialogoRetirar caja={accion.caja} onCerrar={() => setAccion(null)} />
-      ) : null}
-
-      {accion?.tipo === "reactivar" ? (
-        <DialogoReactivar caja={accion.caja} onCerrar={() => setAccion(null)} />
-      ) : null}
-    </>
+    <ResponsiveTable
+      rows={cajas}
+      columns={columnas}
+      rowKey={(caja) => caja.id}
+      rowLink={(caja) => ({ href: `/admin/cajas/${encodeURIComponent(caja.id)}`, label: `Ver la caja ${caja.name}` })}
+      cardTitle={(caja) => <NombreDeCaja caja={caja} />}
+      cardSubtitle={(caja) => caja.motivoRetirada ?? null}
+      cardBadge={(caja) => <EstadoCaja caja={caja} />}
+      empty={<p className="text-body text-text-secondary">Esta sede no tiene cajas.</p>}
+    />
   );
 }
 
-/** Retirar o reactivar una caja desde su ficha: el mismo botón y los mismos diálogos que en la lista. */
+/** Retirar o reactivar una caja desde su ficha. */
 export function AccionesDeCaja({ caja }: { caja: CajaRow }): React.JSX.Element {
   const [accion, setAccion] = React.useState<Accion | null>(null);
   return (
@@ -173,7 +159,7 @@ export function JornadaCelda({ caja }: { caja: { status?: string; jornada: Jorna
     <span className="flex flex-col">
       <Link
         href={`/admin/jornadas/${caja.jornada.id}` as Route}
-        className="font-semibold text-text-primary underline underline-offset-4 hover:text-primary"
+        className="relative z-10 font-semibold text-text-primary underline underline-offset-4 hover:text-primary"
       >
         Abierta · {caja.jornada.trabajador}
       </Link>
@@ -185,15 +171,8 @@ export function JornadaCelda({ caja }: { caja: { status?: string; jornada: Jorna
   );
 }
 
-function EnlaceACaja({ caja }: { caja: CajaRow }): React.JSX.Element {
-  return (
-    <Link
-      href={`/admin/cajas/${encodeURIComponent(caja.id)}` as Route}
-      className="whitespace-nowrap font-medium text-text-primary underline underline-offset-4 hover:text-primary"
-    >
-      {caja.name}
-    </Link>
-  );
+function NombreDeCaja({ caja }: { caja: CajaRow }): React.JSX.Element {
+  return <span className="whitespace-nowrap font-medium text-text-primary">{caja.name}</span>;
 }
 
 function EstadoCaja({ caja }: { caja: CajaRow }): React.JSX.Element {

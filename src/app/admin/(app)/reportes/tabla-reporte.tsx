@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import type { Route } from "next";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
@@ -91,13 +89,7 @@ export function TablaReporte({
       hiddenOnCard: true,
       cell: (f) => (
         <span className="flex flex-col">
-          {f.href ? (
-            <Link href={f.href as Route} className="font-semibold text-text-primary underline-offset-4 hover:underline">
-              {f.titulo}
-            </Link>
-          ) : (
-            <span className="font-semibold text-text-primary">{f.titulo}</span>
-          )}
+          <span className="font-semibold text-text-primary">{f.titulo}</span>
           {f.subtitulo ? <span className="text-caption text-text-secondary">{f.subtitulo}</span> : null}
         </span>
       ),
@@ -154,15 +146,8 @@ export function TablaReporte({
         rows={ordenadas}
         columns={columns}
         rowKey={(f) => f.key}
-        cardTitle={(f) =>
-          f.href ? (
-            <Link href={f.href as Route} className="underline-offset-4 hover:underline">
-              {f.titulo}
-            </Link>
-          ) : (
-            f.titulo
-          )
-        }
+        cardTitle={(f) => f.titulo}
+        rowLink={(f) => (f.href ? { href: f.href, label: `Ver ${f.titulo}` } : null)}
         cardSubtitle={(f) => f.subtitulo}
         empty={<p className="text-body text-text-secondary">{vacio}</p>}
       />

@@ -38,7 +38,7 @@ async function abrir(page: Page, amounts: Record<string, string> = CUATRO) {
 async function verFondeo(page: import("@playwright/test").Page, currency: string, { yaEnCaja = false } = {}) {
   if (!yaEnCaja) await page.getByRole("link", { name: "Ir a Caja" }).click();
   const fila = page.getByRole("table").first().locator("tbody tr").filter({ hasText: "Fondeo inicial" }).filter({ hasText: currency }).first();
-  await fila.getByRole("link", { name: "Ver detalle" }).click();
+  await fila.getByRole("link", { name: /^Ver (la operación|el movimiento)/ }).click();
   await expect(page.getByRole("heading", { name: "Movimiento de caja" })).toBeVisible();
 }
 

@@ -43,7 +43,7 @@ async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "
 }
 
 /**
- * Clicks "Ver detalle" on the first movements-table row whose Concepto
+ * Opens (whole-row link) the first movements-table row whose Concepto
  * matches, via a hard `page.goto("/worker/caja")` first — safe only for the
  * pre-seeded, module-level mock ledger (Apertura de caja, Fondeo adicional,
  * the static Ajuste de efectivo fixture), never for a movement THIS test
@@ -58,7 +58,7 @@ async function openDetailFor(page: Page, concepto: string) {
 async function openDetailForFromCaja(page: Page, concepto: string) {
   const movementsTable = page.getByRole("table").first();
   const row = movementsTable.locator("tbody tr").filter({ hasText: concepto }).first();
-  await row.getByRole("link", { name: "Ver detalle" }).click();
+  await row.getByRole("link", { name: /^Ver el movimiento/ }).click();
   await expect(page.getByRole("heading", { name: "Movimiento de caja" })).toBeVisible();
 }
 
@@ -72,38 +72,36 @@ async function goToCajaAndOpenDetail(page: Page, concepto: string) {
   await openDetailForFromCaja(page, concepto);
 }
 
-test.describe("caja movements table — Acciones column", () => {
-  test("renders an Acciones column header", async ({ page }) => {
+test.describe("caja movements table — the whole row opens its detail", () => {
+  test("there is no Acciones column", async ({ page }) => {
     await page.goto("/worker/caja");
     const movementsTable = page.getByRole("table").first();
-    await expect(movementsTable.getByRole("columnheader", { name: "Acciones" })).toBeVisible();
+    await expect(movementsTable.getByRole("columnheader", { name: "Acciones" })).toHaveCount(0);
   });
 
-  test("an internal movement (no operationCode) shows Ver detalle, Operación stays —", async ({
-    page,
-  }) => {
+  test("an internal movement (no operationCode) opens the movement, Operación stays —", async ({ page }) => {
     await page.goto("/worker/caja");
     const movementsTable = page.getByRole("table").first();
     const row = movementsTable.locator("tbody tr").filter({ hasText: "Ajuste de cierre" }).first();
 
-    await expect(row.getByRole("link", { name: "Ver detalle" })).toBeVisible();
+    await expect(row.getByRole("link", { name: /^Ver el movimiento/ })).toBeVisible();
     await expect(row.locator("td").nth(1)).toHaveText("—");
   });
 
-  test("a movement with operationCode links to Operation Detail and shows no duplicate Ver detalle", async ({
-    page,
-  }) => {
+  test("a movement with operationCode opens its Operation Detail, not a movement detail", async ({ page }) => {
     await page.goto("/worker/caja");
     const movementsTable = page.getByRole("table").first();
     const row = movementsTable.locator("tbody tr").filter({ hasText: "Envío de giro" }).first();
-    const link = row.getByRole("link", { name: /^PC-\d{6}-\d{6}$/ });
-    const code = (await link.textContent())!.trim();
-    await expect(link).toHaveAttribute("href", `/worker/operaciones/${code}`);
-    await expect(row.getByRole("link", { name: "Ver detalle" })).toHaveCount(0);
+    const code = (await row.locator("td").nth(1).textContent())!.trim();
+    expect(code).toMatch(/^PC-\d{6}-\d{6}$/);
+    await expect(row.getByRole("link", { name: `Ver la operación ${code}` })).toHaveAttribute("href", `/worker/operaciones/${code}`);
+    await expect(row.getByRole("link", { name: /^Ver el movimiento/ })).toHaveCount(0);
   });
 
-  test("Ver detalle navigates to /worker/caja/movimientos/[id]", async ({ page }) => {
-    await openDetailFor(page, "Ajuste de cierre");
+  test("clicking anywhere on an internal movement row navigates to /worker/caja/movimientos/[id]", async ({ page }) => {
+    await page.goto("/worker/caja");
+    const row = page.getByRole("table").first().locator("tbody tr").filter({ hasText: "Ajuste de cierre" }).first();
+    await row.locator("td").first().click();
     await expect(page).toHaveURL(/\/worker\/caja\/movimientos\/CM-/);
   });
 });

@@ -59,17 +59,7 @@ export function MovimientosDeJornada({
   const monedas = [...new Set(rows.map((r) => r.currency))];
   const visibles = rows.filter((r) => (tipo === "todos" || r.tipo === tipo) && (moneda === "todas" || r.currency === moneda));
 
-  const enlace = (r: MovimientoRow) =>
-    conDetalle ? (
-      <Link
-        href={`${base}/jornadas/${jornadaId}/movimientos/${r.id}` as Route}
-        className="font-semibold text-text-primary underline-offset-4 hover:underline"
-      >
-        {r.concepto}
-      </Link>
-    ) : (
-      <span className="font-semibold text-text-primary">{r.concepto}</span>
-    );
+  const enlace = (r: MovimientoRow) => <span className="font-semibold text-text-primary">{r.concepto}</span>;
 
   const columnas: readonly ResponsiveColumn<MovimientoRow>[] = [
     { key: "hora", header: "Hora", cell: (r) => <span className="pc-numeric">{r.hora}</span> },
@@ -141,6 +131,7 @@ export function MovimientosDeJornada({
         rows={visibles}
         columns={columnas}
         rowKey={(r) => r.id}
+        rowLink={(r) => (conDetalle ? { href: `${base}/jornadas/${jornadaId}/movimientos/${r.id}`, label: `Ver el movimiento: ${r.concepto}, ${r.hora}` } : null)}
         cardTitle={enlace}
         cardBadge={(r) => <BadgeDeTipo tipo={r.tipo} />}
         empty={<p className="text-body text-text-secondary">Ningún movimiento coincide con esos filtros.</p>}
