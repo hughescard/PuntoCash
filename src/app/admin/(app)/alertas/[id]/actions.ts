@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { getAdminSession } from "@/features/admin/session-server";
 import { registrarEvento } from "@/features/network/audit";
 import { definirReglas, resumenDeReglas, type ReglaDeMoneda } from "@/features/network/alertas";
-import { mensaje } from "../../../mensajes";
+import { mensaje } from "../../mensajes";
 
 export type ResultadoDeAlertas = { ok: false; error: string } | null;
 
@@ -81,5 +81,5 @@ export async function guardarAlertasAction(_previo: ResultadoDeAlertas, formData
   }
 
   revalidatePath("/admin", "layout");
-  redirect(`/admin/sedes/${sedeId}?alertas=${r.value.cambiaron ? "1" : "0"}`);
+  redirect(`/admin/alertas?guardado=${r.value.cambiaron ? "1" : "0"}&sede=${encodeURIComponent(sedeId)}`);
 }

@@ -94,7 +94,7 @@ export function AlertasForm({
 
         <div className="pc-botonera sm:justify-end">
           <Button variant="secondary" asChild>
-            <Link href={`/admin/sedes/${sede.id}`}>Cancelar</Link>
+            <Link href="/admin/alertas">Cancelar</Link>
           </Button>
           <Button type="submit" loading={enviando}>
             <Save aria-hidden="true" />

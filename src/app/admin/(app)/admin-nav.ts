@@ -1,4 +1,5 @@
 import {
+  Bell,
   CalendarClock,
   ChartColumn,
   ClipboardCheck,
@@ -71,6 +72,7 @@ export function adminNavGroups(
           badge: badges.aprobaciones,
         },
         { href: "/admin/operaciones", label: "Operaciones", icon: List },
+        { href: "/admin/alertas", label: "Alertas", icon: Bell },
       ],
     },
     {

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Las alertas de caja de una sede (bloque 6). Pantalla y no diálogo: son varias
+ * Definir las alertas de una sede (bloque 6), desde la sección Alertas. Pantalla y no diálogo: son varias
  * monedas con varios campos cada una. La misma guarda que la ficha: una sede
  * fuera del alcance responde como inexistente (**FR-AD-NAV-3**).
  */
@@ -28,7 +28,7 @@ export default async function AdminAlertasDeSedePage({ params }: { params: Promi
   const { id } = await params;
   const sede = session.sedes.find((s) => s.id === id);
   if (!sede) notFound();
-  if (sede.status === "cerrada") redirect(`/admin/sedes/${sede.id}`);
+  if (sede.status === "cerrada") redirect("/admin/alertas");
 
   const red = redEnAlcance(session.scope);
   const reglas = reglasVigentes(sede.id);
@@ -45,9 +45,9 @@ export default async function AdminAlertasDeSedePage({ params }: { params: Promi
         description={`${sede.name} · Valen para todas sus cajas con la jornada abierta.`}
         actions={
           <Button variant="secondary" asChild>
-            <Link href={`/admin/sedes/${sede.id}`}>
+            <Link href="/admin/alertas">
               <ArrowLeft aria-hidden="true" />
-              Volver a la sede
+              Volver a Alertas
             </Link>
           </Button>
         }

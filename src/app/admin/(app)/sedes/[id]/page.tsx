@@ -15,7 +15,7 @@ import { lineasDeHorario } from "@/features/network/horario";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { WORKER_SERVICES } from "@/features/operations/services";
 import { diaEnCuba, saldosDe } from "@/features/network/jornadas";
-import { reglasVigentes } from "@/features/network/alertas";
+import { alertasActivas, reglasVigentes, tituloDeAlerta } from "@/features/network/alertas";
 import { formatoDeDenominacion, valorDeClave } from "@/features/caja/billetes";
 import { formatAmount } from "@/lib/format";
 import { desde, EstadoBadge, fechaYHora } from "../../jornadas/formato";
@@ -54,13 +54,13 @@ export default async function AdminSedePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ guardado?: string; alertas?: string }>;
+  searchParams: Promise<{ guardado?: string }>;
 }) {
   const session = await getAdminSession();
   if (!session) redirect("/admin/login");
 
   const { id } = await params;
-  const { guardado, alertas } = await searchParams;
+  const { guardado } = await searchParams;
   /* Dos guardas que dicen lo mismo y conviene que lo digan las dos: la sede
      sale de la lista de la sesión, y todo lo que se lee de ella sale de la
      vista con alcance. Si mañana esta pantalla recibiera la sede por otra vía,
@@ -78,6 +78,7 @@ export default async function AdminSedePage({
   const dia = red.diaDeSede(sede.id);
   const hoy = diaEnCuba(new Date());
   const reglasDeAlerta = reglasVigentes(sede.id);
+  const cajasConAlertas = (dia?.cajas ?? []).flatMap((c) => (c.abierta ? [{ jornada: c.abierta, alertas: alertasActivas(c.abierta) }] : [])).filter((x) => x.alertas.length > 0);
 
   return (
     <>
@@ -162,30 +163,34 @@ export default async function AdminSedePage({
         </Card>
       </Section>
 
-      {alertas === "1" || alertas === "0" ? (
-        <Alert variant="success" title={alertas === "1" ? "Alertas guardadas" : "Sin cambios en las alertas"} className="mb-8">
-          {alertas === "1"
-            ? "Rigen desde ahora en todas las cajas de la sede. Lo ocurrido antes se sigue leyendo con las reglas de entonces."
-            : "Las alertas eran ya esas."}
-        </Alert>
-      ) : null}
-
       <Section
         title="Alertas de caja"
-        description="Avisan cuando una caja abierta se queda con poco efectivo, con demasiado, o sin billetes de una denominación."
+        description="Las que rigen en esta sede. Se definen en la sección Alertas."
         actions={
           sede.status !== "cerrada" ? (
             <Button variant="secondary" size="sm" asChild>
-              <Link href={`/admin/sedes/${sede.id}/alertas`}>
+              <Link href="/admin/alertas">
                 <Bell aria-hidden="true" />
-                Configurar alertas
+                Ver en Alertas
               </Link>
             </Button>
           ) : null
         }
       >
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="flex flex-col gap-6 pt-6">
+            {cajasConAlertas.length > 0 ? (
+              <ul className="flex flex-col divide-y divide-border" aria-label="Alertas activas de la sede">
+                {cajasConAlertas.map(({ jornada, alertas }) => (
+                  <ElementoDeLista key={jornada.registerId} href={`/admin/cajas/${encodeURIComponent(jornada.registerId)}`}>
+                    <span className="block font-medium text-text-primary">{jornada.cajaNombre}</span>
+                    <span className="block text-body-sm text-text-secondary">{alertas.map((a) => tituloDeAlerta(a)).join(" · ")}</span>
+                  </ElementoDeLista>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-body text-text-primary">Ninguna caja abierta tiene alertas.</p>
+            )}
             {reglasDeAlerta.length === 0 ? (
               <p className="text-body text-text-secondary">Esta sede no tiene alertas definidas.</p>
             ) : (

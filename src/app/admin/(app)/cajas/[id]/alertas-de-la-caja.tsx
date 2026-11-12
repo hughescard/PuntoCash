@@ -20,7 +20,7 @@ const HISTORIAL_DE_ALERTAS = 10;
 const JORNADAS_REPASADAS = 5;
 
 /** La alerta con sus cifras: es lo que la administración ve y el trabajador no. */
-function cifras(a: AlertaDeCaja): string {
+export function cifras(a: AlertaDeCaja): string {
   if (a.tipo === "billetes-pocos") return `Hay ${a.actual}, el mínimo es ${a.limite}.`;
   const hay = `Hay ${formatAmount(a.actual)} ${a.currency}`;
   return a.tipo === "efectivo-bajo"
