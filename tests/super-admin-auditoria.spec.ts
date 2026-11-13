@@ -62,6 +62,12 @@ test("se separa lo que hizo PuntoCash de lo que hizo un mercante", async ({ page
   const m = await filas(page).count();
   expect(m).toBeGreaterThan(0);
   for (let i = 0; i < Math.min(m, 12); i++) await expect(filas(page).nth(i)).not.toContainText("Mercante ·");
+
+  /* Lo que el trabajador cambia de sí mismo tiene su propio autor. */
+  await main.getByLabel("Quién actuó").selectOption("trabajador");
+  await expect(page).toHaveURL(/rol=trabajador/);
+  const t = await filas(page).count();
+  for (let i = 0; i < t; i++) await expect(filas(page).nth(i)).toContainText("Trabajador");
 });
 
 test("el tipo de evento, la búsqueda y la sede acotan, y se recuerdan en la dirección", async ({ page }) => {

@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v8.7
+## Documento de Requisitos Funcionales (FRD) · v9.0
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -11,7 +11,7 @@
 | --- | --- |
 | `PuntoCash_Admin_Sede_PRD_v1.md` | El producto, sus conceptos y las reglas **A1–A14**, citadas aquí como **[A#]** |
 | `../PuntoCash_PRD_v2.md` | Las reglas de producto **R1–R13** y los requisitos **RP-***, citados como **[R#]** y **[RP-#]** |
-| `../worker/PuntoCash_Worker_Functional_Requirements_v1.md` | El acceso y la recuperación de contraseña, que esta consola reutiliza (**FR-AUTH-***, **FR-REC-***), y la jornada y las operaciones que aquí se consultan |
+| `../worker/PuntoCash_Worker_Functional_Requirements_v1.md` (v2.0) | El acceso y la recuperación de contraseña, que esta consola reutiliza (**FR-AUTH-***, **FR-REC-***), y lo que hace el trabajador y aquí se consulta o se resuelve: jornadas, conteos billete a billete, movimientos de fondos, cambios de billetes, recuentos, operaciones con billetes, cierre forzado y alertas |
 | `PuntoCash_Super_Admin_Functional_Requirements_v1.md` | Lo que hace PuntoCash: sedes, operadores, servicios, catálogo de monedas, rangos de tasas y promociones de red (**FR-SA-***) |
 | `../kiosko/…` | El kiosco de autoservicio (**FR-AS-***) y la pantalla informativa (**FR-PANT-***), que leen de esta consola el contenido público de cada sede |
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 9.0 | 13/11/2026 | **Segunda iteración de Worker: lo que cambia en esta consola.** (1) **La caja lleva billetes**: inventario por denominación en la ficha de caja, la jornada, el movimiento y la operación (**FR-AD-CAJA-15** a **-19**, **FR-AD-JOR-4**, **-17**, **-21**, **FR-AD-OPS-10**). (2) **Ficha de caja** nueva, `/admin/cajas/[id]`: estado en tiempo real, efectivo, pendientes, movimientos, jornadas, alertas; Retirar y Reactivar pasan aquí; Cajas enseña el efectivo de cada caja (§4.6, **FR-AD-CAJA-1**). (3) **Aprobaciones**: sale «Ajuste de efectivo»; entran **Diferencia de composición**, **Movimiento de fondos** y **Diferencia en recuento**; un movimiento de fondos **solo lo confirma el supervisor que nombró el trabajador**, código `solo-el-supervisor`; un rechazo queda como **incidencia** del trabajador; «Sin explicar» (**FR-AD-APR-1**, **-17**, **-18**). (4) **Incidencias** en la ficha y la lista de Trabajadores (**FR-AD-TRAB-18**). (5) **Alertas de caja**, sección nueva en Configuración, `/admin/alertas`; Inicio, ficha de caja y ficha de sede las enseñan (§20, **FR-AD-HOME-2**, **FR-AD-SEDE-17**). (6) **Tablas**: la fila con detalle se abre entera y sus acciones van en la ficha o en «⋯»; **botones** uno al lado del otro (**FR-AD-SHELL-18**, **-19**). (7) En Sedes el **selector de la cabecera** aparece desactivado (**FR-AD-SCOPE-8**). (8) El **cierre forzado** se le avisa al trabajador al instante (**FR-AD-JOR-14**). (9) Los avisos que enumeran cajas o tasas ponen **una por línea**. (10) El trabajador **cambia él mismo** su nombre de usuario y su teléfono (**FR-AD-TRAB-19**). (11) Códigos de operación en **hora de Cuba**. |
 | 8.7 | 03/11/2026 | **Una sede se ve desde que es del operador (FR-AD-SCOPE-7, nuevo).** Las jornadas, solicitudes y operaciones del operador anterior dejan de verse; sus aprobaciones pendientes las resuelve PuntoCash. |
 | 8.6 | 03/11/2026 | **Las tasas admiten hasta 4 decimales** (código `demasiados-decimales`; cifras con mínimo 2 y máximo 4). FR-AD-STATE-7 se comprueba también a 1280 y 1440; la lista de Operaciones deja que el texto de la sede se parta, y la de Jornadas deja partirse la fecha y el horario, para no desbordar a 1280. |
 | 8.5 | 03/11/2026 | **Worker queda recableado contra la lista de la sede (FR-AD-MON-2).** «Añadir moneda» en la caja ofrece las monedas de la lista de su sede que la caja aún no tiene habilitadas; Worker ya no tiene una lista propia. Si la caja ya tiene todas las de la sede, la pantalla lo dice y remite al administrador. Nombre y símbolo de cada moneda salen de la lista ISO 4217 compartida por toda la plataforma, y todas las monedas se manejan con cuatro decimales (decisión de PuntoCash, FRD de Super administración v3.8). |
@@ -85,6 +86,19 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 
 **Ver en la demo:** `marta@malecon-sf.cu`, **Sedes** → cualquier sede, estrechando la ventana por debajo de 640px.
 
+**FR-AD-SHELL-18 · Tablas: abrir una fila y sus acciones.** Una sola regla en toda la consola, también en las listas de dentro de una ficha:
+
+1. **Si la fila tiene detalle, se abre tocando la fila entera.** En escritorio termina en «›», que es el enlace real (teclado y abrir en otra pestaña); en una tarjeta se toca la tarjeta entera. No hay «Ver detalle» ni nombre subrayado. Los enlaces a **otra cosa** dentro de una celda (trabajador, sede, jornada) se mantienen.
+2. **Si existe ficha, las acciones van en la ficha.** La lista sirve para encontrar y abrir.
+3. **Si no hay ficha y sí acciones**, van en un menú **«⋯»** al final de la fila, aunque sea una sola; en la tarjeta, arriba a la derecha.
+4. Si no hay nada que abrir ni hacer, la fila es plana.
+
+Donde este documento dice de una lista «con enlace a» la ficha de la fila, se entiende esta regla. Se aplica en Sedes, Cajas, Trabajadores, Administradores, Promociones, Inicio (sedes y cajas), Reportes y movimientos de la jornada; en «⋯» quedan Equipos, Monedas y Tasas de una sede.
+
+**FR-AD-SHELL-19 · Botones.** Los grupos de botones van uno al lado del otro; si no caben, cada uno ocupa todo el ancho. Un texto que no cabe pasa a dos líneas dentro del botón. Los avisos que enumeran varias cajas, jornadas o tasas ponen **una por línea**.
+
+**Ver en la demo:** `marta@malecon-sf.cu`, **Cajas** (filas que se abren enteras) y **Equipos** (menú «⋯»).
+
 ---
 
 ### 1.2 Cabecera
@@ -115,12 +129,12 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 | --- | --- |
 | Operación | Inicio, Jornadas, Aprobaciones, Operaciones |
 | Sucursal | Sedes, Cajas, Equipos, Trabajadores, Administradores |
-| Configuración | Monedas, Tasas, Promociones, Reportes |
+| Configuración | Monedas, Tasas, **Alertas** (§20), Promociones, Reportes |
 
-- **Administradores** solo existe para el administrador principal (**FR-AD-USR-11**): trece destinos para él, doce para los demás.
+- **Administradores** solo existe para el administrador principal (**FR-AD-USR-11**): catorce destinos para él, trece para los demás.
 - El servidor decide si incluye Administradores al armar el menú. La entrada no llega al navegador de quien no es principal.
 
-**Ver en la demo:** `marta@malecon-sf.cu` (trece destinos) y `dcastro@malecon-sf.cu` (doce, sin Administradores).
+**Ver en la demo:** `marta@malecon-sf.cu` (catorce destinos) y `dcastro@malecon-sf.cu` (trece, sin Administradores).
 
 **FR-AD-SHELL-3 · Indicadores.** Tres destinos llevan un número cuando es mayor que cero:
 
@@ -178,7 +192,7 @@ Requisitos retirados, cuyos códigos no se reutilizan: **FR-AD-ACC-9**, **FR-AD-
 
 | Filtran por la sede elegida | Muestran siempre todo el alcance |
 | --- | --- |
-| Inicio, Cajas, Equipos, Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Promociones, Reportes, y los indicadores del menú (**FR-AD-SHELL-3**) | Sedes, Trabajadores y Administradores, con la sede como columna cuando aplica |
+| Inicio, Cajas, Equipos, Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Alertas, Promociones, Reportes, y los indicadores del menú (**FR-AD-SHELL-3**) | Sedes, Trabajadores y Administradores, con la sede como columna cuando aplica |
 
 - La selección se conserva durante la navegación.
 - Una sesión nueva empieza en «Todas mis sedes».
@@ -201,6 +215,10 @@ No se puede ver en la demo.
 
 **Ver en la demo:** `rortega@caribecambios.cu` (Caribe, que tiene PuntoCash Miramar desde el 30/06/2026), Jornadas con «Desde» 01/06/2026: no aparece ninguna de junio. En Super administración, las mismas fechas muestran las de Atlántico.
 
+**FR-AD-SCOPE-8 · El selector en Sedes.** En el listado y en las fichas de Sedes el selector se muestra **desactivado**: en el listado dice «Todas mis sedes» y en una ficha, la sede de la ficha. La elección guardada no cambia: al salir de Sedes vuelve a aplicarse. Un lector de pantalla oye que en Sedes no se filtra por sede.
+
+**Ver en la demo:** `marta@malecon-sf.cu`, elegir PuntoCash Vedado en la cabecera y abrir **Sedes** → PuntoCash Obispo: el selector dice PuntoCash Obispo y no se puede tocar. Volver a Inicio: vuelve a PuntoCash Vedado.
+
 ---
 
 ### 1.6 Rutas
@@ -219,6 +237,7 @@ No se puede ver en la demo.
 | `/admin/sedes/[id]/editar` | Dirección, teléfono y horario de una sede |
 | `/admin/cajas` | Cajas de las sedes administradas |
 | `/admin/cajas/nueva` | Alta de una caja |
+| `/admin/cajas/[id]` | Ficha de una caja: estado en tiempo real, efectivo por denominación, pendientes, movimientos, jornadas y alertas (§4.6). El identificador lleva «:» y va codificado en la dirección |
 | `/admin/equipos` | Equipos vinculados: cajas y kioscos |
 | `/admin/equipos/vincular` | Vincular un equipo por QR o por código |
 | `/admin/trabajadores` | Listado de trabajadores |
@@ -234,7 +253,7 @@ No se puede ver en la demo.
 | `/admin/perfil/editar` | Edición de sus propios datos personales |
 | `/admin/perfil/contrasena` | Cambio de su propia contraseña |
 | `/admin/jornadas` | Jornadas de las cajas del alcance |
-| `/admin/jornadas/[id]` | Una jornada: apertura, saldos, cierre, movimientos y cierre forzado |
+| `/admin/jornadas/[id]` | Una jornada: apertura, saldos, billetes y monedas, cierre, movimientos y cierre forzado |
 | `/admin/jornadas/[id]/movimientos/[movimientoId]` | Un movimiento de la jornada, en solo lectura |
 | `/admin/aprobaciones` | Bandeja de solicitudes de aprobación: pendientes y resueltas |
 | `/admin/aprobaciones/[id]` | Una solicitud: lo que registró el trabajador y su resolución |
@@ -243,6 +262,8 @@ No se puede ver en la demo.
 | `/admin/monedas` | Monedas que maneja cada sede |
 | `/admin/tasas` | Tabla de tasas de las sedes del alcance |
 | `/admin/tasas/[sedeId]` | Tasas de una sede, con su edición |
+| `/admin/alertas` | Alertas de caja: activas, reglas de cada sede e historial (§20) |
+| `/admin/alertas/[sedeId]` | Definir las alertas de una sede (§20.3) |
 | `/admin/promociones` | Promociones de las sedes administradas |
 | `/admin/promociones/nueva` | Alta de una promoción |
 | `/admin/promociones/[id]` | Una promoción: su edición, o su lectura si no se puede cambiar |
@@ -410,7 +431,7 @@ Lo propio de esta consola: la ayuda, cuando el correo registrado ya no sirve, re
 | Vinculado | Fecha de vinculación y quién la vinculó |
 | Última actividad | Fecha y hora de la última señal del equipo |
 | Jornada | Como en Cajas (**FR-AD-CAJA-1**): si tiene una abierta, trabajador, desde cuándo, si está en sesión y enlace a `/admin/jornadas/{id}`; si no, cerrada |
-| Acción | Si tiene equipo, «Editar etiqueta» (**FR-AD-EQ-30**) y «Desvincular»; si no, «Vincular un equipo» → `/admin/equipos/vincular` |
+| Acciones (menú «⋯», **FR-AD-SHELL-18**) | Si tiene equipo, «Editar etiqueta» (**FR-AD-EQ-30**) y «Desvincular»; si no, «Vincular un equipo» → `/admin/equipos/vincular` |
 
 **FR-AD-EQ-6 · Cajas sin equipo.**
 
@@ -429,7 +450,7 @@ Lo propio de esta consola: la ayuda, cuando el correo registrado ya no sirve, re
 | Vinculado | Fecha de vinculación y quién lo vinculó |
 | Última actividad | Fecha y hora de la última señal del kiosco |
 | Solicitudes | Solicitudes generadas en el periodo (pendiente de dependencia, §18) |
-| Acción | «Editar etiqueta» (**FR-AD-EQ-30**) y «Desvincular» |
+| Acciones (menú «⋯») | «Editar etiqueta» (**FR-AD-EQ-30**) y «Desvincular» |
 
 **Ver en la demo:** `marta@malecon-sf.cu`, **Equipos** → Kioscos de autoservicio (dos en PuntoCash Vedado). Sin kioscos: `rortega@caribecambios.cu`. La columna de solicitudes no se puede ver en la demo.
 
@@ -605,8 +626,10 @@ Datos de cada caja:
 | Equipo | Rótulo del equipo vinculado, o la indicación de que no tiene |
 | Estado | Activa o retirada. Si está retirada, también el motivo de la retirada |
 | Jornada | Si tiene una abierta: trabajador, fecha y hora de apertura, si el trabajador tiene la sesión iniciada en ese momento, y enlace a `/admin/jornadas/{id}`. Si no tiene: cerrada. Si la caja está retirada: nada |
+| Efectivo | Lo que tiene ahora, por moneda («265.570,00 CUP · 431,00 USD»). Si está cerrada, lo que quedó dentro al cerrarla, marcado como tal |
 | Alta | Fecha de creación y nombre de quien la creó |
-| Acción | «Retirar» si está activa; «Reactivar» si está retirada |
+
+- **Cada fila abre la ficha de la caja** (§4.6, **FR-AD-SHELL-18**). «Retirar» y «Reactivar» están en la ficha, no en la lista.
 
 Por debajo de 1024px cada caja es una tarjeta (**FR-AD-SHELL-13**).
 
@@ -671,7 +694,7 @@ Si el usuario no tiene ninguna sede donde crear una caja, la pantalla muestra un
 
 ### 4.3 Retirar una caja
 
-Se inicia con «Retirar» en una caja activa y se confirma en un diálogo.
+Se inicia con «Retirar» en la ficha de una caja activa (§4.6) y se confirma en un diálogo.
 
 **Bloqueos.** Si se da alguna de estas condiciones, el diálogo **no pide motivo**. Explica cada condición que se cumple y ofrece una acción para resolverla. Si se cumplen varias, la acción es la de la primera que aparece en la tabla.
 
@@ -681,7 +704,7 @@ Se inicia con «Retirar» en una caja activa y se confirma en un diálogo.
 | **FR-AD-CAJA-10** | La caja tiene un equipo vinculado | Ir a Equipos → `/admin/equipos` | `equipo-vinculado` |
 | **FR-AD-CAJA-13** | Es la única caja activa de una sede con estado activa | Crear una caja → `/admin/cajas/nueva?sede={sedeId}` | `ultima-caja` |
 
-**Ver en la demo** (`marta@malecon-sf.cu`, Cajas, «Retirar»):
+**Ver en la demo** (`marta@malecon-sf.cu`, Cajas → la caja → «Retirar»):
 
 - Jornada abierta y equipo a la vez: Caja 01 de PuntoCash Obispo.
 - Solo equipo: cualquier caja con equipo y jornada cerrada.
@@ -689,7 +712,7 @@ Se inicia con «Retirar» en una caja activa y se confirma en un diálogo.
 
 **FR-AD-CAJA-8 · Confirmación.** Sin bloqueos, el diálogo pide un **motivo** obligatorio de al menos 10 caracteres, sin contar los espacios al principio y al final.
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Cajas, «Retirar» en una caja de PuntoCash Obispo marcada sin equipo.
+**Ver en la demo:** `marta@malecon-sf.cu`, Cajas → una caja de PuntoCash Obispo marcada sin equipo → «Retirar».
 
 **Rechazos del servidor.**
 
@@ -713,7 +736,7 @@ Se inicia con «Retirar» en una caja activa y se confirma en un diálogo.
 
 ### 4.4 Reactivar una caja
 
-**FR-AD-CAJA-12.** Se inicia con «Reactivar» en una caja retirada y se confirma en un diálogo, sin motivo.
+**FR-AD-CAJA-12.** Se inicia con «Reactivar» en la ficha de una caja retirada y se confirma en un diálogo, sin motivo.
 
 - La caja pasa a activa **sin equipo**: no recupera ningún vínculo anterior y hay que vincularle uno.
 - El diálogo lo advierte antes de confirmar.
@@ -724,7 +747,7 @@ Se inicia con «Retirar» en una caja activa y se confirma en un diálogo.
 | La sede está cerrada | `sede-cerrada` |
 | La caja no existe o está fuera del alcance | `no-encontrada` |
 
-**Ver en la demo:** retirar una caja como en 4.3 y pulsar «Reactivar» en ella.
+**Ver en la demo:** retirar una caja como en 4.3 y pulsar «Reactivar» en su ficha.
 
 ---
 
@@ -737,6 +760,34 @@ Se inicia con «Retirar» en una caja activa y se confirma en un diálogo.
 | Crear | `caja.alta` | Autor, fecha, sede, caja |
 | Retirar | `caja.retirada` | Autor, fecha, sede, caja, motivo |
 | Reactivar | `caja.reactivada` | Autor, fecha, sede, caja |
+
+---
+
+### 4.6 Ficha de una caja — `/admin/cajas/[id]`
+
+Se llega desde Cajas, la ficha de la sede, Inicio y Alertas. Una caja que no existe o está fuera del alcance responde `no-encontrada` (**FR-AD-NAV-3**).
+
+**FR-AD-CAJA-15 · Contenido.** Todo en tiempo real: lo que registra el trabajador en Worker se ve aquí al recargar.
+
+| Bloque | Contenido |
+| --- | --- |
+| Cabecera | Identificador de la caja, sede y, si está retirada, el motivo. «Retirar» o «Reactivar» (§4.3, §4.4). «Volver a Cajas» |
+| Ahora | Estado de la jornada: abierta (trabajador, desde cuándo, si está en sesión, enlace a la jornada) o cerrada (cuándo y por quién, o cierre forzado sin contar). Equipo vinculado |
+| Alertas | Las activas con sus cifras y desde cuándo, y su historial (**FR-AD-ALE-6**) |
+| Efectivo ahora | Por moneda, total e **inventario por denominación** (cantidad y subtotal de cada billete o moneda). Cerrada: «Efectivo al cerrar» o, tras un cierre forzado, «Efectivo en libros al forzar el cierre»: **una caja cerrada tiene dinero dentro** hasta la próxima apertura. Lo que no está desglosado sale como «Sin desglosar» |
+| Pendiente de aprobar | Las solicitudes pendientes de la caja, cada una con su diferencia **nombrada por su motivo** («Reposición +100,00 USD», «Retiro −100,00 USD», «Faltante −20,00 USD») y que abre la solicitud |
+| Últimos movimientos | Los más recientes, con concepto, importe y billetes; cada uno abre su detalle |
+| Jornadas anteriores | Las cerradas de la caja; cada una abre la jornada |
+
+**FR-AD-CAJA-16 · Una reposición o un retiro no son sobrante ni faltante.** En la ficha, como en Aprobaciones, una diferencia se nombra por su motivo, nunca por su signo.
+
+**FR-AD-CAJA-17 · Datos frente a Worker.** Esta ficha enseña los saldos que el trabajador **no ve** (**FR-CIEGO-1** del FRD de Worker). Ningún dato de esta pantalla viaja a Worker.
+
+**FR-AD-CAJA-18 · Inventario.** El inventario de una moneda es la suma de los billetes de los movimientos de su jornada, partiendo del de la anterior. Las denominaciones retiradas por PuntoCash que siguen en la caja se enseñan, marcadas como retiradas.
+
+**FR-AD-CAJA-19 · Super Admin.** La misma ficha, sin acciones, en `/super-admin/sedes/{sedeId}/cajas/{cajaId}` (**FR-SA-EQ-10**).
+
+**Ver en la demo:** `marta@malecon-sf.cu`, Cajas → Caja 01 de PuntoCash Vedado (abierta, con una reposición pendiente); Caja 03 de PuntoCash Obispo (cerrada, con lo que quedó dentro).
 
 ---
 
@@ -772,9 +823,10 @@ El volumen se consulta en Reportes (**FR-AD-REP-12**).
 | 6 | Aprobaciones pendientes (§14) | Hay al menos una solicitud pendiente. Una sola entrada para todas: dice cuántas son y, de la más antigua, su antigüedad, su tipo, su caja y su sede | Todas | `/admin/aprobaciones` | Aparece siempre con esta cuenta |
 | 7 | Caja abierta fuera de horario | Caja activa con jornada abierta, y la hora actual está fuera de la franja de hoy en el horario de su sede, **o** la jornada se abrió un día anterior. La entrada distingue los dos casos y dice quién la abrió y cuándo | Jornada | `/admin/jornadas/{id}` | Caja 01 de PuntoCash Obispo (abierta desde ayer) |
 | 8 | Cierre forzado pendiente de conciliar (**FR-AD-JOR-20**) | Jornada con cierre forzado a la que todavía no ha seguido ninguna apertura de su caja, sea de la fecha que sea. Las diferencias de cierre y de apertura no tienen entrada propia: cuentan en la entrada 6 | Jornada | `/admin/jornadas/{id}` | Forzar el cierre de la Caja 01 de PuntoCash Obispo (**FR-AD-JOR-7**) y volver a Inicio |
-| 9 | Tasa ajustada por PuntoCash (**FR-AD-TASA-12**) | Tasa que el sistema llevó al límite de un rango nuevo y que nadie de la empresa ha confirmado | Sede y moneda | `/admin/tasas/{sedeId}` | EUR de PuntoCash Obispo |
-| 10 | Tasa cuyo rango retiró PuntoCash (**FR-AD-TASA-15**) | Tasa definida en la sede cuya moneda no tiene rango de PuntoCash | Sede y moneda | `/admin/tasas/{sedeId}` | Con `abarrios@bahiacambios.cu`: CAD de PuntoCash Trinidad |
-| 11 | Sede en horario sin ninguna caja abierta | La sede está activa, tiene al menos una caja activa con equipo, ninguna caja tiene jornada abierta y la hora actual está dentro de la franja de hoy en su horario | Sede | `/admin/sedes/{id}` | Entre lunes y sábado de 9:00 a 18:00, forzar el cierre de la Caja 01 de PuntoCash Obispo y volver a Inicio |
+| 9 | **Caja con alertas** (§20) | Caja con la jornada abierta y alguna alerta encendida. Con una: «Caja 02 de PuntoCash Vedado: quedan pocos billetes de 10 USD»; con varias: «… tiene 3 alertas», y debajo sus títulos | Caja | `/admin/cajas/{id}` | Depende de la hora del día: alguna caja de PuntoCash Vedado |
+| 10 | Tasa ajustada por PuntoCash (**FR-AD-TASA-12**) | Tasa que el sistema llevó al límite de un rango nuevo y que nadie de la empresa ha confirmado | Sede y moneda | `/admin/tasas/{sedeId}` | EUR de PuntoCash Obispo |
+| 11 | Tasa cuyo rango retiró PuntoCash (**FR-AD-TASA-15**) | Tasa definida en la sede cuya moneda no tiene rango de PuntoCash | Sede y moneda | `/admin/tasas/{sedeId}` | Con `abarrios@bahiacambios.cu`: CAD de PuntoCash Trinidad |
+| 12 | Sede en horario sin ninguna caja abierta | La sede está activa, tiene al menos una caja activa con equipo, ninguna caja tiene jornada abierta y la hora actual está dentro de la franja de hoy en su horario | Sede | `/admin/sedes/{id}` | Entre lunes y sábado de 9:00 a 18:00, forzar el cierre de la Caja 01 de PuntoCash Obispo y volver a Inicio |
 
 «Dentro de la franja»: la hora de apertura del día es menor o igual que la actual, y la actual es menor que la de cierre. Un día cerrado no tiene franja.
 
@@ -805,7 +857,7 @@ Por debajo de 1024px cada sede es una tarjeta (**FR-AD-SHELL-13**).
 | Equipo | Rótulo e identificador del equipo vinculado, o la indicación de que no tiene, como advertencia |
 | Jornada | Si tiene una abierta: trabajador, desde cuándo, si el trabajador tiene la sesión iniciada en ese momento, y enlace a `/admin/jornadas/{id}`. Si no: cerrada |
 
-Debajo, los kioscos vinculados a la sede con su rótulo e identificador, o la indicación de que no tiene ninguno. Si la sede no tiene cajas activas, un enlace a `/admin/cajas` en lugar de la tabla.
+Cada caja abre su ficha (§4.6). Debajo, los kioscos vinculados a la sede con su rótulo e identificador, o la indicación de que no tiene ninguno. Si la sede no tiene cajas activas, un enlace a `/admin/cajas` en lugar de la tabla.
 
 **Ver en la demo:** `marta@malecon-sf.cu`, elegir PuntoCash Obispo en la cabecera y abrir Inicio.
 
@@ -858,7 +910,7 @@ Por debajo de 1024px cada sede es una tarjeta con código y localidad bajo el no
 
 ### 6.2 Ficha de sede — `/admin/sedes/[id]`
 
-**FR-AD-SEDE-3 · Contenido.** La ficha tiene ocho bloques: datos de la sede, servicios habilitados, cajas y sus equipos, kioscos, trabajadores, tasas, promociones y jornadas de hoy. Una sede que no existe o está fuera del alcance responde `no-encontrada` (**FR-AD-NAV-3**).
+**FR-AD-SEDE-3 · Contenido.** La ficha tiene nueve bloques: datos de la sede, alertas de caja (**FR-AD-SEDE-17**), servicios habilitados, jornadas de hoy, cajas y sus equipos, kioscos, trabajadores, tasas y promociones. Una sede que no existe o está fuera del alcance responde `no-encontrada` (**FR-AD-NAV-3**).
 
 **Ver en la demo:** `marta@malecon-sf.cu`, Sedes → PuntoCash Obispo.
 
@@ -895,13 +947,19 @@ Por debajo de 1024px cada sede es una tarjeta con código y localidad bajo el no
 | --- | --- |
 | Caja | Identificador |
 | Equipo | Rótulo del equipo vinculado, o la indicación de que no tiene, como advertencia |
-| Jornada | Solo si tiene una abierta: el trabajador, si tiene la sesión iniciada o no, y el saldo actual por moneda |
+| Jornada | Abierta: el trabajador, si tiene la sesión iniciada o no, y el saldo actual por moneda. Cerrada: cuándo y por quién se cerró (o «Cierre forzado…, sin contar») y **lo que quedó dentro**, por moneda |
 | Estado | Activa o Retirada |
+
+- **Cada caja abre su ficha** (§4.6).
 
 - Enlaces a `/admin/cajas` y a `/admin/equipos`.
 - Sin cajas, en lugar de la lista, un texto que explica que hace falta crear al menos una.
 
 **Ver en la demo:** `marta@malecon-sf.cu`, ficha de PuntoCash Obispo (Caja 01 con jornada abierta, Caja 02 sin equipo). Sin cajas: ficha de PuntoCash Cerro.
+
+**FR-AD-SEDE-17 · Alertas de caja.** Solo consulta: las **cajas con alertas activas**, cada una con los títulos de sus alertas y que abre la ficha de la caja; y las **reglas vigentes** de la sede por moneda (mínimo, máximo y billetes mínimos). Las alertas se definen en **Alertas** (§20), y el bloque lleva «Ver en Alertas». Sin reglas, lo dice.
+
+**Ver en la demo:** `marta@malecon-sf.cu`, ficha de PuntoCash Vedado.
 
 **FR-AD-SEDE-8 · Kioscos.** Los kioscos vinculados a la sede con su rótulo, su identificador y su última actividad, o la indicación de que no tiene actividad registrada. Enlace «Gestionar equipos» → `/admin/equipos`. Sin kioscos, un texto que lo indica.
 
@@ -1030,6 +1088,7 @@ Datos de cada trabajador:
 | Correo de verificación | Enmascarado (**FR-AD-FMT-3**) |
 | Estado | «Activo» o «Desactivado» |
 | Alta | Fecha de alta |
+| Incidencias | Cuántas incidencias tiene (**FR-AD-TRAB-18**). Cero sin marca |
 | Última jornada | Si tiene una abierta: que está abierta ahora y su caja. Si no: fecha de apertura y caja de la más reciente. Enlace a `/admin/jornadas/{id}`. Si nunca abrió ninguna: «Ninguna» |
 
 Ninguna columna ni dato de esta sección presenta al trabajador asociado a una caja **[A13]**.
@@ -1125,6 +1184,12 @@ Un trabajador que no existe o es de una sede fuera del alcance responde `no-enco
 | Sede | Nombre de su sede. Ninguna caja **[A13]** |
 | Actividad reciente | Su jornada abierta, si la tiene: caja, sede, fecha y hora de apertura, enlace a `/admin/jornadas/{id}`. Las cajas en que ha operado, con un enlace a su volumen por día en Reportes → `/admin/reportes?corte=dia&trabajador={id}` (**FR-AD-REP-12**). Sus **diez últimas jornadas**, de la más reciente a la más antigua; cada una se abre pulsándola → `/admin/jornadas/{id}` |
 | Acciones | «Editar datos» → `/admin/trabajadores/{id}/editar`; «Regenerar credencial»; «Ayudar con el acceso» → `/admin/trabajadores/{id}/acceso`; «Reasignar a otra sede», solo si hay otra sede del alcance no cerrada; «Desactivar» si está activo o «Reactivar» si está desactivado |
+
+**FR-AD-TRAB-18 · Incidencias.** Una **incidencia** es lo que el trabajador registró y la administración **rechazó**: una diferencia de apertura, de cierre, de composición o de recuento, o un movimiento de fondos. Queda **a su nombre** y la administración decide qué hace con él; el sistema no hace nada más. La ficha tiene un bloque **Incidencias** con cada una (tipo, moneda, fecha del rechazo, quién la rechazó y su motivo), que abre su solicitud. Sin incidencias, lo dice.
+
+**Ver en la demo:** `marta@malecon-sf.cu`, Trabajadores: la columna Incidencias; abrir un trabajador con alguna.
+
+**FR-AD-TRAB-19 · Lo que el trabajador cambia de sí mismo.** Desde su Perfil en Worker, el trabajador cambia **su nombre de usuario** y **su teléfono**, y su contraseña (FRD de Worker, §13). Su nombre, su documento y su correo los sigue cambiando solo la administración (**FR-AD-TRAB-9**, **FR-AD-TRAB-10**). Los cambios se ven aquí al momento y quedan en la auditoría de PuntoCash con el trabajador como autor.
 
 Datos de cada jornada de la actividad reciente:
 
@@ -1730,7 +1795,7 @@ Datos de cada moneda, en el orden en que se añadieron:
 | --- | --- |
 | Moneda | Bandera, código y nombre |
 | Habilitada en cajas | Cuántas cajas **activas** de la sede la tienen habilitada hoy, sobre el total de cajas activas, y sus nombres. Si no está en ninguna, la indicación de que no lo está |
-| Acción | «Retirar» |
+| Acciones (menú «⋯», **FR-AD-SHELL-18**) | «Retirar» |
 
 Por debajo de 1024px cada moneda es una tarjeta, con las cajas como subtítulo (**FR-AD-SHELL-13**).
 
@@ -1919,7 +1984,7 @@ Tasas definidas de la sede, en el orden de su lista de monedas:
 | Venta | Cifra en CUP |
 | Rango de PuntoCash | Intervalo de compra e intervalo de venta, o la indicación de que no hay rango (**FR-AD-TASA-7**) |
 | Último cambio | Fecha y autor. El autor es «PuntoCash» cuando el cambio lo hizo el sistema (**FR-AD-TASA-12**) |
-| Acciones | «Cambiar» («Revisar» si está ajustada por PuntoCash), solo si la tasa está en vigor; «Retirar» |
+| Acciones (menú «⋯», **FR-AD-SHELL-18**) | «Cambiar» («Revisar» si está ajustada por PuntoCash), solo si la tasa está en vigor; «Retirar» |
 
 Debajo, **las monedas de la lista de la sede que no tienen tasa** (sin el peso cubano), cada una con «Fijar tasa» o con el motivo por el que no puede fijarse (**FR-AD-TASA-2**). Y un enlace a `/admin/monedas` para añadir a la lista la moneda que falte.
 
@@ -2323,7 +2388,7 @@ Datos de cada jornada:
 | Apertura y cierre | Hora de apertura y hora de cierre. Si el cierre fue otro día, también su fecha. Si sigue abierta, sin cierre |
 | Estado | «Abierta», «Cerrada» o «Cierre forzado» |
 | Operaciones | Número de operaciones completadas con cliente. No cuenta movimientos |
-| Al abrir | «Coincide»; o, por cada moneda que no coincidió con el cierre anterior, la diferencia nombrada por su motivo (**FR-AD-JOR-19**); o «—» si no hay cierre anterior |
+| Al abrir | «Coincide»; o, por cada moneda que no coincidió con el cierre anterior, la diferencia nombrada por su motivo (**FR-AD-JOR-19**), o «Billetes distintos · total sin diferencia» si solo cambió la composición; o «—» si no hay cierre anterior |
 | Cierre | «Cuadrada»; o la diferencia de cada moneda que no cuadró (**FR-AD-JOR-3**); o, en un cierre forzado, «Sin contar» con «Pendiente de conciliar» o «Contada al abrir la siguiente» debajo (**FR-AD-JOR-20**); o «—» si sigue abierta |
 
 - Se entra a una jornada pulsando su fila o su tarjeta en cualquier parte. La fila se resalta al pasar el puntero y termina en «›», que es el enlace real a `/admin/jornadas/{id}` (teclado y abrir en otra pestaña). La tarjeta lleva el mismo «›» junto al estado.
@@ -2361,7 +2426,7 @@ Datos de cada jornada:
 - Sin ninguna jornada: `ibetancourt@centrodivisas.cu`, Jornadas.
 - Ninguna coincide: `marta@malecon-sf.cu`, Jornadas, Estado «Cierres forzados» y Caja «Caja 02 · PuntoCash Vedado».
 
-**Señales encima del listado.** Cada una es un aviso de advertencia con una entrada por jornada (caja y sede) y enlace a `/admin/jornadas/{id}`:
+**Señales encima del listado.** Cada una es un aviso de advertencia con **una entrada por línea** por jornada (caja y sede) y enlace a `/admin/jornadas/{id}`:
 
 | Requisito | Situación | Contenido del aviso | Ver en la demo (Jornadas; `marta@malecon-sf.cu`) |
 | --- | --- | --- | --- |
@@ -2380,11 +2445,16 @@ Datos de cada jornada:
 | La jornada | Estado; trabajador, con enlace a su ficha si está en el alcance; equipo en el que se operó (rótulo e identificador, o «—»); apertura (fecha y hora); cierre (hora, o fecha y hora si fue otro día; si sigue abierta, la indicación de que está abierta) |
 | Apertura | La apertura comparada con el cierre anterior (**FR-AD-JOR-19**) |
 | Saldos | Por moneda: fondeo inicial y saldo actual si está abierta, o saldo final si está cerrada |
-| Cierre | Solo si la cerró el trabajador. Por moneda: esperado, contado, diferencia (**FR-AD-JOR-3**), motivo declarado por el trabajador y estado de su aprobación (**FR-AD-APR-15**) |
+| Billetes y monedas | **FR-AD-JOR-21**: el inventario por denominación de cada moneda, ahora si está abierta o al cerrar si está cerrada |
+| Cierre | Solo si la cerró el trabajador. Por moneda: esperado, contado, y la diferencia (**FR-AD-JOR-3**) o, si el total cuadra y los billetes no, qué billetes cambiaron («+2 de 20 · −1 de 50»); el motivo declarado por el trabajador o **«Sin explicar»** si no llegó; y el estado de su aprobación (**FR-AD-APR-15**) |
 | Cierre forzado | Solo en un cierre forzado (**FR-AD-JOR-14**) |
 | Movimientos | El libro de movimientos (**FR-AD-JOR-5**) |
 
 **Nombre de la jornada.** Caja, trabajador y día de apertura, con este formato: «Caja 01 · Lidia Gómez · 20 oct 2026». Es el nombre de la jornada en toda la consola.
+
+**FR-AD-JOR-21 · Billetes y monedas.** Por moneda, una fila por denominación con cantidad y subtotal, y el total. Lo que no está desglosado sale como «Sin desglosar». En una jornada abierta es lo que hay ahora; en una cerrada, lo que quedó al cerrar.
+
+**FR-AD-JOR-22 · El cierre de Worker.** El trabajador cierra **a ciegas**, en un solo acto, y da los motivos después; si no llegan, la diferencia queda «Sin explicar» (FRD de Worker, §10.6). Por cada moneda deja un movimiento: «Ajuste de cierre» (total distinto), «Ajuste de billetes al cerrar» (mismo total, otros billetes) o «Desglose del conteo de cierre» (todo cuadra).
 
 **FR-AD-JOR-16 · Abierta desde un día anterior.** Un aviso de advertencia con la fecha desde la que sigue abierta.
 
@@ -2397,13 +2467,13 @@ Datos de cada jornada:
 | Columna | Contenido |
 | --- | --- |
 | Hora | Hora del movimiento |
-| Concepto | Concepto. Enlaza al detalle del movimiento (**FR-AD-JOR-17**) |
+| Concepto | Concepto. La fila entera abre el detalle del movimiento (**FR-AD-JOR-17**, **FR-AD-SHELL-18**) |
 | Operación | Código de la operación, con enlace a ella (**FR-AD-OPS-9**); «—» si es un movimiento interno de caja |
-| Tipo | «Entrada» o «Salida» |
+| Tipo | «Entrada», «Salida» o «Cambio» (un cambio de billetes: no entra ni sale) |
 | Importe | Con signo y moneda |
 | Saldo después | Saldo de esa moneda tras el movimiento |
 
-- Filtros: **tipo** (todos, entradas, salidas) y **moneda** (todas, o una de las del libro).
+- Filtros: **tipo** (todos, entradas, salidas, cambios de billetes) y **moneda** (todas, o una de las del libro).
 - Por debajo de 1024px, una tarjeta por movimiento.
 
 **Ver en la demo:** `marta@malecon-sf.cu`, Jornadas, cualquier jornada, sección de movimientos.
@@ -2426,8 +2496,12 @@ Datos de cada jornada:
 | Por moneda: dejado | Saldo final de la jornada anterior |
 | Por moneda: contado | Lo que cuenta quien abre. Es el fondeo inicial de la jornada |
 | Por moneda: diferencia | Contado − dejado |
-| Por moneda: motivo | Obligatorio si la diferencia no es cero: «Reposición de fondos», «Retiro de fondos», «Faltante detectado», «Sobrante detectado» u «Otro» |
+| Por moneda: motivo | Obligatorio si la diferencia no es cero: «Reposición de fondos», «Retiro de fondos», «Faltante detectado», «Sobrante detectado» u «Otro». Si el total coincide y los billetes no: «El supervisor cambió billetes» u «Otro» |
+| Por moneda: supervisor | En reposición, retiro o «El supervisor cambió billetes»: el administrador que nombró el trabajador, que es quien lo confirma (**FR-AD-APR-17**) |
+| Por moneda: billetes | Lo dejado y lo contado, billete a billete, y qué billetes cambiaron |
 | Por moneda: observaciones | Texto del trabajador |
+
+Quien abre **ve lo que declaró quien cerró**, ya escrito, y corrige lo que no recibe; tras un cierre forzado, lo que había en libros (FRD de Worker, §10.3).
 
 **FR-AD-JOR-19 · Sección «Apertura» del detalle.**
 
@@ -2444,6 +2518,7 @@ La diferencia se nombra por su motivo:
 | Retiro de fondos | «Retiro −500,00 USD» | Sin color |
 | Faltante detectado / Sobrante detectado | «Faltante …» / «Sobrante …», como en el cierre (**FR-AD-JOR-3**) | Rojo / verde |
 | Otro | «Diferencia» con el importe con signo | El de su signo |
+| Solo composición | «Billetes distintos · total sin diferencia» | Advertencia |
 
 **Ver en la demo** (`marta@malecon-sf.cu`, Jornadas):
 
@@ -2473,15 +2548,20 @@ La diferencia se nombra por su motivo:
 | Dato | Contenido |
 | --- | --- |
 | Fecha y hora | Del movimiento |
-| Tipo | «Entrada» o «Salida» |
+| Tipo | «Entrada», «Salida» o «Cambio» |
 | Importe | Con signo y moneda |
+| Billetes | Tabla por denominación de lo que entró y salió |
+| Qué fue | En fondos y cambios de billetes: «Reposición: el supervisor trajo efectivo», «Retiro: el supervisor se llevó efectivo», «Cambio de billetes con el supervisor» o «Cambio de billetes con un cliente (no pasa por aprobación)» |
+| Recuento | En un recuento: lo que decían los libros y lo contado |
+| Supervisor | Si lo hay |
 | Saldo antes | Solo en un ajuste |
 | Saldo después | Saldo de esa moneda tras el movimiento |
 | Operación | Código de la operación de la que sale, con enlace (**FR-AD-OPS-9**), o «Movimiento interno de caja» |
-| Motivo y observaciones | Solo en un ajuste, tal como los declaró el trabajador |
-| Aprobación | Si el movimiento registró una diferencia: estado de su solicitud, con enlace (**FR-AD-APR-15**) |
+| Motivo y observaciones | En un ajuste o un recuento, tal como los declaró el trabajador, o «Sin explicar» |
+| Aprobación | Si el movimiento registró una diferencia o un movimiento de fondos: estado de su solicitud, con enlace (**FR-AD-APR-15**) |
+| Fondeo inicial | Si coincidió con lo que entregó quien cerró (o con los libros al forzar el cierre) o la diferencia con el cierre anterior y su motivo, con enlace a su aprobación |
 
-**Ver en la demo:** `marta@malecon-sf.cu`, Jornadas, una jornada de hace cinco días, movimiento «Ajuste de efectivo».
+**Ver en la demo:** `marta@malecon-sf.cu`, Cajas → Caja 01 de PuntoCash Vedado → la reposición pendiente en Últimos movimientos; o cualquier «Fondeo inicial» de una jornada.
 
 | Condición | Código |
 | --- | --- |
@@ -2538,6 +2618,7 @@ La diferencia se nombra por su motivo:
 - La pantalla vuelve al detalle con un aviso de éxito: la caja está cerrada y el trabajador tendrá que abrir una jornada nueva para volver a operar en ella.
 - En el listado y en el detalle la jornada aparece como «Cierre forzado», distinta de una cerrada por el trabajador.
 - El detalle muestra quién la cerró, cuándo, su motivo y su conciliación (**FR-AD-JOR-20**).
+- **El trabajador lo sabe al momento**, esté en la pantalla que esté: un aviso que no se puede descartar con quién cerró, cuándo y el motivo; desde ese instante no registra nada, y lo que tuviera a medias no se guarda (FRD de Worker, §11).
 
 **Ver en la demo:** `marta@malecon-sf.cu`, forzar el cierre de la Caja 01 de PuntoCash Obispo. Un cierre forzado anterior: Caja 03 de PuntoCash Obispo, hace cuatro días.
 
@@ -2615,6 +2696,15 @@ Datos de cada operación:
 | Remesa | Beneficiario, la operación, la remesa y el movimiento de efectivo |
 | Giro | Remitente o beneficiario, según se haya enviado o pagado; la operación, el giro y el movimiento de efectivo |
 
+**FR-AD-OPS-10 · Efectivo de la operación.** Dos bloques más, cuando aplican:
+
+| Bloque | Contenido |
+| --- | --- |
+| Liquidación | Vuelto al cliente, pagado en CUP (con su equivalencia) y a favor de la casa por redondeo. «Cliente recibe» e «Importe entregado» dicen lo que el cliente se llevó; si no coincide con lo que daba la tasa o con el importe de la remesa o el giro, se dice también (FRD de Worker, §6.7) |
+| Billetes de la operación | Por cada movimiento de la operación, la tabla de billetes que entraron y salieron |
+
+**Ver en la demo:** `marta@malecon-sf.cu`, Operaciones, cualquier operación de hoy hecha en Worker.
+
 **FR-AD-OPS-4 · Contexto de la operación.** Bloque encima del detalle **[FR-AS-DOM-11]**:
 
 | Dato | Contenido |
@@ -2658,23 +2748,29 @@ Datos de cada operación:
 
 ## 14. Aprobaciones
 
-Toda diferencia de efectivo que registra un trabajador queda pendiente del visto bueno de la administración. Resolverla deja constancia de la decisión y no cambia nada de lo que el trabajador registró **[A6]**, **[A7]**.
+Toda diferencia de efectivo que registra un trabajador, y todo movimiento de fondos con un supervisor, queda pendiente del visto bueno de la administración. Resolverla deja constancia de la decisión y no cambia nada de lo que el trabajador registró **[A6]**, **[A7]**.
 
 ### 14.1 Solicitudes de aprobación
 
 **FR-AD-APR-1 · Cuándo nace una solicitud.**
 
-- Una solicitud por cada diferencia distinta de cero que registra el trabajador, **una por moneda**.
+- Una solicitud por cada diferencia que registra el trabajador —de importe, o de composición si el total cuadra y los billetes no— y por cada movimiento de fondos, **una por moneda**.
 - **Sin umbral**: toda diferencia, por pequeña que sea.
 - Nace en estado pendiente. La registra Worker (§18).
 
-| Tipo | Origen | Lo que había antes de contar |
+| Tipo | Origen | Referencia |
 | --- | --- | --- |
-| Ajuste de efectivo | El trabajador corrige el saldo de su caja durante la jornada | Saldo registrado |
-| Diferencia de cierre | Lo contado al cerrar no coincide con lo esperado | Saldo esperado |
-| Diferencia de apertura | Lo contado al abrir no coincide con lo que dejó el cierre anterior (**FR-AD-JOR-18**). **Todas** piden aprobación, también una reposición o un retiro de fondos | Lo dejado al cierre anterior |
+| Diferencia de apertura | Lo contado al abrir no coincide en total con lo que dejó el cierre anterior (**FR-AD-JOR-18**) | Lo dejado al cierre anterior |
+| Diferencia de cierre | Lo contado al cerrar no coincide en total con lo esperado | Saldo esperado |
+| **Diferencia de composición** | El total coincide y los billetes no, al abrir, al cerrar o en un recuento. Se muestra qué billetes cambiaron | Saldo esperado, o lo dejado al cierre anterior |
+| **Movimiento de fondos** | Una **reposición** o un **retiro** del supervisor, o un **cambio de billetes con el supervisor**: registrado durante la jornada, o como motivo de una diferencia al abrir («Reposición de fondos», «Retiro de fondos», «El supervisor cambió billetes») o al cerrar | Antes del movimiento |
+| **Diferencia en recuento** | Lo contado en un recuento a mitad de jornada no coincide con los libros (FRD de Worker, §10.7) | Saldo en libros |
 
-Datos de la solicitud: tipo, sede, caja, jornada, trabajador, fecha y hora en que se registró, moneda, lo que había antes, lo contado, la diferencia (contado − lo que había), motivo y observaciones del trabajador, movimiento que la registró si lo hay, estado y resolución.
+**«Ajuste de efectivo» deja de existir**: Worker ya no corrige saldos a voluntad. Las solicitudes antiguas de ese tipo no se conservan en la demostración.
+
+Datos de la solicitud: tipo, sede, caja, jornada, trabajador, fecha y hora en que se registró, moneda, la referencia, lo contado (o lo que quedó tras el movimiento), la diferencia, motivo y observaciones del trabajador (o «Sin explicar»), **supervisor nombrado y momento** (en un movimiento de fondos), **billetes de la diferencia**, movimiento que la registró si lo hay, estado y resolución.
+
+**FR-AD-APR-18 · Sin explicar.** Si el trabajador no llega a dar el motivo de una diferencia de cierre o de recuento (FRD de Worker, §10.6), la solicitud nace igual con el motivo **«Sin explicar»**, y así se muestra aquí, en la jornada y en el movimiento.
 
 ---
 
@@ -2709,7 +2805,7 @@ Datos de cada solicitud:
 
 | Filtro | Valores | Por defecto |
 | --- | --- | --- |
-| Tipo | Todos, «Ajuste de efectivo», «Diferencia de cierre», «Diferencia de apertura» | Todos |
+| Tipo | Todos, «Diferencia de apertura», «Diferencia de cierre», «Diferencia de composición», «Movimiento de fondos», «Diferencia en recuento» | Todos |
 | Caja | Todas, o una caja | Todas |
 | Trabajador | Todos, o un trabajador | Todos |
 | Desde / Hasta | Fechas, sobre el día en que se registró la solicitud | Sin fecha |
@@ -2753,8 +2849,10 @@ Datos de cada solicitud:
 | Trabajador | Nombre |
 | Jornada | Nombre de la jornada, con enlace y su estado |
 | Moneda | Código |
-| Lo que había antes de contar | Saldo registrado (ajuste), saldo esperado (cierre) o lo dejado al cierre anterior (apertura) |
-| Contado | Importe |
+| Referencia | «Dejado al cierre anterior» (apertura), «Saldo esperado» (cierre o composición), «Antes del movimiento» (fondos) o «Saldo en libros» (recuento) |
+| Contado | Importe; en un movimiento de fondos durante la jornada, «Después del movimiento» |
+| Supervisor y cuándo | En un movimiento de fondos: el supervisor nombrado y si fue durante la jornada, al abrir, al cerrar o en un recuento |
+| Billetes | Los billetes de la diferencia; en una de composición, «Billetes que cambiaron (total sin diferencia)» |
 | Diferencia | Con signo, nombrada por su motivo (**FR-AD-APR-6**) |
 | Motivo del trabajador | Tal como lo declaró |
 | Observaciones | Si las dejó |
@@ -2764,7 +2862,7 @@ Datos de cada solicitud:
 
 **Ver en la demo** (`marta@malecon-sf.cu`, Aprobaciones):
 
-- Ajuste con movimiento: una «Ajuste de efectivo» pendiente.
+- Movimiento de fondos: la reposición de 100 USD de la Caja 01 de PuntoCash Vedado.
 - Apertura, sin movimiento: Tipo «Diferencia de apertura», en cualquiera de las dos pestañas.
 - Rechazada: Resueltas, una marcada «Rechazada».
 
@@ -2780,9 +2878,21 @@ Datos de cada solicitud:
 
 **FR-AD-APR-7.** Una solicitud pendiente ofrece «Aprobar» y «Rechazar». Cualquiera de los dos abre un diálogo.
 
+**FR-AD-APR-17 · Quién resuelve un movimiento de fondos.** Confirmarlo es que quien trajo o se llevó el dinero diga que fue así:
+
+| Situación | Quién lo resuelve |
+| --- | --- |
+| El supervisor nombrado es administrador activo de la empresa que opera la sede | **Solo él**. Los demás administradores lo ven con «Solo {nombre} puede confirmarlo», sin botones. Él ve «El trabajador dice que fuiste tú quien trajo el efectivo» (o «se llevó», o «cambió los billetes») |
+| El supervisor nombrado ya no es administrador activo | **Cualquier administrador de la sede**, y la solicitud lo dice: «{nombre} ya no es administrador activo» |
+| La sede cambió de operador y la solicitud quedó sin dueño | PuntoCash (**FR-SA-APR-1**) |
+
+El servidor rechaza la resolución de otro administrador con `solo-el-supervisor`. Las demás solicitudes las resuelve cualquier administrador de la sede, como hasta ahora.
+
+**Ver en la demo:** la reposición de la Caja 01 de PuntoCash Vedado: con `dcastro@malecon-sf.cu` se ve sin botones; con `marta@malecon-sf.cu`, con «Aprobar» y «Rechazar».
+
 **FR-AD-APR-9 / FR-AD-APR-10 · Diálogo.** Antes de pedir el motivo, informa de:
 
-- qué registra la decisión: al aprobar, que la administración asume la diferencia; al rechazar, que no la asume y que queda marcada para revisarla fuera del sistema;
+- qué registra la decisión: al aprobar, que la administración asume la diferencia o confirma el movimiento; al rechazar, que no la asume y que **queda como incidencia a nombre del trabajador** (**FR-AD-TRAB-18**);
 - que resolver deja constancia de la decisión y no modifica el saldo de la caja ni el movimiento registrado.
 
 | Campo | Obligatorio | Reglas |
@@ -2797,6 +2907,7 @@ Datos de cada solicitud:
 | --- | --- |
 | Motivo vacío o de menos de 10 caracteres | `motivo-corto` |
 | Otro usuario de la empresa la resolvió entretanto. La pantalla se actualiza y muestra la resolución que quedó | `ya-resuelta` |
+| Movimiento de fondos de otro supervisor (**FR-AD-APR-17**) | `solo-el-supervisor` |
 | La solicitud no existe o está fuera del alcance | `no-encontrada` |
 
 **FR-AD-APR-9 · Efecto.**
@@ -2813,7 +2924,7 @@ Datos de cada solicitud:
 
 | Estado | Se muestra |
 | --- | --- |
-| Pendiente | «Pendiente de aprobación» |
+| Pendiente | «Pendiente de aprobación»; en un movimiento de fondos, «Pendiente de que {supervisor} lo confirme» |
 | Aprobada | «Aprobada por {nombre}» |
 | Rechazada | «Rechazada por {nombre}» |
 
@@ -3043,7 +3154,10 @@ El volumen de lo operado por las sedes en un periodo. **Solo lectura.**
 | `PoliticaTasas` | El rango de PuntoCash por moneda, contra el peso cubano: mínimo y máximo de compra y de venta, y una versión que cambia cada vez que PuntoCash lo mueve |
 | `ParSede` | La tasa de una moneda en una sede, contra el peso cubano: compra, venta, último cambio con su autor y, si PuntoCash la ajustó al mover un rango, la marca con las cifras anteriores |
 | `Promocion` | Origen (empresa o red), título, texto, imagen opcional, sedes, fechas desde y hasta (por día, hora de Cuba), autor, retirada con fecha y autor |
-| `SolicitudAprobacion` | Tipo (ajuste de efectivo, diferencia de cierre, diferencia de apertura), jornada, moneda, diferencia con signo, motivo y observaciones del trabajador, estado y resolución (decisión, autor, fecha, motivo) |
+| `Denominacion` | Valor de un billete o moneda metálica de una moneda del catálogo, mantenido por PuntoCash para toda la red, con su retirada si la tiene (**FR-SA-DEN-***) |
+| `Billetes` | En cada movimiento de jornada, cuántos de cada denominación entran (positivo) o salen (negativo). El inventario de una caja es su suma |
+| `ReglasDeAlerta` | Por sede y por versión (desde cuándo rigen): por moneda, efectivo mínimo, máximo y billetes mínimos por denominación (§20) |
+| `SolicitudAprobacion` | Tipo (diferencia de apertura, de cierre, de composición, movimiento de fondos, diferencia en recuento), supervisor nombrado, jornada, moneda, diferencia con signo, motivo y observaciones del trabajador, estado y resolución (decisión, autor, fecha, motivo) |
 | `EventoAuditoria` | Tipo, autor y su papel, fecha, sede y operador, sujeto, antes y después, motivo |
 
 Las consultas se acotan por alcance (**FR-AD-DOM-5**). Las escrituras son las que exige cada sección de este documento.
@@ -3140,13 +3254,16 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 | Retirar una moneda de una sede | Saldo cero en todas sus cajas, y que no sea la última de una sede activa (**FR-AD-MON-7**, **FR-AD-MON-9**) |
 | Que Equipos muestre las solicitudes generadas por cada kiosco (**FR-AD-EQ-12**) | Que las solicitudes de kiosco se registren para toda la red y no solo en el kiosco. Operaciones ya sabe qué operación nació de cuál (**FR-AD-OPS-4**); las que no se canjearon no existen fuera del kiosco |
 | Resolver una solicitud | Que siga pendiente al confirmar, y un motivo de al menos 10 caracteres (**FR-AD-APR-7**, **FR-AD-APR-11**) |
-| Que una diferencia registrada en Worker llegue a Aprobaciones (§14) | Que **Worker** registre cada ajuste de efectivo, cada cierre con diferencia y cada apertura con diferencia con su motivo, y que de cada uno nazca su solicitud. La apertura comparada es la misma dependencia de la fila anterior |
+| Que una diferencia registrada en Worker llegue a Aprobaciones (§14) | Que **Worker** registre cada apertura y cada cierre con diferencia (de importe o de composición), cada recuento con diferencia, cada reposición, retiro y cambio de billetes con supervisor, con su motivo o «Sin explicar», y que de cada uno nazca su solicitud (FRD de Worker, §10) |
 | Fijar la tasa de una moneda | Cambio de moneda habilitado en la sede; la moneda y el peso cubano en su lista; un rango de PuntoCash para la moneda; las dos cifras dentro de él, y la compra no mayor que la venta (**FR-AD-TASA-2**, **FR-AD-TASA-8**) |
 | Que el tablero de una sede muestre una moneda | Que su tasa esté **en vigor**: las mismas cuatro condiciones (**FR-AD-TASA-18**) |
 | Publicar una promoción | Una sede del alcance no cerrada; título y texto dentro de su largo; inicio no anterior a hoy, y fin no anterior al inicio; la imagen, si la lleva, JPG, PNG o WebP de hasta 2 MB (**FR-AD-PROM-5**, **FR-AD-PROM-7**, **FR-AD-PROM-12**) |
 | Editar o retirar una promoción | Que sea de la empresa y no haya terminado (**FR-AD-PROM-3**, **FR-AD-PROM-9**) |
 | Forzar el cierre de una jornada | Que siga abierta al confirmar, y un motivo de al menos 10 caracteres (**FR-AD-JOR-9**, **FR-AD-JOR-11**) |
-| Que una jornada muestre su apertura comparada con el cierre anterior (§12.3) | Que **Worker**, al abrir una jornada, registre lo dejado por el cierre anterior, lo contado **a ciegas** —el trabajador cuenta antes de ver lo dejado— y el motivo y las observaciones de toda diferencia. |
+| Que una jornada muestre su apertura comparada con el cierre anterior (§12.3) | Que **Worker**, al abrir una jornada, registre lo dejado por el cierre anterior, lo contado billete a billete —quien abre ve lo que declaró quien cerró y corrige lo que no recibe— y el motivo, el supervisor y las observaciones de cada diferencia (FRD de Worker, §10.3) |
+| Que un movimiento de fondos se resuelva | Que su supervisor siga siendo administrador activo; si no, lo resuelve cualquier administrador de la sede (**FR-AD-APR-17**) |
+| Definir las alertas de una sede | Una sede del alcance no cerrada (§20) |
+| Que una caja tenga alertas | Reglas definidas en su sede y la jornada abierta (§20) |
 
 ---
 
@@ -3180,6 +3297,98 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 24. **El volumen se cuenta una vez y por moneda**: un cambio cuenta la divisa y no los pesos, solo cuentan las completadas, las filas de cada corte suman el total del periodo, y el archivo exportado dice lo mismo que la pantalla, sin ningún dato de clientes (**FR-AD-REP-3**, **FR-AD-REP-7**, **FR-AD-REP-8**).
 25. **Al cambiar de sede se conservan el periodo, la pestaña y los filtros generales**, y se quitan la caja y el trabajador (**FR-AD-SCOPE-5**).
 26. **Una dirección inexistente responde 404 dentro del shell**, con el mismo mensaje que una sede ajena (**FR-AD-NAV-3**).
+27. **Un movimiento de fondos solo lo resuelve el supervisor nombrado**, mientras sea administrador activo (**FR-AD-APR-17**).
+28. **Ningún saldo de esta consola llega a Worker** (**FR-AD-CAJA-17**).
+29. **Una alerta es un estado**: se enciende y se apaga sola, y cambiar una regla no reescribe el historial (**FR-AD-ALE-4**, **FR-AD-ALE-7**).
+
+---
+
+## 20. Alertas de caja
+
+Avisan de que una caja con la jornada abierta se está quedando sin con qué operar, o acumula más efectivo del que conviene tener a mano. Se definen por sede y valen para todas sus cajas.
+
+### 20.1 Qué es una alerta
+
+**FR-AD-ALE-1 · Tipos.**
+
+| Alerta | Se enciende cuando | Título |
+| --- | --- | --- |
+| Efectivo bajo | El saldo de una moneda es **menor** que el mínimo de la sede | «Efectivo bajo en USD» |
+| Efectivo alto | El saldo de una moneda es **mayor** que el máximo | «Efectivo alto en USD» |
+| Pocos billetes | Quedan **menos** billetes (o monedas) de una denominación que el mínimo | «Quedan pocos billetes de 5 USD», «Quedan pocas monedas de 0,25 USD» |
+
+**FR-AD-ALE-2 · Solo con la jornada abierta.** Una caja cerrada no tiene alertas. Al cerrar se apagan; si la caja sigue baja o alta, vuelven a encenderse al abrir.
+
+**FR-AD-ALE-3 · Quién las ve.**
+
+| Quién | Dónde | Cómo |
+| --- | --- | --- |
+| Administración | Alertas (§20.2), Inicio (**FR-AD-HOME-2**, fila 9), ficha de la caja (**FR-AD-ALE-6**), ficha de la sede (**FR-AD-SEDE-17**) | Con cifras: «Hay 87,00 USD, el mínimo es 400,00» |
+| PuntoCash | Ficha de la caja en su consola, solo lectura (**FR-SA-EQ-10**) | Con cifras |
+| Trabajador | Inicio y Caja de Worker | **Sin ninguna cifra**: el título y «Avisa a tu supervisor» (FRD de Worker, §12) |
+
+**FR-AD-ALE-4 · Son un estado.** Se encienden solas cuando se cruza el límite y se apagan solas cuando deja de cruzarse. **No hay «marcar como atendida»**: lo que la apaga es arreglar la caja (una reposición, un retiro o un cambio de billetes).
+
+### 20.2 Alertas — `/admin/alertas`
+
+**FR-AD-ALE-5 · Contenido.** Se aplica el selector de la cabecera (**FR-AD-SCOPE-4**); la cabecera dice qué sedes se están viendo.
+
+| Bloque | Contenido |
+| --- | --- |
+| Activas ahora | Una entrada por caja abierta con alertas: caja y sede, y cada alerta con sus cifras y **desde cuándo**. Abre la ficha de la caja. Sin ninguna, lo dice |
+| Reglas por sede | Una tarjeta por sede: por moneda, «Mínimo …», «Máximo …» y «Billetes mínimos: 10 × 5 · …». «Definir» → `/admin/alertas/{sedeId}`, salvo en una sede cerrada. Sin reglas, lo dice |
+| Historial | Las 15 alertas que se apagaron más recientes: título, caja, sede, desde y hasta. Abre la jornada |
+
+Tras guardar unas reglas, la pantalla vuelve aquí con «Alertas guardadas» o «Sin cambios en las alertas».
+
+**Ver en la demo:** `marta@malecon-sf.cu`, menú **Alertas** (grupo Configuración).
+
+**FR-AD-ALE-6 · En la ficha de la caja.** Bloque «Alertas»: las activas con sus cifras y desde cuándo, y el historial de las últimas jornadas (hasta 10). Sin jornada abierta, dice que no hay alertas porque la caja no está operando.
+
+### 20.3 Definir las alertas de una sede — `/admin/alertas/[sedeId]`
+
+**FR-AD-ALE-7 · Campos.** Una tarjeta por cada moneda de la lista de la sede (**FR-AD-MON-2**):
+
+| Campo | Reglas |
+| --- | --- |
+| Efectivo mínimo | Importe ≥ 0, hasta 2 decimales. Vacío: sin alerta de efectivo bajo |
+| Efectivo máximo | Importe ≥ 0, hasta 2 decimales, no menor que el mínimo. Vacío: sin alerta de efectivo alto |
+| Mínimo de billetes por denominación | Un campo por cada denominación **vigente** del catálogo de esa moneda (**FR-SA-DEN-***): entero ≥ 0. Vacío o cero: sin alerta |
+
+- Se aceptan las dos convenciones de separadores («1.250,5» y «1250.5»).
+- Guardar **sustituye** las reglas de la sede: lo que no viene queda sin límite.
+- **Cambiar una regla no reescribe el pasado**: cada cambio abre una versión nueva que rige desde ese momento, y lo ocurrido antes se sigue leyendo con las reglas de entonces.
+- Si nada cambió, no se abre versión ni se audita.
+
+**Rechazos.**
+
+| Condición | Código |
+| --- | --- |
+| Mínimo mayor que máximo | `minimo-mayor-que-maximo` |
+| Importe negativo o que no se entiende | `importe-invalido` |
+| Billetes mínimos que no son un entero ≥ 0 | `cantidad-invalida` |
+| La sede está cerrada | `sede-cerrada` |
+| La sede no existe o está fuera del alcance | `no-encontrada` |
+
+**Ver en la demo:** `marta@malecon-sf.cu`, Alertas → Reglas por sede → «Definir» en PuntoCash Obispo.
+
+### 20.4 Historial
+
+**FR-AD-ALE-8 · Se recalcula.** El historial no se guarda aparte: se obtiene repasando los movimientos de cada jornada con las reglas vigentes en cada momento, y marca también el momento en que un cambio de reglas encendió o apagó una alerta. Así no puede contradecir al libro de movimientos.
+
+### 20.5 Auditoría
+
+**FR-AD-ALE-9** **[RP-21]**
+
+| Acción | Evento | Datos |
+| --- | --- | --- |
+| Definir las alertas de una sede, si cambió algo | `caja.alertas-definidas` | Autor, fecha, sede, operador, las reglas antes y después |
+
+### 20.6 Demostración
+
+Vedado tiene CUP 20.000–900.000, USD 50–6.000 con mínimo de 5 billetes de 10 USD, y EUR 100–5.000; Obispo, CUP 5.000–800.000 y USD 200–5.000. Las jornadas de ejemplo se siembran respecto a la hora actual, así que qué cajas tienen alertas **cambia a lo largo del día**.
+
+**Para producción:** evaluar las alertas en el servidor al registrar cada movimiento y notificar, en lugar de calcularlas al leer.
 
 ---
 
@@ -3213,6 +3422,15 @@ Amplía el Apéndice A del FRD de Worker.
 | **Contenido público de sede** | Tasas en vigor, datos de contacto y horario, y promociones vigentes de una sucursal |
 | **Evento de auditoría** | Registro inmutable de un acto de gobierno: quién, qué, cuándo, sobre qué y por qué |
 | **Suspender** | Acción de PuntoCash sobre un operador o una sede que corta el acceso de todos sus usuarios y trabajadores **[A14]** |
+| **Denominación** | Valor de un billete o moneda metálica del catálogo de PuntoCash. La caja lleva cuántos hay de cada una |
+| **Inventario** | Cuántos billetes y monedas de cada denominación tiene una caja |
+| **Diferencia de composición** | El total contado coincide y los billetes no |
+| **Movimiento de fondos** | Reposición, retiro o cambio de billetes con supervisor, que confirma el supervisor nombrado |
+| **Recuento** | Conteo de una moneda que pide Worker cuando saldrían billetes que los libros no tienen |
+| **Incidencia** | Lo que un trabajador registró y la administración rechazó; queda a su nombre |
+| **Sin explicar** | Diferencia cuyo motivo no llegó del trabajador |
+| **Liquidación** | Vuelto, pagado en CUP y a favor de la casa de una operación |
+| **Alerta de caja** | Estado de una caja abierta que cruza un límite que fijó su sede (§20) |
 
 ---
 
@@ -3405,4 +3623,14 @@ El mensaje que ve el usuario para cada código de rechazo. Un código se busca p
 | --- | --- |
 | `motivo-corto` | Escribe el motivo, con al menos {min} caracteres. |
 | `ya-resuelta` | Esta solicitud ya fue resuelta. |
+| `solo-el-supervisor` | Solo el supervisor que nombró el trabajador puede confirmar este movimiento. |
 | `error-inesperado` | No se pudo resolver. Vuelve a intentarlo. |
+
+### Alertas — §20
+
+| Código | Mensaje |
+| --- | --- |
+| `minimo-mayor-que-maximo` | {Moneda}: el mínimo no puede ser mayor que el máximo. |
+| `importe-invalido` | {Moneda}: los importes no pueden ser negativos. (Un importe que no se entiende: «{Moneda}: escribe un importe válido, por ejemplo 1.500,00.») |
+| `cantidad-invalida` | {Moneda}: los billetes mínimos son números enteros, de cero en adelante. |
+| `sede-cerrada` | El mensaje común de sede cerrada |

@@ -187,9 +187,10 @@ export function AuditoriaList({
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Field {...ROL}>
             <select {...fieldAria(ROL)} disabled={!hydrated} value={rol} onChange={(e) => setRol(e.currentTarget.value)} className={SELECT}>
-              <option value={TODOS}>PuntoCash y mercantes</option>
+              <option value={TODOS}>Todos</option>
               <option value="super-admin">Solo PuntoCash</option>
               <option value="admin-sede">Solo mercantes</option>
+              <option value="trabajador">Solo trabajadores</option>
             </select>
           </Field>
           <Field {...TIPO}>
