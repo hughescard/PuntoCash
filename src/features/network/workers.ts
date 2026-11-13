@@ -456,3 +456,58 @@ export function cambiarCorreoTrabajador(
   target.email = email.trim();
   return { ok: true, value: { worker: target, anterior } };
 }
+
+/* -------------------------------------------------------------------------
+ * Lo que el trabajador cambia de sí mismo, desde su perfil (12/11/2026)
+ * ---------------------------------------------------------------------- */
+
+export interface DatosPropiosDelTrabajador {
+  /** Su nombre de usuario: una comodidad para entrar sin escribir el correo. */
+  identifier: string;
+  phone: string;
+}
+
+export type DatosPropiosDenial =
+  | "trabajador-no-encontrado"
+  | "identificador-invalido"
+  | "identificador-duplicado"
+  | "telefono-invalido";
+
+/**
+ * El trabajador cambia **su nombre de usuario y su teléfono**, y nada más.
+ *
+ * Su **nombre** y su **documento** son los que dicen quién es en cada
+ * operación, jornada y aprobación: los fija el administrador y el trabajador
+ * no los toca, porque si pudiera, la traza de quién hizo qué dejaría de valer.
+ * El nombre de usuario no dice quién es nadie —todo lo registrado va por su
+ * identificador interno— y el teléfono es un dato de contacto que caduca, así
+ * que lo mejor es que lo mantenga él al día.
+ *
+ * El correo tampoco: es el canal del segundo factor, y cambiarlo es asunto de
+ * la asistencia de acceso del administrador (`cambiarCorreoTrabajador`).
+ *
+ * No lleva alcance: actúa sobre quien tiene la sesión, que es quien llama.
+ */
+export function editarDatosPropiosTrabajador(
+  workerId: string,
+  input: DatosPropiosDelTrabajador,
+): { ok: true; value: { worker: NetworkWorker; antes: DatosPropiosDelTrabajador } } | { ok: false; reason: DatosPropiosDenial } {
+  const target = findWorkerById(workerId);
+  if (!target) return { ok: false, reason: "trabajador-no-encontrado" };
+
+  const identifier = input.identifier.trim();
+  if (!esIdentificadorValido(identifier)) return { ok: false, reason: "identificador-invalido" };
+  const otro = findWorkerByIdentifier(identifier);
+  if (otro && otro.id !== target.id) return { ok: false, reason: "identificador-duplicado" };
+
+  const phone = input.phone.trim();
+  if (!/^\+?[\d\s-]+$/.test(phone) || phone.replace(/\D/g, "").length < 8) {
+    return { ok: false, reason: "telefono-invalido" };
+  }
+
+  const antes = { identifier: target.identifier, phone: target.phone };
+  target.identifier = identifier;
+  target.phone = phone;
+  return { ok: true, value: { worker: target, antes } };
+}
+

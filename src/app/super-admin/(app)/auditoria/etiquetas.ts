@@ -114,6 +114,8 @@ export const AREAS: readonly AreaDeEventos[] = [
     tipos: [
       { tipo: "trabajador.alta", etiqueta: "Trabajador dado de alta" },
       { tipo: "trabajador.editado", etiqueta: "Datos de un trabajador modificados" },
+      { tipo: "trabajador.datos-propios", etiqueta: "Usuario o teléfono cambiados por el propio trabajador" },
+      { tipo: "trabajador.contrasena-cambiada", etiqueta: "Contraseña de un trabajador cambiada por él mismo" },
       { tipo: "trabajador.desactivado", etiqueta: "Trabajador desactivado" },
       { tipo: "trabajador.reactivado", etiqueta: "Trabajador reactivado" },
       { tipo: "trabajador.asistencia-acceso", etiqueta: "Acceso de un trabajador asistido" },
@@ -178,4 +180,5 @@ export function areaDeEvento(tipo: AuditEventType): string {
 export const ETIQUETA_DE_ROL: Readonly<Record<AuditActorRole, string>> = {
   "super-admin": "PuntoCash",
   "admin-sede": "Mercante",
+  trabajador: "Trabajador",
 };

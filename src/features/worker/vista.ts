@@ -11,6 +11,8 @@
  * de dónde salen los datos y no cómo se ven.
  */
 
+import { MONEDA_LOCAL, motivoFueraDeVigor, tasasDeSede } from "@/features/network/rates";
+import { monedasDeSede } from "@/features/network/currencies";
 import { alertasParaElTrabajador, type AlertaParaElTrabajador } from "@/features/network/alertas";
 import { solicitudesDeJornada } from "@/features/network/aprobaciones";
 import type {
@@ -67,6 +69,10 @@ export interface VistaDeCaja {
   /** El conteo de apertura que este trabajador ya declaró en esta caja, sin abrir todavía. */
   aperturaDeclarada: AperturaDeclarada | null;
   tasas: readonly TasaVigente[];
+  /** Desde cuándo rige cada tasa en vigor (ISO), por moneda: si cambió a media jornada, el trabajador lo ve. */
+  tasasDesde: Readonly<Record<string, string>>;
+  /** Monedas de la sede que hoy no se pueden cambiar, con el porqué en palabras del trabajador. */
+  monedasSinCambio: readonly { code: string; motivo: string }[];
   servicios: readonly string[];
   jornadaEnOtraCaja: EstadoDeCaja["jornadaEnOtraCaja"];
   /** La administración forzó el cierre de su jornada y todavía no lo ha visto: se le dice y no puede operar. */
@@ -190,6 +196,12 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
     apertura: estado.apertura,
     aperturaDeclarada: j ? null : aperturaDeclarada(ctx),
     tasas: estado.tasas,
+    tasasDesde: Object.fromEntries(
+      tasasDeSede(ctx.sede.id)
+        .filter((t) => estado.tasas.some((v) => v.code === t.code))
+        .map((t) => [t.code, t.updatedAt]),
+    ),
+    monedasSinCambio: monedasSinCambio(ctx.sede.id, estado.tasas),
     servicios: estado.servicios,
     jornadaEnOtraCaja: estado.jornadaEnOtraCaja,
     cierreForzadoPropio: estado.cierreForzadoPropio,
@@ -215,3 +227,28 @@ export function registroDeWorker(o: OperationRecord): OperationRecord {
   delete copia.origenKiosco;
   return copia;
 }
+
+/**
+ * Las monedas de la sede, salvo el CUP, que hoy no se pueden cambiar en esta
+ * caja, con lo que el trabajador le puede decir al cliente. Sin el servicio
+ * de Cambio de moneda no se lista ninguna: la tarjeta lo dice entero.
+ */
+function monedasSinCambio(sedeId: string, vigentes: readonly TasaVigente[]): { code: string; motivo: string }[] {
+  const out: { code: string; motivo: string }[] = [];
+  for (const m of monedasDeSede(sedeId)) {
+    if (m.code === MONEDA_LOCAL || vigentes.some((t) => t.code === m.code)) continue;
+    const motivo = motivoFueraDeVigor(sedeId, m.code);
+    if (motivo === "sin-servicio") return [];
+    out.push({
+      code: m.code,
+      motivo:
+        motivo === "sin-rango"
+          ? "PuntoCash todavía no permite cambiarla"
+          : motivo === "sin-moneda-local"
+            ? "La sede no tiene CUP para cambiarla"
+            : "Tu sede no le ha puesto tasa",
+    });
+  }
+  return out;
+}
+

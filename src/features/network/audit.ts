@@ -13,7 +13,7 @@
  * equipo a ninguno (FR-SA-AUD-7).
  */
 
-export type AuditActorRole = "super-admin" | "admin-sede";
+export type AuditActorRole = "super-admin" | "admin-sede" | "trabajador";
 
 /**
  * Los tipos se agrupan por quién los produce, que es el filtro más frecuente
@@ -65,6 +65,8 @@ export type AuditEventType =
   | "trabajador.desactivado"
   | "trabajador.reactivado"
   | "trabajador.asistencia-acceso"
+  | "trabajador.datos-propios"
+  | "trabajador.contrasena-cambiada"
   | "usuario-admin.alta"
   | "usuario-admin.editado"
   | "usuario-admin.desactivado"

@@ -83,13 +83,14 @@ test.describe("worker home", () => {
     // made accessible solely for testability (§4) — the currency code text is
     // what a screen reader announces.
     const flags = main.locator("svg[data-currency-flag]");
-    await expect(flags).toHaveCount(7);
+    await expect(flags).toHaveCount(9);
 
     const currencies = await flags.evaluateAll((els) =>
       els.map((el) => el.getAttribute("data-currency-flag")),
     );
-    // 4 en Mi caja (CUP, USD, EUR y GBP, en cero) + 3 en Tasas vigentes (USD, EUR, GBP).
-    expect(currencies).toEqual(["CUP", "USD", "EUR", "GBP", "USD", "EUR", "GBP"]);
+    // 4 en Mi caja (CUP, USD, EUR y GBP, en cero) + 3 en Tasas vigentes (USD, EUR, GBP)
+    // + 2 que la sede maneja sin tasa (CHF, MXN), en «No se cambian hoy».
+    expect(currencies).toEqual(["CUP", "USD", "EUR", "GBP", "USD", "EUR", "GBP", "CHF", "MXN"]);
 
     // Every flag is aria-hidden, so it never duplicates the currency code
     // announcement, and the flag never stands in as the sole identifier.
@@ -109,22 +110,15 @@ test.describe("worker home", () => {
     }
   });
 
-  test('"Ver todas" under Tasas vigentes goes to /worker/tasas, not /worker/operaciones', async ({
-    page,
-  }) => {
+  test("la tarjeta de tasas dice desde cuándo rige cada una, y ya no lleva a otra pantalla", async ({ page }) => {
     const main = page.getByRole("main");
-    // Exact match: "Ver todas" is a substring of "Ver todas las operaciones"
-    // and "Ver todas las alertas", both of which also appear on this screen.
-    await main.getByRole("link", { name: "Ver todas", exact: true }).click();
-
-    await expect(page).toHaveURL(/\/worker\/tasas$/);
-    await expect(page).not.toHaveURL(/\/worker\/operaciones$/);
-    // Still inside the Worker shell.
-    await expect(page.getByRole("banner").getByText("Caja 03")).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Navegación principal" })).toBeVisible();
-    // The placeholder must offer a way back.
-    await page.getByRole("link", { name: /Volver a Inicio/ }).click();
-    await expect(page).toHaveURL(/\/worker\/inicio$/);
+    const tabla = main.getByRole("table").filter({ hasText: "Compra" });
+    await expect(tabla.getByRole("columnheader", { name: "Desde" })).toBeVisible();
+    /* El puesto de prueba copia las tasas de Vedado al crearse: rigen desde hoy. */
+    await expect(tabla.getByText(/^hoy · \d{2}:\d{2}$/).first()).toBeVisible();
+    await expect(main.getByRole("link", { name: "Ver todas", exact: true })).toHaveCount(0);
+    /* La sección Alertas de Worker ya no existe: las alertas están en el aviso de la caja. */
+    await expect(main.getByRole("link", { name: "Ver todas las alertas" })).toHaveCount(0);
   });
 
   test("los accesos rápidos son los servicios que la sede presta, más el catálogo", async ({ page }) => {
@@ -274,3 +268,23 @@ test("a verified access lands on the worker home", async ({ page, puesto }) => {
   await expect(page).toHaveURL(/\/worker\/inicio$/);
   await expect(page.getByRole("heading", { name: "Hola, Juan" })).toBeVisible();
 });
+
+test.describe("Tasas en Inicio · monedas que no se cambian", () => {
+  test.use({ monedas: ["CUP", "USD", "CHF"] });
+
+  test("una moneda de la caja sin tasa sale aparte, con el porqué", async ({ page }) => {
+    await page.goto("/worker/inicio");
+    const lista = page.getByRole("list", { name: "Monedas que no se cambian hoy" });
+    await expect(lista).toContainText("CHF");
+    await expect(lista).toContainText("Tu sede no le ha puesto tasa");
+    await expect(lista).not.toContainText("USD");
+  });
+
+  test("las rutas viejas de Tasas y Alertas ya no existen", async ({ page }) => {
+    for (const ruta of ["/worker/tasas", "/worker/alertas"]) {
+      const r = await page.goto(ruta);
+      expect(r?.status()).toBe(404);
+    }
+  });
+});
+

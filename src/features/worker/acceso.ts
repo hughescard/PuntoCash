@@ -23,6 +23,7 @@
  */
 
 import { maskEmail } from "@/features/auth/two-factor";
+import { LARGO_MINIMO } from "@/features/auth/password-recovery";
 import { contextoDe } from "@/features/network/caja-operativa";
 import { jornadaAbiertaDeCaja } from "@/features/network/jornadas";
 import { findTerminalById } from "@/features/network/devices";
@@ -79,3 +80,29 @@ export async function verificarCredencialesTrabajador(
 
   return { status: "ok", workerId: worker.id, correoEnmascarado: maskEmail(worker.email) };
 }
+
+export type CambioDeContrasenaTrabajador =
+  | { status: "ok" }
+  | { status: "actual-incorrecta" | "demasiado-corta" | "igual-a-la-actual" | "no-coinciden" };
+
+/**
+ * Cambiar la propia contraseña desde el perfil, sabiendo la actual. Las mismas
+ * reglas que en Admin. Se guarda por trabajador, como la recuperada: cambiar
+ * el nombre de usuario después no la pierde.
+ */
+export async function cambiarContrasenaTrabajador(
+  workerId: string,
+  actual: string,
+  nueva: string,
+  repetida: string,
+): Promise<CambioDeContrasenaTrabajador> {
+  await new Promise((r) => setTimeout(r, LATENCY_MS));
+  const vigente = contrasenas.get(workerId) ?? DEMO_PASSWORD;
+  if (actual !== vigente) return { status: "actual-incorrecta" };
+  if (nueva.length < LARGO_MINIMO) return { status: "demasiado-corta" };
+  if (nueva === vigente) return { status: "igual-a-la-actual" };
+  if (nueva !== repetida) return { status: "no-coinciden" };
+  contrasenas.set(workerId, nueva);
+  return { status: "ok" };
+}
+

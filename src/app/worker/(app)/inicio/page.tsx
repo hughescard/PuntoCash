@@ -3,7 +3,6 @@ import Link from "next/link";
 import type { Route } from "next";
 import type { LucideIcon } from "lucide-react";
 import {
-  Bell,
   ChevronRight,
   Clock,
   LayoutGrid,
@@ -34,6 +33,15 @@ import { OperationStatusBadge } from "@/components/patterns/operation-status-bad
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
 import { formatAmount, formatMoney } from "@/lib/format";
+
+/** «hoy · 14:30» o «14 oct · 14:30», en hora de Cuba. */
+function desdeCuando(iso: string): string {
+  const zona = { timeZone: "America/Havana" } as const;
+  const d = new Date(iso);
+  const dia = (x: Date) => x.toLocaleDateString("es-ES", zona);
+  const hora = d.toLocaleTimeString("es-ES", { ...zona, hour: "2-digit", minute: "2-digit" });
+  return dia(d) === dia(new Date()) ? `hoy · ${hora}` : `${d.toLocaleDateString("es-ES", { ...zona, day: "numeric", month: "short" }).replace(".", "")} · ${hora}`;
+}
 
 const formatTime = (d: Date) =>
   new Intl.DateTimeFormat("es-ES", { timeZone: "America/Havana", hour: "2-digit", minute: "2-digit" }).format(d);
@@ -86,7 +94,7 @@ export default async function WorkerHomePage() {
   const worker = { firstName: vista.trabajador.firstName, register: vista.caja.nombre };
   /* Worker opera a ciegas (decisión del 6/11/2026): las monedas de la caja, nunca cuánto hay. */
   const MONEDAS = vista.monedas;
-  const EXCHANGE_RATES = vista.tasas.map((t) => ({ currency: t.code, buy: t.compra, sell: t.venta }));
+  const EXCHANGE_RATES = vista.tasas.map((t) => ({ currency: t.code, buy: t.compra, sell: t.venta, desde: vista.tasasDesde[t.code] }));
   /* Accesos rápidos: los servicios que la caja puede prestar de verdad —
      disponibles en el producto y habilitados por PuntoCash en esta sede. */
   const quickActions = WORKER_SERVICES.filter((s) => s.status === "available" && vista.servicios.includes(s.id));
@@ -98,7 +106,6 @@ export default async function WorkerHomePage() {
     amount: o.amount.kind === "exchange" ? o.amount.source : o.amount.money,
     status: o.estado,
   }));
-  const hasAlerts = false;
 
   return (
     <>
@@ -166,14 +173,20 @@ export default async function WorkerHomePage() {
             </CardHeader>
 
             <CardContent className="flex-1 px-0 pb-0">
+              {EXCHANGE_RATES.length === 0 ? (
+                <p className="px-6 pb-4 text-body text-text-secondary">
+                  {vista.servicios.includes("cambio-moneda")
+                    ? "Tu sede no tiene ninguna tasa en vigor: hoy no se puede cambiar moneda."
+                    : "Tu sede no tiene Cambio de moneda."}
+                </p>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="pl-6">Moneda</TableHead>
                     <TableHead numeric>Compra</TableHead>
-                    <TableHead numeric className="pr-6">
-                      Venta
-                    </TableHead>
+                    <TableHead numeric>Venta</TableHead>
+                    <TableHead className="pr-6 text-right">Desde</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -186,21 +199,39 @@ export default async function WorkerHomePage() {
                         </span>
                       </TableCell>
                       <TableCell numeric>{formatAmount(rate.buy)}</TableCell>
-                      <TableCell numeric className="pr-6 font-medium">
+                      <TableCell numeric className="font-medium">
                         {formatAmount(rate.sell)}
+                      </TableCell>
+                      <TableCell className="pr-6 text-right text-text-secondary">
+                        {rate.desde ? desdeCuando(rate.desde) : ""}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
 
-            <CardFooter className="justify-between">
+            {vista.monedasSinCambio.length > 0 ? (
+              <div className="border-t border-border px-6 py-4">
+                <p className="text-label text-text-primary">No se cambian hoy</p>
+                <ul className="mt-2 flex flex-col gap-1" aria-label="Monedas que no se cambian hoy">
+                  {vista.monedasSinCambio.map((m) => (
+                    <li key={m.code} className="flex items-center gap-2 text-body-sm text-text-secondary">
+                      <CurrencyFlag currency={m.code} />
+                      <span className="font-semibold text-text-primary">{m.code}</span>
+                      <span>· {m.motivo}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <CardFooter>
               <span className="inline-flex items-center gap-2 text-caption text-text-secondary">
                 <Clock className="size-3.5" aria-hidden="true" />
                 Las que tu sede tiene en vigor
               </span>
-              <CardFooterLink href="/worker/tasas">Ver todas</CardFooterLink>
             </CardFooter>
           </Card>
         </div>
@@ -240,16 +271,10 @@ export default async function WorkerHomePage() {
           </CardContent>
         </Card>
 
-        {/* ---- Operaciones recientes · Alertas ----------------------------- */}
+        {/* ---- Operaciones recientes --------------------------------------- */}
         {/* Side by side only when the 6-column table still has room; below
             1400px the table would be cramped, so the alert moves under it. */}
-        <div
-          className={
-            hasAlerts
-              ? "grid grid-cols-1 items-start gap-6 wide:grid-cols-[minmax(0,1fr)_17rem]"
-              : "grid grid-cols-1 gap-6"
-          }
-        >
+        <div className="grid grid-cols-1 gap-6">
           <Card>
             <CardHeader>
               <div className="flex min-w-0 items-center gap-3">
@@ -316,27 +341,6 @@ export default async function WorkerHomePage() {
               <CardFooterLink href="/worker/operaciones">Ver todas las operaciones</CardFooterLink>
             </CardFooter>
           </Card>
-
-          {/* Alerts occupy space only when they exist — never an empty card. */}
-          {hasAlerts ? (
-            <Card>
-              <CardHeader>
-                <div className="flex min-w-0 items-center gap-3">
-                  <CardGlyph icon={Bell} />
-                  <CardTitle>Alertas</CardTitle>
-
-                </div>
-              </CardHeader>
-
-              <CardContent className="flex flex-col gap-3">
-                {null}
-              </CardContent>
-
-              <CardFooter>
-                <CardFooterLink href="/worker/alertas">Ver todas las alertas</CardFooterLink>
-              </CardFooter>
-            </Card>
-          ) : null}
         </div>
       </div>
     </>
