@@ -274,7 +274,7 @@ export default async function AdminInicioPage() {
                 key={`alertas-${jornada.registerId}`}
                 title={
                   alertas.length === 1
-                    ? `${jornada.cajaNombre} de ${sede.name}: ${tituloDeAlerta(alertas[0]!).toLowerCase()}`
+                    ? `${jornada.cajaNombre} de ${sede.name}: ${minusculaInicial(tituloDeAlerta(alertas[0]!))}`
                     : `${jornada.cajaNombre} de ${sede.name} tiene ${alertas.length} alertas`
                 }
                 detail={alertas.map((a) => tituloDeAlerta(a)).join(" · ")}
@@ -600,4 +600,9 @@ function textoDeDiferencia(d: DiferenciaDelDia, sede: Sede): { title: string; de
     title: `Cierre forzado sin contar en ${d.jornada.cajaNombre} de ${sede.name}`,
     detail: "Nadie ha contado el efectivo desde el cierre. El primer conteo será el de quien abra la próxima jornada.",
   };
+}
+
+/** «Efectivo bajo en USD» → «efectivo bajo en USD»: solo la primera letra, las monedas siguen en mayúsculas. */
+function minusculaInicial(texto: string): string {
+  return texto.charAt(0).toLowerCase() + texto.slice(1);
 }

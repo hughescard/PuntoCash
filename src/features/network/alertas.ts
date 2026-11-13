@@ -63,13 +63,13 @@ const EPOCA = "2026-01-01T00:00:00.000Z";
 /** Las reglas con que arranca la demostración: lo justo para que se vean alertas. */
 const SEMILLA: Readonly<Record<string, readonly ReglaDeMoneda[]>> = {
   "sede-vedado": [
-    { currency: "CUP", minimo: 40_000, maximo: 900_000, billetesMinimos: {} },
-    { currency: "USD", minimo: 400, maximo: 6_000, billetesMinimos: { "500": 5, "1000": 10 } },
-    { currency: "EUR", minimo: 500, maximo: 5_000, billetesMinimos: {} },
+    { currency: "CUP", minimo: 20_000, maximo: 900_000, billetesMinimos: {} },
+    { currency: "USD", minimo: 50, maximo: 6_000, billetesMinimos: { "1000": 5 } },
+    { currency: "EUR", minimo: 100, maximo: 5_000, billetesMinimos: {} },
   ],
   "sede-habana-vieja": [
-    { currency: "CUP", minimo: 100_000, maximo: 800_000, billetesMinimos: {} },
-    { currency: "USD", minimo: 600, maximo: 5_000, billetesMinimos: { "500": 15 } },
+    { currency: "CUP", minimo: 5_000, maximo: 800_000, billetesMinimos: {} },
+    { currency: "USD", minimo: 200, maximo: 5_000, billetesMinimos: {} },
   ],
 };
 
