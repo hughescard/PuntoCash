@@ -199,9 +199,9 @@ export function StepCliente({
                   block
                   loading={scanning}
                   onClick={() => void runScan(scenario.id)}
-                  className="justify-start text-left"
+                  className="h-auto min-h-control justify-start whitespace-normal py-3 text-left"
                 >
-                  <QrCode aria-hidden="true" />
+                  <QrCode aria-hidden="true" className="shrink-0" />
                   {scenario.label}
                 </Button>
               ))}
@@ -635,7 +635,7 @@ function RegisterCustomer({
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="pc-botonera sm:justify-end">
             <Button type="button" variant="tertiary" onClick={onCancel}>
               Cancelar
             </Button>

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { formatAppliedRateLine, formatMoney, type Money } from "@/lib/format";
 import { findCurrency } from "@/features/exchange/quote";
 import type { OperationRecord } from "@/features/operations/operations-history";
+import { difiereDeLoDebido, entregadoAlCliente } from "@/features/operations/entregado";
 import { DetailCard, DetailList, DetailRow } from "./detail-parts";
 
 /**
@@ -19,15 +20,16 @@ import { DetailCard, DetailList, DetailRow } from "./detail-parts";
  */
 export function ServiceDetail({ operation }: { operation: OperationRecord }): React.JSX.Element {
   if (operation.amount.kind === "exchange") {
-    return <CurrencyExchangeDetail amount={operation.amount} />;
+    return <CurrencyExchangeDetail amount={operation.amount} liquidacion={operation.liquidacion} />;
   }
   return <GenericServiceDetail operation={operation} />;
 }
 
 /**
- * "Estado de caja" — the register's own arithmetic for this operation, as it
- * stood when it was processed. A historical snapshot read straight off the
- * record, never recomputed from today's Caja balance.
+ * "Movimientos de caja" — lo que entró y lo que salió de la caja con este
+ * cambio. Worker opera a ciegas (decisión del 6/11/2026): ni disponible antes
+ * ni después, que solo ve la administración. Sale de los importes de la
+ * operación, no del saldo.
  *
  * Rendered as its own card (rather than inside `ServiceDetail`) so the page
  * can place it beside the outcome, and so services that move no cash simply
@@ -39,23 +41,23 @@ export function OperationCashCard({
   operation: OperationRecord;
 }): React.JSX.Element | null {
   if (operation.amount.kind !== "exchange") return null;
-  const { cashSnapshot } = operation.amount;
+  const { source, destination } = operation.amount;
+  /* Lo que salió de verdad (12/11/2026): sin lo que quedó a favor de la casa, y con la parte pagada en CUP. */
+  const salio = entregadoAlCliente(destination, operation.liquidacion);
 
   return (
-    <DetailCard title="Estado de caja" icon={Wallet}>
+    <DetailCard title="Movimientos de caja" icon={Wallet}>
       <DetailList>
-        <DetailRow label="Disponible antes" value={formatMoney(cashSnapshot.before)} numeric />
-        <DetailRow
-          label="Entregado al cliente"
-          value={formatMoney(cashSnapshot.movement)}
-          numeric
-        />
-        <DetailRow
-          label="Disponible después"
-          value={formatMoney(cashSnapshot.after)}
-          numeric
-          strong
-        />
+        <DetailRow label="Entró en caja" value={`+${formatMoney(source)}`} numeric />
+        {salio.map((m) => (
+          <DetailRow
+            key={m.currency}
+            label={m.currency === destination.currency ? "Salió de caja (entregado al cliente)" : "Salió de caja en CUP (por falta de billetes)"}
+            value={`−${formatMoney(m)}`}
+            numeric
+            strong
+          />
+        ))}
       </DetailList>
     </DetailCard>
   );
@@ -109,10 +111,13 @@ function ExchangeSide({
  */
 function CurrencyExchangeDetail({
   amount,
+  liquidacion,
 }: {
   amount: Extract<OperationRecord["amount"], { kind: "exchange" }>;
+  liquidacion: OperationRecord["liquidacion"];
 }): React.JSX.Element {
   const { source, destination, appliedRate } = amount;
+  const recibe = entregadoAlCliente(destination, liquidacion);
 
   return (
     <DetailCard title="Detalle del servicio" icon={ArrowLeftRight} contentClassName="gap-4">
@@ -127,7 +132,20 @@ function CurrencyExchangeDetail({
         <ArrowDown className="size-4" />
       </span>
 
-      <ExchangeSide label="Cliente recibe" money={destination} tone="destination" />
+      {/* Lo que se llevó de verdad; si no es lo que daba la tasa, se dice cuánto daba. */}
+      {recibe.map((m, i) => (
+        <ExchangeSide
+          key={m.currency}
+          label={i === 0 ? "Cliente recibe" : "Y, por falta de billetes, en CUP"}
+          money={m}
+          tone="destination"
+        />
+      ))}
+      {difiereDeLoDebido(destination, liquidacion) ? (
+        <p className="text-caption text-text-secondary">
+          Según la tasa le correspondían {formatMoney(destination)}. La diferencia está en «Cómo se movió el efectivo».
+        </p>
+      ) : null}
 
       <hr className="border-t border-dashed border-border" />
 

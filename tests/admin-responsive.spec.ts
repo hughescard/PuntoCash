@@ -192,7 +192,10 @@ test.describe("a 360px, los controles se pueden pulsar", () => {
       .filter({ hasNotText: "Sin equipo vinculado" })
       .first();
     await expect(tarjeta, "ninguna «Caja 01» del alcance tiene equipo vinculado").toBeVisible();
-    await tarjeta.getByRole("button", { name: "Retirar" }).click();
+    /* La tarjeta abre la ficha de la caja, que es donde se retira. */
+    await tarjeta.click();
+    await page.waitForURL(/\/admin\/cajas\/[^/]+$/);
+    await page.getByRole("main").getByRole("button", { name: "Retirar caja" }).click();
 
     const dialogo = page.getByRole("dialog");
     await expect(dialogo).toBeVisible();
@@ -213,16 +216,19 @@ test.describe("a 360px, los controles se pueden pulsar", () => {
       640,
     );
 
-    /* Las acciones **apiladas**: la secundaria arriba y la que decide abajo, en
-       el orden del marcado. Si estuvieran en fila, las dos compartirían la
-       misma línea y sus `y` coincidirían. */
+    /* Las acciones van una al lado de la otra si caben; si no, cada una ocupa
+       la línea entera (decisión del 10/11). Lo que no puede pasar es que una
+       baje de línea y se quede con su ancho natural. */
     const cancelar = await dialogo.getByRole("button", { name: "Cancelar" }).boundingBox();
     const retirar = await dialogo.getByRole("link", { name: /^Ir a (la jornada|Equipos)$/ }).boundingBox();
     expect(cancelar).not.toBeNull();
     expect(retirar).not.toBeNull();
-    expect(retirar!.y, "la acción primaria debe quedar debajo de la secundaria").toBeGreaterThan(
-      cancelar!.y + cancelar!.height - 1,
-    );
+    if (Math.abs(retirar!.y - cancelar!.y) > 1) {
+      expect(Math.abs(cancelar!.width - retirar!.width), "apiladas, las dos ocupan todo el ancho").toBeLessThan(2);
+      expect(retirar!.y, "la acción primaria queda debajo de la secundaria").toBeGreaterThan(cancelar!.y);
+    } else {
+      expect(retirar!.x, "en fila, la acción primaria va a la derecha").toBeGreaterThan(cancelar!.x);
+    }
 
     /* Y alcanzable **sin desplazar**, que es la parte de **FR-AD-SHELL-16**
        que de verdad se puede incumplir: el diálogo cabe siempre, pero si su

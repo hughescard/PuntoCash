@@ -162,18 +162,16 @@ function Comparativa({
 
       {fijadas.length > 0 ? (
         <Alert variant="warning" title="PuntoCash cambió un rango y ajustó tasas" className="mb-8">
-          {fijadas.map((f, i) => (
-            <React.Fragment key={`${f.sede.id}-${f.code}`}>
-              {i > 0 ? ", " : null}
-              <Link
-                href={`/admin/tasas/${f.sede.id}` as Route}
-                className="font-semibold underline underline-offset-4"
-              >
-                {f.code} en {f.sede.name}
-              </Link>
-            </React.Fragment>
-          ))}
-          . Confírmalas o elige otras desde su sede.
+          <ul className="flex flex-col gap-1.5">
+            {fijadas.map((f) => (
+              <li key={`${f.sede.id}-${f.code}`}>
+                <Link href={`/admin/tasas/${f.sede.id}` as Route} className="font-semibold underline underline-offset-4">
+                  {f.code} en {f.sede.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2">Confírmalas o elige otras desde su sede.</p>
         </Alert>
       ) : null}
 

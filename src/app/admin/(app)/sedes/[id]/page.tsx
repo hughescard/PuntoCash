@@ -2,18 +2,21 @@ import * as React from "react";
 import Link from "next/link";
 import type { Metadata, Route } from "next";
 import { notFound, redirect } from "next/navigation";
-import { ArrowRight, Info, Lock, MonitorSmartphone, Pencil } from "lucide-react";
+import { ArrowRight, Bell, Info, Lock, MonitorSmartphone, Pencil } from "lucide-react";
 
 import { PageHeader, Section } from "@/components/shell/app-shell";
 import { Alert, Badge, Button, Card, CardContent } from "@/components/ui";
 import { cifraDeTablero, formatDate, formatDateTime } from "@/lib/format";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { ResponsiveTable } from "@/components/patterns/responsive-table";
+import { ElementoDeLista } from "@/components/patterns/elemento-de-lista";
 import { getAdminSession } from "@/features/admin/session-server";
 import { lineasDeHorario } from "@/features/network/horario";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { WORKER_SERVICES } from "@/features/operations/services";
 import { diaEnCuba, saldosDe } from "@/features/network/jornadas";
+import { alertasActivas, reglasVigentes, tituloDeAlerta } from "@/features/network/alertas";
+import { formatoDeDenominacion, valorDeClave } from "@/features/caja/billetes";
 import { formatAmount } from "@/lib/format";
 import { desde, EstadoBadge, fechaYHora } from "../../jornadas/formato";
 import { EstadoSede } from "../sedes-list";
@@ -74,6 +77,8 @@ export default async function AdminSedePage({
   const enPantalla = red.promocionesEnPantalla(sede.id);
   const dia = red.diaDeSede(sede.id);
   const hoy = diaEnCuba(new Date());
+  const reglasDeAlerta = reglasVigentes(sede.id);
+  const cajasConAlertas = (dia?.cajas ?? []).flatMap((c) => (c.abierta ? [{ jornada: c.abierta, alertas: alertasActivas(c.abierta) }] : [])).filter((x) => x.alertas.length > 0);
 
   return (
     <>
@@ -154,6 +159,66 @@ export default async function AdminSedePage({
                 o el nombre no son correctos, pídeselo a PuntoCash.
               </p>
             </div>
+          </CardContent>
+        </Card>
+      </Section>
+
+      <Section
+        title="Alertas de caja"
+        description="Las que rigen en esta sede. Se definen en la sección Alertas."
+        actions={
+          sede.status !== "cerrada" ? (
+            <Button variant="secondary" size="sm" asChild>
+              <Link href="/admin/alertas">
+                <Bell aria-hidden="true" />
+                Ver en Alertas
+              </Link>
+            </Button>
+          ) : null
+        }
+      >
+        <Card>
+          <CardContent className="flex flex-col gap-6 pt-6">
+            {cajasConAlertas.length > 0 ? (
+              <ul className="flex flex-col divide-y divide-border" aria-label="Alertas activas de la sede">
+                {cajasConAlertas.map(({ jornada, alertas }) => (
+                  <ElementoDeLista key={jornada.registerId} href={`/admin/cajas/${encodeURIComponent(jornada.registerId)}`}>
+                    <span className="block font-medium text-text-primary">{jornada.cajaNombre}</span>
+                    <span className="block text-body-sm text-text-secondary">{alertas.map((a) => tituloDeAlerta(a)).join(" · ")}</span>
+                  </ElementoDeLista>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-body text-text-primary">Ninguna caja abierta tiene alertas.</p>
+            )}
+            {reglasDeAlerta.length === 0 ? (
+              <p className="text-body text-text-secondary">Esta sede no tiene alertas definidas.</p>
+            ) : (
+              <ul className="flex flex-col gap-4" aria-label="Alertas definidas">
+                {reglasDeAlerta.map((r) => (
+                  <li key={r.currency} className="flex flex-col gap-1">
+                    <span className="font-semibold text-text-primary">{r.currency}</span>
+                    <span className="text-body-sm text-text-secondary">
+                      {[
+                        r.minimo !== null ? `Mínimo ${formatAmount(r.minimo)} ${r.currency}` : null,
+                        r.maximo !== null ? `Máximo ${formatAmount(r.maximo)} ${r.currency}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "Sin límites de efectivo"}
+                    </span>
+                    {Object.keys(r.billetesMinimos).length > 0 ? (
+                      <span className="text-body-sm text-text-secondary">
+                        Billetes mínimos:{" "}
+                        {Object.entries(r.billetesMinimos)
+                          .sort(([a], [b]) => Number(b) - Number(a))
+                          .map(([k, n]) => `${formatoDeDenominacion(valorDeClave(k))} × ${n}`)
+                          .join(" · ")}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </Section>
@@ -317,10 +382,14 @@ export default async function AdminSedePage({
                   const equipo = red.equipoDeCaja(caja.id);
                   /* FR-AD-SEDE-7: quién tiene la sesión iniciada y, con jornada abierta, su saldo por moneda. */
                   const abierta = red.jornadaAbiertaDeCaja(caja.id);
+                  /* Cerrada, la caja guarda lo que quedó al cerrar (el efectivo
+                     se queda dentro hasta la próxima apertura). */
+                  const cerrada = abierta ? null : red.ultimaJornadaCerradaDeCaja(caja.id);
                   return (
-                    <li
+                    <ElementoDeLista
                       key={caja.id}
-                      className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                      href={`/admin/cajas/${encodeURIComponent(caja.id)}`}
+                      className="flex flex-wrap items-center justify-between gap-3"
                     >
                       <div className="min-w-0">
                         <p className="text-body font-medium text-text-primary">{caja.name}</p>
@@ -346,6 +415,18 @@ export default async function AdminSedePage({
                                 .join(" · ")}
                             </span>
                           </p>
+                        ) : cerrada ? (
+                          <p className="mt-0.5 text-body-sm text-text-secondary">
+                            {cerrada.estado === "forzada"
+                              ? `Cierre forzado el ${fechaYHora(cerrada.closedAt!)}, sin contar`
+                              : `Cerrada el ${fechaYHora(cerrada.closedAt!)} por ${cerrada.workerName}`}
+                            {" · "}
+                            <span className="pc-numeric">
+                              {saldosDe(cerrada)
+                                .map((m) => `${formatAmount(m.amount)} ${m.currency}`)
+                                .join(" · ")}
+                            </span>
+                          </p>
                         ) : null}
                       </div>
                       {caja.status === "activa" ? (
@@ -353,7 +434,7 @@ export default async function AdminSedePage({
                       ) : (
                         <Badge variant="neutral">Retirada</Badge>
                       )}
-                    </li>
+                    </ElementoDeLista>
                   );
                 })}
               </ul>
@@ -500,7 +581,7 @@ export default async function AdminSedePage({
             ) : (
               <ul className="flex flex-col divide-y divide-border">
                 {enPantalla.map((p) => (
-                  <li key={p.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <ElementoDeLista key={p.id} href={`/admin/promociones/${p.id}`} className="flex items-start gap-3">
                     {p.imagen ? (
                       /* eslint-disable-next-line @next/next/no-img-element -- imagen de la promoción */
                       <img
@@ -510,15 +591,10 @@ export default async function AdminSedePage({
                       />
                     ) : null}
                     <div className="min-w-0">
-                      <Link
-                        href={`/admin/promociones/${p.id}` as Route}
-                        className="font-semibold text-text-primary underline-offset-4 hover:underline"
-                      >
-                        {p.titulo}
-                      </Link>
+                      <p className="font-semibold text-text-primary">{p.titulo}</p>
                       <p className="mt-0.5 text-body-sm text-text-secondary">{p.texto}</p>
                     </div>
-                  </li>
+                  </ElementoDeLista>
                 ))}
               </ul>
             )}

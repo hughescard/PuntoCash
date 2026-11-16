@@ -21,6 +21,7 @@ import {
   getCajaMovementCurrencyFilters,
   type CajaMovementDateFilter,
 } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 
 const SEARCH_FIELD: FieldSpec = { id: "caja-buscar", label: "Buscar" };
 const TYPE_FIELD: FieldSpec = { id: "caja-tipo", label: "Tipo" };
@@ -46,6 +47,7 @@ export function CajaMovementsFilters({
   onClear: () => void;
   hasActiveFilters: boolean;
 }): React.JSX.Element {
+  const caja = useCaja();
   const searchRef = React.useRef<HTMLInputElement>(null);
 
   return (
@@ -102,7 +104,7 @@ export function CajaMovementsFilters({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {getCajaMovementCurrencyFilters().map((option) => (
+            {getCajaMovementCurrencyFilters(caja.monedas).map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>

@@ -107,8 +107,21 @@ export type OperationAmount =
       destination: Money;
       /** Destination units per one source unit — the operation's rate snapshot. */
       appliedRate: number;
-      cashSnapshot: OperationCashSnapshot;
+      /** Solo en la red y en las consolas: Worker no ve los saldos de su caja. */
+      cashSnapshot?: OperationCashSnapshot;
     };
+
+/**
+ * Cómo se movió el efectivo cuando no fue «lo que dice el importe» (bloque 4,
+ * decisión del 9/11/2026): el vuelto, lo que se pagó en CUP por falta de
+ * billetes y lo que quedó a favor de la casa, con su causa. Es lo que consta
+ * en el comprobante. Ninguna cifra es un saldo.
+ */
+export interface OperationLiquidation {
+  vuelto?: { currency: string; importe: number };
+  enCup?: { importe: number; equivale: { currency: string; importe: number } };
+  aFavorDeLaCasa?: readonly { currency: string; importe: number; motivo: "redondeo" }[];
+}
 
 export interface OperationRecord {
   codigo: string;
@@ -120,6 +133,7 @@ export interface OperationRecord {
   amount: OperationAmount;
   worker: string;
   caja: string;
+  liquidacion?: OperationLiquidation;
   /** Historical external-remittance snapshot. Kept separate from the generic
    * operation fields until the specialized Remesa detail is approved. */
   remittance?: {
@@ -619,7 +633,7 @@ export function operationMatchesDateFilter(record: OperationRecord, filter: Oper
   // from — see `MOCK_NOW` — so filtering stays coherent regardless of how
   // much real time has passed since.
   const elapsedHours =
-    (MOCK_NOW.getTime() - new Date(record.fechaHora).getTime()) / (60 * 60 * 1000);
+    (Date.now() - new Date(record.fechaHora).getTime()) / (60 * 60 * 1000);
   return elapsedHours <= spec.hours;
 }
 

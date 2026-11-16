@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRightLeft, Calendar, FileText, Phone, UserRound, Wallet } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Calendar,
+  FileText,
+  Phone,
+  UserRound,
+  Wallet,
+} from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
@@ -14,7 +21,10 @@ import {
   documentTypeShortLabel,
   type Customer,
 } from "@/features/customers/customers";
-import { CashStatus, formatAppliedRate, type CashCheck } from "./exchange-summary";
+import { formatAppliedRate } from "./exchange-summary";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
+import { restar, totalDe, type Denominacion } from "@/features/caja/billetes";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
 
 function CardGlyph({ icon: Icon }: { icon: typeof Wallet }) {
   return (
@@ -34,15 +44,18 @@ function CardGlyph({ icon: Icon }: { icon: typeof Wallet }) {
 export function StepRevision({
   quote,
   customer,
-  cash,
   worker,
   register,
+  efectivo = null,
+  denominaciones = {},
 }: {
   quote: ExchangeQuote;
   customer: Customer;
-  cash: CashCheck;
   worker: string;
   register: string;
+  /** Los billetes que el trabajador marcó en el paso anterior. */
+  efectivo?: EfectivoRegistrado | null;
+  denominaciones?: Readonly<Record<string, readonly Denominacion[]>>;
 }): React.JSX.Element {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[19rem_minmax(0,1fr)_20rem]">
@@ -65,9 +78,12 @@ export function StepRevision({
                 {customerInitials(customer)}
               </span>
               <div className="min-w-0">
-                <p className="text-card-title text-text-primary">{customerFullName(customer)}</p>
+                <p className="text-card-title text-text-primary">
+                  {customerFullName(customer)}
+                </p>
                 <p className="pc-numeric mt-0.5 text-body-sm text-text-secondary">
-                  {documentTypeShortLabel(customer.documentType)} · {customer.documentNumber}
+                  {documentTypeShortLabel(customer.documentType)} ·{" "}
+                  {customer.documentNumber}
                 </p>
                 <p className="text-body-sm text-text-secondary">
                   Nacionalidad: {customer.nationality}
@@ -76,7 +92,12 @@ export function StepRevision({
             </div>
 
             <dl className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
-              <MetaRow icon={Phone} label="Teléfono" value={customer.phone} numeric />
+              <MetaRow
+                icon={Phone}
+                label="Teléfono"
+                value={customer.phone}
+                numeric
+              />
               <MetaRow
                 icon={Calendar}
                 label="Fecha de nacimiento"
@@ -104,43 +125,89 @@ export function StepRevision({
       </div>
 
       {/* ---------------- Exchange summary ---------------- */}
-      <Card className="self-start">
-        <CardHeader>
-          <div className="flex min-w-0 items-center gap-3">
-            <CardGlyph icon={ArrowRightLeft} />
-            <CardTitle>Resumen del cambio</CardTitle>
-          </div>
-        </CardHeader>
+      <div className="flex min-w-0 flex-col gap-6 self-start">
+        <Card>
+          <CardHeader>
+            <div className="flex min-w-0 items-center gap-3">
+              <CardGlyph icon={ArrowRightLeft} />
+              <CardTitle>Resumen del cambio</CardTitle>
+            </div>
+          </CardHeader>
 
-        <CardContent className="flex flex-col gap-5">
-          <ReviewAmount
-            label="Cliente entrega"
-            amount={quote.sourceAmount}
-            currency={quote.sourceCurrency}
-          />
-          <hr className="border-t border-dashed border-border" />
-          <ReviewAmount
-            label="Cliente recibe"
-            amount={quote.destinationAmount}
-            currency={quote.destinationCurrency}
-          />
-          <hr className="border-t border-dashed border-border" />
-          <div className="flex flex-col gap-1">
-            <span className="text-caption text-text-secondary">Tasa aplicada</span>
-            <span className="pc-numeric text-section-title text-text-primary">
-              {formatAppliedRate(quote)}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+          <CardContent className="flex flex-col gap-5">
+            <ReviewAmount
+              label="Cliente entrega"
+              amount={quote.sourceAmount}
+              currency={quote.sourceCurrency}
+            />
+            <hr className="border-t border-dashed border-border" />
+            <ClienteRecibe quote={quote} efectivo={efectivo} />
+            <hr className="border-t border-dashed border-border" />
+            <div className="flex flex-col gap-1">
+              <span className="text-caption text-text-secondary">
+                Tasa aplicada
+              </span>
+              <span className="pc-numeric text-section-title text-text-primary">
+                {formatAppliedRate(quote)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+        {efectivo ? (
+          <Card>
+            <CardHeader>
+              <div className="flex min-w-0 items-center gap-3">
+                <CardGlyph icon={Wallet} />
+                <CardTitle>Billetes de la operación</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <h4 className="text-body font-semibold text-text-primary">
+                {quote.sourceCurrency} que entran
+              </h4>
+              <BilletesDelMovimiento
+                billetes={restar(efectivo.paga, efectivo.vuelto)}
+                currency={quote.sourceCurrency}
+                tipos={denominaciones[quote.sourceCurrency] ?? []}
+                nombre={`${quote.sourceCurrency} que entran`}
+                leyenda="En positivo lo que da el cliente; en negativo el vuelto."
+              />
+              <h4 className="text-body font-semibold text-text-primary">
+                {quote.destinationCurrency} que salen
+              </h4>
+              <BilletesDelMovimiento
+                billetes={restar({}, efectivo.entrega)}
+                currency={quote.destinationCurrency}
+                tipos={denominaciones[quote.destinationCurrency] ?? []}
+                nombre={`${quote.destinationCurrency} que salen`}
+              />
+              {efectivo.entregaCup ? (
+                <>
+                  <h4 className="text-body font-semibold text-text-primary">
+                    CUP que salen
+                  </h4>
+                  <BilletesDelMovimiento
+                    billetes={restar({}, efectivo.entregaCup)}
+                    currency="CUP"
+                    tipos={denominaciones["CUP"] ?? []}
+                    nombre="CUP que salen"
+                  />
+                </>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
+      </div>
 
-      {/* ---------------- Cash state ---------------- */}
+      {/* ---------------- Efecto en la caja ----------------
+          Worker opera a ciegas (decisión del 6/11/2026): ni disponible antes
+          ni después. Lo que entra y lo que sale sí, porque es la operación. */}
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader>
             <div className="flex min-w-0 items-center gap-3">
               <CardGlyph icon={Wallet} />
-              <CardTitle>Estado de caja</CardTitle>
+              <CardTitle>Movimientos de caja</CardTitle>
             </div>
           </CardHeader>
 
@@ -148,50 +215,53 @@ export function StepRevision({
             <LabelledValue label="Caja" value={register} />
             <hr className="border-t border-dashed border-border" />
             <CashLine
-              label="Disponible antes de la operación"
-              amount={cash.available}
-              currency={cash.currency}
+              label="Entra en caja"
+              amount={quote.sourceAmount}
+              currency={quote.sourceCurrency}
             />
             <hr className="border-t border-dashed border-border" />
             <CashLine
-              label="Entrega al cliente (esta operación)"
-              amount={cash.required}
-              currency={cash.currency}
+              label="Sale de caja (entrega al cliente)"
+              amount={quote.destinationAmount}
+              currency={quote.destinationCurrency}
               direction="out"
             />
-            <hr className="border-t border-dashed border-border" />
-            <CashLine
-              label="Disponible después de la operación"
-              amount={cash.remaining}
-              currency={cash.currency}
-              tone={cash.sufficient ? "success" : "error"}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex min-w-0 items-center gap-3">
-              <CardGlyph icon={Wallet} />
-              <CardTitle>Validación de caja</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            <CashStatus cash={cash} />
             <p className="text-caption text-text-secondary">
-              {cash.sufficient
-                ? "La caja cuenta con efectivo suficiente para realizar esta operación."
-                : "Vuelve al paso Cambio y ajusta el monto o la moneda destino."}
-            </p>
-            <p className="text-caption text-text-secondary">
-              Al confirmar se registrarán dos movimientos de caja en la jornada abierta: una
-              entrada de {formatMoney({ amount: quote.sourceAmount, currency: quote.sourceCurrency })}{" "}
-              y una salida de{" "}
-              {formatMoney({ amount: quote.destinationAmount, currency: quote.destinationCurrency })}.
+              Si al confirmar la caja ya no tuviera estos billetes, se dirá y la
+              operación no se registrará.
             </p>
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Lo que el cliente se lleva de verdad: los billetes de la entrega y, si una
+ * parte se paga en CUP, esa parte (12/11/2026). Si no coincide con lo que da
+ * la tasa —por redondeo o por el pago en CUP— se dice cuánto daba la tasa.
+ */
+function ClienteRecibe({ quote, efectivo }: { quote: ExchangeQuote; efectivo: EfectivoRegistrado | null }) {
+  if (!efectivo) {
+    return <ReviewAmount label="Cliente recibe" amount={quote.destinationAmount} currency={quote.destinationCurrency} />;
+  }
+  const enMoneda = totalDe(efectivo.entrega);
+  const enCup = efectivo.entregaCup ? totalDe(efectivo.entregaCup) : 0;
+  const difiere = enCup > 0 || Math.abs(enMoneda - quote.destinationAmount) >= 0.005;
+  return (
+    <div className="flex flex-col gap-3">
+      {enMoneda > 0 || enCup === 0 ? (
+        <ReviewAmount label="Cliente recibe" amount={enMoneda} currency={quote.destinationCurrency} />
+      ) : null}
+      {enCup > 0 ? (
+        <ReviewAmount label={enMoneda > 0 ? "Y, por falta de billetes, en CUP" : "Cliente recibe, en CUP"} amount={enCup} currency="CUP" />
+      ) : null}
+      {difiere ? (
+        <p className="text-caption text-text-secondary">
+          Según la tasa le corresponden {formatMoney({ amount: quote.destinationAmount, currency: quote.destinationCurrency })}.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -280,7 +350,14 @@ function MetaRow({
         <Icon className="size-4 shrink-0" aria-hidden="true" />
         {label}
       </dt>
-      <dd className={cn("text-body-sm text-text-primary", numeric && "pc-numeric")}>{value}</dd>
+      <dd
+        className={cn(
+          "text-body-sm text-text-primary",
+          numeric && "pc-numeric",
+        )}
+      >
+        {value}
+      </dd>
     </div>
   );
 }

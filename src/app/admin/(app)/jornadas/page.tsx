@@ -1,4 +1,3 @@
-import * as React from "react";
 import Link from "next/link";
 import type { Metadata, Route } from "next";
 import { redirect } from "next/navigation";
@@ -95,16 +94,18 @@ export default async function AdminJornadasPage({
           title={olvidadas.length === 1 ? "Una caja sigue abierta de un día anterior" : `${olvidadas.length} cajas siguen abiertas de un día anterior`}
           className="mb-8"
         >
-          {olvidadas.map(({ j, sede }, i) => (
-            <React.Fragment key={j.id}>
-              {i > 0 ? ", " : null}
-              <Link href={`/admin/jornadas/${j.id}` as Route} className="font-semibold underline underline-offset-4">
-                {j.cajaNombre} de {sede.name}
-              </Link>{" "}
-              (abierta por {j.workerName} el {fechaCorta(j.openedAt)})
-            </React.Fragment>
-          ))}
-          . Si nadie va a hacer su cierre, puedes forzar el cierre desde la jornada.
+          {/* Una caja por línea: encadenadas con comas no se distingue dónde acaba una. */}
+          <ul className="flex flex-col gap-1.5">
+            {olvidadas.map(({ j, sede }) => (
+              <li key={j.id}>
+                <Link href={`/admin/jornadas/${j.id}` as Route} className="font-semibold underline underline-offset-4">
+                  {j.cajaNombre} de {sede.name}
+                </Link>{" "}
+                (abierta por {j.workerName} el {fechaCorta(j.openedAt)})
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2">Si nadie va a hacer su cierre, puedes forzar el cierre desde la jornada.</p>
         </Alert>
       ) : null}
 
@@ -114,15 +115,16 @@ export default async function AdminJornadasPage({
           title={sinContar.length === 1 ? "Una caja con cierre forzado no se ha vuelto a contar" : `${sinContar.length} cajas con cierre forzado no se han vuelto a contar`}
           className="mb-8"
         >
-          {sinContar.map(({ j, sede }, i) => (
-            <React.Fragment key={j.id}>
-              {i > 0 ? ", " : null}
-              <Link href={`/admin/jornadas/${j.id}` as Route} className="font-semibold underline underline-offset-4">
-                {j.cajaNombre} de {sede.name}
-              </Link>
-            </React.Fragment>
-          ))}
-          . Su efectivo no se ha comprobado desde el cierre: el primer conteo será el de quien abra la próxima jornada.
+          <ul className="flex flex-col gap-1.5">
+            {sinContar.map(({ j, sede }) => (
+              <li key={j.id}>
+                <Link href={`/admin/jornadas/${j.id}` as Route} className="font-semibold underline underline-offset-4">
+                  {j.cajaNombre} de {sede.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2">Su efectivo no se ha comprobado desde el cierre: el primer conteo será el de quien abra la próxima jornada.</p>
         </Alert>
       ) : null}
 

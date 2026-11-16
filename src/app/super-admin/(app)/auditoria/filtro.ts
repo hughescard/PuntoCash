@@ -105,7 +105,7 @@ export function filtrarAuditoria(filas: readonly FilaDeAuditoria[], f: FiltroDeA
 export function describirFiltro(f: FiltroDeAuditoria, nombres: { actor?: string; operador?: string; sede?: string; tipo?: string }): string {
   const partes: string[] = [];
   if (f.desde || f.hasta) partes.push(`Fechas: ${f.desde || "…"} a ${f.hasta || "…"}`);
-  if (f.rol !== TODOS) partes.push(`Actuó: ${f.rol === "super-admin" ? "PuntoCash" : "Un mercante"}`);
+  if (f.rol !== TODOS) partes.push(`Actuó: ${f.rol === "super-admin" ? "PuntoCash" : f.rol === "trabajador" ? "Un trabajador" : "Un mercante"}`);
   if (f.tipo !== TODOS) partes.push(`Evento: ${nombres.tipo ?? f.tipo}`);
   if (f.actor !== TODOS) partes.push(`Persona: ${nombres.actor ?? f.actor}`);
   if (f.operador !== TODOS) partes.push(`Operador: ${nombres.operador ?? f.operador}`);

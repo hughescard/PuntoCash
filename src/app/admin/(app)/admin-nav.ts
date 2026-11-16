@@ -1,4 +1,5 @@
 import {
+  Bell,
   CalendarClock,
   ChartColumn,
   ClipboardCheck,
@@ -90,6 +91,7 @@ export function adminNavGroups(
       items: [
         { href: "/admin/monedas", label: "Monedas", icon: Coins },
         { href: "/admin/tasas", label: "Tasas", icon: Percent },
+        { href: "/admin/alertas", label: "Alertas", icon: Bell },
         { href: "/admin/promociones", label: "Promociones", icon: Megaphone },
         { href: "/admin/reportes", label: "Reportes", icon: ChartColumn },
       ],

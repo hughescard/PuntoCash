@@ -1,6 +1,7 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { continuarAConfirmar } from "./worker-helpers";
+import { type Page } from "@playwright/test";
 
-import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
 
 /**
  * Worker Nueva operación — Giros — Cobrar giro
@@ -20,7 +21,7 @@ import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
  * **por enlace**, nunca con un `page.goto` posterior.
  */
 
-test.use({ storageState: cajaConJornadaAbierta({ CUP: 50_000 }) });
+test.use({ conCambio: true, fondos: { CUP: 50_000 }, historial: true });
 
 function onScreen(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true });
@@ -49,10 +50,14 @@ async function reviewGiro(page: Page, code: string) {
   await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible({ timeout: 5000 });
 }
 
-/** The Caja balances table shows the amount alone; the currency is its own cell. */
-async function expectCupBalance(page: Page, amount: string) {
-  const balances = page.getByRole("table").first();
-  await expect(balances.locator("tbody tr").filter({ hasText: "CUP" })).toContainText(amount);
+/**
+ * Worker opera a ciegas (6/11/2026): Caja no enseña saldos. «La caja no se
+ * tocó» se comprueba en el libro: ningún pago de giro registrado.
+ */
+async function expectSinPagoDeGiro(page: Page) {
+  const libro = page.getByRole("table").first();
+  await expect(libro).toBeVisible();
+  await expect(libro.locator("tbody tr").filter({ hasText: "Pago de giro" })).toHaveCount(0);
 }
 
 /** Operation-code prefix of the two seeded historical Giro records. */
@@ -140,7 +145,7 @@ test.describe("Cobrar giro — jornada gate", () => {
    * servidor pintó se sustituye por el formulario a media prueba y lo que falla
    * es un `click` sobre un elemento que se acaba de desprender del DOM.
    */
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
+  test.use({ fondos: null });
 
   test("a closed Caja blocks the flow before any lookup is possible", async ({ page }) => {
     await page.goto("/worker/nueva-operacion/giros/cobrar");
@@ -350,7 +355,7 @@ test.describe("Cobrar giro — Revisar giro", () => {
   });
 
   test("Continuar a confirmar reaches the confirmation screen", async ({ page }) => {
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await expect(page.getByRole("heading", { name: "Confirmar entrega del giro" })).toBeVisible();
   });
 });
@@ -382,15 +387,20 @@ test.describe("Cobrar giro — blocked payouts", () => {
     await expect(page.getByRole("button", { name: "Continuar a confirmar" })).toBeDisabled();
   });
 
-  test("an insufficient balance blocks the payout and states what is available", async ({ page }) => {
+  test("si la caja no alcanza, se dice al confirmar, sin cifras, y no se paga", async ({ page }) => {
     await goToCobrar(page);
     await reviewGiro(page, "TR-SIN-FONDOS");
+    /* Worker no ve el saldo: la revisión no puede saberlo. */
+    await expect(onScreen(page, /Disponible/)).toHaveCount(0);
+    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
 
-    await expect(
-      onScreen(page, "La caja no dispone de suficiente CUP para entregar este giro."),
-    ).toBeVisible();
-    await expect(onScreen(page, /Disponible: 50\.000,00 CUP/)).toBeVisible();
+    /* Se dice en el paso de billetes, antes de pedir nada fuera: sin saldos. */
+    await expect(onScreen(page, "La caja no puede pagar eso entero")).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole("button", { name: "Continuar a confirmar" })).toBeDisabled();
+    await expect(onScreen(page, /Disponible/)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toHaveCount(0);
+    await page.getByRole("link", { name: "Caja" }).click();
+    await expectSinPagoDeGiro(page);
   });
 
   test("no alternative currency, conversion or split payment is offered", async ({ page }) => {
@@ -417,7 +427,7 @@ test.describe("Cobrar giro — Confirmar entrega", () => {
   test.beforeEach(async ({ page }) => {
     await goToCobrar(page);
     await reviewGiro(page, "TR-260901-000245");
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await expect(page.getByRole("heading", { name: "Confirmar entrega del giro" })).toBeVisible();
   });
 
@@ -428,15 +438,20 @@ test.describe("Cobrar giro — Confirmar entrega", () => {
     await expect(onScreen(page, "TR-260901-000245")).toBeVisible();
     await expect(onScreen(page, "María Pérez García")).toBeVisible();
     await expect(onScreen(page, "85010112345")).toBeVisible();
-    await expect(onScreen(page, "2.500,00 CUP")).toBeVisible();
+    await expect(page.getByText("2.500,00 CUP", { exact: true }).filter({ visible: true })).toBeVisible();
     await expect(onScreen(page, "CUP · Peso cubano")).toBeVisible();
     await expect(onScreen(page, "Caja 03").first()).toBeVisible();
+    /* Como en la remesa, los billetes de la entrega se ven antes de confirmar. */
+    await expect(page.getByRole("heading", { name: "Billetes que se entregan" })).toBeVisible();
 
     await expect(onScreen(page, "Acción irreversible")).toBeVisible();
     await expect(onScreen(page, /El giro quedará marcado como completado\./)).toBeVisible();
   });
 
   test("Volver returns to Revisar giro with the giro intact", async ({ page }) => {
+    /* Confirmar → billetes → Revisar giro. */
+    await page.getByRole("button", { name: /^Volver/ }).click();
+    await expect(page.getByRole("heading", { name: "Billetes de la entrega" })).toBeVisible();
     await page.getByRole("button", { name: /Volver a Revisar giro/ }).click();
     await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible();
     await expect(onScreen(page, "TR-260901-000245")).toBeVisible();
@@ -448,7 +463,7 @@ test.describe("Cobrar giro — Confirmar entrega", () => {
 
     // No Caja movement was recorded — the balance is untouched.
     await page.getByRole("link", { name: "Caja" }).click();
-    await expectCupBalance(page, "50.000,00");
+    await expectSinPagoDeGiro(page);
   });
 });
 
@@ -456,7 +471,7 @@ test.describe("Cobrar giro — external failures", () => {
   async function confirmPayout(page: Page, code: string) {
     await goToCobrar(page);
     await reviewGiro(page, code);
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
   }
 
@@ -469,7 +484,7 @@ test.describe("Cobrar giro — external failures", () => {
     await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toHaveCount(0);
 
     await page.getByRole("link", { name: "Caja" }).click();
-    await expectCupBalance(page, "50.000,00");
+    await expectSinPagoDeGiro(page);
     // Seeded history contributes its own Giro movements (all carrying seeded
     // operation codes), so "no Caja impact" is expressed as: every Giro row
     // present belongs to that seeded history, none to this session.
@@ -478,7 +493,7 @@ test.describe("Cobrar giro — external failures", () => {
         .getByRole("table")
         .nth(1)
         .locator("tbody tr")
-        .filter({ hasText: "Giros" })
+        .filter({ hasText: "Pago de giro" })
         .filter({ hasNotText: SEEDED_GIRO_CODE_PREFIX }),
     ).toHaveCount(0);
   });
@@ -516,7 +531,7 @@ test.describe("Cobrar giro — payout completed", () => {
   test.beforeEach(async ({ page }) => {
     await goToCobrar(page);
     await reviewGiro(page, "TR-260901-000245");
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toBeVisible({
       timeout: 10_000,
@@ -565,19 +580,19 @@ test.describe("Cobrar giro — payout completed", () => {
     expect(code).toMatch(/^PC-\d{6}-\d{6}$/);
 
     await page.getByRole("link", { name: "Caja" }).click();
-    const rows = page.getByRole("table").nth(1).locator("tbody tr").filter({ hasText: code });
+    const rows = page.getByRole("table").first().locator("tbody tr").filter({ hasText: code });
     await expect(rows).toHaveCount(1);
 
     const row = rows.first();
-    await expect(row).toContainText("Giros");
+    await expect(row).toContainText("Pago de giro");
     await expect(row).toContainText("Salida");
     await expect(row).toContainText("−2.500,00");
     // Commercial movements route through their Operation Detail — they carry
     // an operation code and no "Ver detalle" action of their own.
-    await expect(row.getByRole("link", { name: "Ver detalle" })).toHaveCount(0);
+    await expect(row.getByRole("link", { name: /^Ver el movimiento/ })).toHaveCount(0);
 
-    // saldoAntes → saldoDespués = saldoAntes − importe.
-    await expectCupBalance(page, "47.500,00");
+    // Sin saldos en Worker: el pago está en el libro, no el saldo que dejó.
+    await expect(page.getByText("47.500,00")).toHaveCount(0);
   });
 
   test("registers one payout operation whose client is the beneficiary", async ({ page }) => {
@@ -598,7 +613,7 @@ test.describe("Cobrar giro — payout completed", () => {
       .locator("tbody tr")
       .filter({ hasText: "Giros" })
       .first()
-      .getByRole("link", { name: "Ver detalle" })
+      .getByRole("link", { name: /^Ver (la operación|el movimiento)/ })
       .click();
 
     await expect(page.getByRole("heading", { name: "Detalle de operación" })).toBeVisible();
@@ -642,7 +657,7 @@ test.describe("Enviar giro then Cobrar giro", () => {
     await page.locator("#giro-importe").fill("1000");
 
     await page.getByRole("button", { name: "Continuar" }).click();
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar envío" }).click();
     await expect(page.getByRole("heading", { name: "Giro registrado correctamente" })).toBeVisible({
       timeout: 10_000,

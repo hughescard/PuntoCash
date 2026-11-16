@@ -7,6 +7,7 @@ import { ArrowLeft, Lock, MonitorSmartphone, Pencil } from "lucide-react";
 import { PageHeader, Section } from "@/components/shell/app-shell";
 import { Alert, Badge, Button, Card, CardContent } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
+import { ElementoDeLista } from "@/components/patterns/elemento-de-lista";
 import { cifraDeTablero, formatAmount, formatDate } from "@/lib/format";
 import { GLOBAL_SCOPE } from "@/features/network/scope";
 import { redEnAlcance } from "@/features/network/scoped-reads";
@@ -379,8 +380,15 @@ export default async function SuperAdminSedePage({
                 {cajas.map((caja) => {
                   const equipo = red.equipoDeCaja(caja.id);
                   const abierta = red.jornadaAbiertaDeCaja(caja.id);
+                  /* Cerrada, la caja guarda lo que quedó al cerrar (el efectivo
+                     se queda dentro hasta la próxima apertura). */
+                  const cerrada = abierta ? null : red.ultimaJornadaCerradaDeCaja(caja.id);
                   return (
-                    <li key={caja.id} className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <ElementoDeLista
+                      key={caja.id}
+                      href={`/super-admin/sedes/${sede.id}/cajas/${encodeURIComponent(caja.id)}`}
+                      className="flex flex-wrap items-start justify-between gap-3"
+                    >
                       <div className="min-w-0">
                         <p className="text-body font-medium text-text-primary">{caja.name}</p>
                         <p className="mt-0.5 flex items-center gap-2 text-body-sm text-text-secondary">
@@ -408,8 +416,20 @@ export default async function SuperAdminSedePage({
                                   .join(" · ")}
                               </span>
                             </>
+                          ) : cerrada ? (
+                            <>
+                              {cerrada.estado === "forzada"
+                                ? `Cierre forzado el ${fechaYHora(cerrada.closedAt!)}, sin contar`
+                                : `Cerrada el ${fechaYHora(cerrada.closedAt!)} por ${cerrada.workerName}`}
+                              {" · "}
+                              <span className="pc-numeric">
+                                {saldosDe(cerrada)
+                                  .map((m) => `${formatAmount(m.amount)} ${m.currency}`)
+                                  .join(" · ")}
+                              </span>
+                            </>
                           ) : (
-                            "Sin jornada abierta"
+                            "Sin jornadas todavía"
                           )}
                         </p>
                       </div>
@@ -418,7 +438,7 @@ export default async function SuperAdminSedePage({
                       ) : (
                         <Badge variant="neutral">Retirada</Badge>
                       )}
-                    </li>
+                    </ElementoDeLista>
                   );
                 })}
               </ul>
@@ -542,24 +562,20 @@ export default async function SuperAdminSedePage({
             ) : (
               <ul className="mt-3 flex flex-col divide-y divide-border">
                 {enPantalla.map((p) => (
-                  <li key={p.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <ElementoDeLista key={p.id} href={`/super-admin/promociones/${p.id}`} className="flex items-start gap-3">
                     {p.imagen ? (
                       /* eslint-disable-next-line @next/next/no-img-element -- imagen de la promoción */
                       <img src={p.imagen} alt="" className="h-14 w-20 shrink-0 rounded-control bg-surface-subtle object-contain" />
                     ) : null}
                     <div className="min-w-0">
-                      <p className="font-semibold text-text-primary">
-                        <Link href={`/super-admin/promociones/${p.id}` as Route} className="underline-offset-4 hover:underline">
-                          {p.titulo}
-                        </Link>
-                      </p>
+                      <p className="font-semibold text-text-primary">{p.titulo}</p>
                       <p className="mt-0.5 text-body-sm text-text-secondary">{p.texto}</p>
                       {/* De quién es: PuntoCash la cambia, la de un operador solo la ve. */}
                       <p className="mt-1 text-caption text-text-secondary">
                         Publica {quienPublicaPromocion(p.id)}
                       </p>
                     </div>
-                  </li>
+                  </ElementoDeLista>
                 ))}
               </ul>
             )}

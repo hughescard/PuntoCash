@@ -4,8 +4,8 @@ import * as React from "react";
 import { FileText, Printer } from "lucide-react";
 
 import { Button, Card, CardContent } from "@/components/ui";
-import { formatDateTime, formatMoney, formatSignedAmount } from "@/lib/format";
-import { CAJA_SUMMARY, type CajaMovement } from "@/features/caja/caja-data";
+import { formatDateTime, formatSignedAmount } from "@/lib/format";
+import { TIPO_DE_MOVIMIENTO, type CajaMovement } from "@/features/caja/caja-data";
 
 /**
  * "Comprobante" — same `hidden print:block` mechanism as every other
@@ -55,35 +55,20 @@ function PrintableMovementReceipt({ movement }: { movement: CajaMovement }) {
       <dl style={{ marginTop: 16, lineHeight: 1.7 }}>
         <ReceiptLine label="ID de movimiento" value={movement.id} />
         <ReceiptLine label="Concepto" value={movement.concepto} />
-        <ReceiptLine label="Tipo" value={movement.tipo === "entrada" ? "Entrada" : "Salida"} />
-        <ReceiptLine label="Caja" value={jornada?.register ?? CAJA_SUMMARY.register} />
-        <ReceiptLine label="Trabajador" value={jornada?.worker ?? CAJA_SUMMARY.worker} />
+        <ReceiptLine label="Tipo" value={TIPO_DE_MOVIMIENTO[movement.tipo]} />
+        <ReceiptLine label="Caja" value={jornada?.register ?? "—"} />
+        <ReceiptLine label="Trabajador" value={jornada?.worker ?? "—"} />
         <ReceiptLine label="Fecha y hora" value={formatDateTime(new Date(movement.fechaHora))} />
         <ReceiptLine label="Moneda" value={movement.currency} />
-        {movement.saldoAntes !== undefined ? (
-          <ReceiptLine
-            label="Saldo anterior"
-            value={formatMoney({ amount: movement.saldoAntes, currency: movement.currency })}
-          />
-        ) : null}
         <ReceiptLine
-          label={movement.concepto === "Ajuste de efectivo" || movement.concepto === "Ajuste de cierre" ? "Efectivo contado" : "Importe"}
-          value={
-            (movement.concepto === "Ajuste de efectivo" || movement.concepto === "Ajuste de cierre") && movement.saldoDespues !== undefined
-              ? formatMoney({ amount: movement.saldoDespues, currency: movement.currency })
-              : `${formatSignedAmount(movement.amount)} ${movement.currency}`
-          }
+          label={movement.concepto === "Ajuste de efectivo" || movement.concepto === "Ajuste de cierre" ? "Diferencia" : "Importe"}
+          value={`${formatSignedAmount(movement.amount)} ${movement.currency}`}
         />
-        {movement.concepto === "Ajuste de efectivo" || movement.concepto === "Ajuste de cierre" ? (
-          <ReceiptLine label="Diferencia" value={`${formatSignedAmount(movement.amount)} ${movement.currency}`} />
+        {movement.motivo ? (
+          <ReceiptLine label="Motivo" value={movement.motivo} />
+        ) : movement.concepto === "Ajuste de efectivo" || movement.concepto === "Ajuste de cierre" ? (
+          <ReceiptLine label="Motivo" value="Sin explicar" />
         ) : null}
-        {movement.saldoDespues !== undefined ? (
-          <ReceiptLine
-            label="Saldo resultante"
-            value={formatMoney({ amount: movement.saldoDespues, currency: movement.currency })}
-          />
-        ) : null}
-        {movement.motivo ? <ReceiptLine label="Motivo" value={movement.motivo} /> : null}
         {movement.observaciones ? <ReceiptLine label="Observaciones" value={movement.observaciones} /> : null}
       </dl>
     </section>

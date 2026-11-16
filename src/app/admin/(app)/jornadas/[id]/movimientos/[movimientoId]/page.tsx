@@ -5,11 +5,14 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { PageHeader } from "@/components/shell/app-shell";
-import { Badge, Button, Card, CardContent } from "@/components/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
+import { todasLasDenominaciones } from "@/features/network/denominaciones";
 import { formatAmount, formatSignedAmount } from "@/lib/format";
 import { getAdminSession } from "@/features/admin/session-server";
 import { redEnAlcance } from "@/features/network/scoped-reads";
-import { fechaYHora, nombreDeJornada } from "../../../formato";
+import { BadgeDeTipo } from "../../movimientos-de-jornada";
+import { DiferenciaDeApertura, fechaYHora, nombreDeJornada } from "../../../formato";
 
 export const metadata: Metadata = {
   title: "Administración de sede · Movimiento",
@@ -32,6 +35,11 @@ export default async function AdminMovimientoPage({
   if (!j || !m) notFound();
   /* Si el movimiento registró una diferencia, la solicitud que la acompaña. */
   const solicitud = red.solicitudesDeJornada(j.id).find((s) => s.movimientoId === m.id) ?? null;
+  /* El fondeo de una apertura con cierre anterior: lo recibido frente a lo entregado. */
+  const cierreAnterior = m.concepto === "Fondeo inicial" ? j.apertura.cierreAnterior : null;
+  const apertura = cierreAnterior ? (j.apertura.monedas.find((a) => a.currency === m.currency) ?? null) : null;
+  const composicion =
+    apertura && apertura.diferencia === 0 && apertura.composicion && Object.keys(apertura.composicion).length > 0 ? apertura.composicion : null;
 
   return (
     <>
@@ -53,7 +61,7 @@ export default async function AdminMovimientoPage({
             <Dato etiqueta="Fecha y hora" valor={fechaYHora(m.fechaHora)} />
             <Dato
               etiqueta="Tipo"
-              valor={<Badge variant={m.tipo === "entrada" ? "success" : "error"}>{m.tipo === "entrada" ? "Entrada" : "Salida"}</Badge>}
+              valor={<BadgeDeTipo tipo={m.tipo} />}
             />
             <Dato etiqueta="Importe" valor={`${formatSignedAmount(m.amount)} ${m.currency}`} numerico />
             {m.saldoAntes !== undefined ? (
@@ -73,7 +81,33 @@ export default async function AdminMovimientoPage({
               }
               numerico={Boolean(m.operationCode)}
             />
-            {m.motivo ? <Dato etiqueta="Motivo" valor={m.motivo} /> : null}
+            {m.fondos || m.cambioCon ? (
+              <Dato
+                etiqueta="Qué fue"
+                valor={
+                  m.fondos === "reposicion"
+                    ? "Reposición: el supervisor trajo efectivo"
+                    : m.fondos === "retiro"
+                      ? "Retiro: el supervisor se llevó efectivo"
+                      : m.cambioCon === "supervisor"
+                        ? "Cambio de billetes con el supervisor"
+                        : "Cambio de billetes con un cliente (no pasa por aprobación)"
+                }
+              />
+            ) : null}
+            {m.recuento ? (
+              <Dato
+                etiqueta="Recuento"
+                valor={`En libros ${formatAmount(m.recuento.enLibros)} · contado ${formatAmount(m.recuento.contado)} ${m.currency}`}
+                numerico
+              />
+            ) : null}
+            {m.motivo ? (
+              <Dato etiqueta="Motivo" valor={m.motivo} />
+            ) : m.concepto === "Ajuste de cierre" || (m.recuento && (m.recuento.diferencia !== 0 || m.recuento.composicion)) ? (
+              <Dato etiqueta="Motivo" valor="Sin explicar" />
+            ) : null}
+            {m.supervisor ? <Dato etiqueta="Supervisor" valor={m.supervisor} /> : null}
             {m.observaciones ? <Dato etiqueta="Observaciones" valor={m.observaciones} /> : null}
             {solicitud ? (
               <Dato
@@ -81,13 +115,74 @@ export default async function AdminMovimientoPage({
                 valor={
                   <Link href={`/admin/aprobaciones/${solicitud.id}` as Route} className="underline underline-offset-4 hover:text-primary">
                     {solicitud.estado === "pendiente"
-                      ? "Pendiente de aprobación"
+                      ? solicitud.tipo === "fondos" && solicitud.supervisor
+                        ? `Pendiente de que ${solicitud.supervisor} lo confirme`
+                        : "Pendiente de aprobación"
                       : `${solicitud.estado === "aprobada" ? "Aprobada" : "Rechazada"} por ${solicitud.resolucion?.por ?? "la administración"}`}
                   </Link>
                 }
               />
             ) : null}
           </dl>
+        </CardContent>
+      </Card>
+      {cierreAnterior && apertura ? (
+        <Card className="mt-6 max-w-form-max">
+          <CardHeader>
+            <CardTitle>{apertura.diferencia === 0 && !composicion ? "Apertura" : "Diferencia con el cierre anterior"}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-5 pt-0">
+            {apertura.diferencia === 0 && !composicion ? (
+              <p className="text-body text-text-primary">
+                {cierreAnterior.sinArqueo ? "Coincidió con lo que había en libros al forzar el cierre" : "Coincidió con lo que entregó quien cerró"}{" "}
+                <span className="text-text-secondary">
+                  ({cierreAnterior.workerName} · {fechaYHora(cierreAnterior.closedAt)})
+                </span>
+              </p>
+            ) : (
+              <>
+                <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                  <Dato
+                    etiqueta={cierreAnterior.sinArqueo ? "En libros al forzar el cierre" : "Entregado"}
+                    valor={`${formatAmount(apertura.dejado ?? 0)} ${m.currency}`}
+                    numerico
+                  />
+                  <Dato etiqueta="Recibido" valor={`${formatAmount(apertura.contado)} ${m.currency}`} numerico />
+                  <Dato
+                    etiqueta="Diferencia"
+                    valor={<DiferenciaDeApertura currency={m.currency} diferencia={apertura.diferencia} motivo={apertura.motivo} />}
+                  />
+                  <Dato
+                    etiqueta={cierreAnterior.sinArqueo ? "Cierre forzado" : "Cerró"}
+                    valor={`${cierreAnterior.workerName} · ${fechaYHora(cierreAnterior.closedAt)}`}
+                  />
+                  <Dato etiqueta="Motivo" valor={apertura.motivo ?? "Sin explicar"} />
+                  {apertura.supervisor ? <Dato etiqueta="Supervisor" valor={apertura.supervisor} /> : null}
+                  {apertura.observaciones ? <Dato etiqueta="Observaciones" valor={apertura.observaciones} /> : null}
+                </dl>
+                {composicion ? (
+                  <div className="flex flex-col gap-3">
+                    <p className="text-caption uppercase tracking-wide text-text-secondary">Billetes que cambiaron</p>
+                    <BilletesDelMovimiento
+                      billetes={composicion}
+                      currency={m.currency}
+                      tipos={todasLasDenominaciones(m.currency)}
+                      nombre="que cambiaron al abrir"
+                      leyenda="En positivo los recibidos de más; en negativo los que faltaban de lo entregado."
+                    />
+                  </div>
+                ) : null}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+      <Card className="mt-6 max-w-form-max">
+        <CardHeader>
+          <CardTitle>Billetes y monedas</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <BilletesDelMovimiento billetes={m.billetes} currency={m.currency} tipos={todasLasDenominaciones(m.currency)} />
         </CardContent>
       </Card>
     </>

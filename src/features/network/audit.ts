@@ -13,7 +13,7 @@
  * equipo a ninguno (FR-SA-AUD-7).
  */
 
-export type AuditActorRole = "super-admin" | "admin-sede";
+export type AuditActorRole = "super-admin" | "admin-sede" | "trabajador";
 
 /**
  * Los tipos se agrupan por quién los produce, que es el filtro más frecuente
@@ -39,6 +39,9 @@ export type AuditEventType =
   | "moneda-plataforma.alta"
   | "moneda-plataforma.retirada"
   | "moneda-plataforma.reincorporada"
+  | "denominacion.alta"
+  | "denominacion.retirada"
+  | "denominacion.reincorporada"
   | "rango.definido"
   | "rango.cambiado"
   | "rango.retirado"
@@ -50,6 +53,7 @@ export type AuditEventType =
   | "caja.alta"
   | "caja.retirada"
   | "caja.reactivada"
+  | "caja.alertas-definidas"
   | "equipo-caja.vinculado"
   | "equipo-caja.desvinculado"
   | "equipo-caja.renombrado"
@@ -61,6 +65,8 @@ export type AuditEventType =
   | "trabajador.desactivado"
   | "trabajador.reactivado"
   | "trabajador.asistencia-acceso"
+  | "trabajador.datos-propios"
+  | "trabajador.contrasena-cambiada"
   | "usuario-admin.alta"
   | "usuario-admin.editado"
   | "usuario-admin.desactivado"

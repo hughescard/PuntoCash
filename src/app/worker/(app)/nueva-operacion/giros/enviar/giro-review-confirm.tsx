@@ -7,9 +7,14 @@ import { Alert, Button, Card, CardContent, CardHeader, CardTitle } from "@/compo
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatIsoDate, formatMoney } from "@/lib/format";
 import { documentTypeShortLabel } from "@/features/customers/customers";
-import { CAJA_SUMMARY, findCajaCurrency } from "@/features/caja/caja-data";
+import { findCajaCurrency } from "@/features/caja/caja-data";
 import { senderFullName, type GiroDraft } from "./giro-types";
 import { municipalityLabel, provinceLabel } from "./giro-validation";
+import { useCaja } from "@/features/caja/use-caja";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
+import { restar } from "@/features/caja/billetes";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
+import type { Denominacion } from "@/features/caja/billetes";
 
 /** "🇨🇺 500,00 CUP" — the approved amount treatment for Importe (a)/(a entregar). */
 function MoneyWithFlag({ amount, currency }: { amount: number; currency: string }) {
@@ -38,6 +43,7 @@ export function GiroReview({
   onCancel: () => void;
   onContinue: () => void;
 }): React.JSX.Element {
+  const CAJA_SUMMARY = useCaja().summary;
   const currencyEntry = findCajaCurrency(draft.senderCurrency);
   const currencyLabel = currencyEntry ? `${currencyEntry.code} · ${currencyEntry.name}` : draft.senderCurrency;
 
@@ -107,7 +113,7 @@ export function GiroReview({
         registrar el giro.
       </Alert>
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" onClick={onCancel}>
           Cancelar
         </Button>
@@ -126,6 +132,8 @@ export function GiroReview({
 
 export function GiroConfirmation({
   draft,
+  efectivo,
+  tipos,
   submitting,
   error,
   onBack,
@@ -133,12 +141,15 @@ export function GiroConfirmation({
   onConfirm,
 }: {
   draft: GiroDraft;
+  efectivo: EfectivoRegistrado | null;
+  tipos: Readonly<Record<string, readonly Denominacion[]>>;
   submitting: boolean;
   error?: string;
   onBack: () => void;
   onCancel: () => void;
   onConfirm: () => void;
 }): React.JSX.Element {
+  const CAJA_SUMMARY = useCaja().summary;
   const currencyEntry = findCajaCurrency(draft.senderCurrency);
   const currencyLabel = currencyEntry ? `${currencyEntry.code} · ${currencyEntry.name}` : draft.senderCurrency;
 
@@ -173,6 +184,23 @@ export function GiroConfirmation({
         </CardContent>
       </Card>
 
+      {efectivo?.paga ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Billetes que da el cliente</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <BilletesDelMovimiento
+              billetes={restar(efectivo.paga, efectivo.vuelto ?? {})}
+              currency={draft.senderCurrency}
+              tipos={tipos[draft.senderCurrency] ?? []}
+              nombre={`${draft.senderCurrency} que entran`}
+              leyenda="En positivo lo que da el cliente; en negativo el vuelto."
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Alert variant="warning" title="Acción irreversible">
         Confirma esta operación solo cuando hayas recibido el efectivo y verificado los datos del
         giro. La operación quedará registrada en el sistema.
@@ -180,7 +208,7 @@ export function GiroConfirmation({
 
       {error ? <Alert variant="error" title={error} /> : null}
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" type="button" onClick={onCancel} disabled={submitting}>
           Cancelar
         </Button>

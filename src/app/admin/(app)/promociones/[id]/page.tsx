@@ -73,7 +73,7 @@ export default async function AdminPromocionPage({ params }: { params: Promise<{
               : `Programada: empieza a verse el ${fecha(v.promo.desde)}.`
           }
           actions={
-            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <div className="pc-botonera">
               <RetirarPromocion
                 id={v.promo.id}
                 titulo={v.promo.titulo}

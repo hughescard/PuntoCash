@@ -1,4 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+
+/* La caja del puesto carga el historial con que se diseñó la lista. */
+test.use({ historial: true });
 
 /**
  * Fecha de una celda "dd/MM/yyyy · HH:mm".
@@ -56,7 +59,6 @@ test.describe("worker operaciones — render and shell", () => {
       "Servicio",
       "Importe",
       "Estado",
-      "Acciones",
     ]) {
       await expect(page.getByRole("columnheader", { name: heading })).toBeVisible();
     }
@@ -64,10 +66,10 @@ test.describe("worker operaciones — render and shell", () => {
   });
 
   test("shows Cliente as plain text, never an avatar or initials chip", async ({ page }) => {
-    await expect(page.getByRole("cell", { name: "Carlos Pérez Rodríguez" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Carlos Pérez Rodríguez", exact: true })).toBeVisible();
     // No avatar/initials chip elements anywhere in the table body.
     await expect(page.locator("tbody img")).toHaveCount(0);
-    const clienteCell = page.getByRole("cell", { name: "Carlos Pérez Rodríguez" });
+    const clienteCell = page.getByRole("cell", { name: "Carlos Pérez Rodríguez", exact: true });
     await expect(clienteCell.locator("svg")).toHaveCount(0);
   });
 });
@@ -105,8 +107,10 @@ test.describe("worker operaciones — Importe formatting", () => {
   });
 
   test("matches the spec's canonical amount and date examples exactly", async ({ page }) => {
-    await expect(page.getByText("15.000,00 CUP", { exact: true })).toBeVisible();
-    await expect(page.getByText("250,00 USD", { exact: true })).toBeVisible();
+    /* La tabla y las tarjetas comparten columnas: se mira la tabla, que es lo que se ve a este ancho. */
+    const tabla = page.getByRole("table");
+    await expect(tabla.getByText("15.000,00 CUP", { exact: true })).toBeVisible();
+    await expect(tabla.getByText("250,00 USD", { exact: true })).toBeVisible();
     // Canonical order is amount-then-currency, never the reverse.
     await expect(page.getByText("USD 1.000,00")).toHaveCount(0);
     await expect(page.getByText("EUR 920,00")).toHaveCount(0);
@@ -133,7 +137,7 @@ test.describe("worker operaciones — status", () => {
   test("shows all five approved status labels as text, not colour alone", async ({ page }) => {
     await page.goto("/worker/operaciones");
     for (const status of ["Completada", "En proceso", "Rechazada", "Fallida", "Cancelada"]) {
-      await expect(page.getByText(status, { exact: true }).first()).toBeVisible();
+      await expect(page.getByText(status, { exact: true }).locator("visible=true").first()).toBeVisible();
     }
   });
 
@@ -168,15 +172,15 @@ test.describe("worker operaciones — filters", () => {
 
     await search.fill("PC-260818-005004");
     await expect(page.locator("tbody tr")).toHaveCount(1);
-    await expect(page.getByRole("cell", { name: "PC-260818-005004" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "PC-260818-005004", exact: true })).toBeVisible();
 
     await search.fill("perez rodriguez");
     await expect(page.locator("tbody tr")).toHaveCount(1);
-    await expect(page.getByRole("cell", { name: "Carlos Pérez Rodríguez" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Carlos Pérez Rodríguez", exact: true })).toBeVisible();
 
     await search.fill("90010112345");
     await expect(page.locator("tbody tr")).toHaveCount(1);
-    await expect(page.getByRole("cell", { name: "Carlos Pérez Rodríguez" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Carlos Pérez Rodríguez", exact: true })).toBeVisible();
   });
 
   test("filters by Servicio", async ({ page }) => {
@@ -232,8 +236,9 @@ test.describe("worker operaciones — filters", () => {
     await page.getByLabel("Fecha").click();
     await page.getByRole("option", { name: "Hoy" }).click();
 
-    // `not.toHaveText` reintenta; leer el texto dos veces seguidas no.
-    await expect(total).not.toHaveText(totalBefore);
+    /* El historial es de agosto: «Hoy» no deja ninguna, y el recuento de
+       antes desaparece. */
+    await expect(page.getByText(totalBefore)).toHaveCount(0);
   });
 
   test("Limpiar filtros restores the full list and is disabled at rest", async ({ page }) => {
@@ -259,7 +264,8 @@ test.describe("worker operaciones — filters", () => {
       page.getByText("Prueba ajustando los filtros o el término de búsqueda."),
     ).toBeVisible();
 
-    await page.getByRole("row", { name: "No encontramos operaciones" }).getByRole("button", { name: "Limpiar filtros" }).click();
+    /* El del vacío, no el de la barra de filtros: es el último en el orden del documento. */
+    await page.getByRole("button", { name: "Limpiar filtros" }).last().click();
     await expect(page.locator("tbody tr")).toHaveCount(20);
   });
 });
@@ -318,8 +324,8 @@ test.describe("worker operaciones — custom date range", () => {
       })
       .toBe(true);
     // The boundary dates themselves are included, not excluded.
-    await expect(page.getByRole("cell", { name: "15/08/2026 · 10:00" })).toBeVisible();
-    await expect(page.getByRole("cell", { name: "17/08/2026 · 10:00" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "15/08/2026 · 10:00", exact: true })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "17/08/2026 · 10:00", exact: true })).toBeVisible();
   });
 
   test("Desde alone filters from that date onward", async ({ page }) => {
@@ -441,7 +447,7 @@ test.describe("worker operaciones — detail route", () => {
   test('"Ver detalle" opens the matching operation, never a 404', async ({ page }) => {
     await page.goto("/worker/operaciones");
     const row = page.locator("tbody tr").filter({ hasText: "Carlos Pérez Rodríguez" });
-    await row.getByRole("link", { name: "Ver detalle" }).click();
+    await row.getByRole("link", { name: /^Ver (la operación|el movimiento)/ }).click();
 
     await expect(page).toHaveURL(/\/worker\/operaciones\/PC-\d{6}-\d{6}$/);
     await expect(page.getByRole("heading", { name: /^Operación PC-/ })).toBeVisible();

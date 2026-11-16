@@ -32,6 +32,7 @@ import {
   type HorarioSemanal,
 } from "./horario";
 import { isGlobal, type Scope } from "./scope";
+import { almacen } from "./almacen";
 
 /** La cara pública de una sede. Idéntica a la que Kiosco y Pantalla ya leían. */
 export interface Branch {
@@ -266,7 +267,7 @@ const SEMILLA: Omit<Sede, "hours">[] = [
 ];
 
 /* El texto del horario sale siempre de los datos (`horario.ts`). */
-const mutableSedes: Sede[] = SEMILLA.map((s) => ({ ...s, hours: textoDeHorario(s.horario) }));
+const mutableSedes: Sede[] = almacen("sedes", () => SEMILLA.map((s) => ({ ...s, hours: textoDeHorario(s.horario) })));
 
 /** Vista administrativa completa. */
 export const SEDES: readonly Sede[] = mutableSedes;

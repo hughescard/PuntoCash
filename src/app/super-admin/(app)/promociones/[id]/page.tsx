@@ -76,7 +76,7 @@ export default async function SuperAdminPromocionPage({ params }: { params: Prom
               : `Programada: empieza a verse el ${fecha(promo.desde)}.`
           }
           actions={
-            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <div className="pc-botonera">
               <RetirarPromocionRed
                 id={promo.id}
                 titulo={promo.titulo}

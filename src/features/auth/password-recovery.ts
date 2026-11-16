@@ -230,16 +230,14 @@ export async function reenviarCodigo(): Promise<ReenviarResult> {
  * ---------------------------------------------------------------------- */
 
 /**
- * **En la demostración** no hay cuentas: `mock-auth.ts` acepta la contraseña
- * fija `puntocash` para cualquier identificador. Sin esto, cambiar la
+ * **En la demostración** las cuentas aceptan la contraseña fija `puntocash`. Sin esto, cambiar la
  * contraseña sería un trámite que no cambia nada y el recorrido se quedaría a
  * medias — se felicitaría al trabajador y acto seguido su contraseña nueva no
  * serviría.
  *
- * Así que lo fijado se recuerda aquí y `mock-auth` lo consulta: a partir de
- * ese momento esa cuenta acepta **la nueva y no la de demostración**, que es
- * justo lo que hará el producto. Vive en memoria del navegador y una recarga
- * completa lo borra, como todo lo demás.
+ * Así que lo fijado se recuerda aquí y cada consola lo lleva a su servidor
+ * (`alGuardar`): a partir de ese momento esa cuenta acepta **la nueva y no la
+ * de demostración**, que es justo lo que hará el producto.
  */
 const contrasenasFijadas = new Map<string, string>();
 

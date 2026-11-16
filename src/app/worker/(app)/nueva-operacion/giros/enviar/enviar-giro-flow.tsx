@@ -45,9 +45,9 @@ import {
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
 import { DOCUMENT_TYPES, type DocumentType } from "@/features/customers/customers";
-import { getCurrentWorker } from "@/features/worker/session";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { PROVINCE_CATALOG, getMunicipalitiesForProvince } from "@/features/geography/cuba-provinces";
-import { CAJA_BALANCES, CAJA_SUMMARY, findCajaCurrency, hasOpenJornada } from "@/features/caja/caja-data";
+import { findCajaCurrency } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
 import { formatAmount } from "@/lib/format";
 import {
@@ -60,10 +60,13 @@ import { NO_ERRORS, hasAnyError, municipalityLabel, provinceLabel, validateGiroF
 import { GiroConfirmation, GiroReview } from "./giro-review-confirm";
 import { GiroResult, type GiroCompleted } from "./giro-result";
 import { confirmGiro } from "./confirm-giro";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
+import { RecuentoDeMoneda } from "../../../caja/recuento-de-moneda";
+import { EfectivoDeOperacion } from "../../efectivo-de-operacion";
 
 const CATALOG_ROUTE = "/worker/nueva-operacion";
 
-type Step = "registrar" | "revisar" | "confirmar" | "resultado";
+type Step = "registrar" | "revisar" | "efectivo" | "confirmar" | "resultado";
 
 /**
  * `EMPTY_SENDER` pre-fills sensible defaults (document type, nationality) —
@@ -93,7 +96,7 @@ interface InitialFlow {
  * missing (e.g. a passport instead of a carné) leaves it on Step 1 with the
  * rest filled in.
  */
-function buildInitialFlow(): InitialFlow {
+function buildInitialFlow(monedas: readonly string[]): InitialFlow {
   const handoff = readPendingWorkerHandoff("giros-enviar");
   if (!handoff) return { step: "registrar", values: INITIAL_VALUES, draft: null, kioskCode: null };
 
@@ -107,7 +110,7 @@ function buildInitialFlow(): InitialFlow {
     beneficiary: { ...EMPTY_BENEFICIARY, ...beneficiary },
     giro: { senderCurrency, amountInput: formatAmount(deliveryAmount, 2) },
   };
-  const { draft } = validateGiroForm(values, CAJA_BALANCES.map((balance) => balance.currency));
+  const { draft } = validateGiroForm(values, monedas);
   return { step: draft ? "revisar" : "registrar", values, draft, kioskCode: handoff.code };
 }
 
@@ -123,13 +126,13 @@ function buildInitialFlow(): InitialFlow {
  */
 export function EnviarGiroFlow(): React.JSX.Element {
   const router = useRouter();
-  const worker = getCurrentWorker();
+  const caja = useCaja();
+  const vista = useVistaDeCaja();
+  const worker = vista.trabajador;
+  const MONEDAS = caja.monedas;
+  const CAJA_SUMMARY = caja.summary;
 
-  // Repone la jornada guardada en el equipo y vuelve a pintar si el dominio
-  // cambia (`features/caja/use-caja.ts`).
-  useCaja();
-
-  const [initial] = React.useState(buildInitialFlow);
+  const [initial] = React.useState(() => buildInitialFlow(MONEDAS));
   const [step, setStep] = React.useState<Step>(initial.step);
   const [values, setValues] = React.useState<GiroFormValues>(initial.values);
   const [errors, setErrors] = React.useState(NO_ERRORS);
@@ -142,6 +145,10 @@ export function EnviarGiroFlow(): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmError, setConfirmError] = React.useState<string | undefined>();
   const [completed, setCompleted] = React.useState<GiroCompleted | null>(null);
+  /** Con qué billetes paga el cliente y el vuelto, cuando cuadran (bloque 4). */
+  const [efectivo, setEfectivo] = React.useState<EfectivoRegistrado | null>(null);
+  const [recontando, setRecontando] = React.useState<string | null>(null);
+  const [recarga, setRecarga] = React.useState(0);
 
   /*
    * Sin jornada abierta esta pantalla no opera — salvo que el flujo ya haya
@@ -152,9 +159,9 @@ export function EnviarGiroFlow(): React.JSX.Element {
    * equipo se repone justo después de hidratar, y una captura hecha antes de
    * eso diría que no hay jornada para siempre.
    */
-  const blocked = !hasOpenJornada() && completed === null;
+  const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
 
-  const enabledCurrencies = CAJA_BALANCES.map((balance) => balance.currency);
+  const enabledCurrencies = MONEDAS;
 
   // Live-computed, gates the button only — never surfaces error text before
   // the worker actually tries to continue (§29 vs. the `errors` state below).
@@ -181,15 +188,30 @@ export function EnviarGiroFlow(): React.JSX.Element {
   }
 
   async function handleConfirm() {
-    if (!draft || submitting) return;
+    if (!draft || submitting || !efectivo) return;
     setSubmitting(true);
     setConfirmError(undefined);
 
-    const outcome = await confirmGiro({ draft, worker: worker.fullName });
+    const outcome = await confirmGiro({
+      draft,
+      worker: worker.fullName,
+      jornadaAbierta: caja.jornadaAbierta,
+      monedasHabilitadas: MONEDAS,
+      efectivo,
+    });
 
     setSubmitting(false);
     if (!outcome.ok) {
+      /* Sale un vuelto con billetes que los libros no tienen: se cuenta esa moneda y se vuelve a intentar. */
+      if (outcome.recuento) {
+        setRecontando(outcome.recuento);
+        return;
+      }
       setConfirmError(outcome.message);
+      if (outcome.revisarBilletes) {
+        setRecarga((n) => n + 1);
+        setStep("efectivo");
+      }
       return;
     }
     setCompleted(outcome.completed);
@@ -227,13 +249,66 @@ export function EnviarGiroFlow(): React.JSX.Element {
 
   let stepContent: React.ReactNode;
 
-  if (step === "confirmar" && draft) {
+  if (recontando) {
+    stepContent = (
+      <RecuentoDeMoneda
+        currency={recontando}
+        denominaciones={vista.denominaciones}
+        supervisores={vista.supervisores}
+        onCancelar={() => setRecontando(null)}
+        onListo={() => {
+          setRecontando(null);
+          setRecarga((n) => n + 1);
+          void handleConfirm();
+        }}
+      />
+    );
+  } else if (step === "efectivo" && draft) {
+    stepContent = (
+      <div className="flex flex-col gap-6">
+        <button
+          type="button"
+          onClick={() => setStep("revisar")}
+          className="inline-flex w-fit items-center gap-2 rounded-control text-label font-medium text-text-secondary transition-colors hover:text-text-primary outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          Volver a Revisar giro
+        </button>
+        <header>
+          <h1 className="text-screen-title text-text-primary">Billetes del cobro</h1>
+          <p className="mt-2 text-body text-text-secondary">Marca los billetes con los que paga el cliente el giro.</p>
+        </header>
+        <EfectivoDeOperacion
+          entrada={{ modo: "cobro", currency: draft.senderCurrency, importe: draft.deliveryAmount }}
+          recargar={recarga}
+          inicial={efectivo?.paga}
+          onChange={(e) => setEfectivo(e.listo ? e.efectivo : null)}
+        />
+        {confirmError ? <Alert variant="error" title={confirmError} /> : null}
+        <div className="pc-botonera sm:justify-end">
+          <Button variant="secondary" onClick={requestCancel}>
+            Cancelar
+          </Button>
+          <Button
+            disabled={!efectivo}
+            onClick={() => {
+              setConfirmError(undefined);
+              setStep("confirmar");
+            }}
+          >
+            Continuar a confirmar
+          </Button>
+        </div>
+      </div>
+    );
+  } else if (step === "confirmar" && draft) {
     stepContent = (
       <GiroConfirmation
         draft={draft}
+        efectivo={efectivo}
+        tipos={vista.denominaciones}
         submitting={submitting}
         error={confirmError}
-        onBack={() => setStep("revisar")}
+        onBack={() => setStep("efectivo")}
         onCancel={requestCancel}
         onConfirm={() => void handleConfirm()}
       />
@@ -251,7 +326,10 @@ export function EnviarGiroFlow(): React.JSX.Element {
         worker={worker.fullName}
         onBack={() => setStep("registrar")}
         onCancel={requestCancel}
-        onContinue={() => setStep("confirmar")}
+        onContinue={() => {
+          setEfectivo(null);
+          setStep("efectivo");
+        }}
       />
       </>
     );
@@ -283,7 +361,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
             value="Abierta"
             valueClassName="text-success-foreground"
           />
-          <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(CAJA_BALANCES.length)} />
+          <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(MONEDAS.length)} />
         </CardContent>
       </Card>
 
@@ -316,7 +394,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
             }
           />
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="pc-botonera sm:justify-end">
             <Button type="button" variant="secondary" onClick={requestCancel}>
               Cancelar
             </Button>
@@ -769,6 +847,7 @@ function TextField({
  * ---------------------------------------------------------------------- */
 
 function ResumenGiro({ values }: { values: GiroFormValues }) {
+  const CAJA_SUMMARY = useCaja().summary;
   const beneficiaryName = values.beneficiary.receiverName.trim();
   const provinceMunicipio =
     values.beneficiary.receiverProvince && values.beneficiary.receiverMunicipality

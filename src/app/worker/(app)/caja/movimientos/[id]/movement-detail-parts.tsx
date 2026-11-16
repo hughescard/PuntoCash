@@ -1,12 +1,12 @@
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Building2, ClipboardList, Zap } from "lucide-react";
+import { ArrowLeft, Building2, Zap } from "lucide-react";
 
 import { DetailCard, DetailList, DetailRow } from "@/app/worker/(app)/operaciones/[codigo]/detail-parts";
 import { MovementTypeBadge } from "@/app/worker/(app)/caja/caja-movements-table";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { CAJA_SUMMARY, findCajaCurrency, type CajaMovement } from "@/features/caja/caja-data";
-import { formatDateTime, formatMoney, formatSignedAmount } from "@/lib/format";
+import { findCajaCurrency, TIPO_DE_MOVIMIENTO, type CajaMovement } from "@/features/caja/caja-data";
+import { formatDateTime, formatSignedAmount } from "@/lib/format";
 
 /**
  * Shared building blocks for Cash Movement Detail — the common cards every
@@ -50,13 +50,13 @@ export function MovementInfoCard({ movement }: { movement: CajaMovement }): Reac
   const currency = findCajaCurrency(movement.currency);
 
   return (
-    <DetailCard title="Movimiento" icon={Zap}>
+    <DetailCard title="Movimiento" icon={Zap} className="h-full">
       <DetailList>
         <DetailRow label="ID de movimiento" value={movement.id} numeric />
         <DetailRow label="Concepto" value={movement.concepto} />
         <DetailRow
           label="Tipo"
-          value={movement.tipo === "entrada" ? "Entrada" : "Salida"}
+          value={TIPO_DE_MOVIMIENTO[movement.tipo]}
           strong
         />
         <DetailRow
@@ -93,10 +93,10 @@ export function CashJornadaCard({ movement }: { movement: CajaMovement }): React
   const jornada = movement.jornada;
 
   return (
-    <DetailCard title="Caja y jornada" icon={Building2}>
+    <DetailCard title="Caja y jornada" icon={Building2} className="h-full">
       <DetailList>
-        <DetailRow label="Caja" value={jornada?.register ?? CAJA_SUMMARY.register} />
-        <DetailRow label="Trabajador" value={jornada?.worker ?? CAJA_SUMMARY.worker} />
+        <DetailRow label="Caja" value={jornada?.register ?? "—"} />
+        <DetailRow label="Trabajador" value={jornada?.worker ?? "—"} />
         {jornada ? (
           <DetailRow
             label="Jornada"
@@ -114,51 +114,6 @@ export function CashJornadaCard({ movement }: { movement: CajaMovement }): React
             }
           />
         ) : null}
-      </DetailList>
-    </DetailCard>
-  );
-}
-
-/**
- * "Resultado del movimiento" — the accounting before/movement/after
- * relationship. Unlike the Ajustar efectivo entry/review form (which
- * deliberately never duplicates "Efectivo contado" as "Saldo después"), this
- * historical ledger detail intentionally shows all three for audit purposes.
- *
- * "Saldo anterior" only renders when the movement actually carries one
- * (`saldoAntes`) — a Fondeo inicial movement has no meaningful "before" (its
- * whole point is that nothing from the previous jornada carries forward), so
- * it shows only the resulting balance rather than fabricating one.
- */
-export function MovementResultCard({ movement }: { movement: CajaMovement }): React.JSX.Element {
-  return (
-    <DetailCard title="Resultado del movimiento" icon={ClipboardList}>
-      <DetailList>
-        {movement.saldoAntes !== undefined ? (
-          <>
-            <DetailRow
-              label="Saldo anterior"
-              value={formatMoney({ amount: movement.saldoAntes, currency: movement.currency })}
-              numeric
-            />
-            <DetailRow
-              label="Movimiento"
-              value={`${formatSignedAmount(movement.amount)} ${movement.currency}`}
-              numeric
-              strong
-            />
-          </>
-        ) : null}
-        <DetailRow
-          label="Saldo resultante"
-          value={
-            movement.saldoDespues !== undefined
-              ? formatMoney({ amount: movement.saldoDespues, currency: movement.currency })
-              : "—"
-          }
-          numeric
-          strong
-        />
       </DetailList>
     </DetailCard>
   );

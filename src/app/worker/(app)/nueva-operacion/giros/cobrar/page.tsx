@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { exigirServicio } from "@/features/worker/servicio-habilitado";
+
 import { CobrarGiroFlow } from "./cobrar-giro-flow";
 
 export const metadata: Metadata = {
@@ -8,6 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function CobrarGiroPage() {
+export default async function CobrarGiroPage() {
+  await exigirServicio("giros");
   return <CobrarGiroFlow />;
 }

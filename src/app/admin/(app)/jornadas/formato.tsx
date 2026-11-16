@@ -84,6 +84,8 @@ export function DiferenciaDeApertura({
             ? "Sobrante"
             : "Diferencia";
   const descuadre = palabra === "Faltante" || palabra === "Sobrante" || palabra === "Diferencia";
+  /* Una diferencia de composición: el total cuadra, cambian los billetes. */
+  if (diferencia === 0) return <span className="font-semibold text-warning-foreground">Billetes distintos · total sin diferencia</span>;
   return (
     <span
       className={cn(

@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { ArrowLeft, CalendarDays, ClipboardList, FileSearch, Lock, User } from "lucide-react";
 
 import { Button, Card, CardContent } from "@/components/ui";
 import { OperationStatusBadge } from "@/components/patterns/operation-status-badge";
 import { formatDateTime } from "@/lib/format";
 import {
-  findOperation,
+
   operationDocumentLabel,
   type OperationRecord,
 } from "@/features/operations/operations-history";
@@ -18,6 +19,7 @@ import { ReceiptSection } from "./receipt-section";
 import { OperationCashCard, ServiceDetail } from "./service-detail";
 import { RemittanceDetail } from "./remittance-detail";
 import { GiroDetail } from "./giro-detail";
+import { LiquidacionCard } from "./liquidacion-card";
 
 /**
  * Operation detail.
@@ -33,7 +35,7 @@ import { GiroDetail } from "./giro-detail";
  * comprobante across the foot.
  */
 export function OperationDetailView({ codigo }: { codigo: string }): React.JSX.Element {
-  const operation = findOperation(codigo);
+  const operation = useVistaDeCaja().operaciones.find((o) => o.codigo === codigo);
 
   if (!operation) return <OperationNotFound codigo={codigo} />;
   if (operation.servicio === "Remesa" && operation.remittance) return <RemittanceOperationDetail operation={operation} />;
@@ -76,6 +78,8 @@ export function OperationDetailView({ codigo }: { codigo: string }): React.JSX.E
         </div>
       </div>
 
+      <LiquidacionCard operation={operation} />
+
       <ReceiptSection operation={operation} />
 
       <ConfidentialityNote />
@@ -94,6 +98,7 @@ function GiroOperationDetail({ operation }: { operation: OperationRecord }) {
     <div className="flex flex-col gap-6">
       <BackLink />
       <GiroDetail operation={operation} />
+      <LiquidacionCard operation={operation} />
       <ReceiptSection
         operation={operation}
         description="Puedes imprimir el detalle registrado de esta operación."
@@ -110,6 +115,7 @@ function RemittanceOperationDetail({ operation }: { operation: OperationRecord }
       <BackLink />
       <OperationDetailHeader operation={operation} remittance />
       <RemittanceDetail operation={operation} />
+      <LiquidacionCard operation={operation} />
       <ReceiptSection operation={operation} />
       <ConfidentialityNote />
     </div>

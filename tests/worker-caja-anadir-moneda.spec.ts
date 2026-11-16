@@ -1,6 +1,7 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
-import { esperarFondeoVivo, openJornada, rellenar } from "./worker-helpers";
+import { esperarFondeoVivo, openJornada } from "./worker-helpers";
 
 /**
  * Worker Caja — Añadir moneda (/worker/caja/anadir-moneda).
@@ -154,7 +155,7 @@ test.describe("añadir moneda — restrained content (no rejected rows)", () => 
 });
 
 test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
-  test("enabling CHF adds it to Caja 03 at 0,00 with no movement", async ({ page }) => {
+  test("enabling CHF adds it to Caja 03's currencies with no movement", async ({ page }) => {
     await page.goto("/worker/caja/anadir-moneda");
     await openPicker(page);
     await page.getByRole("option", { name: /^CHF/ }).click();
@@ -162,12 +163,11 @@ test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
 
     await expect(page).toHaveURL(/\/worker\/caja$/, { timeout: 3000 });
 
-    const balancesTable = page.getByRole("table").first();
-    const cadRow = balancesTable.locator("tbody tr").filter({ hasText: "CHF" });
-    await expect(cadRow.getByText("0,00", { exact: true })).toBeVisible();
-    await expect(balancesTable.locator("tbody tr")).toHaveCount(5);
+    const monedas = page.getByRole("list", { name: "Monedas de la caja" });
+    await expect(monedas.getByRole("listitem").filter({ hasText: "CHF" })).toBeVisible();
+    await expect(monedas.getByRole("listitem")).toHaveCount(5);
 
-    const movementsTable = page.getByRole("table").nth(1);
+    const movementsTable = page.getByRole("table").first();
     await expect(
       movementsTable.locator("tbody tr").filter({ hasText: "CHF" }),
     ).toHaveCount(0);
@@ -229,8 +229,7 @@ test.describe("añadir moneda — confirmation, direct entry from Caja", () => {
     await page.getByRole("link", { name: "Cancelar" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja$/);
-    const balancesTable = page.getByRole("table").first();
-    await expect(balancesTable.locator("tbody tr")).toHaveCount(4);
+    await expect(page.getByRole("list", { name: "Monedas de la caja" }).getByRole("listitem")).toHaveCount(4);
   });
 });
 
@@ -240,8 +239,8 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await rellenar(page.getByLabel("Fondo inicial en CUP"), "200000");
-    await page.getByLabel("Fondo inicial en USD").fill("4000");
+    await page.getByLabel("Billetes de 1.000 CUP").fill("200");
+    await page.getByLabel("Billetes de 100 USD").fill("40");
 
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/anadir-moneda\?returnTo=fondeo-inicial$/);
@@ -251,12 +250,12 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
     await page.getByRole("button", { name: "Añadir moneda" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/, { timeout: 3000 });
-    await expect(page.getByLabel("Fondo inicial en CUP")).toHaveValue("200000");
-    await expect(page.getByLabel("Fondo inicial en USD")).toHaveValue("4000");
+    await expect(page.getByLabel("Billetes de 1.000 CUP")).toHaveValue("200");
+    await expect(page.getByLabel("Billetes de 100 USD")).toHaveValue("40");
 
-    const cadInput = page.getByLabel("Fondo inicial en CHF");
-    await expect(cadInput).toBeVisible();
-    await expect(cadInput).toHaveValue("");
+    const chf = page.getByLabel("Billetes de 100 CHF");
+    await expect(chf).toBeVisible();
+    await expect(chf).toHaveValue("");
   });
 
   test("Fondeo inicial can then accept and register an amount for CHF normally", async ({
@@ -264,15 +263,16 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await page.getByLabel("Fondo inicial en CUP").fill("200000");
+    await page.getByLabel("Billetes de 1.000 CUP").fill("200");
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
     await openPicker(page);
     await page.getByRole("option", { name: /^CHF/ }).click();
     await page.getByRole("button", { name: "Añadir moneda" }).click();
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/, { timeout: 3000 });
 
-    await page.getByLabel("Fondo inicial en CHF").fill("1000");
+    await page.getByLabel("Billetes de 1.000 CHF").fill("1");
     await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Confirmar conteo" }).click();
     await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
     await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
       timeout: 3000,
@@ -281,9 +281,9 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
 
     await page.getByRole("link", { name: "Ir a Caja" }).click();
     await expect(page).toHaveURL(/\/worker\/caja$/);
-    const balancesTable = page.getByRole("table").first();
-    const cadRow = balancesTable.locator("tbody tr").filter({ hasText: "CHF" });
-    await expect(cadRow.getByText("1.000,00", { exact: true })).toBeVisible();
+    /* En el libro, el fondeo de CHF; el saldo no se ve (Worker opera a ciegas). */
+    const fondeo = page.getByRole("table").first().locator("tbody tr").filter({ hasText: "Fondeo inicial" }).filter({ hasText: "CHF" });
+    await expect(fondeo.getByText("+1.000,00", { exact: true })).toBeVisible();
   });
 
   test("Cancelar from Añadir moneda also returns to Fondeo inicial with the draft intact", async ({
@@ -291,13 +291,15 @@ test.describe("añadir moneda — entry from Fondeo inicial", () => {
   }) => {
     await page.goto("/worker/caja/fondeo-inicial");
     await esperarFondeoVivo(page);
-    await page.getByLabel("Fondo inicial en EUR").fill("1500");
+    await page.getByLabel("Billetes de 500 EUR").fill("3");
     await page.getByRole("link", { name: /Añádela a la caja/ }).click();
+    /* «Cancelar» sabe a dónde volver cuando la pantalla ha hidratado. */
+    await expect(page.getByRole("link", { name: "Cancelar" })).toHaveAttribute("href", /fondeo-inicial/);
     await page.getByRole("link", { name: "Cancelar" }).click();
 
     await expect(page).toHaveURL(/\/worker\/caja\/fondeo-inicial$/);
-    await expect(page.getByLabel("Fondo inicial en EUR")).toHaveValue("1500");
-    await expect(page.getByLabel("Fondo inicial en CHF")).toHaveCount(0);
+    await expect(page.getByLabel("Billetes de 500 EUR")).toHaveValue("3");
+    await expect(page.getByLabel("Billetes de 100 CHF")).toHaveCount(0);
   });
 });
 

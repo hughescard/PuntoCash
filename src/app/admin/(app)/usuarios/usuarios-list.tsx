@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import type { Route } from "next";
 import { Search } from "lucide-react";
 
 import { Badge, Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
@@ -78,12 +76,9 @@ export function UsuariosList({
       header: "Administrador",
       cell: (row) => (
         <span className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/admin/usuarios/${row.id}` as Route}
-            className="font-medium text-text-primary underline-offset-4 hover:underline"
-          >
+          <span className="font-medium text-text-primary">
             {row.fullName}
-          </Link>
+          </span>
           {row.esYo ? <Badge variant="info">Tú</Badge> : null}
         </span>
       ),
@@ -148,13 +143,11 @@ export function UsuariosList({
         rows={visibles}
         columns={columnas}
         rowKey={(row) => row.id}
+        rowLink={(row) => ({ href: `/admin/usuarios/${row.id}`, label: `Ver la ficha de ${row.fullName}` })}
         cardTitle={(row) => (
-          <Link
-            href={`/admin/usuarios/${row.id}` as Route}
-            className="underline-offset-4 hover:underline"
-          >
+          <span className="font-medium text-text-primary">
             {row.fullName}
-          </Link>
+          </span>
         )}
         cardSubtitle={(row) => (row.esYo ? `${row.identifier} · tú` : row.identifier)}
         cardBadge={(row) => <EstadoUsuario status={row.status} />}

@@ -6,6 +6,8 @@ import { FileText, Printer } from "lucide-react";
 import { Button, Card, CardContent } from "@/components/ui";
 import { formatDateTime, formatMoney, formatRate } from "@/lib/format";
 import { operationDocumentLabel, type OperationRecord } from "@/features/operations/operations-history";
+import { entregadoAlCliente } from "@/features/operations/entregado";
+import { liquidacionComoLineas } from "../../nueva-operacion/liquidacion";
 
 /**
  * "Comprobante" — the receipt strip at the foot of the detail screen.
@@ -77,7 +79,10 @@ function PrintableReceipt({ operation }: { operation: OperationRecord }) {
         {amount.kind === "exchange" ? (
           <>
             <ReceiptLine label="Cliente entrega" value={formatMoney(amount.source)} />
-            <ReceiptLine label="Cliente recibe" value={formatMoney(amount.destination)} />
+            <ReceiptLine
+              label="Cliente recibe"
+              value={entregadoAlCliente(amount.destination, operation.liquidacion).map(formatMoney).join(" + ")}
+            />
             <ReceiptLine
               label="Tasa aplicada"
               value={`1 ${amount.source.currency} = ${formatRate(amount.appliedRate)} ${amount.destination.currency}`}
@@ -87,6 +92,10 @@ function PrintableReceipt({ operation }: { operation: OperationRecord }) {
           <ReceiptLine label="Importe" value={formatMoney(amount.money)} />
         )}
 
+        {/* Cómo se movió el efectivo: vuelto, pago en CUP, redondeo (bloque 4). */}
+        {liquidacionComoLineas(operation.liquidacion).map((l) => (
+          <ReceiptLine key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+        ))}
         <ReceiptLine label="Caja" value={operation.caja} />
         <ReceiptLine label="Trabajador" value={operation.worker} />
       </dl>

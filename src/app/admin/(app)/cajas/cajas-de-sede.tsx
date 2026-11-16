@@ -54,19 +54,23 @@ export interface CajaRow {
   /** Es la única caja activa de una sede en funcionamiento (**FR-AD-CAJA-13**). */
   ultimaActiva: boolean;
   sedeId: string;
+  /** «265.570,00 CUP · 431,00 USD», ya formateado; `alCerrar` si la caja está cerrada. */
+  efectivo: { texto: string; alCerrar: boolean } | null;
 }
 
 
 type Accion = { tipo: "retirar" | "reactivar"; caja: CajaRow };
 
+/**
+ * Las cajas de la sede. La fila entera abre la ficha de la caja, que es donde
+ * se retira o se reactiva (regla de tablas, 12/11/2026).
+ */
 export function CajasDeSede({ cajas }: { cajas: readonly CajaRow[] }): React.JSX.Element {
-  const [accion, setAccion] = React.useState<Accion | null>(null);
-
   const columnas: readonly ResponsiveColumn<CajaRow>[] = [
     {
       key: "caja",
       header: "Caja",
-      cell: (caja) => <span className="font-medium text-text-primary">{caja.name}</span>,
+      cell: (caja) => <NombreDeCaja caja={caja} />,
       hiddenOnCard: true,
     },
     {
@@ -105,35 +109,45 @@ export function CajasDeSede({ cajas }: { cajas: readonly CajaRow[] }): React.JSX
       header: "Jornada",
       cell: (caja) => <JornadaCelda caja={caja} />,
     },
-    { key: "alta", header: "Alta", cell: (caja) => caja.alta },
     {
-      key: "acciones",
-      header: <span className="sr-only">Acciones</span>,
-      cell: (caja) => <Acciones caja={caja} onElegir={setAccion} />,
-      hiddenOnCard: true,
+      /* Lo que tiene ahora; cerrada, lo que quedó dentro al cerrar. */
+      key: "efectivo",
+      header: "Efectivo",
+      cell: (caja) =>
+        caja.efectivo ? (
+          <span className="flex flex-col">
+            <span className="pc-numeric">{caja.efectivo.texto}</span>
+            {caja.efectivo.alCerrar ? <span className="text-caption text-text-secondary">Al cerrar</span> : null}
+          </span>
+        ) : (
+          <span className="text-text-secondary">—</span>
+        ),
     },
+    { key: "alta", header: "Alta", cell: (caja) => caja.alta },
   ];
 
   return (
+    <ResponsiveTable
+      rows={cajas}
+      columns={columnas}
+      rowKey={(caja) => caja.id}
+      rowLink={(caja) => ({ href: `/admin/cajas/${encodeURIComponent(caja.id)}`, label: `Ver la caja ${caja.name}` })}
+      cardTitle={(caja) => <NombreDeCaja caja={caja} />}
+      cardSubtitle={(caja) => caja.motivoRetirada ?? null}
+      cardBadge={(caja) => <EstadoCaja caja={caja} />}
+      empty={<p className="text-body text-text-secondary">Esta sede no tiene cajas.</p>}
+    />
+  );
+}
+
+/** Retirar o reactivar una caja desde su ficha. */
+export function AccionesDeCaja({ caja }: { caja: CajaRow }): React.JSX.Element {
+  const [accion, setAccion] = React.useState<Accion | null>(null);
+  return (
     <>
-      <ResponsiveTable
-        rows={cajas}
-        columns={columnas}
-        rowKey={(caja) => caja.id}
-        cardTitle={(caja) => caja.name}
-        cardSubtitle={(caja) => caja.motivoRetirada ?? null}
-        cardBadge={(caja) => <EstadoCaja caja={caja} />}
-        cardFooter={(caja) => <Acciones caja={caja} onElegir={setAccion} />}
-        empty={<p className="text-body text-text-secondary">Esta sede no tiene cajas.</p>}
-      />
-
-      {accion?.tipo === "retirar" ? (
-        <DialogoRetirar caja={accion.caja} onCerrar={() => setAccion(null)} />
-      ) : null}
-
-      {accion?.tipo === "reactivar" ? (
-        <DialogoReactivar caja={accion.caja} onCerrar={() => setAccion(null)} />
-      ) : null}
+      <Acciones caja={caja} onElegir={setAccion} variante="secondary" />
+      {accion?.tipo === "retirar" ? <DialogoRetirar caja={accion.caja} onCerrar={() => setAccion(null)} /> : null}
+      {accion?.tipo === "reactivar" ? <DialogoReactivar caja={accion.caja} onCerrar={() => setAccion(null)} /> : null}
     </>
   );
 }
@@ -145,7 +159,7 @@ export function JornadaCelda({ caja }: { caja: { status?: string; jornada: Jorna
     <span className="flex flex-col">
       <Link
         href={`/admin/jornadas/${caja.jornada.id}` as Route}
-        className="font-semibold text-text-primary underline underline-offset-4 hover:text-primary"
+        className="relative z-10 font-semibold text-text-primary underline underline-offset-4 hover:text-primary"
       >
         Abierta · {caja.jornada.trabajador}
       </Link>
@@ -155,6 +169,10 @@ export function JornadaCelda({ caja }: { caja: { status?: string; jornada: Jorna
       </span>
     </span>
   );
+}
+
+function NombreDeCaja({ caja }: { caja: CajaRow }): React.JSX.Element {
+  return <span className="whitespace-nowrap font-medium text-text-primary">{caja.name}</span>;
 }
 
 function EstadoCaja({ caja }: { caja: CajaRow }): React.JSX.Element {
@@ -168,9 +186,11 @@ function EstadoCaja({ caja }: { caja: CajaRow }): React.JSX.Element {
 function Acciones({
   caja,
   onElegir,
+  variante = "tertiary",
 }: {
   caja: CajaRow;
   onElegir: (accion: Accion) => void;
+  variante?: "tertiary" | "secondary";
 }): React.JSX.Element {
   /* Las dos abren un diálogo, así que antes de hidratar no hacen nada: el
      servidor las pinta y React todavía no escucha. Quedan cerradas hasta
@@ -179,11 +199,11 @@ function Acciones({
   const hydrated = useHydrated();
 
   return caja.status === "activa" ? (
-    <Button variant="tertiary" size="sm" disabled={!hydrated} onClick={() => onElegir({ tipo: "retirar", caja })}>
-      Retirar
+    <Button variant={variante} size={variante === "tertiary" ? "sm" : "md"} disabled={!hydrated} onClick={() => onElegir({ tipo: "retirar", caja })}>
+      {variante === "tertiary" ? "Retirar" : "Retirar caja"}
     </Button>
   ) : (
-    <Button variant="tertiary" size="sm" disabled={!hydrated} onClick={() => onElegir({ tipo: "reactivar", caja })}>
+    <Button variant={variante} size={variante === "tertiary" ? "sm" : "md"} disabled={!hydrated} onClick={() => onElegir({ tipo: "reactivar", caja })}>
       <RotateCcw aria-hidden="true" />
       Reactivar
     </Button>

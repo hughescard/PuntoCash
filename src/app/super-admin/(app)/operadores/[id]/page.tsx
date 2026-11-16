@@ -1,11 +1,12 @@
 import * as React from "react";
 import Link from "next/link";
-import type { Metadata, Route } from "next";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { PageHeader, Section } from "@/components/shell/app-shell";
 import { Alert, Badge, Button, Card, CardContent } from "@/components/ui";
+import { ElementoDeLista } from "@/components/patterns/elemento-de-lista";
 import { maskEmail } from "@/features/auth/two-factor";
 import { GLOBAL_SCOPE } from "@/features/network/scope";
 import { redEnAlcance } from "@/features/network/scoped-reads";
@@ -159,18 +160,16 @@ export default async function SuperAdminOperadorPage({
                 {r.sedes.map((s) => {
                   const tramo = asignacionVigente(s.id);
                   return (
-                    <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <ElementoDeLista key={s.id} href={`/super-admin/sedes/${s.id}`} className="flex flex-wrap items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <Link href={`/super-admin/sedes/${s.id}` as Route} className="text-body font-medium text-text-primary underline-offset-4 hover:underline">
-                          {s.name}
-                        </Link>
+                        <p className="text-body font-medium text-text-primary">{s.name}</p>
                         <p className="pc-numeric mt-0.5 text-body-sm text-text-secondary">
                           {s.code} · {s.locality}
                           {tramo ? ` · desde el ${fechaCorta(tramo.startedAt)}` : ""}
                         </p>
                       </div>
                       <EstadoDeSedeBadge estado={estadoDeSede(s)} />
-                    </li>
+                    </ElementoDeLista>
                   );
                 })}
               </ul>

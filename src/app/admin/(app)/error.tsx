@@ -28,7 +28,7 @@ export default function AdminError({ reset }: { error: Error & { digest?: string
         Algo falló al preparar lo que pediste. Vuelve a intentarlo; si sigue sin cargar, vuelve a Inicio y continúa
         desde ahí.
       </p>
-      <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+      <div className="pc-botonera mt-10">
         <Button onClick={reset}>Volver a intentarlo</Button>
         <Button variant="secondary" asChild>
           <Link href="/admin/inicio">Volver a Inicio</Link>

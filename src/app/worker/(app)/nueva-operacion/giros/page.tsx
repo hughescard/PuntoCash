@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { exigirServicio } from "@/features/worker/servicio-habilitado";
+
 import { GirosOperationSelector } from "./giros-selector";
 
 /**
@@ -19,6 +21,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function GirosPage() {
+export default async function GirosPage() {
+  await exigirServicio("giros");
   return <GirosOperationSelector />;
 }

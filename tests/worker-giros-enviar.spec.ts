@@ -1,14 +1,14 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { type Page } from "@playwright/test";
 
-import { esperarFondeoVivo, rellenar } from "./worker-helpers";
-import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
+import { abrirPorPantalla, continuarAConfirmar } from "./worker-helpers";
 
 /*
  * La jornada se siembra con 1.200 EUR, que es lo que abría el fondeo que había
  * aquí. El grupo de encaminamiento trata justo de la caja cerrada y de la
  * transición al abrirla, así que se sale de la siembra y abre por la interfaz.
  */
-test.use({ storageState: cajaConJornadaAbierta({ EUR: 1_200 }) });
+test.use({ conCambio: true, fondos: { EUR: 1_200 } });
 
 /**
  * Worker Nueva operación — Giros — Enviar giro
@@ -31,17 +31,7 @@ function onScreen(page: Page, text: string | RegExp) {
 }
 
 async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "1200" }) {
-  await page.goto("/worker/caja/fondeo-inicial");
-  await esperarFondeoVivo(page);
-  for (const [currency, value] of Object.entries(fondos)) {
-    await rellenar(page.getByLabel(`Fondo inicial en ${currency}`), value);
-  }
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Confirmar y abrir caja" }).click();
-  await expect(page.getByRole("heading", { name: "Caja abierta correctamente" })).toBeVisible({
-    timeout: 5000,
-  });
-  await page.getByRole("link", { name: "Ir a Caja" }).click();
+  await abrirPorPantalla(page, fondos);
 }
 
 async function goToGiros(page: Page) {
@@ -101,7 +91,7 @@ async function completeGiro(page: Page, overrides: FillOverrides = {}) {
   await fillValidForm(page, overrides);
   await page.getByRole("button", { name: "Continuar" }).click();
   await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible();
-  await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+  await continuarAConfirmar(page);
   await expect(page.getByRole("heading", { name: "Confirmar envío de giro" })).toBeVisible();
   await page.getByRole("button", { name: "Confirmar envío" }).click();
   await expect(page.getByRole("heading", { name: "Giro registrado correctamente" })).toBeVisible({
@@ -116,7 +106,7 @@ test.describe("Giros — service and routing", () => {
    * repone al hidratar, de modo que la pantalla bloqueada que pintó el
    * servidor se sustituye por la de trabajo a media prueba.
    */
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
+  test.use({ fondos: null });
 
   test("is enabled in Nueva operación and its card leads to the operation selector", async ({ page }) => {
     await page.goto("/worker/nueva-operacion");
@@ -278,7 +268,7 @@ test.describe("Revisar giro", () => {
     await expect(page.getByText("La Habana / Plaza de la Revolución")).toBeVisible();
     await expect(page.getByText("Recogida")).toBeVisible();
     await expect(page.getByText("EUR · Euro")).toBeVisible();
-    await expect(page.getByText("500,00 EUR")).toBeVisible();
+    await expect(page.getByText("500,00 EUR").first()).toBeVisible();
     await expect(page.getByText("Caja 03").first()).toBeVisible();
     await expect(page.getByText("Entrada de efectivo")).toBeVisible();
   });
@@ -311,7 +301,7 @@ test.describe("Confirmar envío", () => {
     await goToGiros(page);
     await fillValidForm(page);
     await page.getByRole("button", { name: "Continuar" }).click();
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await expect(page.getByRole("heading", { name: "Confirmar envío de giro" })).toBeVisible();
   });
 
@@ -323,8 +313,12 @@ test.describe("Confirmar envío", () => {
     await expect(page.getByText("La Habana / Plaza de la Revolución")).toBeVisible();
     await expect(page.getByText("Recogida")).toBeVisible();
     await expect(page.getByText("EUR · Euro")).toBeVisible();
-    await expect(page.getByText("500,00 EUR")).toBeVisible();
+    await expect(page.getByText("500,00 EUR", { exact: true })).toBeVisible();
     await expect(page.getByText("Caja 03").first()).toBeVisible();
+  });
+
+  test("la confirmación enseña los billetes que dio el cliente", async ({ page }) => {
+    await expect(page.getByRole("heading", { name: "Billetes que da el cliente" })).toBeVisible();
   });
 
   test("shows the Acción irreversible warning", async ({ page }) => {
@@ -356,7 +350,7 @@ test.describe("External failure", () => {
     await goToGiros(page);
     await fillValidForm(page, { beneficiaryName: "Falla Externa" });
     await page.getByRole("button", { name: "Continuar" }).click();
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar envío" }).click();
 
     await expect(page.getByText("No se pudo registrar el giro. Intenta nuevamente o solicita asistencia.")).toBeVisible();
@@ -365,8 +359,10 @@ test.describe("External failure", () => {
 
     // The confirm screen has no "Ir a Caja" action — reach Caja via the shell's own nav.
     await page.getByRole("link", { name: "Caja" }).click();
+    /* Sin saldos en Worker: «no se tocó la caja» es que el libro no tiene el envío. */
     const table = page.getByRole("table").first();
-    await expect(table.locator("tr", { hasText: "EUR" })).toContainText("1.200,00");
+    await expect(table).toBeVisible();
+    await expect(table.locator("tbody tr").filter({ hasText: "Envío de giro" })).toHaveCount(0);
   });
 });
 
@@ -377,14 +373,14 @@ test.describe("Success — Caja, Operaciones and result", () => {
 
     // The result screen has no "Ir a Caja" action either — same shell nav.
     await page.getByRole("link", { name: "Caja" }).click();
-    const table = page.getByRole("table").first();
-    await expect(table.locator("tr", { hasText: "EUR" })).toContainText("1.700,00");
+    /* Worker opera a ciegas: el libro lleva el envío, nunca el saldo que deja. */
+    await expect(page.getByText("1.700,00")).toHaveCount(0);
 
-    const movementsTable = page.getByRole("table").nth(1);
-    const row = movementsTable.locator("tbody tr").filter({ hasText: "Giros" }).first();
+    const movementsTable = page.getByRole("table").first();
+    const row = movementsTable.locator("tbody tr").filter({ hasText: "Envío de giro" }).first();
     await expect(row).toContainText("Entrada");
     await expect(row).toContainText("+500,00");
-    await expect(row.getByRole("link", { name: "Ver detalle" })).toHaveCount(0);
+    await expect(row.getByRole("link", { name: /^Ver el movimiento/ })).toHaveCount(0);
   });
 
   test("the new operation appears in Operaciones with the sender as Cliente", async ({ page }) => {
@@ -406,7 +402,7 @@ test.describe("Success — Caja, Operaciones and result", () => {
 
     const table = page.getByRole("table");
     const giroRow = table.locator("tbody tr").filter({ hasText: "Giros" }).first();
-    await giroRow.getByRole("link", { name: "Ver detalle" }).click();
+    await giroRow.getByRole("link", { name: /^Ver (la operación|el movimiento)/ }).click();
 
     // The generic fallback no longer answers for giros — see
     // `worker-operacion-detalle-giro.spec.ts` for the full detail contract.

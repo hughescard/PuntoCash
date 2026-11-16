@@ -21,7 +21,7 @@ import {
 } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { SELECT } from "../equipos/controles";
-import { ActionMenu, type AccionDeMenu } from "@/components/patterns/action-menu";
+import { type AccionDeMenu } from "@/components/patterns/action-menu";
 import { DECIMALES_DE_MONEDA } from "@/features/network/decimales";
 import { MONEDAS_ISO } from "@/features/network/iso-monedas";
 import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
@@ -143,22 +143,6 @@ export function TablaDeRangos({ filas }: { filas: readonly FilaDeRango[] }): Rea
           <span className="text-text-secondary">—</span>
         ),
     },
-    {
-      key: "acciones",
-      header: <span className="sr-only">Acciones</span>,
-      cell: (f) => (
-        <span className="flex justify-end py-1.5">
-          <ActionMenu
-            label={`Acciones de ${f.code}`}
-            disabled={!hydrated}
-            acciones={accionesDe(f, (accion) => {
-              setHecho(null);
-              setAbierto({ fila: f, accion });
-            })}
-          />
-        </span>
-      ),
-    },
   ];
 
   return (
@@ -194,6 +178,14 @@ export function TablaDeRangos({ filas }: { filas: readonly FilaDeRango[] }): Rea
         tablaDesde="xl"
         tarjetasEnDosColumnas
         cardTitle={(f) => <Moneda fila={f} />}
+        rowActions={(f) => ({
+          label: `Acciones de ${f.code}`,
+          disabled: !hydrated,
+          acciones: accionesDe(f, (accion) => {
+            setHecho(null);
+            setAbierto({ fila: f, accion });
+          }),
+        })}
         cardBadge={(f) =>
           f.retirada ? (
             <Badge variant="warning">Retirada</Badge>

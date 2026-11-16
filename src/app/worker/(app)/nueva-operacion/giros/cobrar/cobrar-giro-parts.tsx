@@ -9,7 +9,8 @@ import { Card, CardContent } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/format";
-import { CAJA_BALANCES, CAJA_SUMMARY, findCajaCurrency } from "@/features/caja/caja-data";
+import { findCajaCurrency } from "@/features/caja/caja-data";
+import { useCaja } from "@/features/caja/use-caja";
 
 /** Where Cobrar giro returns to — the Giros operation selector, never Enviar. */
 export const GIROS_ROUTE = "/worker/nueva-operacion/giros";
@@ -42,6 +43,8 @@ export function StepBackLink({ label, onClick }: { label: string; onClick: () =>
 
 /** Caja · Trabajador · Jornada · Monedas habilitadas — the same strip Enviar giro carries. */
 export function ContextStrip({ worker }: { worker: string }): React.JSX.Element {
+  const MONEDAS = useCaja().monedas;
+  const CAJA_SUMMARY = useCaja().summary;
   return (
     <Card>
       <CardContent className="grid grid-cols-2 gap-6 py-5 wide:grid-cols-4">
@@ -53,7 +56,7 @@ export function ContextStrip({ worker }: { worker: string }): React.JSX.Element 
           value="Abierta"
           valueClassName="text-success-foreground"
         />
-        <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(CAJA_BALANCES.length)} />
+        <InfoItem icon={Banknote} label="Monedas habilitadas" value={String(MONEDAS.length)} />
       </CardContent>
     </Card>
   );

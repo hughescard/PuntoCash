@@ -155,7 +155,7 @@ export function EstadoDeRed({
         f.operadorId ? (
           <Link
             href={`/super-admin/operadores/${f.operadorId}` as Route}
-            className="text-text-primary underline-offset-4 hover:underline"
+            className="relative z-10 text-text-primary underline-offset-4 hover:underline"
           >
             {f.operador}
           </Link>
@@ -253,6 +253,7 @@ export function EstadoDeRed({
         rows={visibles}
         columns={columnas}
         rowKey={(f) => f.id}
+        rowLink={(f) => ({ href: `/super-admin/sedes/${f.id}`, label: `Ver la sede ${f.nombre}` })}
         tablaDesde="xl"
         tarjetasEnDosColumnas
         cardTitle={(f) => <EnlaceSede fila={f} />}
@@ -274,11 +275,8 @@ function municipio(localidad: string): string {
 
 function EnlaceSede({ fila }: { fila: FilaEstadoDeRed }): React.JSX.Element {
   return (
-    <Link
-      href={`/super-admin/sedes/${fila.id}` as Route}
-      className="font-medium text-text-primary underline-offset-4 hover:underline"
-    >
+    <span className="font-medium text-text-primary">
       {fila.nombre}
-    </Link>
+    </span>
   );
 }

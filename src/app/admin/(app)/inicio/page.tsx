@@ -14,6 +14,7 @@ import type { Sede } from "@/features/network/sedes";
 import { enHorario } from "@/features/network/horario";
 import type { DiaDeSede, DiferenciaDelDia } from "@/features/network/jornadas";
 import { TIPO_DE_SOLICITUD } from "@/features/network/aprobaciones";
+import { alertasActivas, tituloDeAlerta } from "@/features/network/alertas";
 import { antiguedad } from "../aprobaciones/formato";
 import { diaEnCuba, fechaYHora, hora, jornadaDeCaja } from "../jornadas/formato";
 import { JornadaCelda } from "../cajas/cajas-de-sede";
@@ -127,6 +128,16 @@ export default async function AdminInicioPage() {
       enHorario(fila.sede.horario, ahora),
   );
 
+  /* Bloque 6: las alertas de caja. Una por caja abierta, con todo lo que le
+     pasa: cada una es un estado que se apaga solo cuando la caja se arregla. */
+  const conAlertas = filas.flatMap((fila) =>
+    fila.dia.cajas.flatMap((c) => {
+      if (!c.abierta) return [];
+      const alertas = alertasActivas(c.abierta, ahora);
+      return alertas.length > 0 ? [{ sede: fila.sede, jornada: c.abierta, alertas }] : [];
+    }),
+  );
+
   return (
     <>
       <PageHeader
@@ -165,6 +176,7 @@ export default async function AdminInicioPage() {
         fueraDeHorario.length === 0 &&
         diferencias.length === 0 &&
         fijadas.length === 0 &&
+        conAlertas.length === 0 &&
         sinAbrirEnHorario.length === 0 ? (
           <Card>
             <CardContent className="flex items-center gap-3 pt-6">
@@ -257,6 +269,19 @@ export default async function AdminInicioPage() {
                 action="Ver la jornada"
               />
             ))}
+            {conAlertas.map(({ sede, jornada, alertas }) => (
+              <AtencionItem
+                key={`alertas-${jornada.registerId}`}
+                title={
+                  alertas.length === 1
+                    ? `${jornada.cajaNombre} de ${sede.name}: ${minusculaInicial(tituloDeAlerta(alertas[0]!))}`
+                    : `${jornada.cajaNombre} de ${sede.name} tiene ${alertas.length} alertas`
+                }
+                detail={alertas.map((a) => tituloDeAlerta(a)).join(" · ")}
+                href={`/admin/cajas/${encodeURIComponent(jornada.registerId)}`}
+                action="Ver la caja"
+              />
+            ))}
             {fijadas.map((f) => (
               <AtencionItem
                 key={`fijada-${f.sede.id}-${f.code}`}
@@ -300,6 +325,7 @@ export default async function AdminInicioPage() {
         <ResponsiveTable
           rows={filas}
           rowKey={(fila) => fila.sede.id}
+          rowLink={(fila) => ({ href: `/admin/sedes/${fila.sede.id}`, label: `Ver la sede ${fila.sede.name}` })}
           columns={[
             {
               key: "sede",
@@ -395,6 +421,7 @@ function DetalleDeSede({ red, sede, hoy }: { red: RedEnAlcance; sede: Sede; hoy:
       <ResponsiveTable
         rows={cajas}
         rowKey={(c) => c.id}
+        rowLink={(c) => ({ href: `/admin/cajas/${encodeURIComponent(c.id)}`, label: `Ver la caja ${c.nombre}` })}
         columns={[
           { key: "caja", header: "Caja", cell: (c) => <span className="font-medium text-text-primary">{c.nombre}</span>, hiddenOnCard: true },
           {
@@ -416,7 +443,7 @@ function DetalleDeSede({ red, sede, hoy }: { red: RedEnAlcance; sede: Sede; hoy:
         empty={
           <p className="text-body text-text-secondary">
             Esta sede no tiene ninguna caja activa.{" "}
-            <Link href="/admin/cajas" className="font-semibold text-primary underline underline-offset-4">
+            <Link href="/admin/cajas" className="relative z-10 font-semibold text-primary underline underline-offset-4">
               Ir a Cajas
             </Link>
           </p>
@@ -456,14 +483,7 @@ function resumenDeSede(red: RedEnAlcance, sede: Sede): ResumenDeSede {
 
 function EnlaceSede({ fila }: { fila: ResumenDeSede }): React.JSX.Element {
   return (
-    <Link
-      /* Ruta dinámica: `typedRoutes` no puede comprobar un identificador que
-         nace del dominio, así que se afirma igual que en el resto del producto. */
-      href={`/admin/sedes/${fila.sede.id}` as Route}
-      className="font-medium text-text-primary underline-offset-4 hover:underline"
-    >
-      {fila.sede.name}
-    </Link>
+    <span className="font-medium text-text-primary">{fila.sede.name}</span>
   );
 }
 
@@ -506,6 +526,7 @@ function AtencionItem({
      se resuelve (**FR-AD-HOME-4**), y son pocas y conocidas. Enumerarlas deja
      que el compilador avise si alguna deja de existir. */
   href:
+    | `/admin/cajas/${string}`
     | "/admin/cajas"
     | "/admin/equipos"
     | "/admin/monedas"
@@ -533,7 +554,7 @@ function AtencionItem({
           {/* **FR-AD-HOME-4**: cada entrada lleva a donde se resuelve. */}
           <Link
             href={href as Route}
-            className="inline-flex shrink-0 items-center gap-1.5 self-start text-label font-medium text-primary underline-offset-4 hover:underline"
+            className="relative z-10 inline-flex shrink-0 items-center gap-1.5 self-start text-label font-medium text-primary underline-offset-4 hover:underline"
           >
             {action}
             <ArrowRight className="size-4" aria-hidden="true" />
@@ -579,4 +600,9 @@ function textoDeDiferencia(d: DiferenciaDelDia, sede: Sede): { title: string; de
     title: `Cierre forzado sin contar en ${d.jornada.cajaNombre} de ${sede.name}`,
     detail: "Nadie ha contado el efectivo desde el cierre. El primer conteo será el de quien abra la próxima jornada.",
   };
+}
+
+/** «Efectivo bajo en USD» → «efectivo bajo en USD»: solo la primera letra, las monedas siguen en mayúsculas. */
+function minusculaInicial(texto: string): string {
+  return texto.charAt(0).toLowerCase() + texto.slice(1);
 }

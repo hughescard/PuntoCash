@@ -4,8 +4,6 @@ import * as React from "react";
 import { ArrowRight, CircleCheck, CreditCard, UserRound } from "lucide-react";
 
 import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import { formatMoney } from "@/lib/format";
-import { CAJA_SUMMARY } from "@/features/caja/caja-data";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 import {
   DELIVERY_METHOD_LABEL,
@@ -21,9 +19,14 @@ import {
   currencyLabel,
   row,
 } from "./cobrar-giro-parts";
+import { useCaja } from "@/features/caja/use-caja";
+import { restar, type Denominacion } from "@/features/caja/billetes";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
 
 /** Why a looked-up giro cannot be paid right now. `null` means it can. */
-export type PayoutBlock = "estado" | "moneda" | "fondos" | null;
+/** Sin «fondos»: Worker no ve el saldo; si no alcanza, se dice al confirmar. */
+export type PayoutBlock = "estado" | "moneda" | null;
 
 /* -------------------------------------------------------------------------
  * Step 2 — Revisar giro
@@ -33,7 +36,6 @@ export function GiroPayoutReview({
   transfer,
   worker,
   block,
-  availableCash,
   onBack,
   onCancel,
   onContinue,
@@ -41,7 +43,6 @@ export function GiroPayoutReview({
   transfer: TransferPayoutSnapshot;
   worker: string;
   block: PayoutBlock;
-  availableCash?: number;
   onBack: () => void;
   onCancel: () => void;
   onContinue: () => void;
@@ -110,19 +111,9 @@ export function GiroPayoutReview({
         >
           No es posible entregar este giro desde la caja actual.
         </Alert>
-      ) : block === "fondos" ? (
-        <Alert
-          variant="error"
-          title={`La caja no dispone de suficiente ${transfer.payoutCurrency} para entregar este giro.`}
-        >
-          Disponible:{" "}
-          {availableCash === undefined
-            ? "—"
-            : formatMoney({ amount: availableCash, currency: transfer.payoutCurrency })}
-        </Alert>
       ) : null}
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" onClick={onCancel}>
           Cancelar
         </Button>
@@ -141,6 +132,8 @@ export function GiroPayoutReview({
 
 export function GiroPayoutConfirmation({
   transfer,
+  efectivo,
+  tipos,
   worker,
   submitting,
   error,
@@ -149,6 +142,9 @@ export function GiroPayoutConfirmation({
   onConfirm,
 }: {
   transfer: TransferPayoutSnapshot;
+  /** Los billetes de la entrega, para que se vean antes de confirmar, como en la remesa. */
+  efectivo: EfectivoRegistrado | null;
+  tipos: Readonly<Record<string, readonly Denominacion[]>>;
   worker: string;
   submitting: boolean;
   error?: string;
@@ -156,9 +152,10 @@ export function GiroPayoutConfirmation({
   onCancel: () => void;
   onConfirm: () => void;
 }): React.JSX.Element {
+  const CAJA_SUMMARY = useCaja().summary;
   return (
     <div className="flex flex-col gap-6">
-      <StepBackLink label="Volver a Revisar giro" onClick={onBack} />
+      <StepBackLink label="Volver a los billetes" onClick={onBack} />
 
       <div>
         <h1 className="text-screen-title text-text-primary">Confirmar entrega del giro</h1>
@@ -190,6 +187,30 @@ export function GiroPayoutConfirmation({
         </CardContent>
       </Card>
 
+      {efectivo ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Billetes que se entregan</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 pt-0">
+            <BilletesDelMovimiento
+              billetes={restar({}, efectivo.entrega)}
+              currency={transfer.payoutCurrency}
+              tipos={tipos[transfer.payoutCurrency] ?? []}
+              nombre={`${transfer.payoutCurrency} que salen`}
+            />
+            {efectivo.entregaCup ? (
+              <BilletesDelMovimiento
+                billetes={restar({}, efectivo.entregaCup)}
+                currency="CUP"
+                tipos={tipos["CUP"] ?? []}
+                nombre="CUP que salen"
+              />
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Alert variant="warning" title="Acción irreversible">
         Confirma la operación únicamente después de verificar la identidad del beneficiario y
         entregar el efectivo correspondiente. El giro quedará marcado como completado.
@@ -197,7 +218,7 @@ export function GiroPayoutConfirmation({
 
       {error ? <Alert variant="error" title={error} /> : null}
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" type="button" onClick={onCancel} disabled={submitting}>
           Cancelar
         </Button>

@@ -3,13 +3,15 @@ import Link from "next/link";
 import type { Metadata, Route } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { DatosDeBilletes } from "../datos-de-billetes";
 
 import { PageHeader, Section } from "@/components/shell/app-shell";
 import { Alert, Button, Card, CardContent } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatAmount } from "@/lib/format";
 import { getAdminSession } from "@/features/admin/session-server";
-import { MOTIVO_RESOLUCION_MIN, TIPO_DE_SOLICITUD, type Solicitud } from "@/features/network/aprobaciones";
+import { MOTIVO_RESOLUCION_MIN, TIPO_DE_SOLICITUD, type Solicitud, quienConfirma } from "@/features/network/aprobaciones";
+import { SUPERVISOR_CAMBIO_BILLETES } from "@/features/network/jornadas";
 import { redEnAlcance } from "@/features/network/scoped-reads";
 import { DiferenciaDeApertura, EstadoBadge, fechaYHora, nombreDeJornada } from "../../jornadas/formato";
 import { antiguedad, EstadoSolicitudBadge } from "../formato";
@@ -23,9 +25,11 @@ export const metadata: Metadata = {
 
 /** Cómo se llama lo que había antes de contar, según de dónde venga la diferencia. */
 const REFERENCIA: Readonly<Record<Solicitud["tipo"], string>> = {
-  ajuste: "Saldo registrado",
   cierre: "Saldo esperado",
   apertura: "Dejado al cierre anterior",
+  composicion: "Saldo esperado",
+  fondos: "Antes del movimiento",
+  recuento: "Saldo en libros",
 };
 
 /**
@@ -56,6 +60,7 @@ export default async function AdminSolicitudPage({
   const sede = session.sedes.find((x) => x.id === s.sedeId);
   const jornada = red.jornada(s.jornadaId);
   const ahora = new Date();
+  const confirma = s.estado === "pendiente" ? quienConfirma(s) : null;
 
   return (
     <>
@@ -63,8 +68,8 @@ export default async function AdminSolicitudPage({
         title={TIPO_DE_SOLICITUD[s.tipo]}
         description={jornada ? `Jornada ${nombreDeJornada(jornada)} · ${sede?.name ?? ""}` : (sede?.name ?? "")}
         actions={
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <span className="self-start sm:self-auto">
+          <div className="pc-botonera">
+            <span className="pc-botonera-fija">
               <EstadoSolicitudBadge estado={s.estado} />
             </span>
             <Button variant="secondary" asChild>
@@ -120,14 +125,18 @@ export default async function AdminSolicitudPage({
                   </span>
                 }
               />
-              <Dato etiqueta={REFERENCIA[s.tipo]} valor={<span className="pc-numeric">{formatAmount(s.referencia)}</span>} />
-              <Dato etiqueta="Contado" valor={<span className="pc-numeric">{formatAmount(s.contado)}</span>} />
+              <Dato etiqueta={referenciaDe(s)} valor={<span className="pc-numeric">{formatAmount(s.referencia)}</span>} />
+              <Dato
+                etiqueta={s.origen === "jornada" ? "Después del movimiento" : "Contado"}
+                valor={<span className="pc-numeric">{formatAmount(s.contado)}</span>}
+              />
               {/* FR-AD-APR-6: signo y motivo juntos, sin reinterpretar. */}
               <Dato
                 etiqueta="Diferencia"
                 valor={<DiferenciaDeApertura currency={s.currency} diferencia={s.diferencia} motivo={s.motivo} />}
               />
               <Dato etiqueta="Motivo del trabajador" valor={s.motivo} />
+              <DatosDeBilletes s={s} />
               {s.observaciones ? <Dato etiqueta="Observaciones" valor={s.observaciones} /> : null}
               {s.movimientoId && jornada ? (
                 <Dato
@@ -162,17 +171,53 @@ export default async function AdminSolicitudPage({
               </dl>
               {s.estado === "rechazada" ? (
                 <p className="mt-5 text-body-sm text-text-secondary">
-                  La administración no asume esta diferencia: queda para revisarla fuera del sistema.
+                  {s.tipo === "fondos"
+                    ? "La administración no confirma este movimiento: queda como incidencia a nombre del trabajador."
+                    : "La administración no asume esta diferencia: queda como incidencia a nombre del trabajador."}
                 </p>
               ) : null}
             </CardContent>
           </Card>
+        ) : confirma && confirma.id !== session.user.id ? (
+          /* Decisión del 10/11/2026: confirmar es que quien trajo o se llevó el dinero diga que fue así. */
+          <Alert variant="info" title={`Solo ${confirma.nombre} puede confirmarlo`}>
+            Es el supervisor que, según el trabajador, {verboDeFondos(s)}. Hasta que lo confirme o lo rechace desde su consola,
+            queda pendiente.
+          </Alert>
         ) : (
-          <Resolver id={s.id} motivoMin={MOTIVO_RESOLUCION_MIN} />
+          <>
+            {s.estado === "pendiente" && s.tipo === "fondos" && s.supervisor && !confirma ? (
+              <Alert variant="info" title={`${s.supervisor} ya no es administrador activo`} className="mb-4">
+                El trabajador lo nombró como supervisor, pero ya no puede confirmarlo. Por eso puede resolver esta solicitud cualquier
+                administrador de la sede.
+              </Alert>
+            ) : null}
+            {confirma ? (
+              <p className="mb-4 text-body-sm text-text-secondary">
+                El trabajador dice que fuiste tú quien {verboDeFondos(s)}. Confírmalo si fue así; recházalo si no.
+              </p>
+            ) : null}
+            <Resolver id={s.id} motivoMin={MOTIVO_RESOLUCION_MIN} />
+          </>
         )}
       </Section>
     </>
   );
+}
+
+/** Qué hizo el supervisor, para decirlo en una frase. */
+function verboDeFondos(s: Solicitud): string {
+  if (s.fondos === "cambio" || s.motivo === SUPERVISOR_CAMBIO_BILLETES) return "cambió los billetes";
+  if (s.fondos === "retiro" || s.diferencia < 0) return "se llevó el efectivo";
+  return "trajo el efectivo";
+}
+
+/** Al abrir, la referencia es lo dejado por el cierre anterior; al cerrar, lo esperado por los libros. */
+function referenciaDe(s: Solicitud): string {
+  if (s.origen === "recuento") return "Saldo en libros";
+  if (s.id.includes(`-A-${s.currency}`)) return "Dejado al cierre anterior";
+  if (s.id.includes(`-C-${s.currency}`)) return "Saldo esperado";
+  return REFERENCIA[s.tipo];
 }
 
 function Dato({ etiqueta, valor }: { etiqueta: string; valor: React.ReactNode }) {

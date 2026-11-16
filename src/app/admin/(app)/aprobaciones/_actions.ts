@@ -20,7 +20,7 @@ export async function resolverSolicitudAction(_previo: ResultadoResolver, formDa
   const session = await getAdminSession();
   if (!session) return { ok: false, error: mensaje("aprobaciones", "sesion-terminada"), motivo };
 
-  const r = resolverSolicitud(session.scope, id, decision, motivo, session.user.fullName);
+  const r = resolverSolicitud(session.scope, id, decision, motivo, { id: session.user.id, nombre: session.user.fullName });
   if (!r.ok) {
     if (r.reason === "ya-resuelta") {
       /* FR-AD-APR-11: otro administrador la resolvió entretanto. El aviso va

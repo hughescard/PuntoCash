@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import type { Route } from "next";
 import { Search } from "lucide-react";
 
 import { Badge, Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
@@ -99,12 +97,9 @@ export function SedesList({
       key: "sede",
       header: "Sede",
       cell: (row) => (
-        <Link
-          href={`/admin/sedes/${row.id}` as Route}
-          className="font-medium text-text-primary underline-offset-4 hover:underline"
-        >
+        <span className="font-medium text-text-primary">
           {row.name}
-        </Link>
+        </span>
       ),
       hiddenOnCard: true,
     },
@@ -177,10 +172,11 @@ export function SedesList({
         rows={visibles}
         columns={columnas}
         rowKey={(row) => row.id}
+        rowLink={(row) => ({ href: `/admin/sedes/${row.id}`, label: `Ver la sede ${row.name}` })}
         cardTitle={(row) => (
-          <Link href={`/admin/sedes/${row.id}` as Route} className="underline-offset-4 hover:underline">
+          <span className="font-medium text-text-primary">
             {row.name}
-          </Link>
+          </span>
         )}
         cardSubtitle={(row) => `${row.code} · ${row.locality}`}
         cardBadge={(row) => <EstadoSede status={row.status} />}

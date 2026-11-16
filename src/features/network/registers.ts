@@ -18,6 +18,7 @@
 
 import { findSedeById, isMotivoValido } from "./sedes";
 import { requireOperatorScope, type Scope } from "./scope";
+import { almacen } from "./almacen";
 
 export type RegisterStatus = "activa" | "retirada";
 
@@ -102,7 +103,7 @@ function seed(): Register[] {
   return out;
 }
 
-const mutableRegisters: Register[] = seed();
+const mutableRegisters: Register[] = almacen("cajas", () => seed());
 
 export const REGISTERS: readonly Register[] = mutableRegisters;
 

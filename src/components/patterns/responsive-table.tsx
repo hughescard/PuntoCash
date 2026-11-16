@@ -14,6 +14,15 @@ import {
   TableRow,
 } from "@/components/ui";
 import { ClickableRow } from "./clickable-row";
+import { ActionMenu, type AccionDeMenu } from "./action-menu";
+
+/** Las acciones de una fila que no tiene ficha: un menú «⋯» al final. */
+export interface AccionesDeFila {
+  /** Nombre accesible del botón: «Acciones de USD». */
+  label: string;
+  acciones: readonly AccionDeMenu[];
+  disabled?: boolean;
+}
 
 /**
  * Una tabla que en un teléfono deja de ser una tabla — **FR-AD-SHELL-13**.
@@ -77,6 +86,14 @@ export interface ResponsiveTableProps<T> {
    * `relative z-10`, que lo pone por encima del enlace de la tarjeta.
    */
   rowLink?: (row: T) => { href: string; label: string } | null;
+  /**
+   * Acciones de una fila **sin ficha** (regla de tablas, 12/11/2026): siempre
+   * en un menú «⋯», aunque sea una sola, en la última columna de la tabla y
+   * arriba a la derecha de la tarjeta. Una fila con ficha no lleva acciones:
+   * se abre y las acciones están en la ficha. Por eso no se combina con
+   * `rowLink`.
+   */
+  rowActions?: (row: T) => AccionesDeFila | null;
   /** Qué decir cuando no hay ni una fila. Los dos vacíos —sin datos y sin resultados— nunca comparten mensaje (**FR-AD-STATE-1**). */
   empty: React.ReactNode;
   /**
@@ -104,6 +121,7 @@ export function ResponsiveTable<T>({
   cardSubtitle,
   cardFooter,
   rowLink,
+  rowActions,
   empty,
   tablaDesde = "lg",
   tarjetasEnDosColumnas = false,
@@ -133,6 +151,7 @@ export function ResponsiveTable<T>({
           // que lo tienen (una caja retirada) y filas que no.
           const subtitle = cardSubtitle?.(row);
           const link = rowLink?.(row);
+          const menu = rowActions?.(row);
 
           return (
           <li key={rowKey(row)}>
@@ -149,10 +168,13 @@ export function ResponsiveTable<T>({
                     <p className="mt-1 text-body-sm text-text-secondary">{subtitle}</p>
                   ) : null}
                 </div>
-                {cardBadge || link ? (
+                {cardBadge || link || menu ? (
                   <div className="flex shrink-0 items-center gap-2">
                     {cardBadge?.(row)}
                     {link ? <ChevronRight aria-hidden="true" className="size-5 text-text-secondary" /> : null}
+                    {menu && menu.acciones.length > 0 ? (
+                      <ActionMenu label={menu.label} acciones={menu.acciones} disabled={menu.disabled} />
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -212,6 +234,11 @@ export function ResponsiveTable<T>({
                   <span className="sr-only">Abrir</span>
                 </TableHead>
               ) : null}
+              {rowActions ? (
+                <TableHead>
+                  <span className="sr-only">Acciones</span>
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -222,6 +249,21 @@ export function ResponsiveTable<T>({
                 </TableCell>
               ));
               const link = rowLink?.(row);
+              if (rowActions) {
+                const menu = rowActions(row);
+                return (
+                  <TableRow key={rowKey(row)}>
+                    {celdas}
+                    <TableCell className="w-14 pr-4 text-right">
+                      {menu && menu.acciones.length > 0 ? (
+                        <span className="flex justify-end">
+                          <ActionMenu label={menu.label} acciones={menu.acciones} disabled={menu.disabled} />
+                        </span>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
+                );
+              }
               return link ? (
                 <ClickableRow key={rowKey(row)} href={link.href}>
                   {celdas}

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowRight, ClipboardList, Send, UserRound, Wallet } from "lucide-react";
+import { ClipboardList, Send, UserRound, Wallet } from "lucide-react";
 
 import { Badge, Card, CardContent } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
@@ -18,6 +18,7 @@ import {
   type OperationRecord,
 } from "@/features/operations/operations-history";
 import { CardGlyph, DetailCard, DetailList, DetailRow } from "./detail-parts";
+import { entregadoAlCliente, difiereDeLoDebido } from "@/features/operations/entregado";
 
 /**
  * Specialized historical detail for "Giros".
@@ -172,9 +173,18 @@ function GiroCard({ operation, isPayout }: { operation: OperationRecord; isPayou
                 <DetailRow label="Referencia" value={snapshot.reference} numeric />
               ) : null}
               <DetailRow label="Método de entrega" value={deliveryMethodLabel(snapshot.deliveryMethod)} />
+              {isPayout && difiereDeLoDebido({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency }, operation.liquidacion) ? (
+                <DetailRow label="Importe del giro" value={formatMoney({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency })} numeric />
+              ) : null}
               <DetailRow
                 label={isPayout ? "Importe entregado" : "Importe enviado"}
-                value={formatMoney({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency })}
+                value={
+                  isPayout
+                    ? entregadoAlCliente({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency }, operation.liquidacion)
+                        .map(formatMoney)
+                        .join(" + ")
+                    : formatMoney({ amount: snapshot.deliveryAmount, currency: snapshot.senderCurrency })
+                }
                 numeric
                 strong
               />
@@ -243,32 +253,33 @@ function GiroCard({ operation, isPayout }: { operation: OperationRecord; isPayou
  * Movimiento de efectivo — the historical register impact
  * ---------------------------------------------------------------------- */
 
+/**
+ * Lo que el giro movió en la caja. Worker opera a ciegas (decisión del
+ * 6/11/2026): sin saldo anterior ni resultante; el importe sale de la
+ * operación.
+ */
 function CashMovementCard({ operation, isPayout }: { operation: OperationRecord; isPayout: boolean }) {
-  const cash = operation.amount.kind === "single" ? operation.amount.cashSnapshot : undefined;
-  if (!cash) return null;
+  const money = operation.amount.kind === "single" ? operation.amount.money : undefined;
+  if (!money) return null;
 
   return (
     <DetailCard title="Movimiento de efectivo" icon={Wallet} contentClassName="gap-5">
-      {/* Saldo anterior → movimiento → saldo resultante, exactly as it stood
-          when the operation was committed. */}
-      <div className="grid grid-cols-1 items-stretch gap-3 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)]">
-        <MovementBox label="Saldo anterior" value={formatMoney(cash.before)} />
-        <FlowArrow />
-        <MovementBox
-          label={isPayout ? "Salida — Giro" : "Entrada — Giro"}
-          value={`${isPayout ? "−" : "+"}${formatMoney(cash.movement)}`}
-          tone={isPayout ? "negative" : "positive"}
-        />
-        <FlowArrow />
-        <MovementBox label="Saldo resultante" value={formatMoney(cash.after)} />
-      </div>
+      <MovementBox
+        label={isPayout ? "Salida — Giro" : "Entrada — Giro"}
+        value={
+          isPayout
+            ? entregadoAlCliente(money, operation.liquidacion).map((m) => `−${formatMoney(m)}`).join(" · ")
+            : `+${formatMoney(money)}`
+        }
+        tone={isPayout ? "negative" : "positive"}
+      />
 
       <div className="grid grid-cols-1 gap-x-10 xl:grid-cols-3">
         <DetailList>
           <DetailRow label="Tipo de movimiento" value={isPayout ? "Salida" : "Entrada"} />
         </DetailList>
         <DetailList>
-          <DetailRow label="Moneda" value={currencyLabel(cash.movement.currency)} />
+          <DetailRow label="Moneda" value={currencyLabel(money.currency)} />
         </DetailList>
         <DetailList>
           <DetailRow label="Operación vinculada" value={operation.codigo} numeric />
@@ -323,17 +334,6 @@ function MovementBox({
         {value}
       </p>
     </div>
-  );
-}
-
-function FlowArrow() {
-  return (
-    <span
-      aria-hidden="true"
-      className="hidden size-8 shrink-0 place-items-center self-center rounded-control border border-border bg-surface text-text-secondary xl:grid"
-    >
-      <ArrowRight className="size-4" />
-    </span>
   );
 }
 

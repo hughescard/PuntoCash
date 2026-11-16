@@ -107,7 +107,7 @@ export function EditarPerfilForm({
             </Field>
           </div>
 
-          <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+          <div className="pc-botonera pt-2 sm:justify-end">
             <Button variant="secondary" asChild>
               <Link href="/admin/perfil">Cancelar</Link>
             </Button>

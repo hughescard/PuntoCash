@@ -6,6 +6,8 @@ import { ArrowLeft, Building2 } from "lucide-react";
 
 import { PageHeader, Section } from "@/components/shell/app-shell";
 import { ResponsiveTable } from "@/components/patterns/responsive-table";
+import { ElementoDeLista } from "@/components/patterns/elemento-de-lista";
+import { TIPO_DE_SOLICITUD } from "@/features/network/aprobaciones";
 import { Alert, Button, Card, CardContent } from "@/components/ui";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { maskEmail } from "@/features/auth/two-factor";
@@ -79,6 +81,11 @@ export default async function AdminTrabajadorPage({
   const susJornadas = red.jornadasDeTrabajador(trabajador.id);
   const enCurso = susJornadas.find((j) => j.estado === "abierta") ?? null;
   const recientes = susJornadas.slice(0, 10);
+  /* Las incidencias: lo que el trabajador registró y la administración rechazó. */
+  const incidencias = session.sedes
+    .flatMap((sede) => red.solicitudes(sede.id))
+    .filter((s) => s.estado === "rechazada" && s.workerId === trabajador.id)
+    .sort((a, b) => (b.resolucion?.at ?? b.fechaHora).localeCompare(a.resolucion?.at ?? a.fechaHora));
   const nombreDeSede = (sedeId: string) => session.sedes.find((s) => s.id === sedeId)?.name ?? "";
   const cajasOperadas = [...new Map(susJornadas.map((j) => [j.registerId, `${j.cajaNombre} de ${nombreDeSede(j.sedeId)}`])).values()];
 
@@ -195,6 +202,34 @@ export default async function AdminTrabajadorPage({
             , filtrando por trabajador.
           </p>
         ) : null}
+      </Section>
+
+      <Section title="Incidencias" description="Lo que registró y la administración rechazó. Quedan a su nombre.">
+        {incidencias.length === 0 ? (
+          <p className="text-body text-text-secondary">{trabajador.firstName} no tiene incidencias.</p>
+        ) : (
+          <Card>
+            <CardContent className="pt-6">
+              <ul className="flex flex-col divide-y divide-border" aria-label="Incidencias">
+                {incidencias.map((s) => (
+                  <ElementoDeLista
+                    key={s.id}
+                    href={`/admin/aprobaciones/${s.id}`}
+                    label={`Ver la incidencia: ${TIPO_DE_SOLICITUD[s.tipo].toLowerCase()} en ${s.currency}`}
+                  >
+                    <span className="block font-medium text-text-primary">
+                      {TIPO_DE_SOLICITUD[s.tipo]} · {s.currency}
+                    </span>
+                    <span className="block text-body-sm text-text-secondary">
+                      {fechaYHora(s.resolucion?.at ?? s.fechaHora)}
+                      {s.resolucion ? ` · ${s.resolucion.por}: ${s.resolucion.motivo}` : ""}
+                    </span>
+                  </ElementoDeLista>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
       </Section>
 
       <Section title="Acciones">

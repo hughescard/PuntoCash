@@ -57,7 +57,7 @@ export default async function SuperAdminEventoPage({ params }: { params: Promise
                   <span className="flex flex-col">
                     <span>{e.actor}</span>
                     <span className="text-body-sm text-text-secondary">
-                      {e.rol === "admin-sede" ? `Mercante${e.operador ? ` · ${e.operador}` : ""}` : "PuntoCash"}
+                      {e.rol === "admin-sede" ? `Mercante${e.operador ? ` · ${e.operador}` : ""}` : e.rol === "trabajador" ? "Trabajador" : "PuntoCash"}
                     </span>
                   </span>
                 }

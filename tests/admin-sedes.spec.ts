@@ -34,7 +34,7 @@ test.beforeEach(async ({ page }) => {
    distingue el listado del control que lo filtra. Como enlace hay una sola, y
    el motor de roles ignora además lo que está oculto a este ancho. */
 const enlaceASede = (page: import("@playwright/test").Page, nombre: string) =>
-  page.getByRole("link", { name: nombre, exact: true });
+  page.getByRole("link", { name: `Ver la sede ${nombre}`, exact: true });
 
 test("lista las sedes del alcance y solo esas", async ({ page }) => {
   await expect(enlaceASede(page, "PuntoCash Vedado")).toBeVisible();
@@ -173,4 +173,31 @@ test("lo que se guarda llega a la pantalla de la sala", async ({ page, browser }
   await page.getByLabel("Sábado, cierra").fill("17:30");
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await page.waitForURL(/\/admin\/sedes\/sede-cerro\?guardado=1$/);
+});
+
+test.describe("selector de la cabecera", () => {
+  test("en Sedes está desactivado y dice lo que se ve; al salir vuelve la sede elegida", async ({ page }) => {
+    await signInAsAdmin(page, MARTA);
+    const selector = page.getByRole("banner").getByLabel("Sede que estás viendo");
+
+    await page.goto("/admin/jornadas");
+    await selector.selectOption("sede-vedado");
+    await page.waitForLoadState("load");
+    await expect(selector).toHaveValue("sede-vedado");
+
+    await page.goto("/admin/sedes");
+    await expect(selector).toBeDisabled();
+    await expect(selector).toHaveValue("todas");
+    await expect(selector).toHaveAccessibleDescription(/no se filtra por sede/);
+
+    await page.goto("/admin/sedes/sede-habana-vieja");
+    await expect(selector).toBeDisabled();
+    await expect(selector).toHaveValue("sede-habana-vieja");
+
+    await page.goto("/admin/jornadas");
+    await expect(selector).toBeEnabled();
+    await expect(selector).toHaveValue("sede-vedado");
+    await selector.selectOption("todas");
+    await page.waitForLoadState("load");
+  });
 });

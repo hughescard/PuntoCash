@@ -7,9 +7,12 @@ import { CircleCheck, FileText, Printer } from "lucide-react";
 import { Button, Card, CardContent } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import { findCajaCurrency, CAJA_SUMMARY } from "@/features/caja/caja-data";
+import { findCajaCurrency } from "@/features/caja/caja-data";
 import { senderFullName, type BeneficiaryValues, type SenderValues } from "./giro-types";
 import { municipalityLabel, provinceLabel } from "./giro-validation";
+import { useCaja } from "@/features/caja/use-caja";
+import type { OperationLiquidation } from "@/features/operations/operations-history";
+import { liquidacionComoLineas } from "../../liquidacion";
 
 /** "🇨🇺 500,00 CUP" — the approved amount treatment for Importe. */
 function MoneyWithFlag({ amount, currency }: { amount: number; currency: string }) {
@@ -32,10 +35,13 @@ export interface GiroCompleted {
   deliveryAmount: number;
   /** ISO datetime, captured only at the moment confirmation succeeded. */
   completedAt: string;
+  /** El vuelto: consta en el comprobante. */
+  liquidacion?: OperationLiquidation;
 }
 
 /** Step 4 — Success. */
 export function GiroResult({ completed }: { completed: GiroCompleted }): React.JSX.Element {
+  const CAJA_SUMMARY = useCaja().summary;
   const currencyEntry = findCajaCurrency(completed.senderCurrency);
   const currencyLabel = currencyEntry ? `${currencyEntry.code} · ${currencyEntry.name}` : completed.senderCurrency;
 
@@ -66,6 +72,9 @@ export function GiroResult({ completed }: { completed: GiroCompleted }): React.J
               value={<MoneyWithFlag amount={completed.deliveryAmount} currency={completed.senderCurrency} />}
             />
             <SummaryRow label="Moneda" value={currencyLabel} />
+            {liquidacionComoLineas(completed.liquidacion).map((l) => (
+              <SummaryRow key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+            ))}
             <SummaryRow label="Método de entrega" value="Recogida" />
             <SummaryRow label="Caja" value={CAJA_SUMMARY.register} />
             <SummaryRow label="Trabajador" value={CAJA_SUMMARY.worker} />
@@ -78,7 +87,7 @@ export function GiroResult({ completed }: { completed: GiroCompleted }): React.J
           beneficiario.
         </p>
 
-        <div className="mt-7 flex flex-wrap justify-center gap-3">
+        <div className="pc-botonera mt-7 sm:justify-center">
           <Button variant="secondary" onClick={() => window.print()}>
             <Printer aria-hidden="true" />
             Imprimir comprobante
@@ -105,6 +114,7 @@ function PrintableGiroReceipt({
   completed: GiroCompleted;
   currencyLabel: string;
 }) {
+  const CAJA_SUMMARY = useCaja().summary;
   const { beneficiary } = completed;
   return (
     <section className="hidden print:block" aria-hidden="true">
@@ -127,6 +137,9 @@ function PrintableGiroReceipt({
           value={formatMoney({ amount: completed.deliveryAmount, currency: completed.senderCurrency })}
         />
         <ReceiptLine label="Moneda" value={currencyLabel} />
+        {liquidacionComoLineas(completed.liquidacion).map((l) => (
+          <ReceiptLine key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+        ))}
         <ReceiptLine label="Método de entrega" value="Recogida" />
         <ReceiptLine label="Caja" value={CAJA_SUMMARY.register} />
         <ReceiptLine label="Trabajador" value={CAJA_SUMMARY.worker} />

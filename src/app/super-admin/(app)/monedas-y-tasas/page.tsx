@@ -16,6 +16,10 @@ import { getSuperAdminSession } from "@/features/super-admin/session-server";
 import { fechaCorta, fechaYHora } from "@/app/admin/(app)/jornadas/formato";
 import { TablaDeRangos, type FilaDeRango } from "./tabla-de-rangos";
 import { TasasPorSede, type SedeConTasas } from "./tasas-por-sede";
+import { TablaDeDenominaciones, type FilaDeDenominaciones } from "./tabla-de-denominaciones";
+import { todasLasDenominaciones } from "@/features/network/denominaciones";
+import { existenciasEnCajasAbiertas } from "@/features/network/jornadas";
+import { clave } from "@/features/caja/billetes";
 
 export const metadata: Metadata = {
   title: "Super administración · Monedas y tasas",
@@ -33,6 +37,8 @@ export const metadata: Metadata = {
      desde esta misma tabla (decisión del 2/11, que revierte la del 28/10).
  *   · **Tasas por sede** (decisión del 28/10): de solo lectura y sin capa de
  *     alertas. Qué monedas tiene y qué tasa publica cada sede.
+ *   · **Denominaciones** (decisión del 9/11): los billetes y monedas de cada
+ *     divisa que aceptan y entregan las cajas de toda la red.
  */
 export default async function SuperAdminMonedasYTasasPage({
   searchParams,
@@ -42,7 +48,7 @@ export default async function SuperAdminMonedasYTasasPage({
   const session = await getSuperAdminSession();
   if (!session) redirect("/super-admin/login");
   const inicial = await searchParams;
-  const vista = inicial.vista === "sedes" ? "sedes" : "rangos";
+  const vista = inicial.vista === "sedes" ? "sedes" : inicial.vista === "denominaciones" ? "denominaciones" : "rangos";
   const red = redEnAlcance(GLOBAL_SCOPE);
   const vivas = SEDES.filter((s) => s.status !== "cerrada");
 
@@ -71,6 +77,27 @@ export default async function SuperAdminMonedasYTasasPage({
       esperando: rango || m.retiradaEl ? 0 : conLaMoneda.filter((s) => s.services.includes(SERVICIO_CAMBIO)).length,
       cotizan: vivas.filter((s) => red.tablero(s.id).some((t) => t.currency === m.code)).length,
       tasas,
+    };
+  });
+
+  /* El CUP primero: es la que más se mueve en efectivo. */
+  const conLocal = [...CATALOGO_MONEDAS.filter((m) => m.code === MONEDA_LOCAL), ...ordenadas];
+  const denominaciones: FilaDeDenominaciones[] = conLocal.map((m) => {
+    const enCajas = existenciasEnCajasAbiertas(m.code);
+    return {
+      code: m.code,
+      nombre: m.name,
+      monedaRetirada: Boolean(m.retiradaEl),
+      denominaciones: todasLasDenominaciones(m.code).map((d) => {
+        const e = enCajas.get(clave(d.valor));
+        return {
+          valor: d.valor,
+          tipo: d.tipo,
+          retirada: d.retiradaEl ? fechaCorta(d.retiradaEl) : null,
+          cajas: e?.cajas ?? 0,
+          unidades: e?.unidades ?? 0,
+        };
+      }),
     };
   });
 
@@ -109,7 +136,7 @@ export default async function SuperAdminMonedasYTasasPage({
     <>
       <PageHeader
         title="Monedas y tasas"
-        description="Las monedas de la plataforma, su rango contra el peso cubano, y las tasas que publica cada sede dentro de él."
+        description="Las monedas de la plataforma, su rango contra el peso cubano, las tasas que publica cada sede dentro de él y los billetes y monedas que circulan en las cajas."
       />
 
       <nav aria-label="Vistas" className="mb-6 flex gap-1 border-b border-border">
@@ -119,9 +146,18 @@ export default async function SuperAdminMonedasYTasasPage({
         <Pestana href="/super-admin/monedas-y-tasas?vista=sedes" activa={vista === "sedes"}>
           Tasas por sede
         </Pestana>
+        <Pestana href="/super-admin/monedas-y-tasas?vista=denominaciones" activa={vista === "denominaciones"}>
+          Denominaciones
+        </Pestana>
       </nav>
 
-      {vista === "rangos" ? <TablaDeRangos filas={filas} /> : <TasasPorSede sedes={sedes} inicial={inicial} />}
+      {vista === "rangos" ? (
+        <TablaDeRangos filas={filas} />
+      ) : vista === "sedes" ? (
+        <TasasPorSede sedes={sedes} inicial={inicial} />
+      ) : (
+        <TablaDeDenominaciones filas={denominaciones} />
+      )}
     </>
   );
 }

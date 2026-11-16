@@ -1,5 +1,5 @@
 # PuntoCash — Super administración
-## Documento de Requisitos Funcionales (FRD) · v5.2
+## Documento de Requisitos Funcionales (FRD) · v6.0
 
 **Alcance:** la consola de PuntoCash sobre su red, `/super-admin`. No cubre la consola del mercante (`/admin`).
 
@@ -31,6 +31,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 6.0 | 13/11/2026 | **Lo que cambia en esta consola con la iteración 2 de Worker** (billetes, caja ciega, alertas, perfil del trabajador). (1) **Denominaciones**: tercera pestaña de Monedas y tasas, donde PuntoCash mantiene los billetes y monedas de cada divisa para toda la red: añadir, retirar con motivo, reincorporar (§9.7, **FR-SA-DEN-1 a DEN-8**, nuevos; auditoría en §9.8; códigos en el Apéndice C). (2) **Ficha de caja** de solo lectura, `/super-admin/sedes/[id]/cajas/[cajaId]`: la misma que ve el mercante, sin acciones (**FR-SA-EQ-10**, nuevo); se llega desde la ficha de sede y desde Cajas y equipos. (3) **Ficha de sede**: una caja cerrada dice cuándo y quién la cerró y lo que quedó dentro; sin jornadas, «Sin jornadas todavía» (**FR-SA-SEDE-13**). (4) **Aprobaciones**: los tipos de diferencia son los de la caja por billetes —apertura, cierre, composición, movimiento de fondos y recuento; el «ajuste» desaparece—, el detalle enseña los billetes y la referencia según el tipo, y la resolución guarda la cuenta que resolvió (**FR-SA-APR-1, APR-3, APR-5**). (5) **Jornadas y Operaciones**: el detalle enseña los billetes de cada movimiento y la liquidación de cada operación (**FR-SA-JOR-3**, **FR-SA-OPS-2**). (6) **Auditoría**: tipos nuevos (denominaciones, alertas de caja, usuario y teléfono y contraseña cambiados por el trabajador) y un tercer autor, el **trabajador**, con su filtro «Solo trabajadores» (**FR-SA-AUD-1, AUD-2, AUD-3, AUD-10**). (7) **Ficha del trabajador**: su usuario y su teléfono los puede cambiar él (**FR-SA-TRAB-3**). (8) **Tablas**: la fila entera abre su ficha, y las acciones van en el menú «⋯» de la fila (**FR-SA-SHELL-9**, **FR-SA-SHELL-10**, nuevo). (9) **Botones**: uno al lado del otro, y en un aviso una caja por línea (**FR-SA-SHELL-11**, nuevo) |
 | 5.2 | 03/11/2026 | **PuntoCash resuelve las diferencias de efectivo que quedan sin dueño al traspasar una sede** (§11.3, **FR-SA-APR-1 a APR-5**, nuevos): menú «Aprobaciones», pendiente en Inicio |
 | 5.1 | 03/11/2026 | Un mercante ve cada sede solo desde que es suya; PuntoCash, todo (**FR-SA-DOM-4**) |
 | 5.0 | 03/11/2026 | **Reescritura completa en el formato de la v8 del FRD de Admin.** El documento describe la consola construida, no un diseño previo: una subsección por pantalla y por acción, rechazos con código, auditoría en tablas y «Ver en la demo». Incorpora las decisiones del 03/11: cerrar una sede termina su administración (**FR-SA-ASG-13**); una sede suspendida sin operador se asigna y PuntoCash mantiene su contacto (**FR-SA-SEDE-24**, **FR-SA-ASG-12**); toda credencial entregada es la contraseña (**FR-SA-OPE-16**, **FR-SA-USR-6**); motivo al cambiar un rango ya definido, al retirar una promoción de red y al traspasar el principal (**FR-SA-TASA-16**, **FR-SA-PROM-12**, **FR-SA-USR-10**). Secciones nuevas: Jornadas (**FR-SA-JOR**), Usuarios (**FR-SA-USR**) y Perfil (**FR-SA-PERF**). Los códigos de la v4.2 se conservan donde el requisito sigue; los redefinidos y los retirados se listan abajo |
@@ -90,6 +91,10 @@
 
 **FR-SA-SHELL-9 · Acciones de fila.** Cuando una fila tiene más de una acción, van en un menú «⋯» accesible, que se abre hacia arriba si no cabe debajo y nunca queda fuera de la pantalla.
 
+**FR-SA-SHELL-10 · Abrir una fila.** Si una fila lleva a una ficha, **toda la fila** la abre (el ratón cambia y la fila se resalta al pasar); no hay además un enlace en su nombre. Los enlaces a **otra** ficha dentro de la fila (la sede de una caja, el trabajador de una jornada) siguen siendo enlaces propios y no abren la fila. Rige en todos los listados que llevan a una ficha —Inicio (estado de la red), Sedes, Operadores, Cajas y equipos, Trabajadores, Promociones, Jornadas, Aprobaciones, Operaciones, Auditoría, Usuarios— y en las listas de las fichas (cajas y promociones de una sede; sedes y administradores de un operador). La única excepción es la matriz de Servicios, donde cada celda es una acción. En el teléfono, la tarjeta entera hace lo mismo que la fila.
+
+**FR-SA-SHELL-11 · Botones.** Los botones de una acción van uno al lado del otro, también en el teléfono; si un texto no cabe, pasa a dos líneas dentro del botón, sin salirse. En un aviso con varias cosas que hacer, una caja por línea.
+
 ### 1.2 Rutas
 
 **FR-SA-NAV-1 · Inventario.**
@@ -99,11 +104,12 @@
 | `/super-admin/login` · `/super-admin/verificacion` · `/super-admin/recuperar-acceso` | Acceso (§2) |
 | `/super-admin/inicio` | Inicio (§3) |
 | `/super-admin/sedes` · `/nueva` · `/[id]` · `/[id]/editar` | Sedes (§4) |
+| `/super-admin/sedes/[id]/cajas/[cajaId]` | Ficha de caja (**FR-SA-EQ-10**) |
 | `/super-admin/operadores` · `/nuevo` · `/[id]` | Operadores (§5) |
 | `/super-admin/equipos` (`?pestana=kioscos`) | Cajas y equipos (§6) |
 | `/super-admin/trabajadores` · `/[id]` | Trabajadores (§7) |
 | `/super-admin/servicios` | Servicios (§8) |
-| `/super-admin/monedas-y-tasas` (`?vista=sedes`) | Monedas y tasas (§9) |
+| `/super-admin/monedas-y-tasas` (`?vista=sedes`, `?vista=denominaciones`) | Monedas y tasas (§9) |
 | `/super-admin/promociones` · `/nueva` · `/[id]` | Promociones (§10) |
 | `/super-admin/jornadas` · `/[id]` | Jornadas (§11) |
 | `/super-admin/aprobaciones` · `/[id]` | Aprobaciones sin quien las resuelva (§11.3) |
@@ -284,9 +290,9 @@ Ante un rechazo, el formulario conserva lo escrito y señala el campo.
 | Asignación vigente | Operador, desde cuándo y cuánto tiempo, motivo; sus **administradores** (principal marcado, identificador, correo enmascarado, teléfono, estado, último acceso) | «Revocar» o «Asignar un operador» (no en cerradas) |
 | Historial de asignaciones | Tramos cerrados, del más reciente: operador, fechas, motivo de inicio y de fin | — |
 | Estado de la sede | Historial de suspensiones y reactivaciones (fecha, motivo, quién), leído del registro de auditoría | «Suspender la sede» o «Reactivar la sede», y «Cerrar la sede» (no en cerradas) |
-| Cajas y equipos | Cada caja —también retiradas— con su equipo y su jornada en curso (trabajador, si tiene la sesión iniciada, desde cuándo, saldos); cada kiosco con su última actividad | Ninguna |
+| Cajas y equipos | Cada caja —también retiradas— con su equipo y: con jornada en curso, el trabajador, si tiene la sesión iniciada, desde cuándo y los saldos; cerrada, cuándo y quién la cerró (o «Cierre forzado el …, sin contar») y **lo que quedó dentro**, que sigue en la caja hasta la próxima apertura; sin ninguna jornada, «Sin jornadas todavía». Cada caja abre su ficha (**FR-SA-EQ-10**). Cada kiosco con su última actividad | Ninguna |
 | Trabajadores | Nombre, identificador, estado | Ninguna |
-| Contenido público | Monedas de su lista; tasas que publica hoy; promociones en pantalla hoy, con quién las publica | Ninguna |
+| Contenido público | Monedas de su lista; tasas que publica hoy; promociones en pantalla hoy, con quién las publica (cada una abre su ficha) | Ninguna |
 
 **FR-SA-SEDE-17 · Lo que no se toca.** Cajas, equipos, kioscos, trabajadores, administradores y contenido público son de **solo lectura**, sin controles deshabilitados **[A14]**.
 
@@ -589,6 +595,8 @@ Inventario de la red, de **solo lectura**: las cajas las crea el mercante y los 
 | Jornada | La más reciente: estado, trabajador y fecha, con enlace; o que nunca se abrió |
 | Última actividad | La más reciente entre la señal del equipo y la última jornada |
 
+Cada fila abre la ficha de su caja (**FR-SA-EQ-10**).
+
 **FR-SA-EQ-8 · Retiradas.** Se ocultan por defecto y se muestran con «Mostrar también las retiradas».
 
 **FR-SA-EQ-3 · Kioscos.** Identificador y rótulo, sede, operador, fecha y autor de la vinculación, última actividad y **operaciones de los últimos 30 días** que se originaron en ese kiosco.
@@ -602,6 +610,21 @@ Inventario de la red, de **solo lectura**: las cajas las crea el mercante y los 
 **FR-SA-EQ-7 · Sedes sin cajas.** Encima de la tabla, las sedes no cerradas **sin ninguna caja activa**, con un enlace a Sedes filtradas por «Sin cajas».
 
 **FR-SA-EQ-9 · Pantallas informativas.** No se inventarían: no se vinculan ni tienen sesión. La pestaña de kioscos lo dice.
+
+**FR-SA-EQ-10 · Ficha de caja — `/super-admin/sedes/[id]/cajas/[cajaId]`.** La **misma ficha** que ve el mercante (**FR-AD-CAJA-15 a CAJA-18**), con cifras y **sin ninguna acción**: retirar o reactivar una caja y vincular su equipo son del mercante (**FR-SA-EQ-5**). Muestra:
+
+| Bloque | Contenido |
+| --- | --- |
+| Cabecera | Nombre de la caja, sede y, si está retirada, el motivo; «Volver a la sede» |
+| Estado | Con jornada abierta: trabajador, desde cuándo y saldo por moneda, con los **billetes** de cada una. Cerrada: cuándo y quién la cerró y lo que quedó dentro. Sin jornadas: lo dice |
+| Equipo | El vinculado, o que no tiene |
+| Alertas | Las alertas de caja activas, con sus cifras, y su historial (**FR-AD-ALE-***) |
+| Pendientes | Las diferencias de esa caja sin resolver |
+| Jornadas | Las de la caja, de la más reciente, cada una con enlace a su detalle |
+
+Se llega desde el bloque «Cajas y equipos» de la ficha de sede y desde cada fila de Cajas y equipos. Una caja que no es de esa sede responde como inexistente (**FR-SA-NAV-3**).
+
+**Ver en la demo:** Sedes → PuntoCash Vedado → una caja del bloque «Cajas y equipos»; o Cajas y equipos → cualquier fila.
 
 **Ver en la demo:** Cajas y equipos (aviso de PuntoCash Cerro y Pinar del Río); marcar «Mostrar también las retiradas» para ver las dos cajas de Pinar.
 
@@ -638,7 +661,7 @@ Si además está desactivado, el estado lo añade.
 
 ### 7.2 Ficha — `/super-admin/trabajadores/[id]`
 
-**FR-SA-TRAB-3 · Contenido.** Si no puede entrar, el motivo y quién lo resuelve. Datos (identificador, documento, teléfono, correo enmascarado, alta, estado en su consola); su sede y su operador con sus estados y el contacto del operador; su actividad reciente (las 8 jornadas más recientes, con enlace a Jornadas filtradas por esa persona si hay más); y las sedes en las que ha trabajado.
+**FR-SA-TRAB-3 · Contenido.** Si no puede entrar, el motivo y quién lo resuelve. Datos (identificador, documento, teléfono, correo enmascarado, alta, estado en su consola) —el identificador y el teléfono los puede cambiar el propio trabajador desde su Perfil en Worker, y queda en la auditoría como suyo (**FR-PERF-***); el nombre y el documento, no—; su sede y su operador con sus estados y el contacto del operador; su actividad reciente (las 8 jornadas más recientes, con enlace a Jornadas filtradas por esa persona si hay más); y las sedes en las que ha trabajado.
 
 **FR-SA-TRAB-4 · Solo lectura.** Esta consola no da de alta, no edita, no desactiva y no reactiva trabajadores **[A14]**.
 
@@ -681,7 +704,7 @@ Si además está desactivado, el estado lo añade.
 
 ## 9. Monedas y tasas — `/super-admin/monedas-y-tasas`
 
-Dos vistas: **Monedas y rangos** (por defecto) y **Tasas por sede** (`?vista=sedes`).
+Tres vistas: **Monedas y rangos** (por defecto), **Tasas por sede** (`?vista=sedes`) y **Denominaciones** (`?vista=denominaciones`).
 
 ### 9.1 Monedas y rangos
 
@@ -792,9 +815,41 @@ Filtros: búsqueda de sede, operador y moneda (con moneda, cada tarjeta muestra 
 
 **FR-SA-TASA-13 · Solo lectura.** Las monedas de una sede y sus tasas las decide su mercante **[A4]**, **[A5]**.
 
-### 9.7 Auditoría
+### 9.7 Denominaciones — `?vista=denominaciones`
 
-**FR-SA-TASA-11 / FR-SA-MON-6** **[RP-21]**
+**FR-SA-DEN-1 · Qué son.** Los billetes y monedas metálicas de cada divisa que las cajas de **toda la red** aceptan del cliente y entregan. Con ellos lleva cada caja su inventario billete a billete, el trabajador cuenta al abrir y al cerrar, y el sistema propone con qué billetes pagar (**FR-EF-***). Los mantiene **PuntoCash**, igual que el catálogo de monedas: un billete existe o no existe para todo el país, no por sede. El mercante no los toca (**FR-AD-***).
+
+**FR-SA-DEN-2 · Pantalla.** Una tarjeta por moneda del catálogo, el peso cubano primero y luego el orden de Monedas y rangos. Cada tarjeta: bandera, código y nombre; «Moneda retirada» si lo está; «Añadir»; y dos grupos, **Billetes** y **Monedas**, con cada denominación como un botón con su valor. Una denominación retirada sigue en su grupo, **tachada y en rojo**. Una moneda sin ninguna denominación vigente lo avisa: ninguna caja puede aceptarla ni entregarla en efectivo hasta que se añadan.
+
+**FR-SA-DEN-3 · Añadir.** «Añadir» pide el **tipo** (billete o moneda) y el **valor**, mayor que cero, con hasta **2 decimales** y coma o punto. No pide motivo. Desde ese momento, toda caja con esa moneda la acepta y el sistema puede proponerla para pagar.
+
+**FR-SA-DEN-4 · Retirar.** Tocar una vigente abre «Retirar». Pide **motivo** y antes de confirmar dice **cuántas unidades quedan y en cuántas cajas abiertas**, o que ninguna caja abierta tiene. Si es la última vigente de la moneda, lo advierte: ninguna caja podrá operarla en efectivo. Se permite igual.
+
+**FR-SA-DEN-5 · Efecto de retirar.** Las cajas dejan de **aceptarla** del cliente y el sistema deja de **proponerla** para pagar. Las unidades que ya están en una caja **se quedan en su inventario** hasta que el supervisor las saque con un movimiento de fondos (**FR-CAJA-***): retirar no vacía cajas. Los movimientos ya registrados no cambian **[R9]**.
+
+**FR-SA-DEN-6 · Reincorporar.** Tocar una retirada abre «Reincorporar», con la fecha en que se retiró. Sin motivo. Vuelve a aceptarse y a proponerse.
+
+**FR-SA-DEN-7 · Lo que no se hace.** Una denominación no se borra ni cambia de valor o de tipo: se retira y, si hace falta, se añade la correcta. Una retirada no se vuelve a añadir: se reincorpora (`esta-retirada`).
+
+**FR-SA-DEN-8 · Una moneda nueva.** Una moneda que se añade al catálogo (**FR-SA-MON-9**) llega **sin denominaciones**: hay que añadírselas antes de que una caja pueda operarla en efectivo.
+
+| Condición | Código |
+| --- | --- |
+| Valor vacío, cero o negativo | `valor-invalido` |
+| Más de 2 decimales | `demasiados-decimales` |
+| Ya está y vigente | `ya-existe` |
+| Ya está, retirada | `esta-retirada` |
+| No está en el catálogo | `no-existe` |
+| Retirar una ya retirada | `ya-retirada` |
+| Reincorporar una vigente | `no-esta-retirada` |
+| Retirar sin motivo válido | `motivo-requerido` |
+| Alcance que no es global | `alcance-insuficiente` |
+
+**Ver en la demo:** Monedas y tasas → Denominaciones → USD: retirar la moneda de 0,25 (dice cuántas quedan en las cajas abiertas), reincorporarla; añadir un billete de 200. Añadir una moneda nueva al catálogo y ver su tarjeta «Sin denominaciones».
+
+### 9.8 Auditoría
+
+**FR-SA-TASA-11 / FR-SA-MON-6 / FR-SA-DEN-9** **[RP-21]**
 
 | Acción | Evento | Datos |
 | --- | --- | --- |
@@ -804,6 +859,9 @@ Filtros: búsqueda de sede, operador y moneda (con moneda, cada tarjeta muestra 
 | Añadir moneda | `moneda-plataforma.alta` | Autor, moneda; después: símbolo y 4 decimales |
 | Retirar moneda | `moneda-plataforma.retirada` | Autor, moneda, motivo; después: en cuántas sedes sigue |
 | Reincorporar | `moneda-plataforma.reincorporada` | Autor, moneda |
+| Añadir denominación | `denominacion.alta` | Autor, «Billete (Moneda) de {valor} {moneda}» |
+| Retirar denominación | `denominacion.retirada` | Autor, denominación, motivo |
+| Reincorporar denominación | `denominacion.reincorporada` | Autor, denominación |
 
 ---
 
@@ -899,21 +957,21 @@ El formulario conserva lo escrito ante un rechazo e incluye la vista previa de l
 
 ### 11.2 Detalle — `/super-admin/jornadas/[id]`
 
-**FR-SA-JOR-3 · Contenido.** El mismo cuerpo que en Admin (**FR-AD-JOR-***): la jornada, la apertura con lo contado y lo dejado por el cierre anterior, los saldos, el cierre y los movimientos. La cabecera nombra la sede y **el operador de la fecha**. Si sigue abierta de un día anterior, lo señala y dice que forzar el cierre es de su administrador. Si tuvo cierre forzado, quién, cuándo, el motivo y si ya se contó.
+**FR-SA-JOR-3 · Contenido.** El mismo cuerpo que en Admin (**FR-AD-JOR-***): la jornada, la apertura con lo contado y lo dejado por el cierre anterior, los saldos, el cierre y los movimientos, **con sus billetes** por denominación (**FR-AD-JOR-21**), y el cierre hecho por el trabajador en Worker (**FR-AD-JOR-22**). La cabecera nombra la sede y **el operador de la fecha**. Si sigue abierta de un día anterior, lo señala y dice que forzar el cierre es de su administrador. Si tuvo cierre forzado, quién, cuándo, el motivo y si ya se contó.
 
 **FR-SA-JOR-4 · Sin acciones.** No se fuerza un cierre ni se resuelve una aprobación desde la jornada **[A6]**, **[A14]**. La única aprobación que resuelve PuntoCash es la que no tiene quien la resuelva (§11.3).
 
 ### 11.3 Aprobaciones sin quien las resuelva — `/super-admin/aprobaciones`
 
-**FR-SA-APR-1 · Cuáles.** Una diferencia de efectivo (ajuste, cierre o apertura) **pendiente** cuya jornada se abrió cuando la sede era de un operador que **ya no la administra**. Nadie de la sede puede resolverla: la empresa de entonces perdió la sede, y la de ahora solo ve su propia etapa (**FR-AD-SCOPE-7**). Las resuelve **PuntoCash** (decisión del 03/11/2026). Las demás son de cada mercante y aquí no aparecen.
+**FR-SA-APR-1 · Cuáles.** Una diferencia de efectivo **pendiente** —de apertura, de cierre, de composición, un movimiento de fondos o una diferencia en recuento (**FR-AD-APR-***)— cuya jornada se abrió cuando la sede era de un operador que **ya no la administra**. Nadie de la sede puede resolverla: la empresa de entonces perdió la sede, y la de ahora solo ve su propia etapa (**FR-AD-SCOPE-7**). Las resuelve **PuntoCash** (decisión del 03/11/2026). Las demás son de cada mercante y aquí no aparecen.
 
 **FR-SA-APR-2 · Lista.** «Pendientes», de la más antigua: tipo y diferencia con su signo y el motivo del trabajador; sede, caja y trabajador; operador de entonces y operador de hoy; fecha y antigüedad. Debajo, «Resueltas por PuntoCash», con la fecha y quién. Sin pendientes, la pantalla lo dice. Una diferencia que no es de esta lista responde como inexistente.
 
-**FR-SA-APR-3 · Resolver.** El detalle dice por qué la resuelve PuntoCash, muestra lo que registró el trabajador (referencia, contado, diferencia, motivo, observaciones, jornada) y ofrece **Aprobar** y **Rechazar**, con un motivo de al menos 10 caracteres que se añade al del trabajador. Como en Admin (**FR-AD-APR-***): resolver **deja constancia, no cambia la caja** ni el movimiento registrado; rechazar la marca para revisarla fuera del sistema.
+**FR-SA-APR-3 · Resolver.** El detalle dice por qué la resuelve PuntoCash, muestra lo que registró el trabajador (la **referencia** según el tipo —«Dejado al cierre anterior» al abrir, «Saldo esperado» al cerrar o en composición, «Antes del movimiento» en un movimiento de fondos, «Saldo en libros» en un recuento—; lo contado, o «Después del movimiento» en un movimiento de fondos; diferencia, motivo, **los billetes** por denominación, observaciones, jornada) y ofrece **Aprobar** y **Rechazar**, con un motivo de al menos 10 caracteres que se añade al del trabajador. Como en Admin (**FR-AD-APR-***): resolver **deja constancia, no cambia la caja** ni el movimiento registrado; rechazar la marca para revisarla fuera del sistema.
 
 **FR-SA-APR-4 · Revalidación.** Al confirmar, el servidor comprueba que siga pendiente (`ya-resuelta`) y sin quien la resuelva (`no-es-huerfana`: por ejemplo, la sede volvió a la empresa de entonces). En los dos casos no se guarda nada y la pantalla lo explica.
 
-**FR-SA-APR-5 · Auditoría.** `solicitud.aprobada` o `solicitud.rechazada`, con la persona de PuntoCash como autor, la sede, el **operador de entonces** y el motivo. La resolución queda marcada como de PuntoCash.
+**FR-SA-APR-5 · Auditoría.** `solicitud.aprobada` o `solicitud.rechazada`, con la persona de PuntoCash como autor, la sede, el **operador de entonces** y el motivo. La resolución queda marcada como de PuntoCash y guarda **la cuenta** que la resolvió, no solo su nombre.
 
 | Condición | Código |
 | --- | --- |
@@ -947,7 +1005,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 ### 12.2 Detalle — `/super-admin/operaciones/[codigo]`
 
-**FR-SA-OPS-2 · Contexto.** Sede, **operador responsable** —el de ese día, y si hoy la administra otro, quién—, caja y equipo, trabajador, jornada y origen (mostrador o solicitud de kiosco). Debajo, el detalle de Worker según el servicio.
+**FR-SA-OPS-2 · Contexto.** Sede, **operador responsable** —el de ese día, y si hoy la administra otro, quién—, caja y equipo, trabajador, jornada y origen (mostrador o solicitud de kiosco). Debajo, el detalle de Worker según el servicio, con **la liquidación** —lo que entró y lo que salió de verdad, con sus billetes y el vuelto— (**FR-OPD-12**).
 
 **FR-SA-OPS-3 · Por qué.** Es lo que da sentido al historial de asignaciones: una operación de junio en Miramar es de Atlántico, aunque hoy la sede sea de Caribe **[RP-20]**, **[RP-27]**.
 
@@ -989,11 +1047,11 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 | --- | --- |
 | Fecha y hora | Hora de Cuba |
 | Evento | El acto en lenguaje de negocio y su objeto |
-| Quién | Persona y rol: PuntoCash, o mercante con su operador |
+| Quién | Persona y rol: PuntoCash, mercante con su operador, o **trabajador** |
 | Sede y operador | Enlaces, si los tiene |
 | Motivo declarado | El motivo, si lo tiene |
 
-**FR-SA-AUD-3 / FR-SA-AUD-4 · Filtros.** Quién actuó (PuntoCash, mercantes o ambos); tipo de evento, agrupado por lo que se gobierna; persona; operador; sede; desde y hasta (por día de Cuba, ambos incluidos); búsqueda en el **objeto y el motivo**. Cambiar un filtro vuelve a los 50 primeros.
+**FR-SA-AUD-3 / FR-SA-AUD-4 · Filtros.** Quién actuó (todos, solo PuntoCash, solo mercantes o solo trabajadores); tipo de evento, agrupado por lo que se gobierna; persona; operador; sede; desde y hasta (por día de Cuba, ambos incluidos); búsqueda en el **objeto y el motivo**. Cambiar un filtro vuelve a los 50 primeros.
 
 **FR-SA-AUD-2 · Qué se registra.** Como mínimo, todos los actos de este documento y de la consola del mercante. Los tipos, por área:
 
@@ -1002,10 +1060,10 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 | Sedes | `sede.creada` · `.editada` · `.asignada` · `.revocada` · `.suspendida` · `.reactivada` · `.cerrada` |
 | Operadores | `operador.alta` · `.suspendido` · `.reactivado` · `.baja` · `.acceso-principal-restablecido` |
 | Servicios | `servicio.habilitado` · `.deshabilitado` |
-| Monedas y tasas | `moneda-plataforma.alta` · `.retirada` · `.reincorporada` · `rango.definido` · `.cambiado` · `.retirado` · `tasa.fijada-al-limite` · y los del mercante: `moneda-sede.*`, `par.*` |
+| Monedas y tasas | `moneda-plataforma.alta` · `.retirada` · `.reincorporada` · `denominacion.alta` · `.retirada` · `.reincorporada` · `rango.definido` · `.cambiado` · `.retirado` · `tasa.fijada-al-limite` · y los del mercante: `moneda-sede.*`, `par.*` |
 | Promociones | `promocion-red.alta` · `.editada` · `.retirada` · y `promocion-sede.*` |
-| Cajas y equipos | `caja.*`, `equipo-caja.*`, `kiosco.*` (mercante) |
-| Trabajadores | `trabajador.*` (mercante) |
+| Cajas y equipos | `caja.*` —incluido `caja.alertas-definidas`, las reglas de alerta de una sede—, `equipo-caja.*`, `kiosco.*` (mercante) |
+| Trabajadores | `trabajador.*` (mercante), y `trabajador.datos-propios` (usuario o teléfono) y `trabajador.contrasena-cambiada`, cuyo autor es **el propio trabajador** |
 | Administradores | `usuario-admin.*` (mercante) |
 | Jornadas y aprobaciones | `solicitud.aprobada` · `.rechazada` (mercante, o PuntoCash en las de **FR-SA-APR-1**), `jornada.cierre-forzado` (mercante) |
 | Cuentas de PuntoCash | `usuario-puntocash.alta` · `.editado` · `.credencial-regenerada` · `.desactivado` · `.reactivado` · `.principal-traspasado` · `.contrasena-cambiada` |
@@ -1023,7 +1081,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 **FR-SA-AUD-6 · Inalterable.** Nadie edita ni borra un evento desde ninguna superficie del producto, tampoco esta **[RP-21]**. No hay controles, ni deshabilitados.
 
-**FR-SA-AUD-10 · Autor.** El autor es siempre una **persona** —una cuenta de PuntoCash o un administrador de un mercante—, nunca el nombre de un área **[RP-29]**. En la consola del mercante, un acto de PuntoCash se muestra como «PuntoCash».
+**FR-SA-AUD-10 · Autor.** El autor es siempre una **persona** —una cuenta de PuntoCash, un administrador de un mercante o, en lo que cambia de sí mismo, el trabajador—, nunca el nombre de un área **[RP-29]**. En la consola del mercante, un acto de PuntoCash se muestra como «PuntoCash».
 
 **FR-SA-AUD-9 · Exportar.** «Exportar a Excel» descarga **todos** los eventos que cumplen los filtros de la pantalla (no solo los 50 visibles), con los filtros escritos en la cabecera y quién lo generó. Como ese archivo **nombra a personas**, la exportación deja su propio evento, `auditoria.exportada`, con el número de eventos y los filtros.
 
@@ -1142,6 +1200,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 | Deshabilitar un servicio | Habilitar un servicio |
 | Cambiar un rango ya definido · retirar un rango | Definir el primer rango |
 | Retirar una moneda del catálogo | Añadir y reincorporar una moneda |
+| Retirar una denominación | Añadir y reincorporar una denominación |
 | Retirar una promoción de red | Publicar y editar una promoción de red |
 | Desactivar, reactivar y traspasar una cuenta de PuntoCash | Dar de alta, editar, cambiar el correo y regenerar la credencial de una cuenta · cambiar la propia contraseña |
 | Aprobar o rechazar una diferencia sin quien la resuelva | — |
@@ -1207,6 +1266,7 @@ Todas las cuentas usan la contraseña `puntocash` (salvo las que reciban una cre
 | Moneda sin rango que esperan sedes | CAD |
 | Caja abierta de un día anterior | PuntoCash Obispo |
 | Diferencias sin quien las resuelva | PuntoCash Miramar, 27 a 29/06/2026 (Aprobaciones) |
+| Cajas con alertas | PuntoCash Vedado y PuntoCash Obispo, según la hora (ficha de caja) |
 
 La demostración trabaja **en memoria**: los cambios duran hasta reiniciar el servidor, y las jornadas y operaciones se siembran relativas al día de hoy (la última semana, más las de Miramar de junio).
 
@@ -1288,3 +1348,15 @@ La demostración trabaja **en memoria**: los cambios duran hasta reiniciar el se
 | `motivo-corto` | Escribe el motivo, con al menos 10 caracteres. |
 | `ya-resuelta` | Esta solicitud ya fue resuelta. |
 | `no-es-huerfana` | Ya la puede resolver su mercante: la sede volvió a la empresa que la tenía ese día. |
+
+**Denominaciones (§9.7).** Usan los mismos códigos que el catálogo de monedas con su propio mensaje:
+
+| Código | Mensaje |
+| --- | --- |
+| `valor-invalido` | Introduce un valor mayor que cero. |
+| `demasiados-decimales` | Una denominación admite hasta 2 decimales. |
+| `ya-existe` | Esa denominación ya está en el catálogo. |
+| `esta-retirada` | Esa denominación existe pero está retirada: reincorpórala desde su ficha. |
+| `no-existe` | Esa denominación no está en el catálogo. Recarga para ver su estado. |
+| `ya-retirada` | Esa denominación ya está retirada. Recarga para ver su estado. |
+| `no-esta-retirada` | Esa denominación ya se acepta. Recarga para ver su estado. |

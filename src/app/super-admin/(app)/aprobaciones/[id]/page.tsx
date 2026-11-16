@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata, Route } from "next";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { DatosDeBilletes } from "@/app/admin/(app)/aprobaciones/datos-de-billetes";
 
 import { PageHeader, Section } from "@/components/shell/app-shell";
 import { Alert, Button, Card, CardContent } from "@/components/ui";
@@ -32,9 +33,11 @@ export const metadata: Metadata = {
 };
 
 const REFERENCIA: Readonly<Record<Solicitud["tipo"], string>> = {
-  ajuste: "Saldo registrado",
   cierre: "Saldo esperado",
   apertura: "Dejado al cierre anterior",
+  composicion: "Saldo esperado",
+  fondos: "Antes del movimiento",
+  recuento: "Saldo en libros",
 };
 
 /**
@@ -70,8 +73,8 @@ export default async function SuperAdminSolicitudPage({
         title={TIPO_DE_SOLICITUD[s.tipo]}
         description={`${sede?.name ?? ""}${jornada ? ` · Jornada ${nombreDeJornada(jornada)}` : ""}`}
         actions={
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <span className="self-start sm:self-auto">
+          <div className="pc-botonera">
+            <span className="pc-botonera-fija">
               <EstadoSolicitudBadge estado={s.estado} />
             </span>
             <Button variant="secondary" asChild>
@@ -134,13 +137,17 @@ export default async function SuperAdminSolicitudPage({
                   </span>
                 }
               />
-              <Dato etiqueta={REFERENCIA[s.tipo]} valor={<span className="pc-numeric">{formatAmount(s.referencia)}</span>} />
-              <Dato etiqueta="Contado" valor={<span className="pc-numeric">{formatAmount(s.contado)}</span>} />
+              <Dato etiqueta={referenciaDe(s)} valor={<span className="pc-numeric">{formatAmount(s.referencia)}</span>} />
+              <Dato
+                etiqueta={s.origen === "jornada" ? "Después del movimiento" : "Contado"}
+                valor={<span className="pc-numeric">{formatAmount(s.contado)}</span>}
+              />
               <Dato
                 etiqueta="Diferencia"
                 valor={<DiferenciaDeApertura currency={s.currency} diferencia={s.diferencia} motivo={s.motivo} />}
               />
               <Dato etiqueta="Motivo del trabajador" valor={s.motivo} />
+              <DatosDeBilletes s={s} />
               {s.observaciones ? <Dato etiqueta="Observaciones" valor={s.observaciones} /> : null}
             </dl>
           </CardContent>
@@ -168,6 +175,14 @@ export default async function SuperAdminSolicitudPage({
       </Section>
     </>
   );
+}
+
+/** Al abrir, la referencia es lo dejado por el cierre anterior; al cerrar, lo esperado por los libros. */
+function referenciaDe(s: Solicitud): string {
+  if (s.origen === "recuento") return "Saldo en libros";
+  if (s.id.includes(`-A-${s.currency}`)) return "Dejado al cierre anterior";
+  if (s.id.includes(`-C-${s.currency}`)) return "Saldo esperado";
+  return REFERENCIA[s.tipo];
 }
 
 function Dato({ etiqueta, valor }: { etiqueta: string; valor: React.ReactNode }) {

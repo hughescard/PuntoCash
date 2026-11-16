@@ -4,8 +4,7 @@ import type { Route } from "next";
 import { LogOut, Wallet } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { WorkerSession } from "@/features/worker/session";
-import { LinkedRegister } from "./linked-register";
+import { cerrarSesionTrabajador } from "../_actions";
 
 /**
  * Right-hand header cluster — the approved Worker header content (manual §10):
@@ -32,7 +31,14 @@ function Divider() {
   return <span aria-hidden="true" className="h-9 w-px shrink-0 bg-white/15" />;
 }
 
-export function WorkerIdentity({ worker }: { worker: WorkerSession }): React.JSX.Element {
+export interface IdentidadDeCabecera {
+  fullName: string;
+  initials: string;
+  caja: string;
+  sede: string;
+}
+
+export function WorkerIdentity({ worker }: { worker: IdentidadDeCabecera }): React.JSX.Element {
   return (
     <>
       {/* Identity is information, not a control. */}
@@ -46,7 +52,10 @@ export function WorkerIdentity({ worker }: { worker: WorkerSession }): React.JSX
       {/* The caja this computer is linked to — persistent context for every operation. */}
       <div className="flex items-center gap-2.5">
         <Wallet className="size-5 shrink-0 text-gold" aria-hidden="true" />
-        <LinkedRegister fallback={worker.register} />
+        <div className="flex flex-col leading-tight">
+          <span className="text-label font-semibold text-white">{worker.caja}</span>
+          <span className="text-caption text-text-on-primary-muted">{worker.sede}</span>
+        </div>
       </div>
 
       <Divider />
@@ -67,10 +76,12 @@ export function WorkerIdentity({ worker }: { worker: WorkerSession }): React.JSX
 
       {/* Ends the Worker's session only: the computer stays linked to its caja,
           so this returns to the sign-in screen, never to the pairing screen. */}
-      <Link href={"/worker/login" as Route} className={headerLink}>
-        <LogOut className="size-[18px]" aria-hidden="true" />
-        Cerrar sesión
-      </Link>
+      <form action={cerrarSesionTrabajador}>
+        <button type="submit" className={headerLink}>
+          <LogOut className="size-[18px]" aria-hidden="true" />
+          Cerrar sesión
+        </button>
+      </form>
     </>
   );
 }

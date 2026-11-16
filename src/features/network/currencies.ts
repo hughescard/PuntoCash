@@ -29,6 +29,7 @@ import { allRegistersOf, findRegisterById } from "./registers";
 import type { Register } from "./registers";
 import { findSedeById } from "./sedes";
 import { isGlobal, requireOperatorScope, type Scope } from "./scope";
+import { almacen } from "./almacen";
 
 /* -------------------------------------------------------------------------
  * Catálogo de la plataforma — de PuntoCash (regla A3)
@@ -110,7 +111,7 @@ const lista = (...codes: string[]): MonedaDeSede[] =>
  * lista: es el caso que la decisión del 15/10 vino a permitir. Cerro, recién
  * asignada y sin cajas, arranca con lo mínimo.
  */
-const listas = new Map<string, MonedaDeSede[]>([
+const listas = almacen("listasDeMonedas", () => new Map<string, MonedaDeSede[]>([
   ["sede-vedado", lista("CUP", "USD", "EUR", "GBP", "CHF", "MXN")],
   ["sede-habana-vieja", lista("CUP", "USD", "EUR", "CAD")],
   ["sede-cerro", lista("CUP", "USD")],
@@ -124,7 +125,7 @@ const listas = new Map<string, MonedaDeSede[]>([
   ["sede-trinidad", lista("CUP", "USD", "CAD")],
   /* Pinar del Río no tiene ninguna: el aviso de Inicio de sede sin monedas. */
   ["sede-pinar", []],
-]);
+]));
 
 /** Las monedas de la sede, en el orden en que se añadieron. */
 export function monedasDeSede(sedeId: string): readonly MonedaDeSede[] {
@@ -140,9 +141,15 @@ export function sedeManejaMoneda(sedeId: string, code: string): boolean {
  * ---------------------------------------------------------------------- */
 
 /** Saldo de cada moneda habilitada, por caja. Una moneda en 0 está habilitada. */
-const saldos = new Map<string, Map<string, number>>();
+const saldos = almacen("saldosPorCaja", () => new Map<string, Map<string, number>>());
+
+/* La siembra corre **una sola vez**, al crear el almacén: si corriera en cada
+   carga del módulo, devolvería estas cajas a sus cifras de arranque. */
+const SIEMBRA_DE_SALDOS = !(globalThis as { __puntocash_saldosSembrados?: true }).__puntocash_saldosSembrados;
+(globalThis as { __puntocash_saldosSembrados?: true }).__puntocash_saldosSembrados = true;
 
 function sembrarCaja(registerId: string, monedas: Record<string, number>): void {
+  if (!SIEMBRA_DE_SALDOS) return;
   saldos.set(registerId, new Map(Object.entries(monedas)));
 }
 
@@ -182,9 +189,31 @@ export function cajasConMoneda(sedeId: string, code: string): readonly MonedaEnC
   });
 }
 
-/** Monedas habilitadas en una caja. La consulta Worker cuando se recablee. */
+/** Monedas habilitadas en una caja. */
 export function monedasDeCaja(registerId: string): readonly string[] {
   return findRegisterById(registerId) ? [...(saldos.get(registerId)?.keys() ?? [])] : [];
+}
+
+/**
+ * Worker habilita una moneda en su caja, en cero (**FR-CAJA-13**, **FR-CAJA-14**).
+ * La regla de que esté en la lista de la sede la comprueba quien llama
+ * (`caja-operativa.ts`); aquí solo se registra.
+ */
+export function habilitarMonedaEnCaja(registerId: string, code: string): void {
+  const actuales = saldos.get(registerId) ?? new Map<string, number>();
+  if (!actuales.has(code)) actuales.set(code, 0);
+  saldos.set(registerId, actuales);
+}
+
+/**
+ * Worker deja aquí el saldo de cada moneda tras cada hecho de su caja, para
+ * que el bloqueo de retirar una moneda (**FR-AD-MON-7**) vea lo que de verdad
+ * hay. Una moneda que la caja no tenía queda habilitada.
+ */
+export function anotarSaldoDeCaja(registerId: string, code: string, saldo: number): void {
+  const actuales = saldos.get(registerId) ?? new Map<string, number>();
+  actuales.set(code, saldo);
+  saldos.set(registerId, actuales);
 }
 
 /* -------------------------------------------------------------------------

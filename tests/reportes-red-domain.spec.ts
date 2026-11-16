@@ -13,14 +13,18 @@ import { registrarOperacionSembrada, type OperacionDeRed } from "../src/features
  * 30 de junio— en el proceso de la prueba; no toca el servidor de desarrollo.
  */
 
-const AHORA = new Date("2026-11-02T15:00:00Z");
+/* Relativo a hoy: la siembra genera sus operaciones contando desde la fecha
+   real, y con un «ahora» fijo el periodo por defecto acaba quedándose vacío. */
+const AHORA = new Date();
+const dia = (d: Date) => d.toISOString().slice(0, 10);
+const HACE_30 = new Date(AHORA.getTime() - 30 * 86_400_000);
 
 function sumaDe(filas: { volumen: Record<string, number> }[], moneda: string): number {
   return filas.reduce((s, f) => s + (f.volumen[moneda] ?? 0), 0);
 }
 
 test("cada corte suma el total, por defecto y a 30 días", () => {
-  for (const params of [{}, { desde: "2026-10-03", hasta: "2026-11-02" }]) {
+  for (const params of [{}, { desde: dia(HACE_30), hasta: dia(AHORA) }]) {
     const r = calcularReporteDeRed(params, AHORA);
     expect(r.total.operaciones).toBeGreaterThan(0);
     for (const corte of CORTES_RED) {

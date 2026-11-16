@@ -51,6 +51,7 @@
 import { requireOperatorScope, type Scope } from "./scope";
 import { findRegisterById } from "./registers";
 import { findSedeById } from "./sedes";
+import { almacen } from "./almacen";
 
 export type TerminalKind = "caja" | "kiosco";
 
@@ -77,7 +78,7 @@ export interface Terminal {
  * ---------------------------------------------------------------------- */
 
 /** Mutable en su sitio, igual que el resto del dominio. */
-const mutableTerminals: Terminal[] = [
+const mutableTerminals: Terminal[] = almacen("equipos", () => [
   {
     /* La caja con datos operativos simulados, y la misma que el simulador de
        la demostración deja elegir (FR-DEV-9). */
@@ -196,7 +197,7 @@ const mutableTerminals: Terminal[] = [
     linkMethod: "qr",
     lastSeenAt: "2026-09-29T17:58:00.000Z",
   },
-];
+]);
 
 export const TERMINALS: readonly Terminal[] = mutableTerminals;
 
@@ -242,7 +243,10 @@ export interface PairingChallenge {
  * Un reto por equipo pendiente. En memoria, como el resto del dominio: una
  * recarga completa del servidor los olvida, y el terminal pedirá otro.
  */
-const pendingChallenges = new Map<string, PairingChallenge>();
+/* En `globalThis`: el equipo pide su reto desde `/worker` y el administrador
+   lo canjea desde `/admin`, y los dos tienen que ver el mismo. */
+const ALMACEN_RETOS = globalThis as typeof globalThis & { __puntocashRetosDeEquipo?: Map<string, PairingChallenge> };
+const pendingChallenges = (ALMACEN_RETOS.__puntocashRetosDeEquipo ??= new Map<string, PairingChallenge>());
 
 /** "482913" → "482 913", la agrupación que muestra el terminal y teclea el admin. */
 export function formatPairingCode(code: string): string {

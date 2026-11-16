@@ -53,9 +53,11 @@ const HASTA: FieldSpec = { id: "apr-hasta", label: "Hasta" };
 
 const TIPOS: readonly { value: TipoSolicitud | "todos"; label: string }[] = [
   { value: "todos", label: "Todos" },
-  { value: "ajuste", label: "Ajuste de efectivo" },
-  { value: "cierre", label: "Diferencia de cierre" },
   { value: "apertura", label: "Diferencia de apertura" },
+  { value: "cierre", label: "Diferencia de cierre" },
+  { value: "composicion", label: "Diferencia de composición" },
+  { value: "fondos", label: "Movimiento de fondos" },
+  { value: "recuento", label: "Diferencia en recuento" },
 ];
 
 export function AprobacionesList({

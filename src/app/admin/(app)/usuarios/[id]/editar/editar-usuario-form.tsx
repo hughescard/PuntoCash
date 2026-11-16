@@ -118,7 +118,7 @@ export function EditarUsuarioForm({
             </Field>
           </div>
 
-          <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+          <div className="pc-botonera pt-2 sm:justify-end">
             <Button variant="secondary" asChild>
               <Link href={`/admin/usuarios/${usuario.id}` as Route}>Cancelar</Link>
             </Button>

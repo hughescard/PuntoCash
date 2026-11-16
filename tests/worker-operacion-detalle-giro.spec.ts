@@ -1,13 +1,17 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { continuarAConfirmar } from "./worker-helpers";
+import { type Page } from "@playwright/test";
 
-import { cajaConJornadaAbierta } from "./storage-state";
+/* La caja del puesto carga el historial con que se diseñó la lista. */
+test.use({ historial: true });
+
 
 /*
  * La jornada se siembra con 50.000 CUP, que es lo que abría el fondeo que
  * había aquí: las dieciocho pruebas la necesitan abierta y ninguna trata de
  * abrirla.
  */
-test.use({ storageState: cajaConJornadaAbierta({ CUP: 50_000 }) });
+test.use({ conCambio: true, fondos: { CUP: 50_000 } });
 
 /**
  * Worker Operaciones — specialized historical detail for
@@ -77,7 +81,7 @@ async function sendGiro(page: Page): Promise<string> {
   await page.locator("#giro-importe").fill("2500");
 
   await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+  await continuarAConfirmar(page);
   await page.getByRole("button", { name: "Confirmar envío" }).click();
   await expect(page.getByRole("heading", { name: "Giro registrado correctamente" })).toBeVisible({
     timeout: 10_000,
@@ -95,7 +99,7 @@ async function payoutGiro(page: Page, code: string) {
   await page.getByLabel("Código del giro").fill(code);
   await page.getByRole("button", { name: "Buscar giro" }).click();
   await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible({ timeout: 5000 });
-  await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+  await continuarAConfirmar(page);
   await page.getByRole("button", { name: "Confirmar entrega" }).click();
   await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toBeVisible({
     timeout: 10_000,
@@ -109,7 +113,7 @@ async function openNewestGiroDetail(page: Page) {
     .locator("tbody tr")
     .filter({ hasText: "Giros" })
     .first()
-    .getByRole("link", { name: "Ver detalle" })
+    .getByRole("link", { name: /^Ver (la operación|el movimiento)/ })
     .click();
   await expect(page.getByRole("heading", { name: "Detalle de operación" })).toBeVisible({
     timeout: 10_000,
@@ -168,14 +172,14 @@ test.describe("Operation Detail — giro enviado", () => {
     await expect(onScreen(page, "La Habana · Plaza de la Revolución")).toBeVisible();
   });
 
-  test("shows the historical cash entry, not a live balance", async ({ page }) => {
+  test("shows the cash entry, without any balance", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Movimiento de efectivo" })).toBeVisible();
-    await expect(onScreen(page, "Saldo anterior")).toBeVisible();
-    await expect(onScreen(page, "50.000,00 CUP")).toBeVisible();
     await expect(onScreen(page, "Entrada — Giro")).toBeVisible();
     await expect(onScreen(page, "+2.500,00 CUP")).toBeVisible();
-    await expect(onScreen(page, "Saldo resultante")).toBeVisible();
-    await expect(onScreen(page, "52.500,00 CUP")).toBeVisible();
+    /* Worker opera a ciegas (6/11/2026). */
+    await expect(onScreen(page, "Saldo anterior")).toHaveCount(0);
+    await expect(onScreen(page, "Saldo resultante")).toHaveCount(0);
+    await expect(onScreen(page, "52.500,00 CUP")).toHaveCount(0);
     await expect(onScreen(page, "Entrada").last()).toBeVisible();
   });
 
@@ -239,7 +243,7 @@ test.describe("Operation Detail — giro cobrado", () => {
     await page.getByLabel("Código del giro").fill("TR-260901-000245");
     await page.getByRole("button", { name: "Buscar giro" }).click();
     await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible({ timeout: 5000 });
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toBeVisible({
       timeout: 10_000,
@@ -281,13 +285,12 @@ test.describe("Operation Detail — giro cobrado", () => {
     await expect(onScreen(page, "Completado")).toBeVisible();
   });
 
-  test("shows the historical cash exit", async ({ page }) => {
-    await expect(onScreen(page, "Saldo anterior")).toBeVisible();
-    await expect(onScreen(page, "50.000,00 CUP")).toBeVisible();
+  test("shows the cash exit, without any balance", async ({ page }) => {
     await expect(onScreen(page, "Salida — Giro")).toBeVisible();
     await expect(onScreen(page, "−2.500,00 CUP")).toBeVisible();
-    await expect(onScreen(page, "Saldo resultante")).toBeVisible();
-    await expect(onScreen(page, "47.500,00 CUP")).toBeVisible();
+    await expect(onScreen(page, "Saldo anterior")).toHaveCount(0);
+    await expect(onScreen(page, "Saldo resultante")).toHaveCount(0);
+    await expect(onScreen(page, "47.500,00 CUP")).toHaveCount(0);
     await expect(onScreen(page, "Salida").last()).toBeVisible();
   });
 
@@ -325,7 +328,7 @@ test.describe("Operation Detail — giro history is frozen", () => {
       .locator("tbody tr")
       .filter({ hasText: "Giros" })
       .nth(1)
-      .getByRole("link", { name: "Ver detalle" })
+      .getByRole("link", { name: /^Ver (la operación|el movimiento)/ })
       .click();
     await expect(onScreen(page, "Giro enviado")).toBeVisible();
     await expect(onScreen(page, "Lista para pago")).toBeVisible();

@@ -106,7 +106,7 @@ export function NuevoOperadorForm(): React.JSX.Element {
         El alta no le entrega ninguna sede. Se la asignas después, desde su ficha o desde la de la sede.
       </p>
 
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" asChild>
           <Link href="/super-admin/operadores">Cancelar</Link>
         </Button>
@@ -143,7 +143,7 @@ function OperadorCreado({ resultado }: { resultado: Extract<ResultadoAltaOperado
           </Alert>
         </CardContent>
       </Card>
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+      <div className="pc-botonera sm:justify-end">
         <Button variant="secondary" asChild>
           <Link href="/super-admin/operadores/nuevo">Dar de alta a otro</Link>
         </Button>

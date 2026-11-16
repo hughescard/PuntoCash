@@ -1,26 +1,21 @@
 import * as React from "react";
-import Link from "next/link";
-import type { Route } from "next";
-import { ArrowDownLeft, ArrowUpRight, ListChecks } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, ListChecks } from "lucide-react";
 
-import {
-  Badge,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableEmptyState,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui";
+import { Badge, Button } from "@/components/ui";
+import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { formatAmount, formatDateTime, formatSignedAmount } from "@/lib/format";
+import { formatDateTime, formatSignedAmount } from "@/lib/format";
 import type { CajaMovement } from "@/features/caja/caja-data";
 
 /** "Entrada"/"Salida" as text plus a directional glyph — never colour alone (§20). */
 export function MovementTypeBadge({ tipo }: { tipo: CajaMovement["tipo"] }) {
+  if (tipo === "cambio") {
+    return (
+      <Badge variant="neutral" icon={<ArrowLeftRight aria-hidden="true" />}>
+        Cambio
+      </Badge>
+    );
+  }
   return tipo === "entrada" ? (
     <Badge variant="success" icon={<ArrowDownLeft aria-hidden="true" />}>
       Entrada
@@ -32,6 +27,55 @@ export function MovementTypeBadge({ tipo }: { tipo: CajaMovement["tipo"] }) {
   );
 }
 
+function claseImporte(tipo: CajaMovement["tipo"]): string {
+  return tipo === "entrada"
+    ? "whitespace-nowrap text-success-foreground"
+    : tipo === "cambio"
+      ? "whitespace-nowrap text-text-secondary"
+      : "whitespace-nowrap text-error-foreground";
+}
+
+const COLUMNAS: readonly ResponsiveColumn<CajaMovement>[] = [
+  {
+    key: "fecha",
+    header: "Fecha y hora",
+    cell: (m) => <span className="pc-numeric whitespace-nowrap text-text-secondary">{formatDateTime(new Date(m.fechaHora))}</span>,
+  },
+  {
+    key: "operacion",
+    header: "Operación",
+    cell: (m) =>
+      m.operationCode ? (
+        <span className="pc-numeric whitespace-nowrap font-medium">{m.operationCode}</span>
+      ) : (
+        <span className="text-text-secondary">—</span>
+      ),
+  },
+  { key: "tipo", header: "Tipo", cell: (m) => <MovementTypeBadge tipo={m.tipo} />, hiddenOnCard: true },
+  { key: "concepto", header: "Concepto", cell: (m) => <span className="whitespace-nowrap text-text-secondary">{m.concepto}</span>, hiddenOnCard: true },
+  {
+    key: "moneda",
+    header: "Moneda",
+    cell: (m) => (
+      <span className="flex items-center gap-2 whitespace-nowrap">
+        <CurrencyFlag currency={m.currency} />
+        {m.currency}
+      </span>
+    ),
+  },
+  {
+    key: "importe",
+    header: "Importe",
+    numeric: true,
+    cell: (m) => <span className={claseImporte(m.tipo)}>{formatSignedAmount(m.amount)}</span>,
+  },
+];
+
+/**
+ * Los movimientos de la caja. La fila entera abre su detalle (regla de tablas,
+ * 12/11/2026): el de la operación si la generó una, y si no el del movimiento.
+ * El detalle de un movimiento de operación es la operación misma.
+ */
 export function CajaMovementsTable({
   movements,
   onClearFilters,
@@ -40,95 +84,29 @@ export function CajaMovementsTable({
   onClearFilters: () => void;
 }): React.JSX.Element {
   return (
-    <TableContainer>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="pl-6 whitespace-nowrap">Fecha y hora</TableHead>
-            <TableHead className="whitespace-nowrap">Operación</TableHead>
-            <TableHead className="whitespace-nowrap">Tipo</TableHead>
-            <TableHead className="whitespace-nowrap">Concepto</TableHead>
-            <TableHead className="whitespace-nowrap">Moneda</TableHead>
-            <TableHead numeric className="whitespace-nowrap">
-              Importe
-            </TableHead>
-            <TableHead numeric className="whitespace-nowrap">
-              Saldo después
-            </TableHead>
-            <TableHead className="pr-6 whitespace-nowrap">Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {movements.length === 0 ? (
-            <TableEmptyState
-              colSpan={8}
-              icon={<ListChecks aria-hidden="true" />}
-              title="No encontramos movimientos"
-              description="Prueba ajustando los filtros o el término de búsqueda."
-              action={
-                <Button variant="secondary" size="sm" onClick={onClearFilters}>
-                  Limpiar filtros
-                </Button>
-              }
-            />
-          ) : (
-            movements.map((movement) => (
-              <TableRow key={movement.id}>
-                <TableCell className="pc-numeric pl-6 whitespace-nowrap text-text-secondary">
-                  {formatDateTime(new Date(movement.fechaHora))}
-                </TableCell>
-                <TableCell className="pc-numeric whitespace-nowrap">
-                  {movement.operationCode ? (
-                    <Button variant="tertiary" size="sm" asChild className="-ml-3 font-medium">
-                      <Link href={`/worker/operaciones/${movement.operationCode}` as Route}>
-                        {movement.operationCode}
-                      </Link>
-                    </Button>
-                  ) : (
-                    <span className="pl-3 text-text-secondary">—</span>
-                  )}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <MovementTypeBadge tipo={movement.tipo} />
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-text-secondary">
-                  {movement.concepto}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <span className="flex items-center gap-2">
-                    <CurrencyFlag currency={movement.currency} />
-                    {movement.currency}
-                  </span>
-                </TableCell>
-                <TableCell
-                  numeric
-                  className={
-                    movement.tipo === "entrada"
-                      ? "pc-numeric whitespace-nowrap font-medium text-success-foreground"
-                      : "pc-numeric whitespace-nowrap font-medium text-error-foreground"
-                  }
-                >
-                  {formatSignedAmount(movement.amount)}
-                </TableCell>
-                <TableCell numeric className="pc-numeric whitespace-nowrap text-text-secondary">
-                  {movement.saldoDespues !== undefined ? formatAmount(movement.saldoDespues) : "—"}
-                </TableCell>
-                <TableCell className="pr-6 whitespace-nowrap">
-                  {/* An operation-generated row already links out via its
-                      operation code above — a second "Ver detalle" here
-                      would duplicate that navigation target (§18). */}
-                  {!movement.operationCode ? (
-                    <Button variant="tertiary" size="sm" asChild className="-ml-3 font-medium">
-                      <Link href={`/worker/caja/movimientos/${movement.id}` as Route}>Ver detalle</Link>
-                    </Button>
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <ResponsiveTable
+      rows={movements}
+      columns={COLUMNAS}
+      rowKey={(m) => m.id}
+      tablaDesde="xl"
+      tarjetasEnDosColumnas
+      cardTitle={(m) => m.concepto}
+      cardBadge={(m) => <MovementTypeBadge tipo={m.tipo} />}
+      rowLink={(m) =>
+        m.operationCode
+          ? { href: `/worker/operaciones/${m.operationCode}`, label: `Ver la operación ${m.operationCode}` }
+          : { href: `/worker/caja/movimientos/${m.id}`, label: `Ver el movimiento: ${m.concepto}` }
+      }
+      empty={
+        <div className="flex flex-col items-center gap-3">
+          <ListChecks aria-hidden="true" className="size-8 text-text-secondary" />
+          <p className="text-body font-semibold text-text-primary">No encontramos movimientos</p>
+          <p className="text-body-sm text-text-secondary">Prueba ajustando los filtros o el término de búsqueda.</p>
+          <Button variant="secondary" size="sm" onClick={onClearFilters}>
+            Limpiar filtros
+          </Button>
+        </div>
+      }
+    />
   );
 }

@@ -145,3 +145,19 @@ test.describe("§7 Trabajadores — navegación y congruencia", () => {
     expect(respuesta?.status(), "un trabajador ajeno debe responder como inexistente").toBe(404);
   });
 });
+
+test("las incidencias de un trabajador: el número en la tabla y su lista en la ficha", async ({ page }) => {
+  await signInAsAdmin(page, MARTA);
+  await page.goto("/admin/trabajadores");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("columnheader", { name: "Incidencias" })).toBeVisible();
+  const fila = main.locator("tbody tr", { hasText: "Marisol Rivas" });
+  await expect(fila.locator("td").nth(6)).toHaveText("1");
+  await fila.locator("td").nth(2).click();
+  await page.waitForURL(/\/admin\/trabajadores\/[^/]+$/);
+  const lista = main.getByRole("list", { name: "Incidencias" });
+  await expect(lista.getByRole("link")).toHaveCount(1);
+  await lista.getByRole("link").click();
+  await page.waitForURL(/\/admin\/aprobaciones\//);
+  await expect(main.getByText("queda como incidencia a nombre del trabajador")).toBeVisible();
+});

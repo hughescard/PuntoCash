@@ -8,10 +8,13 @@ import { Button, Card, CardContent } from "@/components/ui";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { MoneyWithFlag, currencyLabel } from "./cobrar-giro-parts";
 import type { GiroPayoutCompleted } from "./confirm-payout";
+import { liquidacionComoLineas } from "../../liquidacion";
+import { entregadoAlCliente, difiereDeLoDebido } from "@/features/operations/entregado";
 
 /** Step 4 — Giro entregado correctamente. */
 export function GiroPayoutResult({ completed }: { completed: GiroPayoutCompleted }): React.JSX.Element {
   const currency = currencyLabel(completed.payoutCurrency);
+  const debido = { amount: completed.payoutAmount, currency: completed.payoutCurrency };
 
   return (
     <>
@@ -34,11 +37,26 @@ export function GiroPayoutResult({ completed }: { completed: GiroPayoutCompleted
               <SummaryRow label="Código del giro" value={completed.giroCode} strong />
               <SummaryRow label="Beneficiario" value={completed.beneficiaryName} />
               <SummaryRow label="Documento de identidad" value={completed.beneficiaryIdentification} />
+              {difiereDeLoDebido(debido, completed.liquidacion) ? (
+                <SummaryRow label="Importe del giro" value={<MoneyWithFlag amount={completed.payoutAmount} currency={completed.payoutCurrency} />} />
+              ) : null}
               <SummaryRow
                 label="Importe entregado"
-                value={<MoneyWithFlag amount={completed.payoutAmount} currency={completed.payoutCurrency} />}
+                value={
+                  <span className="flex flex-wrap items-center gap-2">
+                    {entregadoAlCliente(debido, completed.liquidacion).map((m, i) => (
+                      <React.Fragment key={m.currency}>
+                        {i > 0 ? <span className="text-text-secondary">+</span> : null}
+                        <MoneyWithFlag amount={m.amount} currency={m.currency} />
+                      </React.Fragment>
+                    ))}
+                  </span>
+                }
               />
               <SummaryRow label="Moneda" value={currency} />
+              {liquidacionComoLineas(completed.liquidacion).map((l) => (
+                <SummaryRow key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+              ))}
               <SummaryRow label="Caja" value={completed.caja} />
               <SummaryRow label="Trabajador" value={completed.worker} />
               <SummaryRow label="Fecha y hora" value={formatDateTime(new Date(completed.completedAt))} />
@@ -50,7 +68,7 @@ export function GiroPayoutResult({ completed }: { completed: GiroPayoutCompleted
           El giro fue entregado correctamente y registrado en PuntoCash.
         </p>
 
-        <div className="mt-7 flex flex-wrap justify-center gap-3">
+        <div className="pc-botonera mt-7 sm:justify-center">
           <Button variant="secondary" onClick={() => window.print()}>
             <Printer aria-hidden="true" />
             Imprimir comprobante
@@ -95,9 +113,17 @@ function PrintablePayoutReceipt({
         <ReceiptLine label="Documento de identidad" value={completed.beneficiaryIdentification} />
         <ReceiptLine
           label="Importe entregado"
-          value={formatMoney({ amount: completed.payoutAmount, currency: completed.payoutCurrency })}
+          value={entregadoAlCliente(
+            { amount: completed.payoutAmount, currency: completed.payoutCurrency },
+            completed.liquidacion,
+          )
+            .map(formatMoney)
+            .join(" + ")}
         />
         <ReceiptLine label="Moneda" value={currency} />
+        {liquidacionComoLineas(completed.liquidacion).map((l) => (
+          <ReceiptLine key={l.etiqueta} label={l.etiqueta} value={l.valor} />
+        ))}
         <ReceiptLine label="Método de entrega" value="Recogida" />
         <ReceiptLine label="Caja" value={completed.caja} />
         <ReceiptLine label="Trabajador" value={completed.worker} />

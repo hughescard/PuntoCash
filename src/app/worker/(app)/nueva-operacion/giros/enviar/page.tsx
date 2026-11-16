@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { exigirServicio } from "@/features/worker/servicio-habilitado";
+
 import { EnviarGiroFlow } from "./enviar-giro-flow";
 
 export const metadata: Metadata = {
@@ -10,6 +12,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function EnviarGiroPage() {
+export default async function EnviarGiroPage() {
+  await exigirServicio("giros");
   return <EnviarGiroFlow />;
 }

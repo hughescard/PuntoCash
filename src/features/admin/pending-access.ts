@@ -54,7 +54,12 @@ export const ADMIN_PENDING_COOKIE = "pc_admin_reto";
 
 const PENDING_TTL_MS = 10 * 60 * 1000;
 
-const pending = new Map<string, PendingAccess>();
+/* En `globalThis`: en el servidor de desarrollo, compilar la pantalla de
+   verificación por primera vez puede cargar este módulo en otro grafo que el
+   de la pantalla de acceso, y un `Map` de módulo se perdería entre los dos
+   pasos. Lo comparten `/admin` y `/worker`. */
+const ALMACEN = globalThis as typeof globalThis & { __puntocashAccesosPendientes?: Map<string, PendingAccess> };
+const pending = (ALMACEN.__puntocashAccesosPendientes ??= new Map<string, PendingAccess>());
 
 let sequence = 0;
 

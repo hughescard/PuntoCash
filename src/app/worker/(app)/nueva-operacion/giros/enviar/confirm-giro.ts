@@ -1,25 +1,30 @@
-import { CAJA_BALANCES, CAJA_SUMMARY, hasOpenJornada, registrarEntradaComercial } from "@/features/caja/caja-data";
-import { registerCompletedOperation } from "@/features/operations/operations-history";
+import { comprobarOperacionAction, registrarOperacionAction } from "../../../../_actions";
+import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
 import { transferProvider, type TransferCreatePayload } from "@/features/transfers/transfer-provider";
 import { senderFullName, type GiroDraft } from "./giro-types";
 import { municipalityLabel, provinceLabel } from "./giro-validation";
 import type { GiroCompleted } from "./giro-result";
 
-export type ConfirmGiroOutcome = { ok: true; completed: GiroCompleted } | { ok: false; message: string };
+export type ConfirmGiroOutcome =
+  | { ok: true; completed: GiroCompleted }
+  | {
+      ok: false;
+      message: string;
+      /** Salen billetes (el vuelto) que los libros no tienen: hay que contar esta moneda antes de seguir. */
+      recuento?: string;
+      /** Los billetes ya no valen: hay que volver a marcarlos. */
+      revisarBilletes?: boolean;
+    };
 
-/**
- * "PC-yyMMdd-NNNNNN" — format-compatible with every other PuntoCash
- * operation-code generator (Cambio de moneda, Remesas), kept as its own
- * local sequence so this flow never shares a counter with another one.
- */
-let operationSequence = 9000;
-function nextGiroOperationCode(now: Date): string {
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  operationSequence += 1;
-  return `PC-${yy}${mm}${dd}-${String(operationSequence).padStart(6, "0")}`;
-}
+/** Por qué los billetes ya no valen, en palabras del trabajador. */
+const MENSAJE_DE_BILLETES: Readonly<Record<string, string>> = {
+  "sin-vuelto": "La caja no tiene billetes para darle el vuelto. No se registró nada: pídele al cliente que pague con otros billetes o con el importe justo.",
+  "cierre-forzado": "El administrador cerró tu jornada. Esto no se registró.",
+  "cobro-insuficiente": "El cliente da menos de lo que se le cobra. Revisa los billetes.",
+  "importe-no-pagable": "El importe tiene fracciones menores que el billete más pequeño: no se puede cobrar en billetes. Cámbialo en el primer paso.",
+  "propuesta-vencida": "Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Revísalos.",
+  "sin-esos-billetes": "Contada la caja, esos billetes no están. No se registró nada: vuelve a marcar el vuelto.",
+};
 
 /**
  * The only place `transferProvider.createTransfer` is ever called. Follows
@@ -32,13 +37,17 @@ function nextGiroOperationCode(now: Date): string {
 export async function confirmGiro(params: {
   draft: GiroDraft;
   worker: string;
+  jornadaAbierta: boolean;
+  monedasHabilitadas: readonly string[];
+  /** Con qué billetes paga el cliente y el vuelto (bloque 4). */
+  efectivo: EfectivoRegistrado;
 }): Promise<ConfirmGiroOutcome> {
   const { draft } = params;
 
-  if (!hasOpenJornada()) {
+  if (!params.jornadaAbierta) {
     return { ok: false, message: "Debes tener una jornada abierta para registrar el giro." };
   }
-  if (!CAJA_BALANCES.some((balance) => balance.currency === draft.senderCurrency)) {
+  if (!params.monedasHabilitadas.includes(draft.senderCurrency)) {
     return { ok: false, message: `${draft.senderCurrency} ya no está habilitada en esta caja.` };
   }
 
@@ -55,6 +64,32 @@ export async function confirmGiro(params: {
     receiverIdentification: draft.beneficiary.receiverIdentification.trim(),
   };
 
+  const operacion = {
+    cliente: {
+      nombre: senderFullName(draft.sender),
+      documentType: draft.sender.documentType,
+      documentNumber: draft.sender.documentNumber,
+      telefono: draft.sender.phone,
+      nacionalidad: draft.sender.nationality,
+    },
+    tramo: { currency: payload.senderCurrency, delta: draft.deliveryAmount, concepto: "Envío de giro" },
+    servicio: "Giros" as const,
+    efectivo: params.efectivo,
+  };
+  /* Antes de crear el giro fuera, el servidor comprueba —sin escribir nada—
+     que el cobro con ese vuelto se podría registrar. */
+  const previa = await comprobarOperacionAction(operacion);
+  if (!previa.ok) {
+    if (previa.reason === "recuento-necesario" && previa.currency) {
+      return { ok: false, message: "Hay que contar la moneda antes de dar el vuelto.", recuento: previa.currency };
+    }
+    return {
+      ok: false,
+      message: MENSAJE_DE_BILLETES[previa.reason] ?? "No se pudo comprobar el cobro. Vuelve a los billetes y revísalos.",
+      revisarBilletes: previa.reason !== "cierre-forzado",
+    };
+  }
+
   const external = await transferProvider.createTransfer(payload);
   if (!external.ok) {
     return {
@@ -63,43 +98,8 @@ export async function confirmGiro(params: {
     };
   }
 
-  const now = new Date();
-  const operationCode = nextGiroOperationCode(now);
-
-  const cashIn = registrarEntradaComercial({
-    operationCode,
-    concepto: "Giros",
-    currency: payload.senderCurrency,
-    amount: draft.deliveryAmount,
-    timestamp: now,
-  });
-  if (!cashIn.ok) {
-    return { ok: false, message: "No se pudo registrar el movimiento en caja. Intenta nuevamente." };
-  }
-
-  registerCompletedOperation({
-    codigo: operationCode,
-    fechaHora: now.toISOString(),
-    cliente: {
-      nombre: senderFullName(draft.sender),
-      documentType: draft.sender.documentType,
-      documentNumber: draft.sender.documentNumber,
-      telefono: draft.sender.phone,
-      nacionalidad: draft.sender.nationality,
-    },
-    servicio: "Giros",
-    estado: "Completada",
-    amount: {
-      kind: "single",
-      money: { amount: draft.deliveryAmount, currency: payload.senderCurrency },
-      cashSnapshot: {
-        before: { amount: cashIn.saldoAntes, currency: payload.senderCurrency },
-        movement: { amount: draft.deliveryAmount, currency: payload.senderCurrency },
-        after: { amount: cashIn.saldoDespues, currency: payload.senderCurrency },
-      },
-    },
-    worker: CAJA_SUMMARY.worker,
-    caja: CAJA_SUMMARY.register,
+  const registrada = await registrarOperacionAction({
+    ...operacion,
     transfer: {
       transferAction: "send",
       externalId: external.transfer.id,
@@ -121,6 +121,11 @@ export async function confirmGiro(params: {
       externalStatus: external.transfer.status,
     },
   });
+  if (!registrada.ok) {
+    return { ok: false, message: "No se pudo registrar el movimiento en caja. Solicita asistencia: el giro ya existe en el servicio externo." };
+  }
+  const operationCode = registrada.value.codigo;
+  const now = new Date(registrada.value.fechaHora);
 
   const completed: GiroCompleted = {
     operationCode,
@@ -131,6 +136,7 @@ export async function confirmGiro(params: {
     senderCurrency: payload.senderCurrency,
     deliveryAmount: draft.deliveryAmount,
     completedAt: now.toISOString(),
+    ...(registrada.value.liquidacion ? { liquidacion: registrada.value.liquidacion } : {}),
   };
 
   return { ok: true, completed };

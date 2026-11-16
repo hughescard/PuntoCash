@@ -1,12 +1,14 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
 
 /**
  * Worker home — content, navigation and shell.
  *
- * Data comes from the frontend mocks in `src/features/worker/`. When those are
- * replaced by real queries these tests should point at a seeded worker rather
- * than be rewritten.
+ * Los datos son los de la caja del puesto de la prueba, en la red: una copia de
+ * PuntoCash Vedado con sus tasas, una jornada abierta con estos fondos y dos
+ * giros enviados.
  */
+
+test.use({ conCambio: true, fondos: { CUP: 245_000, USD: 3_850, EUR: 2_120 }, giros: [50_000, 2_500] });
 
 test.describe("worker home", () => {
   test.beforeEach(async ({ page }) => {
@@ -22,7 +24,7 @@ test.describe("worker home", () => {
     await expect(header.getByText("Juan Pérez")).toBeVisible();
     await expect(header.getByText("Caja 03")).toBeVisible();
     await expect(header.getByRole("link", { name: "Perfil" })).toBeVisible();
-    await expect(header.getByRole("link", { name: "Cerrar sesión" })).toBeVisible();
+    await expect(header.getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
   });
 
   test("marks Inicio as the current navigation item", async ({ page }) => {
@@ -45,30 +47,30 @@ test.describe("worker home", () => {
     await expect(page.getByRole("main").getByRole("link", { name: "Nueva operación" })).toBeVisible();
   });
 
-  test("shows the register balances by currency", async ({ page }) => {
+  test("Mi caja lista las monedas de la caja, sin importes", async ({ page }) => {
     const main = page.getByRole("main");
     await expect(main.getByText("Mi caja")).toBeVisible();
-
-    for (const [currency, amount] of [
-      ["CUP", "245.000,00"],
-      ["USD", "3.850,00"],
-      ["EUR", "2.120,00"],
-    ] as const) {
-      await expect(main.getByText(currency, { exact: true }).first()).toBeVisible();
-      await expect(main.getByText(amount, { exact: true })).toBeVisible();
+    const monedas = main.getByRole("list", { name: "Monedas de la caja" });
+    for (const currency of ["CUP", "USD", "EUR"]) {
+      await expect(monedas.getByText(currency, { exact: true })).toBeVisible();
+    }
+    /* Worker opera a ciegas (6/11/2026). */
+    for (const amount of ["297.500,00", "3.850,00", "2.120,00"]) {
+      await expect(main.getByText(amount, { exact: true })).toHaveCount(0);
     }
   });
 
   test("shows the active rates as read-only data", async ({ page }) => {
     const main = page.getByRole("main");
     await expect(main.getByText("Tasas vigentes")).toBeVisible();
-    await expect(main.getByText("Actualizadas hace 4 min")).toBeVisible();
+    await expect(main.getByText("Las que tu sede tiene en vigor")).toBeVisible();
 
     for (const heading of ["Moneda", "Compra", "Venta"]) {
       await expect(main.getByRole("columnheader", { name: heading })).toBeVisible();
     }
-    await expect(main.getByRole("cell", { name: "375,00" })).toBeVisible();
-    await expect(main.getByRole("cell", { name: "490,00" })).toBeVisible();
+    /* Las tasas de PuntoCash Vedado: USD 318/326, EUR 342/354, GBP 398/410. */
+    await expect(main.getByRole("cell", { name: "318,00" })).toBeVisible();
+    await expect(main.getByRole("cell", { name: "410,00" })).toBeVisible();
   });
 
   test("shows SVG currency flags in Mi caja and Tasas vigentes, never emoji", async ({
@@ -81,13 +83,14 @@ test.describe("worker home", () => {
     // made accessible solely for testability (§4) — the currency code text is
     // what a screen reader announces.
     const flags = main.locator("svg[data-currency-flag]");
-    await expect(flags).toHaveCount(6);
+    await expect(flags).toHaveCount(9);
 
     const currencies = await flags.evaluateAll((els) =>
       els.map((el) => el.getAttribute("data-currency-flag")),
     );
-    // 3 in Mi caja (CUP, USD, EUR) + 3 in Tasas vigentes (USD, EUR, GBP).
-    expect(currencies).toEqual(["CUP", "USD", "EUR", "USD", "EUR", "GBP"]);
+    // 4 en Mi caja (CUP, USD, EUR y GBP, en cero) + 3 en Tasas vigentes (USD, EUR, GBP)
+    // + 2 que la sede maneja sin tasa (CHF, MXN), en «No se cambian hoy».
+    expect(currencies).toEqual(["CUP", "USD", "EUR", "GBP", "USD", "EUR", "GBP", "CHF", "MXN"]);
 
     // Every flag is aria-hidden, so it never duplicates the currency code
     // announcement, and the flag never stands in as the sole identifier.
@@ -107,70 +110,50 @@ test.describe("worker home", () => {
     }
   });
 
-  test('"Ver todas" under Tasas vigentes goes to /worker/tasas, not /worker/operaciones', async ({
-    page,
-  }) => {
+  test("la tarjeta de tasas dice desde cuándo rige cada una, y ya no lleva a otra pantalla", async ({ page }) => {
     const main = page.getByRole("main");
-    // Exact match: "Ver todas" is a substring of "Ver todas las operaciones"
-    // and "Ver todas las alertas", both of which also appear on this screen.
-    await main.getByRole("link", { name: "Ver todas", exact: true }).click();
-
-    await expect(page).toHaveURL(/\/worker\/tasas$/);
-    await expect(page).not.toHaveURL(/\/worker\/operaciones$/);
-    // Still inside the Worker shell.
-    await expect(page.getByRole("banner").getByText("Caja 03")).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Navegación principal" })).toBeVisible();
-    // The placeholder must offer a way back.
-    await page.getByRole("link", { name: /Volver a Inicio/ }).click();
-    await expect(page).toHaveURL(/\/worker\/inicio$/);
+    const tabla = main.getByRole("table").filter({ hasText: "Compra" });
+    await expect(tabla.getByRole("columnheader", { name: "Desde" })).toBeVisible();
+    /* El puesto de prueba copia las tasas de Vedado al crearse: rigen desde hoy. */
+    await expect(tabla.getByText(/^hoy · \d{2}:\d{2}$/).first()).toBeVisible();
+    await expect(main.getByRole("link", { name: "Ver todas", exact: true })).toHaveCount(0);
+    /* La sección Alertas de Worker ya no existe: las alertas están en el aviso de la caja. */
+    await expect(main.getByRole("link", { name: "Ver todas las alertas" })).toHaveCount(0);
   });
 
-  test("shows exactly four quick actions plus the catalogue link", async ({ page }) => {
+  test("los accesos rápidos son los servicios que la sede presta, más el catálogo", async ({ page }) => {
     const main = page.getByRole("main");
     await expect(main.getByText("Accesos rápidos")).toBeVisible();
 
-    for (const label of ["Cambio de moneda", "Remesas", "Extracción", "Inserción de efectivo"]) {
+    for (const label of ["Cambio de moneda", "Remesas", "Giros"]) {
       await expect(main.getByRole("link", { name: label })).toBeVisible();
     }
+    /* Un servicio que el producto todavía no ofrece no es un acceso rápido. */
+    await expect(main.getByRole("link", { name: "Inserción de efectivo" })).toHaveCount(0);
     await expect(main.getByRole("link", { name: "Ver todos los servicios" })).toBeVisible();
   });
 
-  test("shows the five most recent operations with status badges", async ({ page }) => {
+  test("muestra las últimas operaciones de esta caja, con su estado", async ({ page }) => {
     const main = page.getByRole("main");
     await expect(main.getByText("Operaciones recientes")).toBeVisible();
-
-    await expect(main.getByRole("cell", { name: "OP-000523" })).toBeVisible();
-    await expect(main.getByRole("cell", { name: "OP-000519" })).toBeVisible();
     await expect(main.getByRole("cell", { name: "María Rodríguez" })).toBeVisible();
-
+    await expect(main.getByRole("cell", { name: "Carlos Gómez" })).toBeVisible();
+    await expect(main.getByRole("cell", { name: /^PC-\d{6}-\d{6}$/ })).toHaveCount(2);
     // Status is text, not colour alone (§20).
-    await expect(main.getByText("En proceso")).toBeVisible();
     await expect(main.getByText("Completada").first()).toBeVisible();
   });
 
   test("formats operation amounts as amount, then currency", async ({ page }) => {
     const main = page.getByRole("main");
-
-    // Canonical order: "350,00 USD", never "USD 350,00".
-    for (const amount of [
-      "350,00 USD",
-      "500,00 USD",
-      "200,00 USD",
-      "150,00 EUR",
-      "50.000,00 CUP",
-    ]) {
+    for (const amount of ["50.000,00 CUP", "2.500,00 CUP"]) {
       await expect(main.getByRole("cell", { name: amount, exact: true })).toBeVisible();
     }
-
-    // Confirms the reverse order is not present anywhere on the page.
-    await expect(page.getByText("USD 350,00")).toHaveCount(0);
-    await expect(page.getByText("EUR 150,00")).toHaveCount(0);
+    await expect(page.getByText("CUP 50.000,00")).toHaveCount(0);
   });
 
-  test("shows the attention alert while one exists", async ({ page }) => {
-    const alert = page.getByRole("status").filter({ hasText: "Efectivo bajo en EUR" });
-    await expect(alert).toBeVisible();
-    await expect(alert).toContainText("nivel operativo recomendado");
+  test("no inventa avisos: «efectivo bajo» no existe mientras nadie fije su umbral", async ({ page }) => {
+    await expect(page.getByRole("main").getByText("Mi caja")).toBeVisible();
+    await expect(page.getByText(/Efectivo bajo|Nivel bajo/)).toHaveCount(0);
   });
 });
 
@@ -180,9 +163,8 @@ test.describe("worker home navigation", () => {
     { name: "Ver caja", path: "/worker/caja" },
     { name: "Ver todas las operaciones", path: "/worker/operaciones" },
     { name: "Ver todos los servicios", path: "/worker/nueva-operacion" },
-    { name: "Ver todas las alertas", path: "/worker/alertas" },
     { name: "Cambio de moneda", path: "/worker/nueva-operacion/cambio-moneda" },
-    { name: "Inserción de efectivo", path: "/worker/nueva-operacion/insercion-efectivo" },
+    { name: "Giros", path: "/worker/nueva-operacion/giros" },
   ] as const;
 
   for (const { name, path } of destinations) {
@@ -271,9 +253,9 @@ test.describe("worker home layout", () => {
   }
 });
 
-test("a verified access lands on the worker home", async ({ page }) => {
+test("a verified access lands on the worker home", async ({ page, puesto }) => {
   await page.goto("/worker/login");
-  await page.getByLabel("Usuario o correo electrónico").fill("juan.perez");
+  await page.getByLabel("Usuario o correo electrónico").fill(puesto.identifier);
   await page.getByLabel("Contraseña", { exact: true }).fill("puntocash");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
 
@@ -286,3 +268,23 @@ test("a verified access lands on the worker home", async ({ page }) => {
   await expect(page).toHaveURL(/\/worker\/inicio$/);
   await expect(page.getByRole("heading", { name: "Hola, Juan" })).toBeVisible();
 });
+
+test.describe("Tasas en Inicio · monedas que no se cambian", () => {
+  test.use({ monedas: ["CUP", "USD", "CHF"] });
+
+  test("una moneda de la caja sin tasa sale aparte, con el porqué", async ({ page }) => {
+    await page.goto("/worker/inicio");
+    const lista = page.getByRole("list", { name: "Monedas que no se cambian hoy" });
+    await expect(lista).toContainText("CHF");
+    await expect(lista).toContainText("Tu sede no le ha puesto tasa");
+    await expect(lista).not.toContainText("USD");
+  });
+
+  test("las rutas viejas de Tasas y Alertas ya no existen", async ({ page }) => {
+    for (const ruta of ["/worker/tasas", "/worker/alertas"]) {
+      const r = await page.goto(ruta);
+      expect(r?.status()).toBe(404);
+    }
+  });
+});
+

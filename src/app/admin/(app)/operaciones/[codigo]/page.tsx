@@ -18,6 +18,8 @@ import { DetailCard, DetailList, DetailRow } from "@/app/worker/(app)/operacione
 import { GiroDetail } from "@/app/worker/(app)/operaciones/[codigo]/giro-detail";
 import { OperationStatusCard } from "@/app/worker/(app)/operaciones/[codigo]/operation-status-card";
 import { RemittanceDetail } from "@/app/worker/(app)/operaciones/[codigo]/remittance-detail";
+import { LiquidacionCard } from "@/app/worker/(app)/operaciones/[codigo]/liquidacion-card";
+import { BilletesDeLaOperacion } from "./billetes-de-la-operacion";
 import { OperationCashCard, ServiceDetail } from "@/app/worker/(app)/operaciones/[codigo]/service-detail";
 import { EstadoBadge, fechaYHora, nombreDeJornada } from "../../jornadas/formato";
 
@@ -54,8 +56,8 @@ export default async function AdminOperacionPage({ params }: { params: Promise<{
         title={`Operación ${o.codigo}`}
         description={`${o.servicio}${o.transfer ? (o.transfer.transferAction === "send" ? " · giro enviado" : " · giro pagado") : ""} · ${fechaYHora(o.fechaHora)}`}
         actions={
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <span className="self-start sm:self-auto">
+          <div className="pc-botonera">
+            <span className="pc-botonera-fija">
               <OperationStatusBadge status={o.estado} />
             </span>
             <Button variant="secondary" asChild>
@@ -111,6 +113,10 @@ export default async function AdminOperacionPage({ params }: { params: Promise<{
       <Section title="La operación">
         <DetalleDeWorker operacion={o} />
       </Section>
+
+      <LiquidacionCard operation={o} />
+
+      {jornada ? <BilletesDeLaOperacion jornada={jornada} codigo={o.codigo} /> : null}
     </>
   );
 }

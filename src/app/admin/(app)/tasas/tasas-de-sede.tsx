@@ -22,7 +22,7 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
+import { ResponsiveTable, type AccionesDeFila, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { formatAmount } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
 import {
@@ -110,32 +110,31 @@ export function TasasDeSede({
       ? setAbierto({ tipo: "fijar", code: fila.code, name: fila.name, rango: fila.rango, actual: fila })
       : undefined;
 
-  const acciones = (fila: TasaRow) =>
-    editable ? (
-      <>
-        {fila.rango && !fila.fueraDeVigor ? (
-          <Button
-            variant="tertiary"
-            size="sm"
-            disabled={!hydrated}
-            onClick={() => abrirFijar(fila)}
-            aria-label={`${fila.fijada ? "Revisar" : "Cambiar"} la tasa de ${fila.code}`}
-          >
-            <Pencil aria-hidden="true" />
-            {fila.fijada ? "Revisar" : "Cambiar"}
-          </Button>
-        ) : null}
-        <Button
-          variant="tertiary"
-          size="sm"
-          disabled={!hydrated}
-          onClick={() => setAbierto({ tipo: "retirar", fila })}
-          aria-label={`Retirar la tasa de ${fila.code}`}
-        >
-          Retirar
-        </Button>
-      </>
-    ) : null;
+  /* Sin ficha, las acciones van en «⋯» (regla de tablas, 12/11/2026). */
+  const acciones = (fila: TasaRow): AccionesDeFila => ({
+    label: `Acciones de ${fila.code}`,
+    disabled: !hydrated,
+    acciones: [
+      ...(fila.rango && !fila.fueraDeVigor
+        ? [
+            {
+              key: "fijar",
+              label: fila.fijada ? "Revisar la tasa" : "Cambiar la tasa",
+              ariaLabel: `${fila.fijada ? "Revisar" : "Cambiar"} la tasa de ${fila.code}`,
+              icon: <Pencil aria-hidden="true" />,
+              onSelect: () => abrirFijar(fila),
+            },
+          ]
+        : []),
+      {
+        key: "retirar",
+        label: "Retirar la tasa",
+        ariaLabel: `Retirar la tasa de ${fila.code}`,
+        destructiva: true,
+        onSelect: () => setAbierto({ tipo: "retirar", fila }),
+      },
+    ],
+  });
 
   const columnas: readonly ResponsiveColumn<TasaRow>[] = [
     {
@@ -163,12 +162,6 @@ export function TasasDeSede({
       key: "cambio",
       header: "Último cambio",
       cell: (fila) => <span className="text-body-sm text-text-secondary">{fila.actualizada}</span>,
-    },
-    {
-      key: "acciones",
-      header: <span className="sr-only">Acciones</span>,
-      cell: (fila) => <div className="flex justify-end gap-1">{acciones(fila)}</div>,
-      hiddenOnCard: true,
     },
   ];
 
@@ -202,7 +195,7 @@ export function TasasDeSede({
           columns={columnas}
           rowKey={(fila) => fila.code}
           cardTitle={(fila) => <NombreTasa fila={fila} />}
-          cardFooter={editable ? acciones : undefined}
+          rowActions={editable ? acciones : undefined}
           empty={
             <p className="text-body text-text-secondary">
               Esta sede todavía no cotiza ninguna moneda.
@@ -359,7 +352,7 @@ function AvisoDeAjuste({
         Confírmala o elige otra.
       </p>
       {estado && !estado.ok ? <p className="mt-2 font-semibold">{estado.error}</p> : null}
-      <form action={accion} className="mt-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+      <form action={accion} className="pc-botonera mt-3">
         <input type="hidden" name="sede" value={sede.id} />
         <input type="hidden" name="moneda" value={fila.code} />
         <Button type="submit" size="sm" loading={enviando} disabled={!hydrated}>

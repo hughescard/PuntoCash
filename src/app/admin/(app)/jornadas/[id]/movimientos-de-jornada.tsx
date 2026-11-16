@@ -27,7 +27,7 @@ export interface MovimientoRow {
   id: string;
   hora: string;
   operacion: string | null;
-  tipo: "entrada" | "salida";
+  tipo: "entrada" | "salida" | "cambio";
   concepto: string;
   currency: string;
   amount: number;
@@ -54,22 +54,12 @@ export function MovimientosDeJornada({
   conDetalle?: boolean;
 }) {
   const hydrated = useHydrated();
-  const [tipo, setTipo] = React.useState<"todos" | "entrada" | "salida">("todos");
+  const [tipo, setTipo] = React.useState<"todos" | "entrada" | "salida" | "cambio">("todos");
   const [moneda, setMoneda] = React.useState("todas");
   const monedas = [...new Set(rows.map((r) => r.currency))];
   const visibles = rows.filter((r) => (tipo === "todos" || r.tipo === tipo) && (moneda === "todas" || r.currency === moneda));
 
-  const enlace = (r: MovimientoRow) =>
-    conDetalle ? (
-      <Link
-        href={`${base}/jornadas/${jornadaId}/movimientos/${r.id}` as Route}
-        className="font-semibold text-text-primary underline-offset-4 hover:underline"
-      >
-        {r.concepto}
-      </Link>
-    ) : (
-      <span className="font-semibold text-text-primary">{r.concepto}</span>
-    );
+  const enlace = (r: MovimientoRow) => <span className="font-semibold text-text-primary">{r.concepto}</span>;
 
   const columnas: readonly ResponsiveColumn<MovimientoRow>[] = [
     { key: "hora", header: "Hora", cell: (r) => <span className="pc-numeric">{r.hora}</span> },
@@ -93,7 +83,7 @@ export function MovimientosDeJornada({
     {
       key: "tipo",
       header: "Tipo",
-      cell: (r) => <Badge variant={r.tipo === "entrada" ? "success" : "error"}>{r.tipo === "entrada" ? "Entrada" : "Salida"}</Badge>,
+      cell: (r) => <BadgeDeTipo tipo={r.tipo} />,
       hiddenOnCard: true,
     },
     {
@@ -123,6 +113,7 @@ export function MovimientosDeJornada({
             <option value="todos">Todos</option>
             <option value="entrada">Entradas</option>
             <option value="salida">Salidas</option>
+            <option value="cambio">Cambios de billetes</option>
           </select>
         </Field>
         <Field {...MONEDA}>
@@ -140,10 +131,20 @@ export function MovimientosDeJornada({
         rows={visibles}
         columns={columnas}
         rowKey={(r) => r.id}
+        rowLink={(r) => (conDetalle ? { href: `${base}/jornadas/${jornadaId}/movimientos/${r.id}`, label: `Ver el movimiento: ${r.concepto}, ${r.hora}` } : null)}
         cardTitle={enlace}
-        cardBadge={(r) => <Badge variant={r.tipo === "entrada" ? "success" : "error"}>{r.tipo === "entrada" ? "Entrada" : "Salida"}</Badge>}
+        cardBadge={(r) => <BadgeDeTipo tipo={r.tipo} />}
         empty={<p className="text-body text-text-secondary">Ningún movimiento coincide con esos filtros.</p>}
       />
     </>
+  );
+}
+
+/** Entrada, salida o cambio de billetes (que no entra ni sale). */
+export function BadgeDeTipo({ tipo }: { tipo: "entrada" | "salida" | "cambio" }): React.JSX.Element {
+  return (
+    <Badge variant={tipo === "entrada" ? "success" : tipo === "salida" ? "error" : "neutral"}>
+      {tipo === "entrada" ? "Entrada" : tipo === "salida" ? "Salida" : "Cambio"}
+    </Badge>
   );
 }

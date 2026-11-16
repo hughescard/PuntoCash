@@ -69,6 +69,9 @@ export const AREAS: readonly AreaDeEventos[] = [
       { tipo: "moneda-plataforma.alta", etiqueta: "Moneda añadida al catálogo" },
       { tipo: "moneda-plataforma.retirada", etiqueta: "Moneda retirada del catálogo" },
       { tipo: "moneda-plataforma.reincorporada", etiqueta: "Moneda reincorporada al catálogo" },
+      { tipo: "denominacion.alta", etiqueta: "Denominación añadida" },
+      { tipo: "denominacion.retirada", etiqueta: "Denominación retirada" },
+      { tipo: "denominacion.reincorporada", etiqueta: "Denominación reincorporada" },
       { tipo: "rango.definido", etiqueta: "Rango de tasas definido" },
       { tipo: "rango.cambiado", etiqueta: "Rango de tasas modificado" },
       { tipo: "rango.retirado", etiqueta: "Rango de tasas retirado" },
@@ -97,6 +100,7 @@ export const AREAS: readonly AreaDeEventos[] = [
       { tipo: "caja.alta", etiqueta: "Caja creada" },
       { tipo: "caja.retirada", etiqueta: "Caja retirada" },
       { tipo: "caja.reactivada", etiqueta: "Caja reactivada" },
+      { tipo: "caja.alertas-definidas", etiqueta: "Alertas de caja de una sede modificadas" },
       { tipo: "equipo-caja.vinculado", etiqueta: "Equipo vinculado a una caja" },
       { tipo: "equipo-caja.desvinculado", etiqueta: "Equipo desvinculado de una caja" },
       { tipo: "equipo-caja.renombrado", etiqueta: "Equipo de caja renombrado" },
@@ -110,6 +114,8 @@ export const AREAS: readonly AreaDeEventos[] = [
     tipos: [
       { tipo: "trabajador.alta", etiqueta: "Trabajador dado de alta" },
       { tipo: "trabajador.editado", etiqueta: "Datos de un trabajador modificados" },
+      { tipo: "trabajador.datos-propios", etiqueta: "Usuario o teléfono cambiados por el propio trabajador" },
+      { tipo: "trabajador.contrasena-cambiada", etiqueta: "Contraseña de un trabajador cambiada por él mismo" },
       { tipo: "trabajador.desactivado", etiqueta: "Trabajador desactivado" },
       { tipo: "trabajador.reactivado", etiqueta: "Trabajador reactivado" },
       { tipo: "trabajador.asistencia-acceso", etiqueta: "Acceso de un trabajador asistido" },
@@ -174,4 +180,5 @@ export function areaDeEvento(tipo: AuditEventType): string {
 export const ETIQUETA_DE_ROL: Readonly<Record<AuditActorRole, string>> = {
   "super-admin": "PuntoCash",
   "admin-sede": "Mercante",
+  trabajador: "Trabajador",
 };

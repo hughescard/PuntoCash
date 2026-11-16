@@ -85,7 +85,7 @@ export function AccionesTrabajador({
 
   return (
     <>
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:flex-wrap">
+      <div className="pc-botonera">
         {/* **Editar** es una pantalla, no un diálogo: seis campos con teclados
             distintos no caben en un modal a 360px (**FR-AD-SHELL-15**). */}
         <Button variant="secondary" asChild>

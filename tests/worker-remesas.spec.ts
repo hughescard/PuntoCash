@@ -1,13 +1,14 @@
-import { expect, test, type Page } from "@playwright/test";
+import { test, expect } from "./worker-fixture";
+import { continuarAConfirmar } from "./worker-helpers";
+import { type Page } from "@playwright/test";
 
-import { cajaConJornadaAbierta, EQUIPO_SIN_JORNADA } from "./storage-state";
 
 /*
  * La jornada se siembra con 1.000 CUP, que es lo que abría el fondeo que había
  * aquí. La prueba de la caja cerrada vive ahora en su propio grupo, con la
  * línea de salida sin jornada.
  */
-test.use({ storageState: cajaConJornadaAbierta({ CUP: 1_000 }) });
+test.use({ conCambio: true, fondos: { CUP: 1_000 } });
 
 async function entrarARemesas(page: Page) {
   await page.goto("/worker/caja");
@@ -23,7 +24,7 @@ async function searchReadyRemittance(page: Page) {
 }
 
 test.describe("Remesas — caja cerrada", () => {
-  test.use({ storageState: EQUIPO_SIN_JORNADA });
+  test.use({ fondos: null });
 
   test("is code-only and blocks a closed Caja", async ({ page }) => {
     await page.goto("/worker/nueva-operacion/remesas");
@@ -52,12 +53,12 @@ test.describe("Remesas", () => {
 
   test("completes once, creates a Remesa operation and cash-out", async ({ page }) => {
     await searchReadyRemittance(page);
-    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await continuarAConfirmar(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Remesa completada" })).toBeVisible();
     await expect(page.getByText("María Pérez García").first()).toBeVisible();
     await page.getByRole("link", { name: "Ir a Operaciones" }).click();
-    await expect(page.getByText("Remesa", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Remesa", { exact: true }).locator("visible=true").first()).toBeVisible();
   });
 
   test("has no horizontal overflow at desktop widths", async ({ page }) => {

@@ -21,6 +21,7 @@
 import { esIdentificadorValido, normalizarCuenta } from "@/features/auth/identificador";
 import { isGlobal, requireOperatorScope, type Scope } from "./scope";
 import { isMotivoValido } from "./sedes";
+import { almacen } from "./almacen";
 
 export type OperatorStatus = "activo" | "suspendido" | "baja";
 
@@ -82,7 +83,7 @@ export interface AdminUser {
   lastAccessAt?: string;
 }
 
-const mutableOperators: Operator[] = [
+const mutableOperators: Operator[] = almacen("operadores", () => [
   {
     id: "op-malecon",
     name: "Malecón Servicios Financieros S.R.L.",
@@ -171,11 +172,11 @@ const mutableOperators: Operator[] = [
     status: "baja",
     createdAt: "2026-01-15T09:00:00.000Z",
   },
-];
+]);
 
 export const OPERATORS: readonly Operator[] = mutableOperators;
 
-const mutableAdminUsers: AdminUser[] = [
+const mutableAdminUsers: AdminUser[] = almacen("usuariosAdmin", () => [
   {
     id: "adm-malecon-1",
     operatorId: "op-malecon",
@@ -271,7 +272,7 @@ const mutableAdminUsers: AdminUser[] = [
     createdAt: "2026-05-04T09:00:00.000Z",
     lastAccessAt: "2026-09-19T11:02:00.000Z",
   },
-];
+]);
 
 export const ADMIN_USERS: readonly AdminUser[] = mutableAdminUsers;
 

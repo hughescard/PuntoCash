@@ -14,6 +14,7 @@ import type { Sede } from "@/features/network/sedes";
 import { diaEnCuba } from "@/features/network/jornadas";
 import { jornadaDeCaja } from "../jornadas/formato";
 import { CajasDeSede, type CajaRow } from "./cajas-de-sede";
+import { efectivoDeCaja } from "./efectivo";
 
 export const metadata: Metadata = {
   title: "Administración de sede · Cajas",
@@ -114,6 +115,7 @@ function BloqueDeSede({ red, sede }: { red: RedEnAlcance; sede: Sede }): React.J
       jornada: jornadaDeCaja(red.jornadaAbiertaDeCaja(caja.id), hoy),
       ultimaActiva: caja.status === "activa" && activas <= 1 && sede.status === "activa",
       sedeId: sede.id,
+      efectivo: efectivoDeCaja(red, caja.id),
     };
   });
 

@@ -98,7 +98,7 @@ export function CampoImagen({
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
           {/* eslint-disable-next-line @next/next/no-img-element -- vista previa de la imagen elegida */}
           <img src={vista} alt="Imagen de la promoción" className="h-32 w-auto max-w-full rounded-control border border-border object-contain" />
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="pc-botonera">
             <Button type="button" variant="secondary" size="sm" disabled={deshabilitado || procesando} onClick={() => archivoRef.current?.click()}>
               <ImagePlus aria-hidden="true" />
               Cambiar imagen

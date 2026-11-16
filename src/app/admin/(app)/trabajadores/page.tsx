@@ -52,6 +52,14 @@ export default async function AdminTrabajadoresPage({
 
   const sedes = session.sedes.map((sede) => ({ id: sede.id, name: sede.name }));
 
+  /* Una incidencia es una solicitud del trabajador que la administración rechazó. */
+  const incidenciasPorTrabajador = new Map<string, number>();
+  for (const sede of session.sedes) {
+    for (const s of red.solicitudes(sede.id)) {
+      if (s.estado === "rechazada") incidenciasPorTrabajador.set(s.workerId, (incidenciasPorTrabajador.get(s.workerId) ?? 0) + 1);
+    }
+  }
+
   const filas: TrabajadorRow[] = session.sedes.flatMap((sede) =>
     red.trabajadores(sede.id).map((trabajador) => ({
       id: trabajador.id,
@@ -67,6 +75,7 @@ export default async function AdminTrabajadoresPage({
          `createdAt` es un instante. */
       alta: formatDate(new Date(trabajador.createdAt)),
       ultimaJornada: ultimaJornada(red.jornadasDeTrabajador(trabajador.id)[0]),
+      incidencias: incidenciasPorTrabajador.get(trabajador.id) ?? 0,
     })),
   );
 

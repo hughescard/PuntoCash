@@ -2,13 +2,18 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { FileSearch, Lock } from "lucide-react";
+import { Banknote, FileSearch, Lock } from "lucide-react";
 
-import { Button, Card, CardContent } from "@/components/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
+import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { findInternalCajaMovement, type CajaMovement } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
-import { BackLink, CashJornadaCard, MovementDetailHeader, MovementInfoCard, MovementResultCard } from "./movement-detail-parts";
+import { BackLink, CashJornadaCard, MovementDetailHeader, MovementInfoCard } from "./movement-detail-parts";
 import { CashAdjustmentDetail } from "./cash-adjustment-detail";
+import { OpeningDifferenceDetail } from "./opening-difference-detail";
+import { FundMovementDetail, RecountDetail } from "./fund-movement-detail";
+import type { Denominacion } from "@/features/caja/billetes";
 import { MovementReceiptSection } from "./movement-receipt-section";
 
 /**
@@ -18,7 +23,7 @@ import { MovementReceiptSection } from "./movement-receipt-section";
  * (§18); this route only ever resolves the other kind.
  *
  * Client Component for the same reason Operation Detail is one: a movement
- * created moments ago by Ajustar efectivo or Registrar fondeo inicial only
+ * created moments ago by Arqueo y cierre or Abrir jornada only
  * exists in the browser's own copy of the mock ledger, mutated client-side —
  * a Server Component here would render the not-found card for a movement
  * that genuinely exists in this session.
@@ -35,8 +40,9 @@ import { MovementReceiptSection } from "./movement-receipt-section";
  * fabricated for a concept this screen doesn't specifically know about.
  */
 export function CashMovementDetailView({ movementId }: { movementId: string }): React.JSX.Element {
-  useCaja();
-  const movement = findInternalCajaMovement(movementId);
+  const caja = useCaja();
+  const vista = useVistaDeCaja();
+  const movement = findInternalCajaMovement(caja.movimientos, movementId);
 
   if (!movement) return <MovementNotFound movementId={movementId} />;
 
@@ -45,17 +51,29 @@ export function CashMovementDetailView({ movementId }: { movementId: string }): 
       <BackLink />
       <MovementDetailHeader movement={movement} />
 
-      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
-        <div className="flex flex-col gap-6">
-          <MovementInfoCard movement={movement} />
-          <CashJornadaCard movement={movement} />
-        </div>
-
-        <div className="flex flex-col gap-6">
-          <MovementSpecificDetail movement={movement} />
-          <MovementResultCard movement={movement} />
-        </div>
+      {/* Las dos tarjetas de datos, a la misma altura; debajo, a todo el ancho, lo propio del concepto y los billetes. */}
+      <div className="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-2">
+        <MovementInfoCard movement={movement} />
+        <CashJornadaCard movement={movement} />
       </div>
+
+      <MovementSpecificDetail movement={movement} tipos={vista.denominaciones[movement.currency] ?? []} />
+
+      {movement.billetes && Object.keys(movement.billetes).length > 0 ? (
+        <Card>
+          <CardHeader>
+            <div className="flex min-w-0 items-center gap-3">
+              <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-control bg-primary-subtle text-primary">
+                <Banknote className="size-[18px]" />
+              </span>
+              <CardTitle>Billetes y monedas</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <BilletesDelMovimiento billetes={movement.billetes} currency={movement.currency} tipos={vista.denominaciones[movement.currency] ?? []} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <MovementReceiptSection movement={movement} />
 
@@ -73,9 +91,15 @@ export function CashMovementDetailView({ movementId }: { movementId: string }): 
  * depth. Returns nothing (not a placeholder) for any other concept — the
  * common cards already say everything genuinely available (§14).
  */
-function MovementSpecificDetail({ movement }: { movement: CajaMovement }): React.JSX.Element | null {
-  if (movement.concepto === "Ajuste de efectivo" || movement.concepto === "Ajuste de cierre") {
+function MovementSpecificDetail({ movement, tipos }: { movement: CajaMovement; tipos: readonly Denominacion[] }): React.JSX.Element | null {
+  if (movement.concepto === "Ajuste de cierre" || movement.concepto === "Ajuste de billetes al cerrar") {
     return <CashAdjustmentDetail movement={movement} />;
+  }
+  if (movement.recuento) return <RecountDetail movement={movement} tipos={tipos} />;
+  if (movement.fondos || movement.cambioCon) return <FundMovementDetail movement={movement} />;
+  /* El fondeo de una apertura: si lo recibido coincidió con lo entregado y, si no, qué se dijo. */
+  if (movement.apertura) {
+    return <OpeningDifferenceDetail apertura={movement.apertura} currency={movement.currency} tipos={tipos} aprobacion={movement.aprobacion} />;
   }
   return null;
 }

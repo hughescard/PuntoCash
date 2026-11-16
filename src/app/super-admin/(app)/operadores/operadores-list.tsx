@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import type { Route } from "next";
 import { Search } from "lucide-react";
 
 import { Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
@@ -163,6 +161,7 @@ export function OperadoresList({
         rows={visibles}
         columns={columnas}
         rowKey={(r) => r.id}
+        rowLink={(r) => ({ href: `/super-admin/operadores/${r.id}`, label: `Ver el operador ${r.nombre}` })}
         tablaDesde="xl"
         tarjetasEnDosColumnas
         cardTitle={(r) => <EnlaceOperador fila={r} />}
@@ -176,8 +175,8 @@ export function OperadoresList({
 
 function EnlaceOperador({ fila }: { fila: OperadorRow }): React.JSX.Element {
   return (
-    <Link href={`/super-admin/operadores/${fila.id}` as Route} className="font-medium text-text-primary underline-offset-4 hover:underline">
+    <span className="font-medium text-text-primary">
       {fila.nombre}
-    </Link>
+    </span>
   );
 }

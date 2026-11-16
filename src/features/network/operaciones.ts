@@ -37,9 +37,31 @@ export const SERVICIOS_DE_RED: readonly OperationServiceName[] = ["Cambio de mon
 const ALMACEN = globalThis as typeof globalThis & { __puntocashOperaciones?: OperacionDeRed[] };
 const operaciones: OperacionDeRed[] = (ALMACEN.__puntocashOperaciones ??= []);
 
-/** Solo la siembra de las jornadas escribe aquí. */
+/** La siembra de las jornadas y Worker (`caja-operativa.ts`) escriben aquí. */
 export function registrarOperacionSembrada(op: OperacionDeRed): void {
   operaciones.push(op);
+}
+
+export const registrarOperacion = registrarOperacionSembrada;
+
+/** Las operaciones de una caja, de la más reciente a la más antigua. */
+export function operacionesDeCaja(registerId: string): readonly OperacionDeRed[] {
+  return operaciones.filter((o) => o.registerId === registerId).sort((a, b) => b.fechaHora.localeCompare(a.fechaHora));
+}
+
+/**
+ * El siguiente código de operación del día, **en hora de Cuba**: `PC-AAMMDD-NNNNNN`.
+ * El contador es del día y empieza tras el mayor ya usado ese día.
+ */
+export function siguienteCodigoDeOperacion(diaEnCuba: string): string {
+  const prefijo = `PC-${diaEnCuba.slice(2, 4)}${diaEnCuba.slice(5, 7)}${diaEnCuba.slice(8, 10)}-`;
+  let mayor = 0;
+  for (const o of operaciones) {
+    if (!o.codigo.startsWith(prefijo)) continue;
+    const n = Number(o.codigo.slice(prefijo.length));
+    if (Number.isFinite(n) && n > mayor) mayor = n;
+  }
+  return `${prefijo}${String(mayor + 1).padStart(6, "0")}`;
 }
 
 export function operacionesDeSede(sedeId: string): readonly OperacionDeRed[] {

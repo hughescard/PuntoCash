@@ -30,6 +30,7 @@ import { estaEnAlcance } from "./assignments";
 import { monedaDelCatalogo, monedasDeSede, sedeManejaMoneda } from "./currencies";
 import { findSedeById, isMotivoValido, SEDES } from "./sedes";
 import { isGlobal, requireOperatorScope, type Scope } from "./scope";
+import { almacen } from "./almacen";
 
 /** La moneda contra la que se cotiza todo. */
 export const MONEDA_LOCAL = "CUP";
@@ -62,7 +63,7 @@ export interface RangoDeTasa {
  * cotizarlo, que es el caso de **FR-AD-TASA-3**. Lo mismo yen, dólar
  * australiano y los pesos colombiano y chileno.
  */
-const rangos = new Map<string, RangoDeTasa>(
+const rangos = almacen("rangos", () => new Map<string, RangoDeTasa>(
   (
     [
       ["USD", [300, 330], [310, 340]],
@@ -82,7 +83,7 @@ const rangos = new Map<string, RangoDeTasa>(
       updatedBy: "PuntoCash · Operaciones",
     },
   ]),
-);
+));
 
 export function rangoDe(code: string): RangoDeTasa | null {
   return rangos.get(code) ?? null;
@@ -136,7 +137,7 @@ const tasa = (
  * volvería sola si PuntoCash se lo habilita (**FR-AD-TASA-14**). **Cerro**,
  * recién asignada, no tiene ninguna.
  */
-const tasas = new Map<string, TasaDeSede[]>([
+const tasas = almacen("tasasDeSede", () => new Map<string, TasaDeSede[]>([
   ["sede-vedado", [tasa("USD", 318, 326), tasa("EUR", 342, 354), tasa("GBP", 398, 410)]],
   [
     "sede-habana-vieja",
@@ -170,7 +171,7 @@ const tasas = new Map<string, TasaDeSede[]>([
     "sede-trinidad",
     [tasa("USD", 315, 325, { updatedBy: "Ana Barrios" }), tasa("CAD", 228, 236, { updatedBy: "Ana Barrios" })],
   ],
-]);
+]));
 
 /** Todas las tasas definidas de la sede, en vigor o no, en el orden de su lista de monedas. */
 export function tasasDeSede(sedeId: string): readonly TasaDeSede[] {

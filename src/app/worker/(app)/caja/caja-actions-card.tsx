@@ -4,12 +4,13 @@ import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import {
+  ArrowLeftRight,
   Banknote,
+  HandCoins,
   CircleDollarSign,
   ClipboardCheck,
   LayoutGrid,
   Printer,
-  SlidersHorizontal,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -23,8 +24,9 @@ const ACTION_ICON: Readonly<Record<string, LucideIcon>> = {
   "imprimir-resumen": Printer,
   "fondeo-inicial": Banknote,
   "anadir-moneda": CircleDollarSign,
-  "ajustar-efectivo": SlidersHorizontal,
   arqueo: ClipboardCheck,
+  fondos: HandCoins,
+  "cambio-billetes": ArrowLeftRight,
 };
 
 /**

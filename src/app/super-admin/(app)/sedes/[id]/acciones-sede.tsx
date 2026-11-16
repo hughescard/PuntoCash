@@ -349,7 +349,7 @@ export function AccionesDeEstado({
 
   return (
     <>
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="pc-botonera">
         {suspendida ? (
           <Button disabled={!hydrated} onClick={() => setAbierto("reactivar")}>
             <PlayCircle aria-hidden="true" />

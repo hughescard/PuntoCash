@@ -28,7 +28,8 @@ test.describe("Monedas de sede", () => {
       await expect(page.getByRole("heading", { name: sede, level: 2 })).toBeVisible();
     }
 
-    await page.getByRole("button", { name: "Retirar GBP de PuntoCash Vedado" }).click();
+    await page.getByRole("button", { name: "Acciones de GBP en PuntoCash Vedado" }).click();
+    await page.getByRole("menuitem", { name: "Retirar GBP de PuntoCash Vedado" }).click();
     const dialogo = page.getByRole("dialog");
     await expect(
       dialogo.getByText("GBP tiene saldo en Caja 03. Debe quedar en cero antes de retirarla de la lista."),
@@ -53,7 +54,7 @@ test.describe("Monedas de sede", () => {
       page.getByRole("button", { name: "Añadir moneda a PuntoCash Matanzas" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Retirar USD de PuntoCash Matanzas" }).first(),
+      page.getByRole("button", { name: "Acciones de USD en PuntoCash Matanzas" }).first(),
     ).toBeAttached();
   });
 });

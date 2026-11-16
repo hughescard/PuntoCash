@@ -11,11 +11,10 @@
  * problema con una persona es suspender la sede o al operador, que corta el
  * acceso de todos a la vez (FR-SA-TRAB-6).
  *
- * El acceso de Worker (`mock-auth.ts`) **todavía no consulta este registro**:
- * acepta cualquier identificador con la contraseña de demostración. En el
- * producto real, el acceso valida identificador y credencial contra el
- * trabajador, su estado y la sede asignada. La limitación de la demostración
- * está en la nota de entrega (§8.3).
+ * El acceso de Worker (`features/worker/acceso.ts`) **consulta este registro**:
+ * el trabajador, su estado y que sea de la sede del equipo. En la
+ * demostración todos aceptan la contraseña `puntocash` hasta que alguien la
+ * cambia recuperándola.
  */
 
 import { cuentaCoincide, esIdentificadorValido, normalizarCuenta } from "@/features/auth/identificador";
@@ -24,6 +23,7 @@ import { findSedeById } from "./sedes";
 import { findOperatorById } from "./operators";
 import { operadorVigente } from "./assignments";
 import { requireOperatorScope, type Scope } from "./scope";
+import { almacen } from "./almacen";
 
 export type WorkerStatus = "activo" | "desactivado";
 
@@ -88,7 +88,7 @@ function worker(
   };
 }
 
-const mutableWorkers: NetworkWorker[] = [
+const mutableWorkers: NetworkWorker[] = almacen("trabajadores", () => [
   worker("trb-1", "jperez", "Juan Pérez", "88041203211", "sede-vedado"),
   worker("trb-2", "lgomez", "Lidia Gómez", "91072355442", "sede-vedado"),
   worker("trb-3", "afonseca", "Alberto Fonseca", "85110488763", "sede-vedado"),
@@ -109,7 +109,7 @@ const mutableWorkers: NetworkWorker[] = [
   worker("trb-14", "ifuentes", "Ismael Fuentes", "81092066404", "sede-centro-habana"),
   /* En la sede suspendida de Bahía: activo, pero sin poder entrar (FR-AD-TRAB-16). */
   worker("trb-15", "rleon", "Raúl León", "86090455215", "sede-trinidad"),
-];
+]);
 
 const deactivated = mutableWorkers.find((w) => w.id === "trb-12");
 if (deactivated) {
@@ -456,3 +456,58 @@ export function cambiarCorreoTrabajador(
   target.email = email.trim();
   return { ok: true, value: { worker: target, anterior } };
 }
+
+/* -------------------------------------------------------------------------
+ * Lo que el trabajador cambia de sí mismo, desde su perfil (12/11/2026)
+ * ---------------------------------------------------------------------- */
+
+export interface DatosPropiosDelTrabajador {
+  /** Su nombre de usuario: una comodidad para entrar sin escribir el correo. */
+  identifier: string;
+  phone: string;
+}
+
+export type DatosPropiosDenial =
+  | "trabajador-no-encontrado"
+  | "identificador-invalido"
+  | "identificador-duplicado"
+  | "telefono-invalido";
+
+/**
+ * El trabajador cambia **su nombre de usuario y su teléfono**, y nada más.
+ *
+ * Su **nombre** y su **documento** son los que dicen quién es en cada
+ * operación, jornada y aprobación: los fija el administrador y el trabajador
+ * no los toca, porque si pudiera, la traza de quién hizo qué dejaría de valer.
+ * El nombre de usuario no dice quién es nadie —todo lo registrado va por su
+ * identificador interno— y el teléfono es un dato de contacto que caduca, así
+ * que lo mejor es que lo mantenga él al día.
+ *
+ * El correo tampoco: es el canal del segundo factor, y cambiarlo es asunto de
+ * la asistencia de acceso del administrador (`cambiarCorreoTrabajador`).
+ *
+ * No lleva alcance: actúa sobre quien tiene la sesión, que es quien llama.
+ */
+export function editarDatosPropiosTrabajador(
+  workerId: string,
+  input: DatosPropiosDelTrabajador,
+): { ok: true; value: { worker: NetworkWorker; antes: DatosPropiosDelTrabajador } } | { ok: false; reason: DatosPropiosDenial } {
+  const target = findWorkerById(workerId);
+  if (!target) return { ok: false, reason: "trabajador-no-encontrado" };
+
+  const identifier = input.identifier.trim();
+  if (!esIdentificadorValido(identifier)) return { ok: false, reason: "identificador-invalido" };
+  const otro = findWorkerByIdentifier(identifier);
+  if (otro && otro.id !== target.id) return { ok: false, reason: "identificador-duplicado" };
+
+  const phone = input.phone.trim();
+  if (!/^\+?[\d\s-]+$/.test(phone) || phone.replace(/\D/g, "").length < 8) {
+    return { ok: false, reason: "telefono-invalido" };
+  }
+
+  const antes = { identifier: target.identifier, phone: target.phone };
+  target.identifier = identifier;
+  target.phone = phone;
+  return { ok: true, value: { worker: target, antes } };
+}
+

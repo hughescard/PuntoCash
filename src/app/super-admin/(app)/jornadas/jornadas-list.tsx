@@ -117,16 +117,13 @@ export function JornadasDeRedList({
            alta una sede con nombre largo. Debajo de xl son tarjetas y no
            hace falta recortar nada. */
         <span className="flex min-w-32 flex-col xl:max-w-40">
-          <Link
-            href={`/super-admin/jornadas/${r.id}` as Route}
-            className="font-medium text-text-primary underline-offset-4 hover:underline"
-          >
+          <span className="font-medium text-text-primary">
             {r.caja}
-          </Link>
+          </span>
           <Link
             href={`/super-admin/sedes/${r.sedeId}` as Route}
             title={r.sede}
-            className="text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline xl:truncate"
+            className="relative z-10 text-caption text-text-secondary underline-offset-4 hover:text-text-primary hover:underline xl:truncate"
           >
             {r.sede}
           </Link>

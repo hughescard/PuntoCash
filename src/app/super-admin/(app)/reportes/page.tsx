@@ -84,7 +84,7 @@ export default async function SuperAdminReportesPage({
         description="El volumen de la red: lo operado en cada moneda, contando cada operación completada una vez."
         actions={
           /* Enlaces corrientes y no `Link`: un archivo no se precarga. */
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="pc-botonera">
             <Button variant="secondary" asChild>
               <a href={exportar("xlsx")} download>
                 <FileSpreadsheet aria-hidden="true" />

@@ -81,7 +81,8 @@ test.describe("Tasas", () => {
     const compra = 380 + (Date.now() % 20);
     const venta = compra + 10;
 
-    await page.getByRole("button", { name: "Cambiar la tasa de GBP" }).click();
+    await page.getByRole("button", { name: "Acciones de GBP" }).click();
+    await page.getByRole("menuitem", { name: "Cambiar la tasa de GBP" }).click();
     const dialogo = page.getByRole("dialog");
     await dialogo.getByLabel(/^Compra/).fill(String(compra));
     await dialogo.getByLabel(/^Venta/).fill(String(venta));

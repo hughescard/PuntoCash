@@ -18,7 +18,7 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/responsive-table";
+import { ResponsiveTable, type AccionesDeFila, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { useHydrated } from "@/lib/use-hydrated";
 import type { MonedaCatalogo } from "@/features/network/currencies";
 import { anadirMonedaAction, retirarMonedaAction, type ResultadoMoneda } from "./_actions";
@@ -78,18 +78,23 @@ export function MonedasDeSede({
   const [retirando, setRetirando] = React.useState<MonedaRow | null>(null);
   const hydrated = useHydrated();
 
-  const boton = (fila: MonedaRow) =>
-    editable ? (
-      <Button
-        variant="tertiary"
-        size="sm"
-        disabled={!hydrated}
-        onClick={() => setRetirando(fila)}
-        aria-label={`Retirar ${fila.code} de ${sede.name}`}
-      >
-        Retirar
-      </Button>
-    ) : null;
+  /* Sin ficha, las acciones van en «⋯» (regla de tablas, 12/11/2026). */
+  const acciones = (fila: MonedaRow): AccionesDeFila | null =>
+    editable
+      ? {
+          label: `Acciones de ${fila.code} en ${sede.name}`,
+          disabled: !hydrated,
+          acciones: [
+            {
+              key: "retirar",
+              label: "Retirar",
+              ariaLabel: `Retirar ${fila.code} de ${sede.name}`,
+              destructiva: true,
+              onSelect: () => setRetirando(fila),
+            },
+          ],
+        }
+      : null;
 
   const columnas: readonly ResponsiveColumn<MonedaRow>[] = [
     {
@@ -110,12 +115,6 @@ export function MonedasDeSede({
          media tarjeta y parte la lista de cajas en tres renglones. */
       hiddenOnCard: true,
     },
-    {
-      key: "acciones",
-      header: <span className="sr-only">Acciones</span>,
-      cell: boton,
-      hiddenOnCard: true,
-    },
   ];
 
   return (
@@ -126,7 +125,7 @@ export function MonedasDeSede({
         rowKey={(fila) => fila.code}
         cardTitle={(fila) => <NombreMoneda fila={fila} />}
         cardSubtitle={(fila) => `Habilitada en cajas: ${textoCajas(fila)}`}
-        cardFooter={boton}
+        rowActions={editable ? acciones : undefined}
         empty={<p className="text-body text-text-secondary">Esta sede no tiene monedas.</p>}
       />
 
