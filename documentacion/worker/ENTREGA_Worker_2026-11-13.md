@@ -179,6 +179,7 @@ Esta iteración tocó mucho las dos consolas, porque todo lo que hace el trabaja
 | **Tablas**: la fila entera abre su ficha en todos los listados y en las listas de las fichas (cajas y promociones de una sede, sedes y administradores de un operador); Jornadas pierde su enlace duplicado; las acciones de los rangos van en «⋯». Excepción: la matriz de Servicios | **FR-SA-SHELL-10** (nuevo), **FR-SA-SHELL-9** |
 | **Botones** uno al lado del otro; una caja por línea en los avisos | **FR-SA-SHELL-11** (nuevo) |
 | Cuentas de demostración: cajas con alertas | Apéndice B |
+| Sale la sección «Fuera de alcance»: queda fuera todo lo que el documento no especifica | Fila 6.0 de la tabla de versiones |
 
 ---
 
