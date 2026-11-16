@@ -195,17 +195,3 @@ Contraseña `puntocash`, código `123456`. En un navegador sin vincular, Worker 
 **Arrancar.** `npm install`, `npm run build` y `npm start` (o `npm run dev`). Si ya tenías el servidor de desarrollo, páralo y borra `.next` antes de arrancar: hay rutas que ya no existen. La demostración trabaja en memoria y siembra jornadas y operaciones respecto a la hora actual, así que lo que se ve cambia a lo largo del día.
 
 **Pruebas.** `npm run typecheck` y `npm run test:ui`, contra la compilación de producción. Worker se prueba en un segundo servidor con `PUNTOCASH_PRUEBAS=1` (puestos de prueba aislados y rutas `/pruebas/*`, que sin esa variable responden 404). Resultado del 13/11: **Worker 342 pasan; consolas 503 pasan y 1 se salta**. Una pasada cortada a medias deja estado en memoria (por ejemplo, un cierre forzado): reinicia el servidor antes de repetir.
-
----
-
-## 6. Fuera de esta entrega
-
-| Asunto | Estado |
-| --- | --- |
-| **Billetes en el kiosco** de autoservicio | Siguiente bloque |
-| **Incidencias** del trabajador en la ficha de Super Admin | Pendiente: hoy solo en Admin |
-| Diseño final del **comprobante** impreso | Pendiente; hoy lleva los datos y la liquidación |
-| Aviso **en vivo** del cierre forzado: hoy Worker pregunta cada 5 segundos | Para producción (**FR-CF-6**, Worker §16) |
-| Evaluación de las **alertas en el servidor** y notificaciones | Para producción |
-| Backend y persistencia reales | Pendientes en todo el producto |
-| Worker en tableta o teléfono | No se prueba: Worker es de escritorio |
