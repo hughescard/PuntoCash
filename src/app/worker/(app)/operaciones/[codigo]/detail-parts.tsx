@@ -64,22 +64,28 @@ export function DetailRow({
   value,
   numeric = false,
   strong = false,
+  prosa = false,
 }: {
   label: string;
   value: React.ReactNode;
   /** Tabular figures for codes, documents, phone numbers and amounts. */
   numeric?: boolean;
   strong?: boolean;
+  /** Texto que puede ser largo (una dirección, un correo): se parte en líneas en vez de salirse de la tarjeta. */
+  prosa?: boolean;
 }): React.JSX.Element {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-border py-2.5 last:border-b-0 last:pb-0">
-      {/* The value never wraps — a broken operation code or amount is
+      {/* A figure never wraps — a broken operation code or amount is
           unreadable at a glance — so when the pair is too wide for the card
-          it is the prose label that reflows, never the figure. */}
-      <dt className="min-w-0 text-body-sm text-text-secondary">{label}</dt>
+          it is the prose label that reflows, never the figure. Prose values
+          (`prosa`: an address, an email) are the exception: they wrap, or a
+          long one would run over the label and out of the card. */}
+      <dt className={cn("text-body-sm text-text-secondary", prosa ? "shrink-0" : "min-w-0")}>{label}</dt>
       <dd
         className={cn(
-          "shrink-0 text-right text-body-sm whitespace-nowrap text-text-primary",
+          "text-right text-body-sm text-text-primary",
+          prosa ? "min-w-0 [overflow-wrap:anywhere]" : "shrink-0 whitespace-nowrap",
           numeric && "pc-numeric",
           strong ? "font-semibold" : "font-medium",
         )}

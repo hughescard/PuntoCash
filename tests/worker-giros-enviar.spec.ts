@@ -1,7 +1,7 @@
 import { test, expect } from "./worker-fixture";
 import { type Page } from "@playwright/test";
 
-import { abrirPorPantalla, continuarAConfirmar } from "./worker-helpers";
+import { abrirPorPantalla, continuarAConfirmar, identificarRemitente } from "./worker-helpers";
 
 /*
  * La jornada se siembra con 1.200 EUR, que es lo que abría el fondeo que había
@@ -34,7 +34,8 @@ async function openJornada(page: Page, fondos: Record<string, string> = { EUR: "
   await abrirPorPantalla(page, fondos);
 }
 
-async function goToGiros(page: Page) {
+/** Entra en Enviar giro y, salvo que se pida lo contrario, identifica al remitente sembrado. */
+async function goToGiros(page: Page, { remitente = true }: { remitente?: boolean } = {}) {
   await page.goto("/worker/caja");
   await page.getByRole("link", { name: "Nueva operación" }).click();
   await page.getByRole("link", { name: /Giros/ }).click();
@@ -42,6 +43,7 @@ async function goToGiros(page: Page) {
   // two equal-level operations behind it, never auto-launched.
   await page.getByRole("link", { name: /Enviar giro/ }).click();
   await expect(page.getByRole("heading", { name: "Giros" })).toBeVisible();
+  if (remitente) await identificarRemitente(page);
 }
 
 async function openJornadaAndGoToGiros(page: Page, fondos?: Record<string, string>) {
@@ -58,19 +60,11 @@ interface FillOverrides {
   beneficiaryName?: string;
   province?: string;
   municipality?: string;
-  secondSurname?: string;
   email?: string;
 }
 
 /** Fills every required field with a valid default, overridable per test. */
 async function fillValidForm(page: Page, overrides: FillOverrides = {}) {
-  await page.locator("#giro-remitente-numero-documento").fill("90010112345");
-  await page.locator("#giro-remitente-nombre").fill("Carlos");
-  await page.locator("#giro-remitente-primer-apellido").fill("Pérez");
-  await page.locator("#giro-remitente-segundo-apellido").fill(overrides.secondSurname ?? "Rodríguez");
-  await page.locator("#giro-remitente-fecha-nacimiento").fill("1985-01-01");
-  await page.locator("#giro-remitente-telefono").fill("+53 5 123 4567");
-
   await page.locator("#giro-beneficiario-nombre").fill(overrides.beneficiaryName ?? "María López García");
   await page.locator("#giro-beneficiario-correo").fill(overrides.email ?? "maria.lopez@example.com");
   await page.locator("#giro-beneficiario-telefono").fill("+53 5 678 1234");
@@ -156,11 +150,6 @@ test.describe("Registrar giro — form", () => {
     await expect(page.getByText("Abierta")).toBeVisible();
     await expect(page.getByText("Monedas habilitadas")).toBeVisible();
     await expect(page.getByText("4", { exact: true }).first()).toBeVisible();
-  });
-
-  test("Segundo apellido is required", async ({ page }) => {
-    await fillValidForm(page, { secondSurname: "" });
-    await expect(page.getByRole("button", { name: "Continuar" })).toBeDisabled();
   });
 
   test("beneficiary email is optional, but must be a valid email when provided", async ({ page }) => {
@@ -251,6 +240,53 @@ test.describe("Registrar giro — form", () => {
   });
 });
 
+test.describe("Remitente — identificado como cliente", () => {
+  test.beforeEach(async ({ page }) => {
+    await goToGiros(page, { remitente: false });
+  });
+
+  test("empieza buscando al remitente; el formulario del giro no aparece hasta elegirlo", async ({ page }) => {
+    await expect(page.getByRole("button", { name: "Buscar cliente" })).toBeVisible();
+    await expect(page.locator("#giro-beneficiario-nombre")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+  });
+
+  test("un remitente registrado se carga con sus datos y no se edita en el giro", async ({ page }) => {
+    await identificarRemitente(page);
+    await expect(onScreen(page, "Carlos Pérez Rodríguez").first()).toBeVisible();
+    await expect(onScreen(page, "CI · 90010112345")).toBeVisible();
+    await expect(onScreen(page, "1 ene 1990")).toBeVisible();
+    await expect(onScreen(page, "+53 5 1234 5678")).toBeVisible();
+    // Sin campos del remitente: sus datos son los del cliente registrado.
+    await expect(page.locator("[id^=giro-remitente]")).toHaveCount(0);
+  });
+
+  test("Cambiar remitente vuelve a la búsqueda sin perder el resto del giro", async ({ page }) => {
+    await identificarRemitente(page);
+    await page.locator("#giro-beneficiario-nombre").fill("María López García");
+    await page.getByRole("button", { name: "Cambiar remitente" }).click();
+    await expect(page.getByRole("button", { name: "Buscar cliente" })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
+    await expect(page.locator("#giro-beneficiario-nombre")).toHaveValue("María López García");
+  });
+
+  test("un remitente sin registrar se registra aquí y pasa al formulario", async ({ page }) => {
+    await page.locator("#numero-documento").fill("77070712345");
+    await page.getByRole("button", { name: "Buscar cliente" }).click();
+    await expect(onScreen(page, "Cliente no encontrado")).toBeVisible();
+    await page.getByRole("button", { name: "Registrar nuevo cliente" }).last().click();
+    await page.locator("#reg-nombre").fill("Lucía");
+    await page.locator("#reg-primer-apellido").fill("Martín");
+    await page.locator("#reg-segundo-apellido").fill("Vega");
+    await page.locator("#reg-fecha-nacimiento").fill("1977-07-07");
+    await page.locator("#reg-telefono").fill("+53 5 222 3333");
+    await page.getByRole("button", { name: "Registrar y continuar" }).click();
+    await expect(page.locator("#giro-beneficiario-nombre")).toBeVisible();
+    await expect(onScreen(page, "Lucía Martín Vega").first()).toBeVisible();
+    await expect(onScreen(page, "CI · 77070712345")).toBeVisible();
+  });
+});
+
 test.describe("Revisar giro", () => {
   test.beforeEach(async ({ page }) => {
     await goToGiros(page);
@@ -290,7 +326,7 @@ test.describe("Revisar giro", () => {
     await page.getByRole("button", { name: "Volver a Giros" }).click();
     await expect(page.getByRole("heading", { name: "Revisar giro" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Giros" })).toBeVisible();
-    await expect(page.locator("#giro-remitente-nombre")).toHaveValue("Carlos");
+    await expect(onScreen(page, "Carlos Pérez Rodríguez")).toBeVisible();
     await expect(page.locator("#giro-beneficiario-nombre")).toHaveValue("María López García");
     await expect(page.getByLabel("Importe a entregar")).toHaveValue("500");
   });
@@ -457,7 +493,7 @@ test.describe("Cancellation and back navigation", () => {
   test("Cancelar on Step 1 with an untouched form exits without a confirmation dialog", async ({
     page,
   }) => {
-    await goToGiros(page);
+    await goToGiros(page, { remitente: false });
     await page.getByRole("button", { name: "Cancelar" }).click();
     await expect(page).toHaveURL(/\/worker\/nueva-operacion$/);
   });
@@ -466,11 +502,12 @@ test.describe("Cancellation and back navigation", () => {
     page,
   }) => {
     await goToGiros(page);
-    await page.locator("#giro-remitente-nombre").fill("Carlos");
+    await page.locator("#giro-beneficiario-nombre").fill("María López García");
     await page.getByRole("button", { name: "Cancelar" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.getByRole("button", { name: "Seguir registrando" }).click();
-    await expect(page.locator("#giro-remitente-nombre")).toHaveValue("Carlos");
+    await expect(onScreen(page, "Carlos Pérez Rodríguez")).toBeVisible();
+    await expect(page.locator("#giro-beneficiario-nombre")).toHaveValue("María López García");
   });
 });
 

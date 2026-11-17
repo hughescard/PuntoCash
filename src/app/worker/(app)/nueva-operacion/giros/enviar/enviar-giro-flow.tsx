@@ -44,18 +44,19 @@ import {
 } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
-import { DOCUMENT_TYPES, type DocumentType } from "@/features/customers/customers";
+import { documentTypeShortLabel, type Customer } from "@/features/customers/customers";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { PROVINCE_CATALOG, getMunicipalitiesForProvince } from "@/features/geography/cuba-provinces";
 import { findCajaCurrency } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
-import { formatAmount } from "@/lib/format";
+import { formatAmount, formatIsoDate } from "@/lib/format";
 import {
-  birthDateFromCubanId,
   clearPendingWorkerHandoff,
   readPendingWorkerHandoff,
+  type KioskClientInput,
 } from "@/features/kiosk/self-service-request";
-import { EMPTY_BENEFICIARY, EMPTY_SENDER, type GiroDraft, type GiroFormValues } from "./giro-types";
+import { StepCliente } from "../../cambio-moneda/step-cliente";
+import { EMPTY_BENEFICIARY, EMPTY_SENDER, senderFullName, type GiroDraft, type GiroFormValues } from "./giro-types";
 import { NO_ERRORS, hasAnyError, municipalityLabel, provinceLabel, validateGiroForm } from "./giro-validation";
 import { GiroConfirmation, GiroReview } from "./giro-review-confirm";
 import { GiroResult, type GiroCompleted } from "./giro-result";
@@ -66,7 +67,7 @@ import { EfectivoDeOperacion } from "../../efectivo-de-operacion";
 
 const CATALOG_ROUTE = "/worker/nueva-operacion";
 
-type Step = "registrar" | "revisar" | "efectivo" | "confirmar" | "resultado";
+type Step = "remitente" | "registrar" | "revisar" | "efectivo" | "confirmar" | "resultado";
 
 /**
  * `EMPTY_SENDER` pre-fills sensible defaults (document type, nationality) —
@@ -83,35 +84,37 @@ const INITIAL_VALUES: GiroFormValues = {
 interface InitialFlow {
   step: Step;
   values: GiroFormValues;
-  draft: GiroDraft | null;
   kioskCode: string | null;
+  /** Lo que el cliente declaró de sí mismo en el kiosco: solo lanza la búsqueda del remitente. */
+  kioskSender: KioskClientInput | null;
 }
 
 /**
- * Starting point of the flow. Opened from "Buscar solicitud", the kiosk
- * request fills the whole form (the sender's birth date comes from the
- * carné number; nationality keeps its "Cubana" default). If that already
- * validates, the flow opens straight on "Revisar giro": the client did the
- * data entry, the worker only receives the cash and confirms. Anything
- * missing (e.g. a passport instead of a carné) leaves it on Step 1 with the
- * rest filled in.
+ * Starting point of the flow: always the sender, identified exactly as the
+ * client of a Cambio de moneda (search by document or scan; registered →
+ * loaded, not registered → registered here). Opened from "Buscar solicitud",
+ * the kiosk request pre-runs that search with the document the client typed,
+ * and fills the beneficiary and the giro; once the worker selects the sender,
+ * a complete request goes straight to "Revisar giro".
  */
-function buildInitialFlow(monedas: readonly string[]): InitialFlow {
+function buildInitialFlow(): InitialFlow {
   const handoff = readPendingWorkerHandoff("giros-enviar");
-  if (!handoff) return { step: "registrar", values: INITIAL_VALUES, draft: null, kioskCode: null };
+  if (!handoff) return { step: "remitente", values: INITIAL_VALUES, kioskCode: null, kioskSender: null };
 
   const { sender, beneficiary, senderCurrency, deliveryAmount } = handoff.data;
   const values: GiroFormValues = {
-    sender: {
-      ...EMPTY_SENDER,
-      ...sender,
-      birthDate: sender.documentType === "CI" ? birthDateFromCubanId(sender.documentNumber) : "",
-    },
+    sender: EMPTY_SENDER,
     beneficiary: { ...EMPTY_BENEFICIARY, ...beneficiary },
     giro: { senderCurrency, amountInput: formatAmount(deliveryAmount, 2) },
   };
-  const { draft } = validateGiroForm(values, monedas);
-  return { step: draft ? "revisar" : "registrar", values, draft, kioskCode: handoff.code };
+  return { step: "remitente", values, kioskCode: handoff.code, kioskSender: sender };
+}
+
+/** El remitente es un cliente registrado: sus datos se toman tal cual, no se editan en el giro. */
+function senderFromCustomer(customer: Customer): GiroFormValues["sender"] {
+  const { documentType, documentNumber, firstName, firstSurname, secondSurname, birthDate, phone, nationality } =
+    customer;
+  return { documentType, documentNumber, firstName, firstSurname, secondSurname, birthDate, phone, nationality };
 }
 
 /**
@@ -132,13 +135,14 @@ export function EnviarGiroFlow(): React.JSX.Element {
   const MONEDAS = caja.monedas;
   const CAJA_SUMMARY = caja.summary;
 
-  const [initial] = React.useState(() => buildInitialFlow(MONEDAS));
+  const [initial] = React.useState(() => buildInitialFlow());
   const [step, setStep] = React.useState<Step>(initial.step);
   const [values, setValues] = React.useState<GiroFormValues>(initial.values);
   const [errors, setErrors] = React.useState(NO_ERRORS);
   const [cancelOpen, setCancelOpen] = React.useState(false);
 
-  const [draft, setDraft] = React.useState<GiroDraft | null>(initial.draft);
+  const [draft, setDraft] = React.useState<GiroDraft | null>(null);
+  const [customer, setCustomer] = React.useState<Customer | null>(null);
 
   // The kiosk prefill (if any) now lives in local state — drop the handoff.
   React.useEffect(() => clearPendingWorkerHandoff(), []);
@@ -165,9 +169,28 @@ export function EnviarGiroFlow(): React.JSX.Element {
 
   // Live-computed, gates the button only — never surfaces error text before
   // the worker actually tries to continue (§29 vs. the `errors` state below).
-  const canContinue = !hasAnyError(validateGiroForm(values, enabledCurrencies).errors);
+  const canContinue = customer !== null && !hasAnyError(validateGiroForm(values, enabledCurrencies).errors);
 
-  const dirty = JSON.stringify(values) !== JSON.stringify(INITIAL_VALUES);
+  const dirty = customer !== null || JSON.stringify(values) !== JSON.stringify(INITIAL_VALUES);
+
+  /**
+   * Elegido el remitente, se sigue al formulario del giro. Una solicitud de
+   * kiosco ya trae el resto completo: va directa a Revisar giro.
+   */
+  function selectSender(selected: Customer) {
+    const next = { ...values, sender: senderFromCustomer(selected) };
+    setCustomer(selected);
+    setValues(next);
+    if (initial.kioskCode) {
+      const result = validateGiroForm(next, enabledCurrencies);
+      if (result.draft) {
+        setDraft(result.draft);
+        setStep("revisar");
+        return;
+      }
+    }
+    setStep("registrar");
+  }
 
   function leaveFlow() {
     router.push(CATALOG_ROUTE);
@@ -249,7 +272,38 @@ export function EnviarGiroFlow(): React.JSX.Element {
 
   let stepContent: React.ReactNode;
 
-  if (recontando) {
+  if (step === "remitente") {
+    stepContent = (
+      <div className="flex flex-col gap-6">
+        <BackLink />
+
+        <div>
+          <h1 className="text-screen-title text-text-primary">Giros</h1>
+          <p className="mt-2 max-w-2xl text-body text-text-secondary">
+            Identifica al remitente: la persona que entrega el efectivo y envía el giro.
+          </p>
+        </div>
+
+        {initial.kioskCode ? (
+          <Alert variant="info" title={`Solicitud de kiosco ${initial.kioskCode}`}>
+            Comprueba el documento del remitente y selecciónalo. El resto del giro ya viene completo.
+          </Alert>
+        ) : null}
+
+        <StepCliente kioskClient={initial.kioskSender} selectedCustomer={customer} onSelectCustomer={selectSender} />
+
+        <div className="pc-botonera sm:justify-end">
+          <Button type="button" variant="secondary" onClick={requestCancel}>
+            Cancelar
+          </Button>
+          <Button disabled={!customer} onClick={() => setStep("registrar")}>
+            Continuar
+            <ArrowRight aria-hidden="true" />
+          </Button>
+        </div>
+      </div>
+    );
+  } else if (recontando) {
     stepContent = (
       <RecuentoDeMoneda
         currency={recontando}
@@ -371,11 +425,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
         className="grid grid-cols-1 items-start gap-6 wide:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"
       >
         <div className="flex flex-col gap-6">
-          <SenderSection
-            values={values.sender}
-            errors={errors.sender}
-            onChange={(sender) => setValues((prev) => ({ ...prev, sender }))}
-          />
+          <SenderSection sender={values.sender} onChange={() => setStep("remitente")} />
           <BeneficiarySection
             values={values.beneficiary}
             errors={errors.beneficiary}
@@ -506,74 +556,42 @@ function InfoItem({
  * Section: Remitente
  * ---------------------------------------------------------------------- */
 
-const SENDER_FIELDS = {
-  documentType: { id: "giro-remitente-tipo-documento", label: "Tipo de documento", required: true },
-  documentNumber: { id: "giro-remitente-numero-documento", label: "Número de documento", required: true },
-  firstName: { id: "giro-remitente-nombre", label: "Nombre", required: true },
-  firstSurname: { id: "giro-remitente-primer-apellido", label: "Primer apellido", required: true },
-  secondSurname: { id: "giro-remitente-segundo-apellido", label: "Segundo apellido", required: true },
-  birthDate: { id: "giro-remitente-fecha-nacimiento", label: "Fecha de nacimiento", required: true },
-  phone: { id: "giro-remitente-telefono", label: "Teléfono", required: true },
-  nationality: { id: "giro-remitente-nacionalidad", label: "Nacionalidad", required: true },
-} as const satisfies Record<string, FieldSpec>;
-
-function SenderSection({
-  values,
-  errors,
-  onChange,
-}: {
-  values: GiroFormValues["sender"];
-  errors: Partial<Record<keyof GiroFormValues["sender"], string>>;
-  onChange: (values: GiroFormValues["sender"]) => void;
-}) {
-  function set<K extends keyof GiroFormValues["sender"]>(key: K, value: GiroFormValues["sender"][K]) {
-    onChange({ ...values, [key]: value });
-  }
-
+/**
+ * El remitente ya se identificó en el paso anterior y es un cliente
+ * registrado: aquí se muestra, no se edita. Para otro remitente se vuelve a
+ * identificar.
+ */
+function SenderSection({ sender, onChange }: { sender: GiroFormValues["sender"]; onChange: () => void }) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <span
             aria-hidden="true"
             className="grid size-9 shrink-0 place-items-center rounded-control bg-primary-subtle text-primary"
           >
             <User className="size-[18px]" />
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <CardTitle>Remitente</CardTitle>
-            <p className="mt-0.5 text-body-sm text-text-secondary">
-              Registra los datos de la persona que envía el giro.
-            </p>
+            <p className="mt-0.5 text-body-sm text-text-secondary">Cliente registrado en PuntoCash.</p>
           </div>
+          <Button type="button" variant="secondary" onClick={onChange}>
+            Cambiar remitente
+          </Button>
         </div>
       </CardHeader>
-      {/* `wide:` sorts before Tailwind's own `sm:`/`lg:` in the emitted
-          cascade (see tokens.css), so an intermediate breakpoint here would
-          silently outrank it — jump straight from 1 column to 3 instead. */}
-      <CardContent className="grid grid-cols-1 gap-5 wide:grid-cols-3">
-        <Field {...SENDER_FIELDS.documentType} error={errors.documentType}>
-          <Select value={values.documentType} onValueChange={(v) => set("documentType", v as DocumentType)}>
-            <SelectTrigger {...fieldAria(SENDER_FIELDS.documentType)}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DOCUMENT_TYPES.map((type) => (
-                <SelectItem key={type.value} value={type.value}>
-                  {type.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <TextField spec={SENDER_FIELDS.documentNumber} value={values.documentNumber} error={errors.documentNumber} onChange={(v) => set("documentNumber", v)} />
-        <TextField spec={SENDER_FIELDS.firstName} value={values.firstName} error={errors.firstName} onChange={(v) => set("firstName", v)} />
-        <TextField spec={SENDER_FIELDS.firstSurname} value={values.firstSurname} error={errors.firstSurname} onChange={(v) => set("firstSurname", v)} />
-        <TextField spec={SENDER_FIELDS.secondSurname} value={values.secondSurname} error={errors.secondSurname} onChange={(v) => set("secondSurname", v)} />
-        <TextField spec={SENDER_FIELDS.birthDate} value={values.birthDate} error={errors.birthDate} onChange={(v) => set("birthDate", v)} type="date" />
-        <TextField spec={SENDER_FIELDS.phone} value={values.phone} error={errors.phone} onChange={(v) => set("phone", v)} type="tel" />
-        <TextField spec={SENDER_FIELDS.nationality} value={values.nationality} error={errors.nationality} onChange={(v) => set("nationality", v)} />
+      {/* Read-only values: as many columns as fit, never one tall stack. */}
+      <CardContent className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-5">
+        <ReadOnlyValue label="Nombre completo">{senderFullName(sender)}</ReadOnlyValue>
+        <ReadOnlyValue label="Documento" numeric>
+          {documentTypeShortLabel(sender.documentType)} · {sender.documentNumber}
+        </ReadOnlyValue>
+        <ReadOnlyValue label="Fecha de nacimiento">{formatIsoDate(sender.birthDate)}</ReadOnlyValue>
+        <ReadOnlyValue label="Teléfono" numeric>
+          {sender.phone}
+        </ReadOnlyValue>
+        <ReadOnlyValue label="Nacionalidad">{sender.nationality}</ReadOnlyValue>
       </CardContent>
     </Card>
   );

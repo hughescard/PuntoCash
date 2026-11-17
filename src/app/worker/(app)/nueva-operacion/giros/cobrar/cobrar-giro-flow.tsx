@@ -25,6 +25,9 @@ import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
 import { RecuentoDeMoneda } from "../../../caja/recuento-de-moneda";
 import { EfectivoDeOperacion } from "../../efectivo-de-operacion";
 import { confirmGiroPayout, type GiroPayoutCompleted } from "./confirm-payout";
+import { FotoDelCarne } from "../../foto-del-carne";
+import type { CapturaAbierta } from "../../../../_foto-del-carne-actions";
+import type { MotivoDeCaptura } from "@/features/network/fotos-del-carne";
 
 type Step = "codigo" | "revisar" | "efectivo" | "confirmar" | "resultado";
 
@@ -68,6 +71,13 @@ export function CobrarGiroFlow(): React.JSX.Element {
   const [efectivo, setEfectivo] = React.useState<EfectivoRegistrado | null>(null);
   const [recontando, setRecontando] = React.useState<string | null>(null);
   const [recarga, setRecarga] = React.useState(0);
+  /** La foto del carné de quien cobra: el código abierto y, cuando llegan las dos fotos, su identificador. */
+  const [captura, setCaptura] = React.useState<CapturaAbierta | null>(null);
+  const [fotoLista, setFotoLista] = React.useState<string | null>(null);
+  const motivoDeFoto = React.useMemo<MotivoDeCaptura | null>(
+    () => (transfer ? { servicio: "Giros", referencia: transfer.code, beneficiario: transfer.receiverName, documento: transfer.receiverIdentification } : null),
+    [transfer],
+  );
 
   /*
    * Sin jornada abierta esta pantalla no opera — salvo que el flujo ya haya
@@ -127,6 +137,8 @@ export function CobrarGiroFlow(): React.JSX.Element {
       return;
     }
     setCode(entered);
+    setCaptura(null);
+    setFotoLista(null);
     setTransfer(result.transfer);
     setStep("revisar");
   }
@@ -137,7 +149,7 @@ export function CobrarGiroFlow(): React.JSX.Element {
   }
 
   async function handleConfirm() {
-    if (!transfer || submitting || !efectivo) return;
+    if (!transfer || submitting || !efectivo || !fotoLista) return;
     setSubmitting(true);
     setConfirmError(undefined);
 
@@ -148,6 +160,7 @@ export function CobrarGiroFlow(): React.JSX.Element {
       jornadaAbierta: caja.jornadaAbierta,
       monedas: caja.monedas,
       efectivo,
+      fotoDelCarne: fotoLista,
     });
 
     setSubmitting(false);
@@ -258,6 +271,8 @@ export function CobrarGiroFlow(): React.JSX.Element {
         worker={worker.fullName}
         submitting={submitting}
         error={confirmError}
+        fotoLista={fotoLista !== null}
+        foto={motivoDeFoto ? <FotoDelCarne motivo={motivoDeFoto} captura={captura} onCaptura={setCaptura} onLista={setFotoLista} /> : null}
         onBack={() => setStep("efectivo")}
         onCancel={leaveFlow}
         onConfirm={() => void handleConfirm()}

@@ -1,5 +1,5 @@
 # PuntoCash — Super administración
-## Documento de Requisitos Funcionales (FRD) · v6.0
+## Documento de Requisitos Funcionales (FRD) · v6.1
 
 **Alcance:** la consola de PuntoCash sobre su red, `/super-admin`. No cubre la consola del mercante (`/admin`).
 
@@ -31,7 +31,8 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
-| 6.0 | 13/11/2026 | **Lo que cambia en esta consola con la iteración 2 de Worker** (billetes, caja ciega, alertas, perfil del trabajador). (1) **Denominaciones**: tercera pestaña de Monedas y tasas, donde PuntoCash mantiene los billetes y monedas de cada divisa para toda la red: añadir, retirar con motivo, reincorporar (§9.7, **FR-SA-DEN-1 a DEN-8**, nuevos; auditoría en §9.8; códigos en el Apéndice C). (2) **Ficha de caja** de solo lectura, `/super-admin/sedes/[id]/cajas/[cajaId]`: la misma que ve el mercante, sin acciones (**FR-SA-EQ-10**, nuevo); se llega desde la ficha de sede y desde Cajas y equipos. (3) **Ficha de sede**: una caja cerrada dice cuándo y quién la cerró y lo que quedó dentro; sin jornadas, «Sin jornadas todavía» (**FR-SA-SEDE-13**). (4) **Aprobaciones**: los tipos de diferencia son los de la caja por billetes —apertura, cierre, composición, movimiento de fondos y recuento; el «ajuste» desaparece—, el detalle enseña los billetes y la referencia según el tipo, y la resolución guarda la cuenta que resolvió (**FR-SA-APR-1, APR-3, APR-5**). (5) **Jornadas y Operaciones**: el detalle enseña los billetes de cada movimiento y la liquidación de cada operación (**FR-SA-JOR-3**, **FR-SA-OPS-2**). (6) **Auditoría**: tipos nuevos (denominaciones, alertas de caja, usuario y teléfono y contraseña cambiados por el trabajador) y un tercer autor, el **trabajador**, con su filtro «Solo trabajadores» (**FR-SA-AUD-1, AUD-2, AUD-3, AUD-10**). (7) **Ficha del trabajador**: su usuario y su teléfono los puede cambiar él (**FR-SA-TRAB-3**). (8) **Tablas**: la fila entera abre su ficha, y las acciones van en el menú «⋯» de la fila (**FR-SA-SHELL-9**, **FR-SA-SHELL-10**, nuevo). (9) **Botones**: uno al lado del otro, y en un aviso una caja por línea (**FR-SA-SHELL-11**, nuevo) |
+| 6.1 | 16/11/2026 | **Foto del carné de quien cobra.** El detalle de una remesa entregada o de un giro pagado muestra las dos fotos del carné del beneficiario, como en Admin (**FR-SA-OPS-2**; FRD de Admin **FR-AD-OPS-11**; FRD de Worker §6.8). Además, el detalle de una operación enseña de verdad la liquidación y los billetes, que el requisito ya pedía y la pantalla no mostraba, y la ficha del trabajador avisa de que su usuario y su teléfono los puede cambiar él (**FR-SA-TRAB-3**) |
+| 6.0 | 13/11/2026 | **Lo que cambia en esta consola con la iteración 2 de Worker** (billetes, caja ciega, alertas, perfil del trabajador). (1) **Denominaciones**: tercera pestaña de Monedas y tasas, donde PuntoCash mantiene los billetes y monedas de cada divisa para toda la red: añadir, retirar con motivo, reincorporar (§9.7, **FR-SA-DEN-1 a DEN-8**, nuevos; auditoría en §9.8; códigos en el Apéndice C). (2) **Ficha de caja** de solo lectura, `/super-admin/sedes/[id]/cajas/[cajaId]`: la misma que ve el mercante, sin acciones (**FR-SA-EQ-10**, nuevo); se llega desde la ficha de sede y desde Cajas y equipos. (3) **Ficha de sede**: una caja cerrada dice cuándo y quién la cerró y lo que quedó dentro; sin jornadas, «Sin jornadas todavía» (**FR-SA-SEDE-13**). (4) **Aprobaciones**: los tipos de diferencia son los de la caja por billetes —apertura, cierre, composición, movimiento de fondos y recuento; el «ajuste» desaparece—, el detalle enseña los billetes y la referencia según el tipo, y la resolución guarda la cuenta que resolvió (**FR-SA-APR-1, APR-3, APR-5**). (5) **Jornadas y Operaciones**: el detalle enseña los billetes de cada movimiento y la liquidación de cada operación (**FR-SA-JOR-3**, **FR-SA-OPS-2**). (6) **Auditoría**: tipos nuevos (denominaciones, alertas de caja, usuario y teléfono y contraseña cambiados por el trabajador) y un tercer autor, el **trabajador**, con su filtro «Solo trabajadores» (**FR-SA-AUD-1, AUD-2, AUD-3, AUD-10**). (7) **Ficha del trabajador**: su usuario y su teléfono los puede cambiar él (**FR-SA-TRAB-3**). (8) **Tablas**: la fila entera abre su ficha, y las acciones van en el menú «⋯» de la fila (**FR-SA-SHELL-9**, **FR-SA-SHELL-10**, nuevo). (9) **Botones**: uno al lado del otro, y en un aviso una caja por línea (**FR-SA-SHELL-11**, nuevo). (10) Sale la sección «Fuera de alcance»: queda fuera todo lo que el documento no especifica |
 | 5.2 | 03/11/2026 | **PuntoCash resuelve las diferencias de efectivo que quedan sin dueño al traspasar una sede** (§11.3, **FR-SA-APR-1 a APR-5**, nuevos): menú «Aprobaciones», pendiente en Inicio |
 | 5.1 | 03/11/2026 | Un mercante ve cada sede solo desde que es suya; PuntoCash, todo (**FR-SA-DOM-4**) |
 | 5.0 | 03/11/2026 | **Reescritura completa en el formato de la v8 del FRD de Admin.** El documento describe la consola construida, no un diseño previo: una subsección por pantalla y por acción, rechazos con código, auditoría en tablas y «Ver en la demo». Incorpora las decisiones del 03/11: cerrar una sede termina su administración (**FR-SA-ASG-13**); una sede suspendida sin operador se asigna y PuntoCash mantiene su contacto (**FR-SA-SEDE-24**, **FR-SA-ASG-12**); toda credencial entregada es la contraseña (**FR-SA-OPE-16**, **FR-SA-USR-6**); motivo al cambiar un rango ya definido, al retirar una promoción de red y al traspasar el principal (**FR-SA-TASA-16**, **FR-SA-PROM-12**, **FR-SA-USR-10**). Secciones nuevas: Jornadas (**FR-SA-JOR**), Usuarios (**FR-SA-USR**) y Perfil (**FR-SA-PERF**). Los códigos de la v4.2 se conservan donde el requisito sigue; los redefinidos y los retirados se listan abajo |
@@ -1005,7 +1006,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 ### 12.2 Detalle — `/super-admin/operaciones/[codigo]`
 
-**FR-SA-OPS-2 · Contexto.** Sede, **operador responsable** —el de ese día, y si hoy la administra otro, quién—, caja y equipo, trabajador, jornada y origen (mostrador o solicitud de kiosco). Debajo, el detalle de Worker según el servicio, con **la liquidación** —lo que entró y lo que salió de verdad, con sus billetes y el vuelto— (**FR-OPD-12**).
+**FR-SA-OPS-2 · Contexto.** Sede, **operador responsable** —el de ese día, y si hoy la administra otro, quién—, caja y equipo, trabajador, jornada y origen (mostrador o solicitud de kiosco). Debajo, el detalle de Worker según el servicio, con **la liquidación** —lo que entró y lo que salió de verdad, con sus billetes y el vuelto— (**FR-OPD-12**). En una remesa entregada o un giro pagado, además, las **dos fotos del carné** de quien cobró, como en Admin (FRD de Admin **FR-AD-OPS-11**).
 
 **FR-SA-OPS-3 · Por qué.** Es lo que da sentido al historial de asignaciones: una operación de junio en Miramar es de Atlántico, aunque hoy la sede sea de Caribe **[RP-20]**, **[RP-27]**.
 
@@ -1216,15 +1217,6 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 **FR-SA-DOM-3 · Lo que el dominio no expone a esta consola.** Ninguna escritura sobre cajas, equipos, trabajadores, administradores de un mercante (salvo el restablecimiento del principal), monedas de una sede ni tasas de una sede (salvo el ajuste al límite, **FR-SA-TASA-8**) acepta el alcance global **[RP-26]**.
 
 **FR-SA-DOM-4 · Operador en una fecha.** El dominio responde quién administraba una sede en cualquier instante **[RP-20]**, y Jornadas, Operaciones, Reportes y los recuentos de Operadores lo usan **[RP-27]**. Con el alcance de un operador, las lecturas de jornadas, solicitudes y operaciones devuelven solo lo ocurrido en sus tramos (**FR-AD-SCOPE-7**); con el alcance global, todo.
-
----
-
-## 18. Fuera de alcance
-
-- **Comisión por operación** y todo lo económico entre PuntoCash y sus mercantes **[A8]**: dominio aparte, para más adelante.
-- **Dominio de clientes**: dominio aparte, para más adelante. Hoy el cliente vive dentro de cada operación.
-- Sub-roles en la consola; exportación de otros listados; administración de las pantallas informativas; notificaciones.
-- Backend y persistencia reales: la demostración trabaja contra un dominio en memoria (**Apéndice B**).
 
 ---
 

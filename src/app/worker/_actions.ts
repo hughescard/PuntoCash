@@ -62,6 +62,7 @@ import {
 } from "@/features/worker/sesion";
 import { getContextoDeTrabajo } from "@/features/worker/sesion-servidor";
 import { registroDeWorker } from "@/features/worker/vista";
+import { capturaLista, consumirCaptura, requiereFotoDelCarne } from "@/features/network/fotos-del-carne";
 
 
 /**
@@ -206,7 +207,13 @@ export async function guardarContrasenaTrabajadorAction(cuenta: string, contrase
 
 export type AccionDeCaja<T> =
   | { ok: true; value: T }
-  | { ok: false; reason: CajaDenial | "sin-sesion"; currency?: string; cotizacion?: Cotizacion };
+  | {
+      ok: false;
+      /** `falta-foto-del-carne`: una remesa o un giro cobrado sin las dos fotos del carné del beneficiario. */
+      reason: CajaDenial | "sin-sesion" | "falta-foto-del-carne";
+      currency?: string;
+      cotizacion?: Cotizacion;
+    };
 
 async function conCaja<T>(fn: (ctx: ContextoDeCaja) => AccionDeCaja<T>): Promise<AccionDeCaja<T>> {
   const ctx = await getContextoDeTrabajo();
@@ -340,11 +347,26 @@ export async function registrarCambioAction(input: {
   });
 }
 
-export async function registrarOperacionAction(op: OperacionPorRegistrar): Promise<AccionDeCaja<OperationRecord>> {
+/**
+ * `fotoDelCarne` es la captura abierta en la confirmación: una remesa o un
+ * giro cobrado no se registran sin las dos fotos del carné de quien cobra.
+ * Al registrar, las fotos pasan a la operación y la captura queda usada.
+ */
+export async function registrarOperacionAction(
+  op: OperacionPorRegistrar,
+  fotoDelCarne?: string,
+): Promise<AccionDeCaja<OperationRecord>> {
   return conCaja((ctx) => {
+    if (faltaFotoDelCarne(ctx, op, fotoDelCarne)) return { ok: false, reason: "falta-foto-del-carne" };
     const r = registrarOperacionSimple(ctx, op);
-    return r.ok ? { ok: true, value: sinRed(r.value) } : r;
+    if (!r.ok) return r;
+    if (fotoDelCarne && requiereFotoDelCarne(op)) consumirCaptura(fotoDelCarne, ctx.worker.id, r.value.codigo);
+    return { ok: true, value: sinRed(r.value) };
   });
+}
+
+function faltaFotoDelCarne(ctx: ContextoDeCaja, op: OperacionPorRegistrar, fotoDelCarne: string | undefined): boolean {
+  return requiereFotoDelCarne(op) && !capturaLista(fotoDelCarne, ctx.worker.id, { documento: op.cliente.documentNumber });
 }
 
 /* -- Propuestas de billetes (bloque 4): no registran nada ------------------ */
@@ -380,9 +402,11 @@ export async function proponerPagoAction(input: { currency: string; importe: num
 }
 
 /** Comprueba, sin registrar nada, que la operación se podría registrar ahora: antes de dar nada por hecho en un proveedor externo. */
-export async function comprobarOperacionAction(op: OperacionPorRegistrar): Promise<AccionDeCaja<null>> {
+export async function comprobarOperacionAction(op: OperacionPorRegistrar, fotoDelCarne?: string): Promise<AccionDeCaja<null>> {
   const ctx = await getContextoDeTrabajo();
   if (!ctx) return { ok: false, reason: "sin-sesion" };
+  /* Antes de dar nada por hecho en el proveedor: sin las fotos, la entrega no sigue. */
+  if (faltaFotoDelCarne(ctx, op, fotoDelCarne)) return { ok: false, reason: "falta-foto-del-carne" };
   return comprobarOperacionSimple(ctx, op);
 }
 

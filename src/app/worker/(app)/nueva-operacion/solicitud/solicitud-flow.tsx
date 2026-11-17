@@ -58,8 +58,8 @@ const NEXT_STEP: Record<KioskRequestService, { title: string; body: string }> = 
     body: "La remesa se localiza automáticamente. Pide el documento del beneficiario y comprueba que coincide antes de entregar el efectivo.",
   },
   "giros-enviar": {
-    title: "Recibe el efectivo",
-    body: "Los datos del giro ya están completos. Cobra el importe al cliente y confirma el envío.",
+    title: "Identifica al remitente y recibe el efectivo",
+    body: "Comprueba el documento del remitente y selecciónalo. El resto del giro ya está completo: cobra el importe y confirma el envío.",
   },
   "giros-cobrar": {
     title: "Compara el carné con la persona",

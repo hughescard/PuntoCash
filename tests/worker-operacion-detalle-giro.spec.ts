@@ -1,5 +1,5 @@
 import { test, expect } from "./worker-fixture";
-import { continuarAConfirmar } from "./worker-helpers";
+import { continuarAConfirmar, hacerFotosDelCarne, identificarRemitente } from "./worker-helpers";
 import { type Page } from "@playwright/test";
 
 /* La caja del puesto carga el historial con que se diseñó la lista. */
@@ -60,12 +60,7 @@ async function sendGiro(page: Page): Promise<string> {
   await page.getByRole("link", { name: /Enviar giro/ }).click();
   await expect(page.getByRole("heading", { name: "Giros" })).toBeVisible();
 
-  await page.locator("#giro-remitente-numero-documento").fill("85010112345");
-  await page.locator("#giro-remitente-nombre").fill("Carlos");
-  await page.locator("#giro-remitente-primer-apellido").fill("Pérez");
-  await page.locator("#giro-remitente-segundo-apellido").fill("Rodríguez");
-  await page.locator("#giro-remitente-fecha-nacimiento").fill("1985-01-01");
-  await page.locator("#giro-remitente-telefono").fill("+53 5 123 4567");
+  await identificarRemitente(page);
 
   await page.locator("#giro-beneficiario-nombre").fill("María Pérez García");
   await page.locator("#giro-beneficiario-telefono").fill("+53 5 678 1234");
@@ -100,6 +95,7 @@ async function payoutGiro(page: Page, code: string) {
   await page.getByRole("button", { name: "Buscar giro" }).click();
   await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible({ timeout: 5000 });
   await continuarAConfirmar(page);
+  await hacerFotosDelCarne(page);
   await page.getByRole("button", { name: "Confirmar entrega" }).click();
   await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toBeVisible({
     timeout: 10_000,
@@ -144,9 +140,9 @@ test.describe("Operation Detail — giro enviado", () => {
 
   test("shows the sender as recorded, including the historical birth date", async ({ page }) => {
     await expect(onScreen(page, "Carlos Pérez Rodríguez")).toBeVisible();
-    await expect(onScreen(page, "CI · 85010112345")).toBeVisible();
-    await expect(onScreen(page, "01/01/1985")).toBeVisible();
-    await expect(onScreen(page, "+53 5 123 4567")).toBeVisible();
+    await expect(onScreen(page, "CI · 90010112345")).toBeVisible();
+    await expect(onScreen(page, "01/01/1990")).toBeVisible();
+    await expect(onScreen(page, "+53 5 1234 5678")).toBeVisible();
     await expect(onScreen(page, "Cubana")).toBeVisible();
   });
 
@@ -244,6 +240,7 @@ test.describe("Operation Detail — giro cobrado", () => {
     await page.getByRole("button", { name: "Buscar giro" }).click();
     await expect(page.getByRole("heading", { name: "Revisar giro" })).toBeVisible({ timeout: 5000 });
     await continuarAConfirmar(page);
+    await hacerFotosDelCarne(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toBeVisible({
       timeout: 10_000,

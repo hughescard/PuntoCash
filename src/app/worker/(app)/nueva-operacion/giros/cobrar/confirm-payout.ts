@@ -41,6 +41,7 @@ const MENSAJE_DE_BILLETES: Readonly<Record<string, string>> = {
   "sin-salida": "La caja no puede pagar eso entero. No se registró nada: ofrécele al beneficiario otra salida o que vuelva más tarde.",
   "propuesta-vencida": "Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Revísalos.",
   "sin-esos-billetes": "Contada la caja, esos billetes no están. No se registró nada: vuelve a marcar con qué billetes se entrega.",
+  "falta-foto-del-carne": "Faltan las fotos del carné del beneficiario. No se registró nada: haz las dos fotos con el móvil.",
 };
 
 
@@ -72,6 +73,8 @@ export async function confirmGiroPayout(params: {
   monedas: readonly string[];
   /** Los billetes con los que se entrega (bloque 4). */
   efectivo: EfectivoRegistrado;
+  /** La captura con las dos fotos del carné del beneficiario (16/11/2026). */
+  fotoDelCarne: string;
 }): Promise<ConfirmPayoutOutcome> {
   const { transfer } = params;
   const isCurrencyEnabled = (c: string) => params.monedas.includes(c);
@@ -110,7 +113,7 @@ export async function confirmGiroPayout(params: {
   /* El servidor comprueba, sin escribir nada, que se podría registrar con
      estos billetes: si hay que contar la moneda o no cuadran, se sabe antes de
      dar el giro por pagado fuera. */
-  const previa = await comprobarOperacionAction(operacion);
+  const previa = await comprobarOperacionAction(operacion, params.fotoDelCarne);
   if (!previa.ok) {
     if (previa.reason === "recuento-necesario" && previa.currency) {
       return { ok: false, message: "Hay que contar la moneda antes de entregar.", recuento: previa.currency };
@@ -119,7 +122,7 @@ export async function confirmGiroPayout(params: {
     return {
       ok: false,
       message: mensaje ?? "No se pudo comprobar la entrega. Vuelve a los billetes y revísalos.",
-      revisarBilletes: previa.reason !== "cierre-forzado",
+      revisarBilletes: previa.reason !== "cierre-forzado" && previa.reason !== "falta-foto-del-carne",
     };
   }
 
@@ -162,7 +165,7 @@ export async function confirmGiroPayout(params: {
       // Raw API enum ("COMPLETED"), never the Spanish label.
       externalStatus: external.transfer.status,
     },
-  });
+  }, params.fotoDelCarne);
   if (!registrada.ok) {
     return { ok: false, message: "No se pudo registrar el movimiento en caja. Solicita asistencia: el giro ya figura como pagado en el servicio externo." };
   }

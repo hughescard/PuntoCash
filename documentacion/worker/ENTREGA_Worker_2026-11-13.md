@@ -1,9 +1,10 @@
 # Entrega · Worker, iteración 2
-## Nota de entrega · 13 de noviembre de 2026
+## Nota de entrega · 13 de noviembre de 2026 · actualizada el 16
 
-- **Qué se entrega:** la aplicación del trabajador, `/worker`, operando sobre la red real de la demostración: caja por billetes, a ciegas, con su supervisor, alertas y perfil.
+- **Qué se entrega:** la aplicación del trabajador, `/worker`, operando sobre la red real de la demostración: caja por billetes, a ciegas, con su supervisor, alertas y perfil, y la foto del carné de quien cobra una remesa o un giro.
 - **Además:** todo lo que esta iteración cambió en **Admin de sede** y en **Super Admin**, que es mucho. §4 lo lista **cambio por cambio**, con el requisito donde leer cada uno.
 - **Rama:** `worker/iteracion-2`.
+- **Actualización del 16/11:** foto del carné de quien cobra (Worker §6.8, Admin **FR-AD-OPS-11**, Super Admin **FR-SA-OPS-2**) y remitente de Enviar giro como cliente registrado (Worker **FR-GE-2**). FRD 2.1, 9.1 y 6.1.
 
 ---
 
@@ -11,14 +12,14 @@
 
 | Documento | Versión | Para qué |
 | --- | --- | --- |
-| `PuntoCash_Worker_Functional_Requirements_v1.md` | **2.0** (entregada: 1.13) | **El módulo de esta entrega.** Reescrito en el formato de los FRD de administración: una subsección por pantalla, reglas, códigos de rechazo y «Ver en la demo». Mensajes por código en el Apéndice C; cuentas en el Apéndice B |
-| `../admin/PuntoCash_Admin_Sede_Functional_Requirements_v1.md` | **9.0** (entregada: 8.7) | Los cambios en Admin de sede de §4.1. Sección nueva: §20 Alertas de caja |
-| `../admin/PuntoCash_Super_Admin_Functional_Requirements_v1.md` | **6.0** (entregada: 5.2) | Los cambios en Super Admin de §4.2. Sección nueva: §9.7 Denominaciones |
+| `PuntoCash_Worker_Functional_Requirements_v1.md` | **2.1** (entregada: 1.13) | **El módulo de esta entrega.** Reescrito en el formato de los FRD de administración: una subsección por pantalla, reglas, códigos de rechazo y «Ver en la demo». Mensajes por código en el Apéndice C; cuentas en el Apéndice B |
+| `../admin/PuntoCash_Admin_Sede_Functional_Requirements_v1.md` | **9.1** (entregada: 8.7) | Los cambios en Admin de sede de §4.1. Sección nueva: §20 Alertas de caja |
+| `../admin/PuntoCash_Super_Admin_Functional_Requirements_v1.md` | **6.1** (entregada: 5.2) | Los cambios en Super Admin de §4.2. Sección nueva: §9.7 Denominaciones |
 | `PuntoCash_Worker_PRD_v1.md` | 1.1 | Sin cambios |
 | `../admin/PuntoCash_Admin_Sede_PRD_v1.md` · `../admin/PuntoCash_Super_Admin_PRD_v1.md` · `../PuntoCash_PRD_v2.md` | 1.19 · 1.2 · 2.5 | Sin cambios; solo por las reglas que citan los FRD |
 
 - El FRD fija las reglas. **El diseño a implementar es el de la demostración**: disposición, componentes, textos y estados.
-- La v2.0 del FRD de Worker reescribe la 1.13. Los códigos se conservan donde el requisito sigue; los retirados están al final de su tabla de versiones y no se reutilizan.
+- La v2.0 del FRD de Worker reescribe la 1.13; la 2.1 añade la foto del carné y el remitente de Enviar giro. Los códigos se conservan donde el requisito sigue; los retirados están al final de su tabla de versiones y no se reutilizan.
 - En Admin y Super Admin, la fila 9.0 y la 6.0 de su tabla de versiones resumen lo mismo que §4, numerado.
 
 ---
@@ -33,8 +34,9 @@ Worker es de escritorio: referencia a 1280px.
 | Inicio | `/worker/inicio` | §4 | Ve su jornada, las alertas de su caja y las tasas de hoy con su hora, y qué monedas no se cambian hoy y por qué |
 | Nueva operación | `/worker/nueva-operacion`, `/solicitud` | §5 | Elige el servicio; busca la solicitud que un cliente dejó en el kiosco |
 | Cambio de moneda | `/worker/nueva-operacion/cambio-moneda` | §7 y §6 | Compra, venta o entre dos divisas; «Entregar» o «Recibir un importe»; paso Efectivo con billetes y vuelto |
-| Cobrar remesa | `/worker/nueva-operacion/remesas` | §8 y §6 | Paga una remesa con billetes |
-| Giros | `/worker/nueva-operacion/giros`, `/enviar`, `/cobrar` | §9 y §6 | Envía o paga un giro con billetes |
+| Cobrar remesa | `/worker/nueva-operacion/remesas` | §8, §6 y §6.8 | Paga una remesa con billetes, con las dos fotos del carné del beneficiario |
+| Giros | `/worker/nueva-operacion/giros`, `/enviar`, `/cobrar` | §9 y §6 | Envía un giro identificando al remitente como cliente registrado; paga un giro con las dos fotos del carné (§6.8). Siempre con billetes |
+| Foto del carné | `/movil/carne/{id}`, en el móvil del trabajador, fuera de `/worker` | §6.8 | Hace las dos fotos del carné desde el QR de la confirmación; la caja las recibe sola |
 | Caja | `/worker/caja` | §10.1 | Ve su caja **sin cifras**: abierta o no, monedas, movimientos y lo pendiente |
 | Abrir jornada | `/worker/caja/fondeo-inicial` | §10.3 | Cuenta billete a billete contra lo que dejó el cierre anterior; explica las diferencias |
 | Reposición o retiro | `/worker/caja/fondos` | §10.4 | Registra el efectivo que trae o se lleva el supervisor, que lo confirma |
@@ -60,6 +62,8 @@ Ya no existen: «Ajustar efectivo», Tasas (`/worker/tasas`), Alertas (`/worker/
 | La apertura se cuenta **una vez** contra lo que dejó el cierre; el cierre es **un solo acto** y los motivos llegan después, o queda «Sin explicar» | Worker §10.3, §10.6; Admin **FR-AD-APR-18** |
 | Lo que trae, se lleva o cambia el supervisor **solo lo confirma el supervisor que nombró el trabajador** | Worker §10.4–10.5; Admin **FR-AD-APR-17** |
 | Si saldrían billetes que los libros no tienen, **antes se cuenta la moneda entera** con el supervisor (recuento) | Worker §10.7 |
+| Remesas y cobro de giros **no se confirman sin las dos fotos del carné** de quien cobra; las ve la administración, el trabajador ya no | Worker §6.8; Admin **FR-AD-OPS-11** |
+| El remitente de un giro es un **cliente registrado**, como en Cambio de moneda; sus datos no se editan en el giro | Worker **FR-GE-2** |
 | Un pago es **exacto o no se paga**: si la caja no tiene con qué, se ofrece otra salida o queda pendiente; a favor de la casa solo queda el redondeo | Worker §6.4 |
 | Rechazar una diferencia la deja como **incidencia** del trabajador, visible en su ficha | Admin **FR-AD-TRAB-18** |
 | Las **alertas** las define la sede en una sección propia; la administración las ve con cifras y el trabajador sin ellas | Admin §20; Worker §12 |
@@ -72,7 +76,7 @@ Ya no existen: «Ajustar efectivo», Tasas (`/worker/tasas`), Alertas (`/worker/
 
 Esta iteración tocó mucho las dos consolas, porque todo lo que hace el trabajador lo ve y lo gobierna la administración. Cada fila es un cambio; «Dónde leerlo» lleva al requisito.
 
-### 4.1 Admin de sede (FRD 8.7 → 9.0)
+### 4.1 Admin de sede (FRD 8.7 → 9.1)
 
 **Navegación y reglas de toda la consola**
 
@@ -128,6 +132,7 @@ Esta iteración tocó mucho las dos consolas, porque todo lo que hace el trabaja
 | Cambio | Dónde leerlo |
 | --- | --- |
 | El detalle enseña **la liquidación** (lo que entró y salió de verdad, el vuelto) y **los billetes** de la operación | **FR-AD-OPS-10** (nuevo) |
+| En una remesa entregada o un giro pagado, el bloque **«Carné de quien cobró»** con las dos fotos, quién las hizo y cuándo; una entrega anterior a la foto lo dice | **FR-AD-OPS-11** (nuevo, 9.1) |
 
 **Aprobaciones**
 
@@ -157,7 +162,7 @@ Esta iteración tocó mucho las dos consolas, porque todo lo que hace el trabaja
 | Dependencias y comportamiento crítico de aceptación (puntos 27 a 29) | §18, §19 |
 | Términos nuevos y códigos nuevos (`solo-el-supervisor`, bloque de Alertas) | Apéndices A y C |
 
-### 4.2 Super Admin (FRD 5.2 → 6.0)
+### 4.2 Super Admin (FRD 5.2 → 6.1)
 
 | Cambio | Dónde leerlo |
 | --- | --- |
@@ -172,13 +177,15 @@ Esta iteración tocó mucho las dos consolas, porque todo lo que hace el trabaja
 | El detalle de una aprobación enseña la **referencia según el tipo** y **los billetes** | **FR-SA-APR-3** |
 | La resolución guarda **la cuenta** de PuntoCash que la resolvió, no solo su nombre | **FR-SA-APR-5** |
 | El detalle de una jornada enseña **los billetes** y el cierre hecho en Worker | **FR-SA-JOR-3** |
-| El detalle de una operación enseña **la liquidación** | **FR-SA-OPS-2** |
+| El detalle de una operación enseña **la liquidación** y los billetes | **FR-SA-OPS-2** |
+| En una remesa entregada o un giro pagado, las **dos fotos del carné** de quien cobró, como en Admin | **FR-SA-OPS-2** (6.1) |
 | **Auditoría**: tipos nuevos —denominaciones, `caja.alertas-definidas`, `trabajador.datos-propios`, `trabajador.contrasena-cambiada`— | **FR-SA-AUD-2** |
 | Auditoría: un tercer autor, **el trabajador**, en lo que cambia de sí mismo; el filtro «Quién actuó» tiene **«Solo trabajadores»** | **FR-SA-AUD-1**, **-3**, **-10** |
 | La ficha del trabajador avisa que su usuario y su teléfono los puede cambiar él | **FR-SA-TRAB-3** |
 | **Tablas**: la fila entera abre su ficha en todos los listados y en las listas de las fichas (cajas y promociones de una sede, sedes y administradores de un operador); Jornadas pierde su enlace duplicado; las acciones de los rangos van en «⋯». Excepción: la matriz de Servicios | **FR-SA-SHELL-10** (nuevo), **FR-SA-SHELL-9** |
 | **Botones** uno al lado del otro; una caja por línea en los avisos | **FR-SA-SHELL-11** (nuevo) |
 | Cuentas de demostración: cajas con alertas | Apéndice B |
+| Sale la sección «Fuera de alcance»: queda fuera todo lo que el documento no especifica | Fila 6.0 de la tabla de versiones |
 
 ---
 
@@ -194,18 +201,6 @@ Contraseña `puntocash`, código `123456`. En un navegador sin vincular, Worker 
 
 **Arrancar.** `npm install`, `npm run build` y `npm start` (o `npm run dev`). Si ya tenías el servidor de desarrollo, páralo y borra `.next` antes de arrancar: hay rutas que ya no existen. La demostración trabaja en memoria y siembra jornadas y operaciones respecto a la hora actual, así que lo que se ve cambia a lo largo del día.
 
-**Pruebas.** `npm run typecheck` y `npm run test:ui`, contra la compilación de producción. Worker se prueba en un segundo servidor con `PUNTOCASH_PRUEBAS=1` (puestos de prueba aislados y rutas `/pruebas/*`, que sin esa variable responden 404). Resultado del 13/11: **Worker 342 pasan; consolas 503 pasan y 1 se salta**. Una pasada cortada a medias deja estado en memoria (por ejemplo, un cierre forzado): reinicia el servidor antes de repetir.
+**Foto del carné.** Se prueba con `RM-7X82-9KLM` en Remesas o `TR-260901-000245` en Cobrar giro. Sin móvil, «Abrir el enlace en este equipo (demostración)» abre la página del móvil en otra pestaña del ordenador. Con un móvil real, basta con que esté en la misma red que el ordenador: aunque la caja se abra por `localhost`, el QR lleva la IP del ordenador en la red local. La dependencia nueva `qrcode` la instala `npm install`.
 
----
-
-## 6. Fuera de esta entrega
-
-| Asunto | Estado |
-| --- | --- |
-| **Billetes en el kiosco** de autoservicio | Siguiente bloque |
-| **Incidencias** del trabajador en la ficha de Super Admin | Pendiente: hoy solo en Admin |
-| Diseño final del **comprobante** impreso | Pendiente; hoy lleva los datos y la liquidación |
-| Aviso **en vivo** del cierre forzado: hoy Worker pregunta cada 5 segundos | Para producción (**FR-CF-6**, Worker §16) |
-| Evaluación de las **alertas en el servidor** y notificaciones | Para producción |
-| Backend y persistencia reales | Pendientes en todo el producto |
-| Worker en tableta o teléfono | No se prueba: Worker es de escritorio |
+**Pruebas.** `npm run typecheck` y `npm run test:ui`, contra la compilación de producción. Worker se prueba en un segundo servidor con `PUNTOCASH_PRUEBAS=1` (puestos de prueba aislados y rutas `/pruebas/*`, que sin esa variable responden 404). Resultado del 16/11: **Worker 346 pasan; consolas 503 pasan y 1 se salta**. Una pasada cortada a medias deja estado en memoria (por ejemplo, un cierre forzado): reinicia el servidor antes de repetir.

@@ -270,8 +270,9 @@ function Rows({ rows }: { rows: readonly (readonly [string, React.ReactNode])[] 
     <dl className="flex flex-col">
       {rows.map(([label, value]) => (
         <div key={label} className="flex items-baseline justify-between gap-4 border-b border-border py-2.5 last:border-b-0 last:pb-0">
-          <dt className="min-w-0 text-body-sm text-text-secondary">{label}</dt>
-          <dd className="shrink-0 text-right text-body-sm font-medium text-text-primary">{value}</dd>
+          {/* La etiqueta es corta y no se parte; el dato sí, si es largo (una dirección, un correo). */}
+          <dt className="shrink-0 text-body-sm text-text-secondary">{label}</dt>
+          <dd className="min-w-0 text-right text-body-sm font-medium [overflow-wrap:anywhere] text-text-primary">{value}</dd>
         </div>
       ))}
     </dl>
@@ -281,8 +282,8 @@ function Rows({ rows }: { rows: readonly (readonly [string, React.ReactNode])[] 
 function ConfirmRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-border py-2.5">
-      <dt className="text-body-sm text-text-secondary">{label}</dt>
-      <dd className="text-body-sm font-semibold text-text-primary">{value}</dd>
+      <dt className="shrink-0 text-body-sm text-text-secondary">{label}</dt>
+      <dd className="min-w-0 text-right text-body-sm font-semibold [overflow-wrap:anywhere] text-text-primary">{value}</dd>
     </div>
   );
 }
