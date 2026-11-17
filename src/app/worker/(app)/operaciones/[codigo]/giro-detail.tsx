@@ -233,10 +233,10 @@ function GiroCard({ operation, isPayout }: { operation: OperationRecord; isPayou
                     <DetailRow label="Teléfono" value={snapshot.receiverPhone} numeric />
                   ) : null}
                   {snapshot.receiverEmail ? (
-                    <DetailRow label="Correo electrónico" value={snapshot.receiverEmail} />
+                    <DetailRow label="Correo electrónico" value={snapshot.receiverEmail} prosa />
                   ) : null}
                   {snapshot.receiverAddress ? (
-                    <DetailRow label="Dirección" value={snapshot.receiverAddress} />
+                    <DetailRow label="Dirección" value={snapshot.receiverAddress} prosa />
                   ) : null}
                   {location ? <DetailRow label="Provincia / Municipio" value={location} /> : null}
                 </DetailList>

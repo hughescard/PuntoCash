@@ -1,5 +1,5 @@
 import { test, expect } from "./worker-fixture";
-import { continuarAConfirmar } from "./worker-helpers";
+import { continuarAConfirmar, hacerFotosDelCarne, identificarRemitente } from "./worker-helpers";
 import { type Page } from "@playwright/test";
 
 
@@ -443,6 +443,9 @@ test.describe("Cobrar giro — Confirmar entrega", () => {
     await expect(onScreen(page, "Caja 03").first()).toBeVisible();
     /* Como en la remesa, los billetes de la entrega se ven antes de confirmar. */
     await expect(page.getByRole("heading", { name: "Billetes que se entregan" })).toBeVisible();
+    /* Y, sin las dos fotos del carné, no se confirma. */
+    await expect(page.getByRole("heading", { name: "Foto del carné del beneficiario" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Confirmar entrega" })).toBeDisabled();
 
     await expect(onScreen(page, "Acción irreversible")).toBeVisible();
     await expect(onScreen(page, /El giro quedará marcado como completado\./)).toBeVisible();
@@ -472,6 +475,7 @@ test.describe("Cobrar giro — external failures", () => {
     await goToCobrar(page);
     await reviewGiro(page, code);
     await continuarAConfirmar(page);
+    await hacerFotosDelCarne(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
   }
 
@@ -532,6 +536,7 @@ test.describe("Cobrar giro — payout completed", () => {
     await goToCobrar(page);
     await reviewGiro(page, "TR-260901-000245");
     await continuarAConfirmar(page);
+    await hacerFotosDelCarne(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Giro entregado correctamente" })).toBeVisible({
       timeout: 10_000,
@@ -636,12 +641,7 @@ test.describe("Enviar giro then Cobrar giro", () => {
     await goToSelector(page);
     await page.getByRole("link", { name: /Enviar giro/ }).click();
 
-    await page.locator("#giro-remitente-numero-documento").fill("90010112345");
-    await page.locator("#giro-remitente-nombre").fill("Carlos");
-    await page.locator("#giro-remitente-primer-apellido").fill("Pérez");
-    await page.locator("#giro-remitente-segundo-apellido").fill("Rodríguez");
-    await page.locator("#giro-remitente-fecha-nacimiento").fill("1985-01-01");
-    await page.locator("#giro-remitente-telefono").fill("+53 5 123 4567");
+    await identificarRemitente(page);
 
     await page.locator("#giro-beneficiario-nombre").fill("Ana Beltrán Soto");
     await page.locator("#giro-beneficiario-telefono").fill("+53 5 111 2222");

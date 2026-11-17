@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
@@ -229,4 +231,44 @@ export async function continuarAConfirmar(page: Page): Promise<void> {
     await expect(page.getByText("Los billetes cuadran.")).toBeVisible({ timeout: 15_000 });
     await boton.click();
   }
+}
+
+/** Una foto cualquiera hace de carné en las pruebas: lo que se comprueba es el recorrido, no la imagen. */
+const FOTO_DEL_CARNE = path.join(__dirname, "fixtures", "promocion.jpg");
+
+/**
+ * En la confirmación de una remesa o de un giro cobrado: hace las dos fotos
+ * del carné como las haría el móvil del trabajador —abre el enlace del QR en
+ * otra pestaña y sube anverso y reverso— y espera a que la caja las reciba.
+ */
+export async function hacerFotosDelCarne(page: Page): Promise<void> {
+  const enlace = page.getByRole("link", { name: /Abrir el enlace en este equipo/ });
+  await expect(enlace).toBeVisible({ timeout: 15_000 });
+  const url = await enlace.getAttribute("href");
+  expect(url, "la confirmación no ofrece el enlace del móvil").toBeTruthy();
+  const movil = await page.context().newPage();
+  await movil.setViewportSize({ width: 390, height: 844 });
+  await movil.goto(url!);
+  for (const cara of ["anverso", "reverso"] as const) {
+    /* El botón se habilita al hidratar: antes, el archivo no llegaría a ningún manejador. */
+    await expect(movil.getByRole("button", { name: `Hacer foto del ${cara}` })).toBeEnabled({ timeout: 15_000 });
+    await movil.locator(`input[data-cara="${cara}"]`).setInputFiles(FOTO_DEL_CARNE);
+    await expect(movil.getByRole("button", { name: `Repetir foto del ${cara}` })).toBeVisible({ timeout: 15_000 });
+  }
+  await expect(movil.getByText("Listo: las fotos ya están en la caja")).toBeVisible();
+  await movil.close();
+  await expect(page.getByRole("button", { name: "Repetir las fotos" })).toBeVisible({ timeout: 15_000 });
+}
+
+/**
+ * Enviar giro empieza identificando al remitente como el cliente de Cambio de
+ * moneda. Por defecto, el cliente sembrado Carlos Pérez Rodríguez (CI
+ * 90010112345, nacido el 01/01/1990, +53 5 1234 5678). Deja la prueba en el
+ * formulario del giro.
+ */
+export async function identificarRemitente(page: Page, documento = "90010112345"): Promise<void> {
+  await page.locator("#numero-documento").fill(documento);
+  await page.getByRole("button", { name: "Buscar cliente" }).click();
+  await page.getByRole("button", { name: /^(Seleccionar cliente y continuar|Continuar con este cliente)$/ }).click();
+  await expect(page.locator("#giro-beneficiario-nombre")).toBeVisible();
 }

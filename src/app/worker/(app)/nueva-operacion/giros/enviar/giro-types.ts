@@ -1,6 +1,6 @@
 import type { DocumentType } from "@/features/customers/customers";
 
-/** The approved base KYC set for the sender — identical shape to `Customer`, just not persisted as one (§20-22). */
+/** The sender's base KYC: always a registered `Customer`, identified as in Cambio de moneda and copied into the giro. */
 export interface SenderValues {
   documentType: DocumentType;
   documentNumber: string;

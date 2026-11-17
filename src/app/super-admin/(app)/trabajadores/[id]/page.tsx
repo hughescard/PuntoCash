@@ -104,6 +104,11 @@ export default async function SuperAdminTrabajadorPage({ params }: { params: Pro
                 valor={t.status === "activo" ? "Activo" : `Desactivado${t.deactivation?.at ? ` el ${fechaCorta(t.deactivation.at)}` : ""}`}
               />
             </dl>
+            {/* FR-SA-TRAB-3: si cambian, puede no haber sido el mercante. */}
+            <p className="mt-5 text-body-sm text-text-secondary">
+              El identificador y el teléfono los puede cambiar el propio trabajador desde su Perfil en Worker; esos cambios
+              quedan en la auditoría como suyos.
+            </p>
           </CardContent>
         </Card>
       </Section>

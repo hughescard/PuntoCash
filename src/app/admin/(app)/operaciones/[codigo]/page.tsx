@@ -20,6 +20,7 @@ import { OperationStatusCard } from "@/app/worker/(app)/operaciones/[codigo]/ope
 import { RemittanceDetail } from "@/app/worker/(app)/operaciones/[codigo]/remittance-detail";
 import { LiquidacionCard } from "@/app/worker/(app)/operaciones/[codigo]/liquidacion-card";
 import { BilletesDeLaOperacion } from "./billetes-de-la-operacion";
+import { FotosDelCarne } from "./fotos-del-carne";
 import { OperationCashCard, ServiceDetail } from "@/app/worker/(app)/operaciones/[codigo]/service-detail";
 import { EstadoBadge, fechaYHora, nombreDeJornada } from "../../jornadas/formato";
 
@@ -117,6 +118,8 @@ export default async function AdminOperacionPage({ params }: { params: Promise<{
       <LiquidacionCard operation={o} />
 
       {jornada ? <BilletesDeLaOperacion jornada={jornada} codigo={o.codigo} /> : null}
+
+      <FotosDelCarne operacion={o} />
     </>
   );
 }

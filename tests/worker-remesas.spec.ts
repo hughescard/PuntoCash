@@ -1,5 +1,7 @@
+import path from "node:path";
+
 import { test, expect } from "./worker-fixture";
-import { continuarAConfirmar } from "./worker-helpers";
+import { continuarAConfirmar, hacerFotosDelCarne } from "./worker-helpers";
 import { type Page } from "@playwright/test";
 
 
@@ -54,11 +56,44 @@ test.describe("Remesas", () => {
   test("completes once, creates a Remesa operation and cash-out", async ({ page }) => {
     await searchReadyRemittance(page);
     await continuarAConfirmar(page);
+    await hacerFotosDelCarne(page);
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Remesa completada" })).toBeVisible();
     await expect(page.getByText("María Pérez García").first()).toBeVisible();
     await page.getByRole("link", { name: "Ir a Operaciones" }).click();
     await expect(page.getByText("Remesa", { exact: true }).locator("visible=true").first()).toBeVisible();
+  });
+
+  test("the delivery cannot be confirmed without both photos of the carné", async ({ page }) => {
+    await searchReadyRemittance(page);
+    await continuarAConfirmar(page);
+    await expect(page.getByRole("heading", { name: "Foto del carné del beneficiario" })).toBeVisible();
+    await expect(page.getByRole("img", { name: /Código QR para hacer la foto del carné/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Confirmar entrega" })).toBeDisabled();
+
+    /* Solo el anverso: sigue sin poder confirmarse. */
+    const url = await page.getByRole("link", { name: /Abrir el enlace en este equipo/ }).getAttribute("href");
+    const movil = await page.context().newPage();
+    await movil.goto(url!);
+    await expect(movil.getByText("María Pérez García")).toBeVisible();
+    /* El móvil no enseña el documento del beneficiario. */
+    await expect(movil.getByText("85010112345")).toHaveCount(0);
+    await expect(movil.getByRole("button", { name: "Hacer foto del anverso" })).toBeEnabled();
+    await movil.locator('input[data-cara="anverso"]').setInputFiles(path.join(__dirname, "fixtures", "promocion.jpg"));
+    await expect(movil.getByRole("button", { name: "Repetir foto del anverso" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Anverso del carné del beneficiario" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Confirmar entrega" })).toBeDisabled();
+
+    /* Con el reverso, sí. */
+    await movil.locator('input[data-cara="reverso"]').setInputFiles(path.join(__dirname, "fixtures", "promocion.jpg"));
+    await expect(movil.getByText("Listo: las fotos ya están en la caja")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Confirmar entrega" })).toBeEnabled({ timeout: 15_000 });
+    await page.getByRole("button", { name: "Confirmar entrega" }).click();
+    await expect(page.getByRole("heading", { name: "Remesa completada" })).toBeVisible();
+
+    /* Usado el enlace, el móvil ya no sube nada más. */
+    await movil.reload();
+    await expect(movil.getByRole("heading", { name: "Entrega ya confirmada" })).toBeVisible();
   });
 
   test("has no horizontal overflow at desktop widths", async ({ page }) => {

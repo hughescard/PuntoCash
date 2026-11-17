@@ -21,6 +21,10 @@ import { GiroDetail } from "@/app/worker/(app)/operaciones/[codigo]/giro-detail"
 import { OperationStatusCard } from "@/app/worker/(app)/operaciones/[codigo]/operation-status-card";
 import { RemittanceDetail } from "@/app/worker/(app)/operaciones/[codigo]/remittance-detail";
 import { OperationCashCard, ServiceDetail } from "@/app/worker/(app)/operaciones/[codigo]/service-detail";
+import { LiquidacionCard } from "@/app/worker/(app)/operaciones/[codigo]/liquidacion-card";
+/* La liquidación y los billetes, los mismos que ve el mercante (FR-SA-OPS-2). */
+import { BilletesDeLaOperacion } from "@/app/admin/(app)/operaciones/[codigo]/billetes-de-la-operacion";
+import { FotosDelCarne } from "@/app/admin/(app)/operaciones/[codigo]/fotos-del-carne";
 import { EstadoBadge, fechaYHora, nombreDeJornada } from "@/app/admin/(app)/jornadas/formato";
 
 export const metadata: Metadata = {
@@ -144,6 +148,12 @@ export default async function SuperAdminOperacionPage({ params }: { params: Prom
       <Section title="La operación">
         <DetalleDeWorker operacion={o} />
       </Section>
+
+      <LiquidacionCard operation={o} />
+
+      {jornada ? <BilletesDeLaOperacion jornada={jornada} codigo={o.codigo} /> : null}
+
+      <FotosDelCarne operacion={o} />
     </>
   );
 }

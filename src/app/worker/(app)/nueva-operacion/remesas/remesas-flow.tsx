@@ -16,6 +16,9 @@ import { restar } from "@/features/caja/billetes";
 import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimiento";
 import { RecuentoDeMoneda } from "../../caja/recuento-de-moneda";
 import { EfectivoDeOperacion } from "../efectivo-de-operacion";
+import { FotoDelCarne } from "../foto-del-carne";
+import type { CapturaAbierta } from "../../../_foto-del-carne-actions";
+import type { MotivoDeCaptura } from "@/features/network/fotos-del-carne";
 import { entregadoAlCliente, difiereDeLoDebido } from "@/features/operations/entregado";
 import { liquidacionComoLineas } from "../liquidacion";
 import type { OperationLiquidation } from "@/features/operations/operations-history";
@@ -32,6 +35,7 @@ const MENSAJE_DE_BILLETES: Readonly<Record<string, string>> = {
   "sin-salida": "La caja no puede pagar eso entero. No se registró nada: ofrécele al cliente otra salida o que vuelva más tarde.",
   "propuesta-vencida": "Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Revísalos.",
   "sin-esos-billetes": "Contada la caja, esos billetes no están. No se registró nada: vuelve a marcar con qué billetes se entrega.",
+  "falta-foto-del-carne": "Faltan las fotos del carné del beneficiario. No se registró nada: haz las dos fotos con el móvil.",
 };
 
 export function RemesasFlow(): React.JSX.Element {
@@ -55,6 +59,13 @@ export function RemesasFlow(): React.JSX.Element {
   const [externo, setExterno] = React.useState<RemittanceSnapshot | null>(null);
   const [recontando, setRecontando] = React.useState<string | null>(null);
   const [recarga, setRecarga] = React.useState(0);
+  /** La foto del carné de quien cobra: el código abierto y, cuando llegan las dos fotos, su identificador. */
+  const [captura, setCaptura] = React.useState<CapturaAbierta | null>(null);
+  const [fotoLista, setFotoLista] = React.useState<string | null>(null);
+  const motivoDeFoto = React.useMemo<MotivoDeCaptura | null>(
+    () => (remittance ? { servicio: "Remesa", referencia: remittance.code, beneficiario: remittance.receiverName, documento: remittance.receiverIdentification } : null),
+    [remittance],
+  );
 
   /*
    * Sin jornada abierta esta pantalla no opera — salvo que el flujo ya haya
@@ -75,6 +86,7 @@ export function RemesasFlow(): React.JSX.Element {
     const result = await remittanceProvider.findByCode(normalized);
     setSearching(false);
     if (!result.ok) { setRemittance(null); setNotFound(true); return; }
+    setCaptura(null); setFotoLista(null);
     setCode(normalized); setRemittance(result.remittance); setStep("revision");
   }
 
@@ -101,7 +113,7 @@ export function RemesasFlow(): React.JSX.Element {
   }, [handoffCode]);
 
   async function confirm() {
-    if (!remittance || !payable || submitting || !efectivo) return;
+    if (!remittance || !payable || submitting || !efectivo || !fotoLista) return;
     setSubmitting(true); setError(null);
     const operacion = {
       servicio: "Remesa" as const,
@@ -120,12 +132,12 @@ export function RemesasFlow(): React.JSX.Element {
         setError(`La caja no tiene ${remittance.payoutCurrency} suficiente para entregar esta remesa. No se registró nada: avisa a tu supervisor.`);
         return;
       }
-      const previa = await comprobarOperacionAction(operacion);
+      const previa = await comprobarOperacionAction(operacion, fotoLista);
       if (!previa.ok) {
         setSubmitting(false);
         if (previa.reason === "recuento-necesario" && previa.currency) { setRecontando(previa.currency); return; }
         setError(MENSAJE_DE_BILLETES[previa.reason] ?? "No se pudo comprobar la entrega. Vuelve a los billetes y revísalos.");
-        if (previa.reason in MENSAJE_DE_BILLETES && previa.reason !== "cierre-forzado") { setRecarga((n) => n + 1); setStep("efectivo"); }
+        if (previa.reason in MENSAJE_DE_BILLETES && previa.reason !== "cierre-forzado" && previa.reason !== "falta-foto-del-carne") { setRecarga((n) => n + 1); setStep("efectivo"); }
         return;
       }
       const external = await remittanceProvider.complete(remittance.id);
@@ -136,7 +148,7 @@ export function RemesasFlow(): React.JSX.Element {
     const registrada = await registrarOperacionAction({
       ...operacion,
       remittance: { serviceId: remittance.id, code: remittance.code, reference: remittance.reference, beneficiaryName: remittance.receiverName, beneficiaryIdentification: remittance.receiverIdentification, deliveryMethod: remittance.deliveryMethod, payoutAmount: remittance.deliveryAmount, payoutCurrency: remittance.payoutCurrency, externalStatus: entregada.status },
-    });
+    }, fotoLista);
     if (!registrada.ok) {
       setSubmitting(false);
       if (registrada.reason === "recuento-necesario" && registrada.currency) { setRecontando(registrada.currency); return; }
@@ -183,7 +195,19 @@ export function RemesasFlow(): React.JSX.Element {
       </div>
     );
   }
-  return <Confirmation remittance={remittance} efectivo={efectivo} tipos={vista.denominaciones} error={error} submitting={submitting} onBack={() => setStep("efectivo")} onConfirm={confirm} />;
+  return (
+    <Confirmation
+      remittance={remittance}
+      efectivo={efectivo}
+      tipos={vista.denominaciones}
+      error={error}
+      submitting={submitting}
+      fotoLista={fotoLista !== null}
+      foto={motivoDeFoto ? <FotoDelCarne motivo={motivoDeFoto} captura={captura} onCaptura={setCaptura} onLista={setFotoLista} /> : null}
+      onBack={() => setStep("efectivo")}
+      onConfirm={confirm}
+    />
+  );
 }
 
 /**
@@ -259,7 +283,7 @@ function DemoCodes({ onPick }: { onPick: (code: string) => void }) {
   );
 }
 
-function Confirmation({ remittance, efectivo, tipos, error, submitting, onBack, onConfirm }: { remittance: RemittanceSnapshot; efectivo: EfectivoRegistrado | null; tipos: Readonly<Record<string, readonly import("@/features/caja/billetes").Denominacion[]>>; error: string | null; submitting: boolean; onBack: () => void; onConfirm: () => void }) { const CAJA_SUMMARY = useCaja().summary; return <div className="mx-auto flex w-full max-w-3xl flex-col gap-6"><Back onClick={onBack} label="Volver a los billetes" /><header><h1 className="text-screen-title text-text-primary">Confirmar entrega de remesa</h1><p className="mt-2 text-body text-text-secondary">Confirma la entrega del efectivo al beneficiario.</p></header><Card><CardContent className="pt-6"><Facts rows={[fact("Código de remesa", remittance.code), fact("Beneficiario", remittance.receiverName), fact("Documento de identidad", remittance.receiverIdentification), fact("Importe a entregar", <Money remittance={remittance} key="money" />), fact("Moneda", `${remittance.payoutCurrency} · ${currencyName(remittance.payoutCurrency)}`), fact("Caja", CAJA_SUMMARY.register)]} /></CardContent></Card>{efectivo ? <Card><CardHeader><CardTitle>Billetes que se entregan</CardTitle></CardHeader><CardContent className="flex flex-col gap-4 pt-0"><BilletesDelMovimiento billetes={restar({}, efectivo.entrega)} currency={remittance.payoutCurrency} tipos={tipos[remittance.payoutCurrency] ?? []} nombre={`${remittance.payoutCurrency} que salen`} />{efectivo.entregaCup ? <BilletesDelMovimiento billetes={restar({}, efectivo.entregaCup)} currency="CUP" tipos={tipos["CUP"] ?? []} nombre="CUP que salen" /> : null}</CardContent></Card> : null}<Alert variant="warning" title="Acción irreversible">Confirma la operación únicamente después de verificar la identidad del beneficiario y entregar el efectivo correspondiente. Esta acción marcará la remesa como entregada.</Alert>{error ? <Alert variant="error" title={error} /> : null}<div className="pc-botonera sm:justify-end"><Button variant="secondary" onClick={onBack}>Cancelar</Button><Button variant="destructive" loading={submitting} onClick={onConfirm}>{submitting ? "Confirmando…" : "Confirmar entrega"}</Button></div></div>; }
+function Confirmation({ remittance, efectivo, tipos, error, submitting, fotoLista, foto, onBack, onConfirm }: { remittance: RemittanceSnapshot; efectivo: EfectivoRegistrado | null; tipos: Readonly<Record<string, readonly import("@/features/caja/billetes").Denominacion[]>>; error: string | null; submitting: boolean; fotoLista: boolean; foto: React.ReactNode; onBack: () => void; onConfirm: () => void }) { const CAJA_SUMMARY = useCaja().summary; return <div className="mx-auto flex w-full max-w-3xl flex-col gap-6"><Back onClick={onBack} label="Volver a los billetes" /><header><h1 className="text-screen-title text-text-primary">Confirmar entrega de remesa</h1><p className="mt-2 text-body text-text-secondary">Confirma la entrega del efectivo al beneficiario.</p></header><Card><CardContent className="pt-6"><Facts rows={[fact("Código de remesa", remittance.code), fact("Beneficiario", remittance.receiverName), fact("Documento de identidad", remittance.receiverIdentification), fact("Importe a entregar", <Money remittance={remittance} key="money" />), fact("Moneda", `${remittance.payoutCurrency} · ${currencyName(remittance.payoutCurrency)}`), fact("Caja", CAJA_SUMMARY.register)]} /></CardContent></Card>{efectivo ? <Card><CardHeader><CardTitle>Billetes que se entregan</CardTitle></CardHeader><CardContent className="flex flex-col gap-4 pt-0"><BilletesDelMovimiento billetes={restar({}, efectivo.entrega)} currency={remittance.payoutCurrency} tipos={tipos[remittance.payoutCurrency] ?? []} nombre={`${remittance.payoutCurrency} que salen`} />{efectivo.entregaCup ? <BilletesDelMovimiento billetes={restar({}, efectivo.entregaCup)} currency="CUP" tipos={tipos["CUP"] ?? []} nombre="CUP que salen" /> : null}</CardContent></Card> : null}{foto}<Alert variant="warning" title="Acción irreversible">Confirma la operación únicamente después de verificar la identidad del beneficiario y entregar el efectivo correspondiente. Esta acción marcará la remesa como entregada.</Alert>{error ? <Alert variant="error" title={error} /> : null}<div className="pc-botonera sm:justify-end"><Button variant="secondary" onClick={onBack}>Cancelar</Button><Button variant="destructive" loading={submitting} disabled={!fotoLista} onClick={onConfirm}>{submitting ? "Confirmando…" : "Confirmar entrega"}</Button></div></div>; }
 function Result({ completed }: { completed: Completed }) { const CAJA_SUMMARY = useCaja().summary; const { remittance } = completed; return <div className="mx-auto flex w-full max-w-3xl flex-col items-center"><span className="grid size-14 place-items-center rounded-pill border-2 border-success text-success"><CircleCheck className="size-8" aria-hidden="true" /></span><h1 className="mt-5 text-screen-title text-text-primary">Remesa completada</h1><p className="mt-2 text-body text-text-secondary">La remesa ha sido marcada como entregada.</p><Card className="mt-8 w-full"><CardContent className="pt-6"><Facts rows={[["Código de remesa", remittance.code], ["Beneficiario", remittance.receiverName], ["Documento de identidad", remittance.receiverIdentification], ...(difiereDeLoDebido({ amount: remittance.deliveryAmount, currency: remittance.payoutCurrency }, completed.liquidacion) ? [["Importe de la remesa", <Money remittance={remittance} key="nominal" />] as const] : []), ["Importe entregado", <Entregado key="money" importes={entregadoAlCliente({ amount: remittance.deliveryAmount, currency: remittance.payoutCurrency }, completed.liquidacion)} />], ["Moneda", `${remittance.payoutCurrency} · ${currencyName(remittance.payoutCurrency)}`], ...liquidacionComoLineas(completed.liquidacion).map((l) => [l.etiqueta, l.valor] as const), ["Caja", CAJA_SUMMARY.register], ["Trabajador", CAJA_SUMMARY.worker], ["Fecha y hora", formatDateTime(new Date(completed.completedAt))]]} /></CardContent></Card><p className="mt-5 text-body-sm text-text-secondary">La remesa fue completada correctamente y registrada en PuntoCash.</p><div className="pc-botonera mt-7 sm:justify-center"><Button variant="secondary" onClick={() => window.print()}><Printer aria-hidden="true" />Imprimir comprobante</Button><Button asChild><Link href="/worker/operaciones"><FileText aria-hidden="true" />Ir a Operaciones</Link></Button></div><section className="hidden print:block" aria-hidden="true"><h1>PuntoCash · Comprobante de remesa</h1><dl><dt>Operación</dt><dd>{completed.operationCode}</dd><dt>Código de remesa</dt><dd>{remittance.code}</dd><dt>Beneficiario</dt><dd>{remittance.receiverName}</dd><dt>Documento</dt><dd>{remittance.receiverIdentification}</dd><dt>Importe entregado</dt><dd>{entregadoAlCliente({ amount: remittance.deliveryAmount, currency: remittance.payoutCurrency }, completed.liquidacion).map(formatMoney).join(" + ")}</dd>{liquidacionComoLineas(completed.liquidacion).map((l) => <React.Fragment key={l.etiqueta}><dt>{l.etiqueta}</dt><dd>{l.valor}</dd></React.Fragment>)}<dt>Caja</dt><dd>{CAJA_SUMMARY.register}</dd><dt>Trabajador</dt><dd>{CAJA_SUMMARY.worker}</dd><dt>Fecha y hora</dt><dd>{formatDateTime(new Date(completed.completedAt))}</dd></dl></section></div>; }
 function Facts({ rows }: { rows: readonly (readonly [string, React.ReactNode])[] }) { return <dl className="grid gap-4 sm:grid-cols-2">{rows.map(([label, value]) => <div key={label} className="border-b border-border pb-3 last:border-b-0"><dt className="text-caption text-text-secondary">{label}</dt><dd className="mt-1 text-body font-medium text-text-primary">{value}</dd></div>)}</dl>; }
 function fact(label: string, value: React.ReactNode): readonly [string, React.ReactNode] { return [label, value]; }

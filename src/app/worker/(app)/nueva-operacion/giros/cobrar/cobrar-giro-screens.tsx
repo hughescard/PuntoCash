@@ -137,11 +137,17 @@ export function GiroPayoutConfirmation({
   worker,
   submitting,
   error,
+  fotoLista,
+  foto,
   onBack,
   onCancel,
   onConfirm,
 }: {
   transfer: TransferPayoutSnapshot;
+  /** Las dos fotos del carné ya están: sin ellas no se confirma. */
+  fotoLista: boolean;
+  /** La tarjeta de la foto del carné. */
+  foto: React.ReactNode;
   /** Los billetes de la entrega, para que se vean antes de confirmar, como en la remesa. */
   efectivo: EfectivoRegistrado | null;
   tipos: Readonly<Record<string, readonly Denominacion[]>>;
@@ -211,6 +217,8 @@ export function GiroPayoutConfirmation({
         </Card>
       ) : null}
 
+      {foto}
+
       <Alert variant="warning" title="Acción irreversible">
         Confirma la operación únicamente después de verificar la identidad del beneficiario y
         entregar el efectivo correspondiente. El giro quedará marcado como completado.
@@ -222,7 +230,7 @@ export function GiroPayoutConfirmation({
         <Button variant="secondary" type="button" onClick={onCancel} disabled={submitting}>
           Cancelar
         </Button>
-        <Button type="button" loading={submitting} onClick={onConfirm}>
+        <Button type="button" loading={submitting} disabled={!fotoLista} onClick={onConfirm}>
           {submitting ? null : <CircleCheck aria-hidden="true" />}
           {submitting ? "Confirmando…" : "Confirmar entrega"}
         </Button>

@@ -26,8 +26,9 @@ import { currentKioskDevice } from "./device-session";
  *                   pre-searched by document, the worker verifies and selects.
  *   remesas       → remittance found automatically; the worker verifies the
  *                   beneficiary's document in person (R5).
- *   giros-enviar  → the whole giro prefilled and opened on "Revisar giro":
- *                   the worker only receives the cash and confirms.
+ *   giros-enviar  → sender pre-searched by document, the worker verifies and
+ *                   selects (as in cambio-moneda); the rest of the giro is
+ *                   prefilled, so it then opens on "Revisar giro".
  *   giros-cobrar  → giro found automatically; the worker checks the carné
  *                   photo against the person and pays.
  *

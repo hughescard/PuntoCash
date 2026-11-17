@@ -153,50 +153,6 @@ export function StepRevision({
             </div>
           </CardContent>
         </Card>
-        {efectivo ? (
-          <Card>
-            <CardHeader>
-              <div className="flex min-w-0 items-center gap-3">
-                <CardGlyph icon={Wallet} />
-                <CardTitle>Billetes de la operación</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <h4 className="text-body font-semibold text-text-primary">
-                {quote.sourceCurrency} que entran
-              </h4>
-              <BilletesDelMovimiento
-                billetes={restar(efectivo.paga, efectivo.vuelto)}
-                currency={quote.sourceCurrency}
-                tipos={denominaciones[quote.sourceCurrency] ?? []}
-                nombre={`${quote.sourceCurrency} que entran`}
-                leyenda="En positivo lo que da el cliente; en negativo el vuelto."
-              />
-              <h4 className="text-body font-semibold text-text-primary">
-                {quote.destinationCurrency} que salen
-              </h4>
-              <BilletesDelMovimiento
-                billetes={restar({}, efectivo.entrega)}
-                currency={quote.destinationCurrency}
-                tipos={denominaciones[quote.destinationCurrency] ?? []}
-                nombre={`${quote.destinationCurrency} que salen`}
-              />
-              {efectivo.entregaCup ? (
-                <>
-                  <h4 className="text-body font-semibold text-text-primary">
-                    CUP que salen
-                  </h4>
-                  <BilletesDelMovimiento
-                    billetes={restar({}, efectivo.entregaCup)}
-                    currency="CUP"
-                    tipos={denominaciones["CUP"] ?? []}
-                    nombre="CUP que salen"
-                  />
-                </>
-              ) : null}
-            </CardContent>
-          </Card>
-        ) : null}
       </div>
 
       {/* ---------------- Efecto en la caja ----------------
@@ -233,6 +189,52 @@ export function StepRevision({
           </CardContent>
         </Card>
       </div>
+
+      {/* Los billetes, a todo el ancho: en la columna central no cabían las tablas. */}
+      {efectivo ? (
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <div className="flex min-w-0 items-center gap-3">
+              <CardGlyph icon={Wallet} />
+              <CardTitle>Billetes de la operación</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <h4 className="text-body font-semibold text-text-primary">
+              {quote.sourceCurrency} que entran
+            </h4>
+            <BilletesDelMovimiento
+              billetes={restar(efectivo.paga, efectivo.vuelto)}
+              currency={quote.sourceCurrency}
+              tipos={denominaciones[quote.sourceCurrency] ?? []}
+              nombre={`${quote.sourceCurrency} que entran`}
+              leyenda="En positivo lo que da el cliente; en negativo el vuelto."
+            />
+            <h4 className="text-body font-semibold text-text-primary">
+              {quote.destinationCurrency} que salen
+            </h4>
+            <BilletesDelMovimiento
+              billetes={restar({}, efectivo.entrega)}
+              currency={quote.destinationCurrency}
+              tipos={denominaciones[quote.destinationCurrency] ?? []}
+              nombre={`${quote.destinationCurrency} que salen`}
+            />
+            {efectivo.entregaCup ? (
+              <>
+                <h4 className="text-body font-semibold text-text-primary">
+                  CUP que salen
+                </h4>
+                <BilletesDelMovimiento
+                  billetes={restar({}, efectivo.entregaCup)}
+                  currency="CUP"
+                  tipos={denominaciones["CUP"] ?? []}
+                  nombre="CUP que salen"
+                />
+              </>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }
