@@ -296,9 +296,10 @@ function CashMovementCard({ operation, isPayout }: { operation: OperationRecord;
 
 /**
  * Lo que costó el giro y lo que movió en la caja, leído como una cuenta de
- * arriba abajo (decisión del 19/11/2026): lo que recibe el beneficiario, la
- * tarifa y el total cobrado; lo que entregó el cliente y el vuelto, si lo
- * hubo; y la entrada en caja, que es el único movimiento del libro, neto.
+ * arriba abajo (decisión del 19/11/2026): lo que recibe el beneficiario y la
+ * tarifa; lo que entregó el cliente y el vuelto, si lo hubo; y al final el
+ * total cobrado, al que llegan las dos cuentas. Debajo, la entrada en caja,
+ * que es el único movimiento del libro, neto.
  *
  * Sustituye a «Movimiento de efectivo» + «Cómo se movió el efectivo» en el
  * giro enviado: separadas, sus tres cifras no se relacionaban entre sí.
@@ -333,13 +334,14 @@ function CuentaDelEnvio({ operation }: { operation: OperationRecord }) {
             />
           </>
         ) : null}
-        <DetailRow label="Total cobrado" value={m(total)} numeric strong />
         {vuelto > 0 ? (
           <>
             <DetailRow label="Entregó el cliente" value={m(total + vuelto)} numeric />
             <DetailRow label="Vuelto" value={<span className="text-error-foreground">−{m(vuelto)}</span>} numeric />
           </>
         ) : null}
+        {/* Cierra la cuenta: es a lo que llegan las dos sumas, giro + tarifa y entregó − vuelto. */}
+        <DetailRow label="Total cobrado" value={m(total)} numeric strong />
       </DetailList>
 
       <MovementBox label="Entrada en caja — Giro" value={`+${m(money.amount)}`} tone="positive" />
