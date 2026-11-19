@@ -12,8 +12,12 @@ import { DetailCard, DetailList, DetailRow } from "./detail-parts";
  * no se pinta.
  */
 export function LiquidacionCard({ operation }: { operation: OperationRecord }): React.JSX.Element | null {
-  /* El giro enviado lo cuenta en su propia tarjeta, junto a la tarifa y la entrada en caja (19/11/2026). */
-  if (operation.transfer?.transferAction === "send") return null;
+  /*
+   * Cambio, remesa y giro lo cuentan en su propia cuenta del efectivo, junto a
+   * lo que entró o salió de la caja (19/11/2026). Queda para los servicios que
+   * todavía no tienen detalle propio.
+   */
+  if (operation.amount.kind === "exchange" || operation.remittance || operation.transfer) return null;
   const lineas = liquidacionComoLineas(operation.liquidacion);
   if (lineas.length === 0) return null;
   return (

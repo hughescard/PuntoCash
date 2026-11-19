@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowDown, ArrowLeftRight, FileText, Wallet } from "lucide-react";
+import { ArrowDown, ArrowLeftRight, FileText } from "lucide-react";
 
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
@@ -7,7 +7,8 @@ import { formatAppliedRateLine, formatMoney, type Money } from "@/lib/format";
 import { findCurrency } from "@/features/exchange/quote";
 import type { OperationRecord } from "@/features/operations/operations-history";
 import { difiereDeLoDebido, entregadoAlCliente } from "@/features/operations/entregado";
-import { DetailCard, DetailList, DetailRow } from "./detail-parts";
+import { DetailCard } from "./detail-parts";
+import { CuentaDeEfectivo, filasDeUnPago, salidasDeUnPago, type FilaDeCuenta } from "./cuenta-de-efectivo";
 
 /**
  * "Detalle del servicio" — the service-specific half of the detail screen.
@@ -41,25 +42,31 @@ export function OperationCashCard({
   operation: OperationRecord;
 }): React.JSX.Element | null {
   if (operation.amount.kind !== "exchange") return null;
+  /* La tasa ya está en «Detalle del servicio», junto a las dos cifras. */
   const { source, destination } = operation.amount;
-  /* Lo que salió de verdad (12/11/2026): sin lo que quedó a favor de la casa, y con la parte pagada en CUP. */
-  const salio = entregadoAlCliente(destination, operation.liquidacion);
+  const l = operation.liquidacion;
+  /* La cuenta (19/11/2026): lo que dio el cliente y su vuelto, lo que cambia, lo que le correspondía y cómo se le pagó. */
+  const vuelto = l?.vuelto?.currency === source.currency ? l.vuelto.importe : 0;
+  const filasDelPago = filasDeUnPago(destination, "Le corresponde", l, "Recibe el cliente");
+  const filas: FilaDeCuenta[] = [
+    ...(vuelto > 0
+      ? [
+          { etiqueta: "Entregó el cliente", valor: formatMoney({ amount: source.amount + vuelto, currency: source.currency }) },
+          { etiqueta: "Vuelto", valor: `−${formatMoney({ amount: vuelto, currency: source.currency })}`, resta: true },
+        ]
+      : []),
+    { etiqueta: "Cambia", valor: formatMoney(source) },
+    /* Si se le pagó justo lo que le correspondía, «le corresponde» y «recibe» son la misma cifra: basta una. */
+    ...(filasDelPago.length === 1 ? [{ etiqueta: "Recibe el cliente", valor: formatMoney(destination), total: true }] : filasDelPago),
+  ];
 
   return (
-    <DetailCard title="Movimientos de caja" icon={Wallet}>
-      <DetailList>
-        <DetailRow label="Entró en caja" value={`+${formatMoney(source)}`} numeric />
-        {salio.map((m) => (
-          <DetailRow
-            key={m.currency}
-            label={m.currency === destination.currency ? "Salió de caja (entregado al cliente)" : "Salió de caja en CUP (por falta de billetes)"}
-            value={`−${formatMoney(m)}`}
-            numeric
-            strong
-          />
-        ))}
-      </DetailList>
-    </DetailCard>
+    <CuentaDeEfectivo
+      titulo="Movimientos de caja"
+      filas={filas}
+      movimientos={[{ sentido: "entrada", money: source }, ...salidasDeUnPago(destination, l)]}
+      servicio="Cambio"
+    />
   );
 }
 
@@ -143,7 +150,7 @@ function CurrencyExchangeDetail({
       ))}
       {difiereDeLoDebido(destination, liquidacion) ? (
         <p className="text-caption text-text-secondary">
-          Según la tasa le correspondían {formatMoney(destination)}. La diferencia está en «Cómo se movió el efectivo».
+          Según la tasa le correspondían {formatMoney(destination)}. La diferencia está en «Movimientos de caja».
         </p>
       ) : null}
 

@@ -60,8 +60,11 @@ test.describe("Cambio con vuelto", () => {
 
     await page.getByRole("link", { name: "Ver detalle" }).click();
     await expect(page.getByRole("heading", { name: /^Operación PC-/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Cómo se movió el efectivo" })).toBeVisible();
-    await expect(onScreen(page, "Vuelto al cliente").first()).toBeVisible();
+    /* El vuelto es una fila de la cuenta del cambio (19/11/2026), no una tarjeta aparte. */
+    await expect(page.getByRole("heading", { name: "Movimientos de caja" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Cómo se movió el efectivo" })).toHaveCount(0);
+    await expect(onScreen(page, "Entregó el cliente").first()).toBeVisible();
+    await expect(onScreen(page, "−50,00 USD").first()).toBeVisible();
   });
 });
 

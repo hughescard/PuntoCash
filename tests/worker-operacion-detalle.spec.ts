@@ -98,7 +98,10 @@ test.describe("operation detail — Cambio de moneda", () => {
 
   test("shows what entered and left the caja, without any balance", async ({ page }) => {
     await expect(onScreen(page, "Movimientos de caja").first()).toBeVisible();
-    await expect(onScreen(page, "Salió de caja (entregado al cliente)").first()).toBeVisible();
+    /* La cuenta del cambio (19/11/2026): lo que cambia, lo que recibe y, debajo, lo que entró y salió del libro. */
+    await expect(onScreen(page, "Recibe el cliente").first()).toBeVisible();
+    await expect(onScreen(page, "Entrada en caja — Cambio").first()).toBeVisible();
+    await expect(onScreen(page, "Salida de caja — Cambio").first()).toBeVisible();
     await expect(onScreen(page, "−920,00 EUR").first()).toBeVisible();
     /* Worker opera a ciegas (6/11/2026). */
     for (const gone of ["Estado de caja", "Disponible antes", "Disponible después", "1.250,00 EUR", "330,00 EUR"]) {
@@ -193,7 +196,7 @@ test.describe("operation detail — Remesa", () => {
 
   test("shows the linked commercial cash-out snapshot and stays read-only", async ({ page }) => {
     await page.goto(`/worker/operaciones/${REMITTANCE_CODE}`);
-    for (const value of ["Movimiento de efectivo", "−500,00 CUP", "Salida", REMITTANCE_CODE]) {
+    for (const value of ["Movimiento de efectivo", "Importe de la remesa", "−500,00 CUP", "Salida de caja — Remesa", REMITTANCE_CODE]) {
       await expect(onScreen(page, value).first()).toBeVisible();
     }
     for (const gone of ["8.450,00 CUP", "7.950,00 CUP", "Saldo anterior", "Saldo resultante"]) {

@@ -287,7 +287,8 @@ test.describe("Operation Detail — giro cobrado", () => {
   });
 
   test("shows the cash exit, without any balance", async ({ page }) => {
-    await expect(onScreen(page, "Salida — Giro")).toBeVisible();
+    await expect(onScreen(page, "Salida de caja — Giro")).toBeVisible();
+    await expect(onScreen(page, "Importe del giro")).toBeVisible();
     await expect(onScreen(page, "−2.500,00 CUP")).toBeVisible();
     await expect(onScreen(page, "Saldo anterior")).toHaveCount(0);
     await expect(onScreen(page, "Saldo resultante")).toHaveCount(0);
