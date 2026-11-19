@@ -78,7 +78,16 @@ export interface GiroEnviarRequestData {
   sender: KioskClientInput;
   beneficiary: KioskBeneficiaryInput;
   senderCurrency: string;
+  /**
+   * El importe que dijo el cliente. Con `forma: "enviar"`, lo que entrega él;
+   * con `"llegar"` (o sin forma, como hoy), lo que recibe el beneficiario.
+   */
   deliveryAmount: number;
+  /**
+   * Cómo pidió el giro (tarifas, 19/11/2026). El kiosco todavía no lo
+   * pregunta: Worker ya lo lee para cuando lo haga, y sin él entiende «llegar».
+   */
+  forma?: "enviar" | "llegar";
 }
 
 export interface GiroCobrarRequestData {

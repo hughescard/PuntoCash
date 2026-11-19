@@ -759,3 +759,57 @@ test.describe("Cierre forzado visto por el trabajador", () => {
     })).toMatchObject({ ok: false, reason: "jornada-no-abierta" });
   });
 });
+
+test.describe("Tarifa de un giro enviado (19/11/2026)", () => {
+  const envio = (deliveryAmount: number, tarifa: { fijo: number; porcentaje: number; cobrada: number; total: number }, delta = tarifa.total, currency = "CUP") => ({
+    servicio: "Giros" as const,
+    cliente: CLIENTE,
+    tramo: { currency, delta, concepto: "Envío de giro" },
+    transfer: {
+      transferAction: "send" as const,
+      code: "TR-PRUEBA",
+      receiverName: "Beneficiaria de prueba",
+      receiverIdentification: "85010112345",
+      deliveryMethod: "pickup" as const,
+      senderCurrency: currency,
+      deliveryAmount,
+      tarifa: { forma: "llegar" as const, tramo: { desde: 1_000, incluido: true, hasta: 10_000 }, ...tarifa },
+    },
+  });
+
+  test("entra el giro más la tarifa que toca, en un solo movimiento", () => {
+    const ctx = puesto({ CUP: 10_000 });
+    const r = registrarOperacionSimple(ctx, envio(2_500, { fijo: 150, porcentaje: 0, cobrada: 150, total: 2_650 }));
+    expect(r.ok).toBe(true);
+    expect(saldo(ctx, "CUP")).toBe(12_650);
+  });
+
+  test("una tarifa que no es la vigente no se registra", () => {
+    const ctx = puesto({ CUP: 10_000 });
+    /* La pantalla cotizó 100 de tarifa; la vigente para 2.500 CUP es 150. */
+    expect(registrarOperacionSimple(ctx, envio(2_500, { fijo: 100, porcentaje: 0, cobrada: 100, total: 2_600 }))).toMatchObject({
+      ok: false,
+      reason: "tarifa-cambiada",
+    });
+    /* Ni un total que no sea giro + tarifa. */
+    expect(registrarOperacionSimple(ctx, envio(2_500, { fijo: 150, porcentaje: 0, cobrada: 150, total: 2_650 }, 2_500))).toMatchObject({
+      ok: false,
+      reason: "tarifa-cambiada",
+    });
+    /* Ni un giro bajo el mínimo. */
+    expect(registrarOperacionSimple(ctx, envio(500, { fijo: 150, porcentaje: 0, cobrada: 150, total: 650 }))).toMatchObject({
+      ok: false,
+      reason: "tarifa-cambiada",
+    });
+    expect(saldo(ctx, "CUP")).toBe(10_000);
+  });
+
+  test("en una moneda sin tarifa de giros no se envían giros", () => {
+    const ctx = puesto({ GBP: 100 });
+    expect(registrarOperacionSimple(ctx, envio(50, { fijo: 1, porcentaje: 0, cobrada: 1, total: 51 }, 51, "GBP"))).toMatchObject({
+      ok: false,
+      reason: "sin-tarifa-de-giro",
+      currency: "GBP",
+    });
+  });
+});

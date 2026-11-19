@@ -41,6 +41,7 @@ import { isMotivoValido } from "./sedes";
 import { isGlobal, type Scope } from "./scope";
 import type { GuardaDeRetiroDeDenominacion } from "./denominaciones";
 import {
+  TARIFAS_SEMBRADAS,
   impagablesCon,
   validarTarifaDeGiro,
   type TarifaDeGiro,
@@ -81,19 +82,17 @@ export const TARIFA_POR_SERVICIO: Readonly<Record<string, TarifaDeServicio>> = {
  * La política de giros de cada moneda
  * ---------------------------------------------------------------------- */
 
-const T = (hasta: number | null, fijo: number, porcentaje: number): TramoDeTarifa => ({ hasta, fijo, porcentaje });
-
 /**
- * Siembra: peso cubano, dólar y euro. Las demás monedas del catálogo no tienen
- * política, así que no se envían giros en ellas hasta que PuntoCash la defina.
+ * Siembra: peso cubano, dólar y euro (`TARIFAS_SEMBRADAS`, en las reglas para
+ * que también la lea la siembra de jornadas). Las demás monedas del catálogo
+ * no tienen política, así que no se envían giros en ellas hasta que PuntoCash
+ * la defina.
  */
 const politicas = almacen("tarifas-de-giro", () => {
   const m = new Map<string, TarifaDeGiro>();
-  const sembrar = (moneda: string, minimo: number, tramos: TramoDeTarifa[], updatedAt: string) =>
-    m.set(moneda, { moneda, minimo, tramos, updatedAt, updatedBy: "Elena Marrero Fonseca" });
-  sembrar("CUP", 1_000, [T(10_000, 150, 0), T(50_000, 100, 1), T(null, 0, 0.8)], "2026-11-02T14:00:00.000Z");
-  sembrar("USD", 10, [T(100, 3, 0), T(500, 1, 2), T(null, 0, 1.5)], "2026-11-02T14:05:00.000Z");
-  sembrar("EUR", 10, [T(100, 3, 0), T(500, 1, 2), T(null, 0, 1.5)], "2026-11-02T14:10:00.000Z");
+  for (const [moneda, t] of Object.entries(TARIFAS_SEMBRADAS)) {
+    m.set(moneda, { moneda, minimo: t.minimo, tramos: t.tramos.map((x) => ({ ...x })), updatedAt: t.updatedAt, updatedBy: "Elena Marrero Fonseca" });
+  }
   return m;
 });
 

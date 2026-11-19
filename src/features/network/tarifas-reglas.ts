@@ -23,6 +23,19 @@ export interface TarifaDeGiro {
   updatedBy: string;
 }
 
+const T = (hasta: number | null, fijo: number, porcentaje: number): TramoDeTarifa => ({ hasta, fijo, porcentaje });
+
+/**
+ * Las tarifas con las que arranca la demostración. Viven aquí, sin almacén,
+ * porque también las lee la siembra de jornadas para que los giros del
+ * historial hayan pagado la tarifa que les toca.
+ */
+export const TARIFAS_SEMBRADAS: Readonly<Record<string, { minimo: number; tramos: readonly TramoDeTarifa[]; updatedAt: string }>> = {
+  CUP: { minimo: 1_000, tramos: [T(10_000, 150, 0), T(50_000, 100, 1), T(null, 0, 0.8)], updatedAt: "2026-11-02T14:00:00.000Z" },
+  USD: { minimo: 10, tramos: [T(100, 3, 0), T(500, 1, 2), T(null, 0, 1.5)], updatedAt: "2026-11-02T14:05:00.000Z" },
+  EUR: { minimo: 10, tramos: [T(100, 3, 0), T(500, 1, 2), T(null, 0, 1.5)], updatedAt: "2026-11-02T14:10:00.000Z" },
+};
+
 /** El tramo en el que cae un giro, por lo que recibe el beneficiario. */
 export function tramoDe(tarifa: Pick<TarifaDeGiro, "tramos">, importe: number): TramoDeTarifa {
   const tramo = tarifa.tramos.find((t) => t.hasta === null || importe <= t.hasta + 1e-9);
@@ -158,6 +171,111 @@ export function calcularTarifa(tarifa: Pick<TarifaDeGiro, "tramos">, importe: nu
     exacta,
     cobrada: redondearAlAlza(exacta, menor),
   };
+}
+
+/* -------------------------------------------------------------------------
+ * Cotizar un giro, en las dos formas
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Cómo pide el cliente el giro (decisión del 19/11):
+ *
+ *   · `enviar`: dice cuánto entrega, y la tarifa sale de ahí.
+ *   · `llegar`: dice cuánto recibe el beneficiario, y se le suma la tarifa.
+ */
+export type FormaDeGiro = "enviar" | "llegar";
+
+export interface CotizacionDeGiro {
+  forma: FormaDeGiro;
+  /** Lo que recibe el beneficiario. */
+  giro: number;
+  tarifa: TarifaCalculada;
+  /** Lo que se cobra: giro + tarifa. */
+  total: number;
+  /** En `enviar`, lo que dijo el cliente que entrega; en `llegar`, igual al total. */
+  entrega: number;
+  /** En `enviar`, lo que sobra de lo que entrega y se le devuelve. */
+  vuelto: number;
+  /**
+   * Por qué sobra: el giro siguiente que se podría enviar ya pide más de lo
+   * que entrega el cliente. Solo cuando hay vuelto.
+   */
+  siguiente?: { giro: number; total: number };
+}
+
+export type CotizacionRechazada =
+  | { reason: "importe-invalido" }
+  /** El importe no se puede pagar con las denominaciones que circulan. */
+  | { reason: "no-pagable"; menor: number }
+  /** Queda por debajo del giro mínimo. `entregaMinima` es lo que el cliente tendría que entregar para llegar a él. */
+  | { reason: "bajo-minimo"; minimo: number; entregaMinima: number };
+
+export type ResultadoDeCotizacion = { ok: true; value: CotizacionDeGiro } | ({ ok: false } & CotizacionRechazada);
+
+/* Las cuentas se hacen en diezmilésimas enteras, para que 0,1 + 0,2 sea 0,3. */
+const desdeUnidades = (u: number) => u / 1e4;
+
+/**
+ * La cotización de un giro con la tarifa de su moneda.
+ *
+ * En `enviar` se busca, tramo a tramo, el mayor giro pagable cuyo total
+ * (giro + tarifa redondeada) no pase de lo entregado. Dentro de un tramo el
+ * total crece con el giro; entre tramos puede saltar en cualquier sentido,
+ * y por eso se miran todos y se queda el mayor.
+ */
+export function cotizarGiro(
+  tarifa: Pick<TarifaDeGiro, "minimo" | "tramos">,
+  menor: number,
+  forma: FormaDeGiro,
+  importe: number,
+): ResultadoDeCotizacion {
+  if (!Number.isFinite(importe) || importe <= 0) return { ok: false, reason: "importe-invalido" };
+  if (!esPagable(importe, menor)) return { ok: false, reason: "no-pagable", menor };
+
+  const paso = enUnidades(menor);
+  const total = (g: number) => enUnidades(g) + enUnidades(calcularTarifa(tarifa, g, menor).cobrada);
+  const bajoMinimo = (): ResultadoDeCotizacion => ({
+    ok: false,
+    reason: "bajo-minimo",
+    minimo: tarifa.minimo,
+    entregaMinima: desdeUnidades(total(tarifa.minimo)),
+  });
+  const armar = (giro: number, entrega: number): CotizacionDeGiro => {
+    const t = calcularTarifa(tarifa, giro, menor);
+    const tot = desdeUnidades(total(giro));
+    const vuelto = desdeUnidades(enUnidades(entrega) - total(giro));
+    const sig = desdeUnidades(enUnidades(giro) + paso);
+    return {
+      forma,
+      giro,
+      tarifa: t,
+      total: tot,
+      entrega,
+      vuelto,
+      ...(vuelto > 0 ? { siguiente: { giro: sig, total: desdeUnidades(total(sig)) } } : {}),
+    };
+  };
+
+  if (forma === "llegar") {
+    if (importe < tarifa.minimo) return bajoMinimo();
+    return { ok: true, value: armar(importe, desdeUnidades(total(importe))) };
+  }
+
+  const E = enUnidades(importe);
+  let mejor: number | null = null;
+  tarifa.tramos.forEach((t, i) => {
+    const lo = i === 0 ? enUnidades(tarifa.minimo) : enUnidades(tarifa.tramos[i - 1]!.hasta ?? 0) + paso;
+    const hi = t.hasta === null ? Number.POSITIVE_INFINITY : enUnidades(t.hasta);
+    /* Primera aproximación sin redondear la tarifa, llevada al paso de la denominación. */
+    const aprox = (E - enUnidades(t.fijo)) / (1 + t.porcentaje / 100);
+    let g = Math.min(Math.floor(aprox / paso) * paso, hi);
+    for (let n = 0; n < 10_000 && g >= lo && total(desdeUnidades(g)) > E; n++) g -= paso;
+    if (g < lo) return;
+    for (let n = 0; n < 10_000 && g + paso <= hi && total(desdeUnidades(g + paso)) <= E; n++) g += paso;
+    if (mejor === null || g > mejor) mejor = g;
+  });
+  if (mejor === null) return bajoMinimo();
+  return { ok: true, value: armar(desdeUnidades(mejor), importe) };
 }
 
 /**

@@ -76,6 +76,7 @@ import {
 } from "./jornadas";
 import { registrarOperacion, siguienteCodigoDeOperacion, type OperacionDeRed } from "./operaciones";
 import { motivoFueraDeVigor, tasasDeSede } from "./rates";
+import { cotizarGiro, menorDenominacion, tarifaDeGiro } from "./tarifas";
 import { findRegisterById, type Register } from "./registers";
 import { findSedeById, type Sede } from "./sedes";
 import { findWorkerById, motivoDeBloqueo, type NetworkWorker } from "./workers";
@@ -298,6 +299,10 @@ export type CajaDenial =
   /** Entran y salen los mismos billetes. */
   | "cambio-sin-efecto"
   /** El cliente da menos de lo que se le cobra. */
+  /** Se envía un giro en una moneda sin tarifa de giros: en ella no se envían giros. */
+  | "sin-tarifa-de-giro"
+  /** La tarifa del giro no es la que toca ahora (PuntoCash la cambió, o el giro quedó bajo el mínimo): se vuelve a cotizar. */
+  | "tarifa-cambiada"
   | "cobro-insuficiente"
   /** No hay billetes para darle el vuelto: que pague con otros billetes o con el importe justo. */
   | "sin-vuelto"
@@ -1264,6 +1269,34 @@ function comprobarExistencias(j: Jornada, tramos: readonly Tramo[]): CajaResult<
   return falta ? pedirRecuento<null>(j, falta) : { ok: true, value: null };
 }
 
+/**
+ * Un giro enviado paga la tarifa que toca **ahora** (decisiones del 19/11):
+ * se recalcula con la tarifa vigente de su moneda, y lo que trae la pantalla
+ * —la tarifa y lo que entra en caja— tiene que coincidir. Si PuntoCash la
+ * cambió mientras el trabajador lo registraba, se rechaza y se vuelve a cotizar.
+ */
+function comprobarTarifaDeGiro(op: OperacionPorRegistrar): CajaResult<null> {
+  const giro = op.transfer!;
+  const politica = tarifaDeGiro(giro.senderCurrency);
+  if (!politica) return no("sin-tarifa-de-giro", giro.senderCurrency);
+  const menor = menorDenominacion(giro.senderCurrency);
+  if (menor === null) return no("sin-denominaciones", giro.senderCurrency);
+  const cot = cotizarGiro(politica, menor, "llegar", giro.deliveryAmount);
+  const igual = (a: number, b: number) => Math.abs(a - b) < 0.00005;
+  if (
+    !cot.ok ||
+    !giro.tarifa ||
+    !igual(cot.value.tarifa.cobrada, giro.tarifa.cobrada) ||
+    !igual(cot.value.tarifa.fijo, giro.tarifa.fijo) ||
+    !igual(cot.value.tarifa.porcentaje, giro.tarifa.porcentaje) ||
+    !igual(cot.value.total, giro.tarifa.total) ||
+    !igual(cot.value.total, op.tramo.delta)
+  ) {
+    return no("tarifa-cambiada", giro.senderCurrency);
+  }
+  return { ok: true, value: null };
+}
+
 /** Todo lo que hay que comprobar antes de registrar una operación simple; no escribe nada. */
 function prepararOperacionSimple(
   ctx: ContextoDeCaja,
@@ -1272,6 +1305,10 @@ function prepararOperacionSimple(
 ): CajaResult<{ j: Jornada; tramos: Tramo[]; liquidacion: OperacionDeRed["liquidacion"] }> {
   const ok = comprobarOperar(ctx, op.servicio);
   if (!ok.ok) return ok as CajaResult<never>;
+  if (op.transfer?.transferAction === "send") {
+    const t = comprobarTarifaDeGiro(op);
+    if (!t.ok) return t as CajaResult<never>;
+  }
   const j = ok.value;
   let tramos: Tramo[] = [op.tramo];
   let liquidacion: OperacionDeRed["liquidacion"];

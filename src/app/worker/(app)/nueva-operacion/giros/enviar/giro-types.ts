@@ -1,4 +1,6 @@
 import type { DocumentType } from "@/features/customers/customers";
+import type { FormaDeGiro } from "@/features/network/tarifas-reglas";
+import type { TarifaDelGiro } from "@/features/operations/operations-history";
 
 /** The sender's base KYC: always a registered `Customer`, identified as in Cambio de moneda and copied into the giro. */
 export interface SenderValues {
@@ -26,6 +28,12 @@ export interface BeneficiaryValues {
 
 export interface GiroValues {
   senderCurrency: string;
+  /**
+   * Cómo lo pide el cliente (19/11/2026): `llegar`, cuánto recibe el
+   * beneficiario, y se le suma la tarifa; `enviar`, cuánto entrega él, y la
+   * tarifa sale de ahí.
+   */
+  forma: FormaDeGiro;
   /** Raw text as typed — parsed with `parseAmountInput` at validation time. */
   amountInput: string;
 }
@@ -62,7 +70,15 @@ export interface GiroDraft {
   sender: SenderValues;
   beneficiary: BeneficiaryValues;
   senderCurrency: string;
+  /** Lo que recibe el beneficiario. */
   deliveryAmount: number;
+  /** La tarifa cotizada; `tarifa.total` es lo que se cobra. */
+  tarifa: TarifaDelGiro;
+  /** En «Enviar un importe», lo que dijo el cliente que entrega y lo que le sobra. */
+  entrega: number;
+  vuelto: number;
+  /** Por qué sobra: el giro siguiente ya pediría más. */
+  siguiente?: { giro: number; total: number };
 }
 
 export function senderFullName(sender: SenderValues): string {

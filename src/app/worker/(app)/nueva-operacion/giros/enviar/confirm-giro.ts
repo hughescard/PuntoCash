@@ -14,6 +14,8 @@ export type ConfirmGiroOutcome =
       recuento?: string;
       /** Los billetes ya no valen: hay que volver a marcarlos. */
       revisarBilletes?: boolean;
+      /** PuntoCash cambió la tarifa de giros: hay que volver a cotizar. */
+      tarifaCambiada?: boolean;
     };
 
 /** Por qué los billetes ya no valen, en palabras del trabajador. */
@@ -72,9 +74,21 @@ export async function confirmGiro(params: {
       telefono: draft.sender.phone,
       nacionalidad: draft.sender.nationality,
     },
-    tramo: { currency: payload.senderCurrency, delta: draft.deliveryAmount, concepto: "Envío de giro" },
+    /* Entra el giro más su tarifa, en un solo movimiento (19/11/2026). */
+    tramo: { currency: payload.senderCurrency, delta: draft.tarifa.total, concepto: "Envío de giro" },
     servicio: "Giros" as const,
     efectivo: params.efectivo,
+    /* Con lo que el servidor comprueba la tarifa antes de crear el giro fuera. */
+    transfer: {
+      transferAction: "send" as const,
+      code: "",
+      receiverName: payload.receiverName,
+      receiverIdentification: payload.receiverIdentification,
+      deliveryMethod: payload.deliveryMethod,
+      senderCurrency: payload.senderCurrency,
+      deliveryAmount: draft.deliveryAmount,
+      tarifa: draft.tarifa,
+    },
   };
   /* Antes de crear el giro fuera, el servidor comprueba —sin escribir nada—
      que el cobro con ese vuelto se podría registrar. */
@@ -82,6 +96,16 @@ export async function confirmGiro(params: {
   if (!previa.ok) {
     if (previa.reason === "recuento-necesario" && previa.currency) {
       return { ok: false, message: "Hay que contar la moneda antes de dar el vuelto.", recuento: previa.currency };
+    }
+    if (previa.reason === "tarifa-cambiada" || previa.reason === "sin-tarifa-de-giro") {
+      return {
+        ok: false,
+        tarifaCambiada: true,
+        message:
+          previa.reason === "sin-tarifa-de-giro"
+            ? `PuntoCash retiró la tarifa de giros en ${draft.senderCurrency}: en esa moneda ya no se envían giros. No se registró nada.`
+            : "PuntoCash cambió la tarifa mientras registrabas el giro. No se registró nada: revisa el importe y la tarifa nueva con el cliente.",
+      };
     }
     return {
       ok: false,
@@ -119,6 +143,7 @@ export async function confirmGiro(params: {
       senderCurrency: payload.senderCurrency,
       deliveryAmount: draft.deliveryAmount,
       externalStatus: external.transfer.status,
+      tarifa: draft.tarifa,
     },
   });
   if (!registrada.ok) {
@@ -135,6 +160,7 @@ export async function confirmGiro(params: {
     beneficiary: draft.beneficiary,
     senderCurrency: payload.senderCurrency,
     deliveryAmount: draft.deliveryAmount,
+    tarifa: draft.tarifa,
     completedAt: now.toISOString(),
     ...(registrada.value.liquidacion ? { liquidacion: registrada.value.liquidacion } : {}),
   };

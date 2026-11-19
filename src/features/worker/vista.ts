@@ -34,6 +34,8 @@ import {
 } from "@/features/network/caja-operativa";
 import { jornadasDeCaja, type Jornada } from "@/features/network/jornadas";
 import { operacionesDeCaja } from "@/features/network/operaciones";
+import { tarifaDeGiro } from "@/features/network/tarifas";
+import type { TarifaDeGiro } from "@/features/network/tarifas-reglas";
 
 export interface TrabajadorEnSesion {
   id: string;
@@ -81,6 +83,12 @@ export interface VistaDeCaja {
   alertas: readonly AlertaParaElTrabajador[];
   /** Las operaciones de esta caja **[R12]**, de la más reciente a la más antigua. */
   operaciones: readonly OperationRecord[];
+  /**
+   * La tarifa de giros de cada moneda de la caja que la tiene (19/11/2026).
+   * En una moneda sin tarifa no se envían giros. El servidor la vuelve a
+   * comprobar al registrar.
+   */
+  tarifasDeGiro: Readonly<Record<string, Pick<TarifaDeGiro, "minimo" | "tramos">>>;
 }
 
 /** Cuántos días de libro se envían a la pantalla de Caja. */
@@ -207,6 +215,12 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
     cierreForzadoPropio: estado.cierreForzadoPropio,
     alertas: propia ? alertasParaElTrabajador(j, now) : [],
     operaciones: operacionesDeCaja(ctx.register.id).map(registroDeWorker),
+    tarifasDeGiro: Object.fromEntries(
+      estado.saldos
+        .map((s) => [s.currency, tarifaDeGiro(s.currency)] as const)
+        .filter((x): x is readonly [string, TarifaDeGiro] => x[1] !== null)
+        .map(([code, t]) => [code, { minimo: t.minimo, tramos: t.tramos }]),
+    ),
   };
 }
 

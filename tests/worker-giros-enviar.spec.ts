@@ -78,7 +78,7 @@ async function fillValidForm(page: Page, overrides: FillOverrides = {}) {
 
   await page.getByRole("button", { name: /^Moneda:/ }).click();
   await page.getByRole("option", { name: new RegExp(`^${overrides.currency ?? "EUR"}`) }).click();
-  await page.getByLabel("Importe a entregar").fill(overrides.amount ?? "500");
+  await page.getByLabel(/^Importe que (recibe|entrega)/).fill(overrides.amount ?? "500");
 }
 
 async function completeGiro(page: Page, overrides: FillOverrides = {}) {
@@ -207,15 +207,14 @@ test.describe("Registrar giro — form", () => {
     await expect(page.getByRole("option", { name: /^CAD/ })).toHaveCount(0);
   });
 
-  test("a currency at a 0,00 Caja balance is still selectable (this operation is an Entrada)", async ({
-    page,
-  }) => {
+  test("una moneda sin tarifa de giros no se ofrece, y se dice por qué", async ({ page }) => {
     await page.getByRole("button", { name: /^Moneda:/ }).click();
-    // GBP is enabled for Caja 03 by default at 0,00 — still offered.
-    await expect(page.getByRole("option", { name: /^GBP/ })).toBeVisible();
+    // GBP is enabled for Caja 03 by default, but PuntoCash has no giro tarifa for it.
+    await expect(page.getByRole("option", { name: /^GBP/ })).toHaveCount(0);
+    await expect(page.getByText("GBP no aparece: PuntoCash no le ha puesto tarifa de giros.")).toBeVisible();
   });
 
-  test("Importe a entregar is required and validated as money", async ({ page }) => {
+  test("the amount is required and validated as money", async ({ page }) => {
     await fillValidForm(page, { amount: "" });
     await expect(page.getByRole("button", { name: "Continuar" })).toBeDisabled();
   });
@@ -228,15 +227,56 @@ test.describe("Registrar giro — form", () => {
     await expect(summary.getByText("María López García")).toBeVisible();
     await expect(summary.getByText("La Habana / Plaza de la Revolución")).toBeVisible();
     await expect(summary.getByText("Recogida")).toBeVisible();
-    await expect(summary.getByText("500 EUR")).toBeVisible();
+    /* 500 EUR caen en el segundo tramo del euro: 1 + 2 % = 11. */
+    await expect(summary.getByText("500,00 EUR")).toBeVisible();
+    await expect(summary.getByText("11,00 EUR", { exact: true })).toBeVisible();
+    await expect(summary.getByText("1,00 EUR + 2 %")).toBeVisible();
+    await expect(summary.getByText("511,00 EUR")).toBeVisible();
     await expect(summary.getByText("Entrada de efectivo")).toBeVisible();
   });
+
 
   test("Continuar stays disabled until the whole form is valid", async ({ page }) => {
     const continuar = page.getByRole("button", { name: "Continuar" });
     await expect(continuar).toBeDisabled();
     await fillValidForm(page);
     await expect(continuar).toBeEnabled();
+  });
+});
+
+test.describe("Tarifa del giro", () => {
+  test.beforeEach(async ({ page }) => {
+    await goToGiros(page);
+  });
+
+  test("«Enviar un importe» descuenta la tarifa de lo que entrega el cliente", async ({ page }) => {
+    await page.getByLabel("Enviar un importe").check();
+    /* Con 103 llegan 100: el primer tramo del euro cobra 3 fijos. */
+    await fillValidForm(page, { amount: "103" });
+    const summary = page.locator("dl").filter({ hasText: "Impacto en caja" });
+    await expect(summary.getByText("100,00 EUR", { exact: true })).toBeVisible();
+    await expect(summary.getByText("3,00 EUR", { exact: true })).toBeVisible();
+    await expect(summary.getByText("103,00 EUR", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page.getByText("Enviar un importe")).toBeVisible();
+  });
+
+  test("lo que sobra de lo que entrega se le devuelve, y se dice por qué", async ({ page }) => {
+    await page.getByLabel("Enviar un importe").check();
+    /* Con 200,42 llegan 195,50 (1 + 2 % = 4,91) y sobra 0,01: 195,51 ya pide 200,43. */
+    await fillValidForm(page, { amount: "200,42" });
+    const summary = page.locator("dl").filter({ hasText: "Impacto en caja" });
+    await expect(summary.getByText("195,50 EUR", { exact: true })).toBeVisible();
+    await expect(summary.getByText("0,01 EUR", { exact: true })).toBeVisible();
+    await expect(page.getByText(/con un giro de 195,51 EUR tendría que entregar 200,43 EUR/)).toBeVisible();
+  });
+
+  test("por debajo del giro mínimo dice cuánto hace falta", async ({ page }) => {
+    await fillValidForm(page, { amount: "5" });
+    await expect(page.getByText("El giro mínimo es de 10,00 EUR.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continuar" })).toBeDisabled();
+    await page.getByLabel("Enviar un importe").check();
+    await expect(page.getByText("El giro mínimo es de 10,00 EUR; con la tarifa, el cliente tiene que entregar al menos 13,00 EUR.")).toBeVisible();
   });
 });
 
@@ -304,7 +344,10 @@ test.describe("Revisar giro", () => {
     await expect(page.getByText("La Habana / Plaza de la Revolución")).toBeVisible();
     await expect(page.getByText("Recogida")).toBeVisible();
     await expect(page.getByText("EUR · Euro")).toBeVisible();
+    await expect(page.getByText("Que llegue un importe")).toBeVisible();
     await expect(page.getByText("500,00 EUR").first()).toBeVisible();
+    await expect(page.getByText("1,00 EUR + 2 %")).toBeVisible();
+    await expect(page.getByText("511,00 EUR")).toBeVisible();
     await expect(page.getByText("Caja 03").first()).toBeVisible();
     await expect(page.getByText("Entrada de efectivo")).toBeVisible();
   });
@@ -328,7 +371,7 @@ test.describe("Revisar giro", () => {
     await expect(page.getByRole("heading", { name: "Giros" })).toBeVisible();
     await expect(onScreen(page, "Carlos Pérez Rodríguez")).toBeVisible();
     await expect(page.locator("#giro-beneficiario-nombre")).toHaveValue("María López García");
-    await expect(page.getByLabel("Importe a entregar")).toHaveValue("500");
+    await expect(page.getByLabel("Importe que recibe el beneficiario")).toHaveValue("500");
   });
 });
 
@@ -350,6 +393,7 @@ test.describe("Confirmar envío", () => {
     await expect(page.getByText("Recogida")).toBeVisible();
     await expect(page.getByText("EUR · Euro")).toBeVisible();
     await expect(page.getByText("500,00 EUR", { exact: true })).toBeVisible();
+    await expect(page.getByText("511,00 EUR", { exact: true })).toBeVisible();
     await expect(page.getByText("Caja 03").first()).toBeVisible();
   });
 
@@ -415,7 +459,8 @@ test.describe("Success — Caja, Operaciones and result", () => {
     const movementsTable = page.getByRole("table").first();
     const row = movementsTable.locator("tbody tr").filter({ hasText: "Envío de giro" }).first();
     await expect(row).toContainText("Entrada");
-    await expect(row).toContainText("+500,00");
+    /* Un solo movimiento: el giro más su tarifa. */
+    await expect(row).toContainText("+511,00");
     await expect(row.getByRole("link", { name: /^Ver el movimiento/ })).toHaveCount(0);
   });
 
@@ -427,7 +472,8 @@ test.describe("Success — Caja, Operaciones and result", () => {
     const table = page.getByRole("table");
     const row = table.locator("tbody tr").filter({ hasText: "Giros" }).first();
     await expect(row).toContainText("Carlos Pérez Rodríguez");
-    await expect(row).toContainText("500,00 EUR");
+    /* Lo que entró en caja: el giro más su tarifa. */
+    await expect(row).toContainText("511,00 EUR");
     await expect(row).toContainText("Completada");
   });
 
@@ -462,6 +508,8 @@ test.describe("Success — Caja, Operaciones and result", () => {
     await expect(onScreen(page, "María López García").first()).toBeVisible();
     await expect(onScreen(page, "85010112345").first()).toBeVisible();
     await expect(onScreen(page, "500,00 EUR").first()).toBeVisible();
+    await expect(onScreen(page, "11,00 EUR").first()).toBeVisible();
+    await expect(onScreen(page, "511,00 EUR").first()).toBeVisible();
     await expect(onScreen(page, "Recogida").first()).toBeVisible();
     await expect(onScreen(page, /\d{2}\/\d{2}\/\d{4} · \d{2}:\d{2}/).first()).toBeVisible();
   });
@@ -512,7 +560,7 @@ test.describe("Cancellation and back navigation", () => {
 });
 
 test.describe("Scope protection", () => {
-  test("no delivery-method selector, no delivery/transfer option, no bank-account field, no fee/exchange-rate UI", async ({
+  test("no delivery-method selector, no delivery/transfer option, no bank-account field, no commission/exchange-rate UI", async ({
     page,
   }) => {
     await goToGiros(page);

@@ -208,7 +208,27 @@ export interface OperationRecord {
     deliveryAmount: number;
     /** Raw external status enum (e.g. `"COMPLETED"`) — never a Spanish label. */
     externalStatus?: string;
+    /**
+     * La tarifa que pagó el remitente (decisiones del 19/11/2026). Solo en el
+     * envío: cobrar un giro no lleva tarifa. Se guarda tal como se aplicó —el
+     * tramo, el fijo, el porcentaje y lo cobrado ya redondeado— para que el
+     * detalle y la conciliación no dependan de la tarifa de hoy.
+     */
+    tarifa?: TarifaDelGiro;
   };
+}
+
+export interface TarifaDelGiro {
+  /** Cómo lo pidió el cliente: cuánto entregaba, o cuánto tenía que llegar. */
+  forma: "enviar" | "llegar";
+  /** El tramo que se aplicó, tal como estaba ese día. */
+  tramo: { desde: number; incluido: boolean; hasta: number | null };
+  fijo: number;
+  porcentaje: number;
+  /** Lo cobrado: fijo + porcentaje, redondeado al alza a la denominación más pequeña. */
+  cobrada: number;
+  /** Lo que entregó el cliente: el giro más la tarifa. */
+  total: number;
 }
 
 /** "CI · 90010112345" — the same short form used on client cards. */
@@ -380,12 +400,12 @@ const HERO_RECORDS: readonly OperationRecord[] = [
     estado: "Completada",
     amount: {
       kind: "single",
-      money: { amount: 2500, currency: "CUP" },
-      // Enviar giro takes cash IN: 5.000,00 → 7.500,00 CUP.
+      money: { amount: 2650, currency: "CUP" },
+      // Enviar giro takes cash IN, giro + tarifa (2.500 + 150): 5.000,00 → 7.650,00 CUP.
       cashSnapshot: {
         before: { amount: 5000, currency: "CUP" },
-        movement: { amount: 2500, currency: "CUP" },
-        after: { amount: 7500, currency: "CUP" },
+        movement: { amount: 2650, currency: "CUP" },
+        after: { amount: 7650, currency: "CUP" },
       },
     },
     worker: WORKER_NAME,
@@ -418,6 +438,14 @@ const HERO_RECORDS: readonly OperationRecord[] = [
       deliveryAmount: 2500,
       // Still awaiting payout when this operation was committed.
       externalStatus: "READY",
+      tarifa: {
+        forma: "llegar",
+        tramo: { desde: 1000, incluido: true, hasta: 10_000 },
+        fijo: 150,
+        porcentaje: 0,
+        cobrada: 150,
+        total: 2650,
+      },
     },
   },
   {
@@ -436,11 +464,11 @@ const HERO_RECORDS: readonly OperationRecord[] = [
     amount: {
       kind: "single",
       money: { amount: 2500, currency: "CUP" },
-      // Cobrar giro pays cash OUT: 7.500,00 → 5.000,00 CUP.
+      // Cobrar giro pays cash OUT, with no tarifa: 7.650,00 → 5.150,00 CUP.
       cashSnapshot: {
-        before: { amount: 7500, currency: "CUP" },
+        before: { amount: 7650, currency: "CUP" },
         movement: { amount: 2500, currency: "CUP" },
-        after: { amount: 5000, currency: "CUP" },
+        after: { amount: 5150, currency: "CUP" },
       },
     },
     worker: WORKER_NAME,

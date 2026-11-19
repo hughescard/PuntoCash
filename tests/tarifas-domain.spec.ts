@@ -4,6 +4,7 @@ import { GLOBAL_SCOPE, operatorScope } from "../src/features/network/scope";
 import { denominacionesDe, retirarDenominacion } from "../src/features/network/denominaciones";
 import {
   calcularTarifa,
+  cotizarGiro,
   definirTarifaDeGiro,
   GUARDA_DE_TARIFAS,
   redondearAlAlza,
@@ -184,4 +185,49 @@ test("no se retira una denominación si la tarifa de giros deja de poder cobrars
   expect(denominacionesDe("CUP").some((d) => d.valor === 1)).toBe(true);
   /* Retirar una que no es la más pequeña no cambia nada. */
   expect(retiroQueImpideLaTarifa("CUP", 1000)).toBeNull();
+});
+
+test.describe("cotizar un giro", () => {
+  const usd = { minimo: 10, tramos: TRAMOS };
+
+  test("«que llegue un importe» suma la tarifa; «enviar un importe» la descuenta, y cuestan lo mismo", () => {
+    const llegar = cotizarGiro(usd, 0.01, "llegar", 100);
+    expect(llegar).toMatchObject({ ok: true, value: { giro: 100, total: 103, vuelto: 0 } });
+    const enviar = cotizarGiro(usd, 0.01, "enviar", 103);
+    expect(enviar).toMatchObject({ ok: true, value: { giro: 100, total: 103, vuelto: 0 } });
+    /* 1 + 2 % redondeado al alza: con 104 llegan 100,98 y no sobra nada. */
+    expect(cotizarGiro(usd, 0.01, "enviar", 104)).toMatchObject({ ok: true, value: { giro: 100.98, total: 104, vuelto: 0 } });
+  });
+
+  test("por debajo del mínimo dice cuánto tendría que entregar el cliente", () => {
+    expect(cotizarGiro(usd, 0.01, "llegar", 5)).toEqual({ ok: false, reason: "bajo-minimo", minimo: 10, entregaMinima: 13 });
+    expect(cotizarGiro(usd, 0.01, "enviar", 12)).toEqual({ ok: false, reason: "bajo-minimo", minimo: 10, entregaMinima: 13 });
+    expect(cotizarGiro(usd, 0.01, "enviar", 13)).toMatchObject({ ok: true, value: { giro: 10 } });
+  });
+
+  test("un importe que no se puede pagar con lo que circula no se cotiza", () => {
+    expect(cotizarGiro(usd, 0.01, "llegar", 10.005)).toEqual({ ok: false, reason: "no-pagable", menor: 0.01 });
+    expect(cotizarGiro(usd, 0, "llegar", 0)).toEqual({ ok: false, reason: "importe-invalido" });
+  });
+
+  test("con una denominación grande, el giro y la tarifa van de 5 en 5", () => {
+    const t = { minimo: 10, tramos: [T(null, 0, 3)] };
+    expect(cotizarGiro(t, 5, "llegar", 30)).toMatchObject({ ok: true, value: { giro: 30, total: 35 } });
+    expect(cotizarGiro(t, 5, "enviar", 45)).toMatchObject({ ok: true, value: { giro: 40, total: 45, vuelto: 0 } });
+    expect(cotizarGiro(t, 5, "enviar", 37)).toEqual({ ok: false, reason: "no-pagable", menor: 5 });
+  });
+
+  test("el vuelto que deja un salto entre tramos dice cuánto costaría el giro siguiente", () => {
+    const t = { minimo: 10, tramos: [T(100, 0, 1), T(null, 10, 0)] };
+    expect(cotizarGiro(t, 0.01, "enviar", 105)).toMatchObject({
+      ok: true,
+      value: { giro: 100, total: 101, vuelto: 4, siguiente: { giro: 100.01, total: 110.01 } },
+    });
+  });
+
+  test("si un tramo superior sale más barato, se envía el giro mayor", () => {
+    const t = { minimo: 10, tramos: [T(100, 10, 0), T(null, 0, 1)] };
+    /* Con 105: en el primer tramo llegarían 95; en el segundo, 103,96. */
+    expect(cotizarGiro(t, 0.01, "enviar", 105)).toMatchObject({ ok: true, value: { giro: 103.96 } });
+  });
 });

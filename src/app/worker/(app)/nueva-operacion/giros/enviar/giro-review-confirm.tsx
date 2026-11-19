@@ -15,6 +15,40 @@ import { BilletesDelMovimiento } from "@/components/patterns/billetes-del-movimi
 import { restar } from "@/features/caja/billetes";
 import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
 import type { Denominacion } from "@/features/caja/billetes";
+import { desgloseDeTarifa } from "./cotizacion-de-giro";
+
+/** Lo que cuesta el giro, en las mismas líneas en revisión y confirmación: llega, tarifa, total y, si sobra, lo que se devuelve. */
+function lineasDeImporte(draft: GiroDraft): (readonly [string, React.ReactNode])[] {
+  const m = (amount: number) => formatMoney({ amount, currency: draft.senderCurrency });
+  return [
+    ["Recibe el beneficiario", <MoneyWithFlag key="giro" amount={draft.deliveryAmount} currency={draft.senderCurrency} />],
+    [
+      "Tarifa",
+      <span key="tarifa" className="pc-numeric">
+        {m(draft.tarifa.cobrada)}
+        {draft.tarifa.porcentaje > 0 ? (
+          <span className="block text-caption font-normal text-text-secondary">{desgloseDeTarifa(draft.tarifa, draft.senderCurrency)}</span>
+        ) : null}
+      </span>,
+    ],
+    ["Total a cobrar", <span key="total" className="pc-numeric text-body font-bold">{m(draft.tarifa.total)}</span>],
+    ...(draft.vuelto > 0
+      ? ([
+          [
+            "Se le devuelve",
+            <span key="vuelto" className="pc-numeric">
+              {m(draft.vuelto)}
+              {draft.siguiente ? (
+                <span className="block text-caption font-normal text-text-secondary">
+                  Entrega {m(draft.entrega)}; con un giro de {m(draft.siguiente.giro)} tendría que entregar {m(draft.siguiente.total)}.
+                </span>
+              ) : null}
+            </span>,
+          ],
+        ] as const)
+      : []),
+  ];
+}
 
 /** "🇨🇺 500,00 CUP" — the approved amount treatment for Importe (a)/(a entregar). */
 function MoneyWithFlag({ amount, currency }: { amount: number; currency: string }) {
@@ -92,7 +126,8 @@ export function GiroReview({
             rows={[
               ["Método de entrega", "Recogida"],
               ["Moneda", currencyLabel],
-              ["Importe a entregar", <MoneyWithFlag key="importe" amount={draft.deliveryAmount} currency={draft.senderCurrency} />],
+              ["Qué dijo el cliente", draft.tarifa.forma === "llegar" ? "Que llegue un importe" : "Enviar un importe"],
+              ...lineasDeImporte(draft),
             ]}
           />
         </SectionCard>
@@ -176,11 +211,10 @@ export function GiroConfirmation({
           />
           <ConfirmRow label="Método de entrega" value="Recogida" />
           <ConfirmRow label="Moneda" value={currencyLabel} />
-          <ConfirmRow
-            label="Importe a entregar"
-            value={<MoneyWithFlag amount={draft.deliveryAmount} currency={draft.senderCurrency} />}
-          />
           <ConfirmRow label="Caja" value={CAJA_SUMMARY.register} />
+          {lineasDeImporte(draft).map(([label, value]) => (
+            <ConfirmRow key={label} label={label} value={value} />
+          ))}
         </CardContent>
       </Card>
 
