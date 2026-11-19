@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v9.1
+## Documento de Requisitos Funcionales (FRD) · v9.2
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 9.2 | 19/11/2026 | **Tarifas de giros.** Enviar giro cobra al remitente la tarifa que fija PuntoCash (FRD de Super Admin §10; FRD de Worker **FR-GE-16**). El mercante no la ve ni la cambia; la ve, aplicada, en el detalle de cada giro enviado (**FR-AD-OPS-3**). El importe de un giro enviado en Operaciones es el total cobrado; en Reportes, la tarifa **no es volumen** (**FR-AD-REP-8**). El **detalle de una operación** se lee como una cuenta del efectivo, que sustituye al bloque «Liquidación» (**FR-AD-OPS-10**) |
 | 9.1 | 16/11/2026 | **Foto del carné de quien cobra.** El detalle de una remesa entregada o de un giro pagado muestra las dos fotos del carné del beneficiario que hizo el trabajador al entregar (**FR-AD-OPS-11**, nuevo; FRD de Worker §6.8) |
 | 9.0 | 13/11/2026 | **Segunda iteración de Worker: lo que cambia en esta consola.** (1) **La caja lleva billetes**: inventario por denominación en la ficha de caja, la jornada, el movimiento y la operación (**FR-AD-CAJA-15** a **-19**, **FR-AD-JOR-4**, **-17**, **-21**, **FR-AD-OPS-10**). (2) **Ficha de caja** nueva, `/admin/cajas/[id]`: estado en tiempo real, efectivo, pendientes, movimientos, jornadas, alertas; Retirar y Reactivar pasan aquí; Cajas enseña el efectivo de cada caja (§4.6, **FR-AD-CAJA-1**). (3) **Aprobaciones**: sale «Ajuste de efectivo»; entran **Diferencia de composición**, **Movimiento de fondos** y **Diferencia en recuento**; un movimiento de fondos **solo lo confirma el supervisor que nombró el trabajador**, código `solo-el-supervisor`; un rechazo queda como **incidencia** del trabajador; «Sin explicar» (**FR-AD-APR-1**, **-17**, **-18**). (4) **Incidencias** en la ficha y la lista de Trabajadores (**FR-AD-TRAB-18**). (5) **Alertas de caja**, sección nueva en Configuración, `/admin/alertas`; Inicio, ficha de caja y ficha de sede las enseñan (§20, **FR-AD-HOME-2**, **FR-AD-SEDE-17**). (6) **Tablas**: la fila con detalle se abre entera y sus acciones van en la ficha o en «⋯»; **botones** uno al lado del otro (**FR-AD-SHELL-18**, **-19**). (7) En Sedes el **selector de la cabecera** aparece desactivado (**FR-AD-SCOPE-8**). (8) El **cierre forzado** se le avisa al trabajador al instante (**FR-AD-JOR-14**). (9) Los avisos que enumeran cajas o tasas ponen **una por línea**. (10) El trabajador **cambia él mismo** su nombre de usuario y su teléfono (**FR-AD-TRAB-19**). (11) Códigos de operación en **hora de Cuba**. |
 | 8.7 | 03/11/2026 | **Una sede se ve desde que es del operador (FR-AD-SCOPE-7, nuevo).** Las jornadas, solicitudes y operaciones del operador anterior dejan de verse; sus aprobaciones pendientes las resuelve PuntoCash. |
@@ -2695,13 +2696,13 @@ Datos de cada operación:
 | Cabecera | Código, servicio (en un giro, si se envió o se pagó), fecha y hora, estado. Enlace a `/admin/operaciones` |
 | Cambio de moneda | Cliente; lo que entrega y lo que recibe, con la tasa aplicada; estado de la operación; estado de caja |
 | Remesa | Beneficiario, la operación, la remesa y el movimiento de efectivo |
-| Giro | Remitente o beneficiario, según se haya enviado o pagado; la operación, el giro y el movimiento de efectivo |
+| Giro | Remitente o beneficiario, según se haya enviado o pagado; la operación, el giro y el movimiento de efectivo. En un giro enviado, la **tarifa** que pagó el remitente, con su desglose |
 
 **FR-AD-OPS-10 · Efectivo de la operación.** Dos bloques más, cuando aplican:
 
 | Bloque | Contenido |
 | --- | --- |
-| Liquidación | Vuelto al cliente, pagado en CUP (con su equivalencia) y a favor de la casa por redondeo. «Cliente recibe» e «Importe entregado» dicen lo que el cliente se llevó; si no coincide con lo que daba la tasa o con el importe de la remesa o el giro, se dice también (FRD de Worker, §6.7) |
+| Cuenta del efectivo | Lo que se debía o costó, lo que cambió de manos —vuelto, pagado en CUP con su equivalencia, redondeo a favor de la casa— y el total en la última fila; debajo, lo que entró o salió de la caja. Es la misma tarjeta que en Worker (FRD de Worker **FR-OPD-12**, §6.7) |
 | Billetes de la operación | Por cada movimiento de la operación, la tabla de billetes que entraron y salieron |
 
 **Ver en la demo:** `marta@malecon-sf.cu`, Operaciones, cualquier operación de hoy hecha en Worker.
@@ -2967,9 +2968,10 @@ El volumen de lo operado por las sedes en un periodo. **Solo lectura.**
 | Cambio de moneda en que el cliente entrega divisa | Lo que entrega el cliente | La divisa entregada | Compra |
 | Cambio de moneda en que el cliente entrega CUP | Lo que recibe el cliente | La divisa recibida | Venta |
 | Remesa | Lo pagado al beneficiario | La del pago | — |
-| Giro enviado | Importe del giro (entra efectivo en la caja) | La del giro | Enviado |
+| Giro enviado | Lo que recibe el beneficiario, **sin la tarifa** (entra efectivo en la caja) | La del giro | Enviado |
 | Giro pagado | Importe del giro (sale efectivo de la caja) | La del giro | Pagado |
 
+- La tarifa de un giro enviado entra en la caja con el giro, pero no es volumen: no es lo que el cliente vino a operar. Ejemplo: giro de 5.000 CUP con 150 de tarifa → entran 5.150 CUP en la caja y cuentan 5.000.
 - En un cambio de moneda los pesos cubanos de la contrapartida no cuentan. Ejemplo: el cliente entrega 100 USD y recibe 39.000 CUP → 100 USD de compra.
 - Agregación: por moneda, la suma de los importes que cuentan; **operaciones**, el número de operaciones que cuentan.
 - Una operación entra en un periodo por su día, en hora de Cuba, con «desde» y «hasta» incluidos.

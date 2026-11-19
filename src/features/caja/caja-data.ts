@@ -280,10 +280,17 @@ export function saveFondeoInicialDraft(draft: FondeoInicialDraft): void {
   fondeoInicialDraft = draft;
 }
 
-export function consumeFondeoInicialDraft(): FondeoInicialDraft | null {
-  const draft = fondeoInicialDraft;
+/**
+ * Se lee al pintar y se descarta después de montar, en dos pasos: si leerlo
+ * lo borrara, un render que React tira (bajo carga, o en modo estricto) se
+ * lo llevaría y la pantalla volvería vacía.
+ */
+export function peekFondeoInicialDraft(): FondeoInicialDraft | null {
+  return fondeoInicialDraft;
+}
+
+export function discardFondeoInicialDraft(): void {
   fondeoInicialDraft = null;
-  return draft;
 }
 
 /* -------------------------------------------------------------------------

@@ -26,7 +26,7 @@ import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cn } from "@/lib/utils";
 import { formatDateTime, formatMoney, formatSignedAmount } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
-import { consumeFondeoInicialDraft, saveFondeoInicialDraft } from "@/features/caja/caja-data";
+import { discardFondeoInicialDraft, peekFondeoInicialDraft, saveFondeoInicialDraft } from "@/features/caja/caja-data";
 import type { Billetes } from "@/features/caja/billetes";
 import { useCaja } from "@/features/caja/use-caja";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
@@ -88,8 +88,10 @@ export function FondeoInicialFlow(): React.JSX.Element {
   /* Se abre con totales: lo que declaró quien cerró viene escrito, y quien
      abre cambia solo lo que no recibe. */
   const [unidades, setUnidades] = React.useState<Unidades>(
-    () => consumeFondeoInicialDraft()?.unidades ?? aUnidades(vista.apertura.billetesEntregados),
+    () => peekFondeoInicialDraft()?.unidades ?? aUnidades(vista.apertura.billetesEntregados),
   );
+  /* El borrador ya está en el estado: se descarta para que no vuelva otro día. */
+  React.useEffect(() => discardFondeoInicialDraft(), []);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | undefined>();
   const [comparacionLocal, setComparacion] = React.useState<ComparacionDeApertura | null>(null);

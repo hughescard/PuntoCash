@@ -1,5 +1,5 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos Funcionales (FRD) · v2.1
+## Documento de Requisitos Funcionales (FRD) · v2.2
 
 **Alcance:** la aplicación del trabajador de caja, `/worker`. No cubre el kiosco de autoservicio ni las consolas de administración.
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 2.2 | 19/11/2026 | **Enviar giro cobra la tarifa de giros** que fija PuntoCash (FRD de Super Admin §10). Dos formas de pedirlo —«Que llegue un importe» y «Enviar un importe»—, con la tarifa calculada sobre lo que recibe el beneficiario; giro mínimo; solo las monedas con tarifa; resumen en vivo; revisión, confirmación, resultado y comprobante con lo que llega, la tarifa y el total; el paso «Efectivo» cobra el total; el servidor recalcula la tarifa al confirmar (**FR-GE-3**, **FR-GE-9** a **GE-13**, **FR-GE-15**; **FR-GE-16** a **GE-19**, nuevos; códigos `tarifa-cambiada` y `sin-tarifa-de-giro`). **Cobrar giro** no lleva tarifa (**FR-GC-8**). El kiosco puede mandar la forma (**FR-SOL-4**, **FR-SOL-6**). El **detalle de una operación** se lee como una cuenta, en una sola tarjeta, en todos los servicios (**FR-OPD-12**, **FR-EF-20**) |
 | 2.1 | 16/11/2026 | **Foto del carné de quien cobra.** Entregar una remesa o pagar un giro exige dos fotos del carné del beneficiario, anverso y reverso, hechas con el móvil del trabajador desde un QR de la confirmación; sin ellas no se confirma (§6.8, **FR-CARNE-1 a 10**, nuevos; **FR-RM-12**, **FR-GC-12**). Ruta nueva `/movil/carne/{id}` (**FR-NAV-1**), código `falta-foto-del-carne` y mensajes del enlace del móvil (Apéndice C). **Enviar giro**: el remitente es un cliente registrado, identificado como en Cambio de moneda, y sus datos no se editan en el giro (**FR-GE-2**, nuevo; **FR-GE-3**, **FR-SOL-6**) |
 | 2.0 | 13/11/2026 | **Segunda iteración de Worker. Documento reescrito** en el formato de los FRD de administración (una subsección por pantalla, reglas y códigos, «Ver en la demo», mensajes en el Apéndice C). Lo que cambia de fondo: (1) **Worker opera sobre la red** — la caja, la jornada, las tasas, los servicios y las monedas son los de la sede, y lo que hace el trabajador lo ve la administración al momento (§3). (2) **Worker opera a ciegas**: no ve ningún saldo, ni en pantalla ni en los datos que recibe (§1.6). (3) **La caja lleva billetes**: cada movimiento registra cuántos de cada denominación (§10). (4) **Apertura con totales y cierre a ciegas, billete a billete**, declarados una vez; el cierre es un solo acto y los motivos llegan después (§10.3, §10.6). (5) **Reposición o retiro** y **cambio de billetes**, confirmados por el supervisor nombrado; **recuento** cuando saldrían billetes que los libros no tienen (§10.4, §10.5, §10.7). (6) **Operaciones con billetes**: paso «Efectivo», vuelto, «exacta o no se paga», liquidación (§6). (7) **Cambio de moneda** entre dos divisas y en modo «Recibir un importe» (§7). (8) **Cierre forzado** avisado al trabajador al instante (§11). (9) **Alertas** de la caja, sin cifras (§12). (10) **Perfil** con nombre de usuario, teléfono y contraseña (§13). (11) **Tablas** con una sola regla para abrir filas (§1.4). Salen «Ajustar efectivo», las pantallas Tasas y Alertas, y el simulador de vinculación. |
 | 1.13 | 03/11/2026 | Toda moneda de la lista ISO lleva su bandera (FR-FMT-4) |
@@ -504,11 +505,11 @@ Recupera una solicitud generada en el kiosco (`KS-AAMMDD-NNNNNN`) y continúa el
 
 **FR-SOL-3** Aquí el motivo del rechazo **sí se distingue**: código no encontrado, solicitud vencida (más de 30 minutos) y solicitud ya utilizada.
 
-**FR-SOL-4** Una solicitud encontrada se resume con los datos justos para reconocerla: el par y el importe en un cambio; beneficiario e importe al cobrar; remitente, beneficiario e importe al enviar un giro.
+**FR-SOL-4** Una solicitud encontrada se resume con los datos justos para reconocerla: el par y el importe en un cambio; beneficiario e importe al cobrar; remitente, beneficiario e importe al enviar un giro, con la forma si el kiosco la manda.
 
 **FR-SOL-5** «Continuar» marca la solicitud como consumida y lleva al flujo de su servicio con los datos. No registra nada.
 
-**FR-SOL-6** En Cambio de moneda la cotización del kiosco no se hereda: se vuelve a cotizar con las tasas en vigor. En Cobrar remesa y Cobrar giro, el código dispara la búsqueda por código. En Enviar giro, el documento que dio el cliente lanza la búsqueda del remitente (**FR-GE-2**), y si no está registrado, el alta se rellena con lo que escribió; elegido el remitente, si el resto está completo se salta a la revisión. La confirmación sigue siendo manual y el código del giro solo nace al confirmar.
+**FR-SOL-6** En Cambio de moneda la cotización del kiosco no se hereda: se vuelve a cotizar con las tasas en vigor. En Cobrar remesa y Cobrar giro, el código dispara la búsqueda por código. En Enviar giro, el documento que dio el cliente lanza la búsqueda del remitente (**FR-GE-2**), y si no está registrado, el alta se rellena con lo que escribió; elegido el remitente, si el resto está completo se salta a la revisión. La solicitud puede traer **cómo lo pidió el cliente** (`forma`: `llegar` o `enviar`, **FR-GE-16**); sin ella, se entiende «Que llegue un importe». La tarifa no se hereda: se calcula con la vigente. La confirmación sigue siendo manual y el código del giro solo nace al confirmar.
 
 **FR-SOL-7** El flujo de destino consume los datos una sola vez.
 
@@ -598,7 +599,7 @@ Si el cliente no acepta, no se registra nada.
 | Pagado en CUP | Parte del pago se completó en CUP (§6.4, paso 2), con su equivalencia |
 | A favor de la casa (redondeo) | Hubo redondeo a la denominación más pequeña, en la moneda o en el CUP del resto |
 
-**FR-EF-20 · Dónde se ve.** En el resultado, en el comprobante (**FR-PRINT-1**) y en el detalle de la operación («Cómo se movió el efectivo», **FR-OPD-12**). La administración la ve en el detalle de la operación (**FR-AD-OPS-***).
+**FR-EF-20 · Dónde se ve.** En el resultado, en el comprobante (**FR-PRINT-1**) y en el detalle de la operación, como filas de su cuenta del efectivo (**FR-OPD-12**). La administración la ve en el detalle de la operación (**FR-AD-OPS-***).
 
 **FR-EF-21 · Lo entregado.** «Cliente recibe», «Importe entregado» y «Salió de caja» dicen **lo que el cliente se llevó**: lo debido menos el redondeo, con la parte en CUP aparte. Si no coincide con lo que daba la tasa o con el importe de la remesa o el giro, se dice también ese importe.
 
@@ -780,23 +781,40 @@ Pasos: **Remitente → Registrar giro → Revisar giro → Efectivo → Confirma
 | --- | --- |
 | Remitente | El elegido en **FR-GE-2**, solo lectura: nombre completo, documento, fecha de nacimiento, teléfono, nacionalidad |
 | Beneficiario | Nombre completo, correo (opcional), teléfono, dirección, documento, provincia, municipio |
-| Datos del giro | Moneda (solo las habilitadas en la caja) e importe. Método: Recogida, solo lectura |
+| Datos del giro | **Qué dice el cliente** (**FR-GE-16**), moneda e importe. Método: Recogida, solo lectura |
 
 - El correo del beneficiario, si se da, debe ser válido.
 - Municipio depende de la provincia; cambiar de provincia limpia un municipio incompatible.
-- El importe es mayor que cero. Los errores se muestran al intentar continuar.
+- **Moneda:** solo las habilitadas en la caja **que tienen tarifa de giros**; en las demás no se envían giros. Si alguna de la caja se queda fuera, la pantalla la nombra.
+- El importe es mayor que cero y pagable con las denominaciones de la moneda. Los errores del formulario se muestran al intentar continuar; los del importe frente a la tarifa (**FR-GE-17**), mientras se escribe.
 
-**FR-GE-9 · Revisión.** Remitente, beneficiario y datos del giro, con aviso de verificar los datos.
+**FR-GE-16 · Dos formas de pedirlo.** El trabajador marca lo que dice el cliente:
 
-**FR-GE-15 · Efectivo.** Lo que da el remitente y el vuelto (§6.1, §6.2).
+| Forma | El cliente dice | Se calcula |
+| --- | --- | --- |
+| **Que llegue un importe** (por defecto) | Cuánto recibe el beneficiario | Tarifa de ese importe; el total es la suma |
+| **Enviar un importe** | Cuánto entrega | El **mayor giro** que, sumándole su tarifa, no pasa de lo entregado |
+
+- La tarifa se calcula **siempre sobre lo que recibe el beneficiario**, con la tarifa vigente de la moneda (FRD de Super Admin **FR-SA-TAR-3**, **TAR-7**). Un mismo giro cuesta lo mismo pedido de una forma o de la otra.
+- En «Enviar un importe», el giro baja a la cifra pagable inmediatamente inferior, y lo que sobra se le devuelve al remitente en el acto como vuelto: nunca queda a favor de la casa. La pantalla dice por qué sobra: «con un giro de X tendría que entregar Y».
+
+**FR-GE-17 · Giro mínimo.** Se comprueba sobre lo que recibe el beneficiario y se avisa **mientras se escribe**, junto al importe, con «Continuar» apagado: el giro mínimo de la moneda y, en «Enviar un importe», además, cuánto tiene que entregar el cliente como mínimo.
+
+**FR-GE-18 · Resumen en vivo.** El resumen lateral muestra, mientras se escribe: recibe el beneficiario, tarifa (con su desglose si lleva porcentaje), **total a cobrar** y, si lo hay, lo que se le devuelve.
+
+**FR-GE-9 · Revisión.** Remitente, beneficiario y datos del giro, con aviso de verificar los datos. El importe se lee en tres líneas: **recibe el beneficiario**, **tarifa** (con su desglose si lleva porcentaje: «100,00 CUP + 1 %») y **total a cobrar**.
+
+**FR-GE-15 · Efectivo.** Se cobra el **total**: el giro más la tarifa. Lo que da el remitente y el vuelto (§6.1, §6.2).
 
 **FR-GE-10 · Confirmar envío.** Muestra **«Billetes que da el cliente»** y el vuelto. Es irreversible y se deshabilita durante el envío.
 
-**FR-GE-11** El servidor valida jornada, moneda y billetes, y luego pide al proveedor crear el giro. Un fallo del proveedor no registra nada **[R2]**.
+**FR-GE-11** El servidor valida jornada, moneda y billetes, **vuelve a calcular la tarifa con la vigente** y luego pide al proveedor crear el giro. Un fallo del proveedor no registra nada **[R2]**.
 
-**FR-GE-12** Con éxito se registran la entrada de caja con sus billetes (lo que dio el remitente menos el vuelto) y una operación `Completada` de servicio `Giros`, con el remitente como cliente y la instantánea del giro **[R7] [R9]**.
+**FR-GE-19 · La tarifa cambió.** Si PuntoCash cambió la tarifa de la moneda mientras se registraba el giro (`tarifa-cambiada`), o la retiró (`sin-tarifa-de-giro`), no se registra nada: se vuelve a «Registrar giro» con el aviso, para recotizar con el cliente.
 
-**FR-GE-13** El resultado muestra el código de operación y el **código del giro** que necesitará el beneficiario, el vuelto si lo hubo, comprobante y vía a Operaciones.
+**FR-GE-12** Con éxito se registran la entrada de caja con sus billetes (lo que dio el remitente menos el vuelto) y una operación `Completada` de servicio `Giros`, con el remitente como cliente y la instantánea del giro **[R7] [R9]**. **La tarifa no es un movimiento aparte**: va en la misma entrada. El importe de la operación es el total cobrado, y la operación guarda la tarifa tal como se aplicó —forma, tramo, fijo, porcentaje, lo cobrado y el total—. Al proveedor se le pide un giro por lo que recibe el beneficiario.
+
+**FR-GE-13** El resultado muestra el código de operación y el **código del giro** que necesitará el beneficiario; recibe el beneficiario, tarifa y total cobrado; el vuelto si lo hubo; comprobante, con esas mismas líneas, y vía a Operaciones.
 
 **FR-GE-14** Salir con datos introducidos pide confirmación.
 
@@ -812,7 +830,7 @@ Pasos: **Código → Revisar giro → Efectivo → Confirmar entrega**, y el res
 
 **FR-GC-7** Estados del proveedor en español; en giros, `READY` es «Lista para pago» y `COMPLETED` es «Completado» **[R10]**.
 
-**FR-GC-8** La revisión muestra los datos del giro y el beneficiario, con aviso de verificar la identidad **[R5]**.
+**FR-GC-8** La revisión muestra los datos del giro y el beneficiario, con aviso de verificar la identidad **[R5]**. Cobrar un giro no lleva tarifa: quien cobra ve solo el importe del giro, nunca la tarifa que pagó el remitente.
 
 **FR-GC-9** No se continúa si el estado no es `READY` **[R6]** o la moneda no está habilitada en la caja, cada caso con su mensaje. Un giro `COMPLETED` se encuentra y se revisa, sin poder continuar.
 
@@ -828,7 +846,7 @@ Pasos: **Código → Revisar giro → Efectivo → Confirmar entrega**, y el res
 
 **FR-GC-16** El resultado confirma la entrega, con la liquidación si la hay, comprobante y vía a Operaciones.
 
-**Ver en la demo:** cobrar `TR-260901-000245`; enviar un giro de 500 EUR pagado con 600 EUR para ver el vuelto.
+**Ver en la demo:** cobrar `TR-260901-000245`. Enviar un giro: «Que llegue un importe» de 500 EUR → tarifa 11,00 EUR (1,00 + 2 %), total 511,00; pagado con 520 EUR, vuelto de 9,00. «Enviar un importe» de 9.000 CUP → recibe 8.850 y tarifa 150. «Enviar un importe» de 5 USD: avisa del giro mínimo de 10 USD y de que el cliente tiene que entregar al menos 13 USD.
 
 ---
 
@@ -1170,7 +1188,15 @@ Los ve PuntoCash en su auditoría (**FR-SA-AUD-***).
 
 **FR-OPD-11** La tasa, escrita según **FR-FMT-6**; en un cambio entre divisas, las dos tasas.
 
-**FR-OPD-12 · «Cómo se movió el efectivo».** Cuando hay liquidación (§6.7): vuelto, pagado en CUP y a favor de la casa. Lo entregado según **FR-EF-21**.
+**FR-OPD-12 · La cuenta del efectivo.** Una sola tarjeta que se lee de arriba abajo: primero lo que se debía o costó, luego lo que cambió de manos en el mostrador y, **en la última fila, el total**; debajo, lo que **entró o salió de la caja** («Entrada en caja — Giro», «Salida de caja — Remesa»…), neto, que es lo único que queda en el libro. El vuelto, lo pagado en CUP y el redondeo a favor de la casa (§6.7) son **filas de la cuenta, no movimientos**: no llevan recuadro.
+
+| Servicio | Filas |
+| --- | --- |
+| Enviar giro | Recibe el beneficiario · Tarifa (con su desglose si lleva porcentaje) · Entregó el cliente y Vuelto, si lo hubo · **Total cobrado** |
+| Cobrar giro, Remesa | Importe del giro (de la remesa) · si no se pagó justo: redondeo a favor de la casa, pagado en CUP por falta de billetes (con lo que se dio en CUP) · **Entregado al beneficiario**, por moneda |
+| Cambio de moneda («Movimientos de caja») | Entregó el cliente y Vuelto, si lo hubo · Cambia · **Recibe el cliente**; si no se le pagó justo, antes «Le corresponde» y las filas del pago |
+
+Lo entregado según **FR-EF-21**.
 
 **FR-OPD-13** **Sin** estado de caja, saldo anterior ni saldo resultante (§1.6).
 
@@ -1287,6 +1313,8 @@ Cada flujo dice el mensaje con las palabras de su pantalla («el cliente», «el
 | `sin-salida` | La caja no puede pagar eso entero. No se registró nada: ofrécele al cliente otra salida o que vuelva más tarde. (Con la opción de otro importe en un cambio, **FR-EF-12**.) |
 | `propuesta-vencida` | Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Revísalos. |
 | `fondos-insuficientes` | La caja no tiene {moneda} suficiente para entregar este cambio. No se registró nada: avisa a tu supervisor o propón al cliente un importe menor. |
+| `tarifa-cambiada` | PuntoCash cambió la tarifa mientras registrabas el giro. No se registró nada: revisa el importe y la tarifa nueva con el cliente. |
+| `sin-tarifa-de-giro` | PuntoCash retiró la tarifa de giros en {moneda}: en esa moneda ya no se envían giros. No se registró nada. |
 | `falta-foto-del-carne` | Faltan las fotos del carné del beneficiario. No se registró nada: haz las dos fotos con el móvil. |
 
 ### Foto del carné, en el móvil

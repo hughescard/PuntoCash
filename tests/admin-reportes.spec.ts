@@ -52,6 +52,19 @@ test.describe("Reportes · qué cuenta como volumen", () => {
     expect(giro("send")).toMatchObject({ sentido: "enviado", currency: "CUP", amount: 5_000 });
     expect(giro("payout")).toMatchObject({ sentido: "pagado", currency: "CUP", amount: 5_000 });
   });
+
+  test("la tarifa de un giro enviado no es volumen: cuenta lo que recibe el beneficiario", () => {
+    const v = volumenDeOperacion({
+      ...base, servicio: "Giros", estado: "Completada",
+      /* Entró en caja el giro más la tarifa. */
+      amount: { kind: "single", money: { amount: 5_150, currency: "CUP" } },
+      transfer: {
+        transferAction: "send", code: "TR", receiverName: "B", receiverIdentification: "1", deliveryMethod: "pickup", senderCurrency: "CUP", deliveryAmount: 5_000,
+        tarifa: { forma: "llegar", tramo: { desde: 1_000, incluido: true, hasta: 10_000 }, fijo: 150, porcentaje: 0, cobrada: 150, total: 5_150 },
+      },
+    });
+    expect(v).toMatchObject({ sentido: "enviado", currency: "CUP", amount: 5_000 });
+  });
 });
 
 test.describe("Reportes", () => {
