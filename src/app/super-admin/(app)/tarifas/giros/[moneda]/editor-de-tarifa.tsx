@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2, TriangleAlert } from "lucide-react";
 
 import { Alert, Button, Card, Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
-import { validarTarifaDeGiro, type TramoDeTarifa, type TarifaWriteError } from "@/features/network/tarifas-reglas";
+import { redondeoQuePesa, validarTarifaDeGiro, type TramoDeTarifa, type TarifaWriteError } from "@/features/network/tarifas-reglas";
 import { guardarTarifaDeGiroAction, type ResultadoTarifa } from "../../_actions";
 import { mensajeDeTarifa } from "../../mensajes";
 import { importe, textoDelTramo } from "../../formato";
@@ -190,6 +190,11 @@ export function EditorDeTarifa({
           {tramos.map((t, i) => {
             const ultimo = i === tramos.length - 1;
             const marcado = visible?.tramo === i || (servidor?.tramo === i && !visible);
+            /* Aviso, no error (decisión del 19/11): con una denominación mínima grande el redondeo puede pesar más que el porcentaje. */
+            const pesa =
+              !marcado && Number.isFinite(minimoLeido) && leidos.every((x, j) => j !== i || Number.isFinite(x.fijo + x.porcentaje))
+                ? redondeoQuePesa({ minimo: minimoLeido, tramos: leidos }, i, menor)
+                : null;
             const HASTA: FieldSpec = { id: `tarifa-tramo-${t.clave}-hasta`, label: "Hasta", required: !ultimo, error: errorDe(i, "hasta") };
             const FIJO: FieldSpec = { id: `tarifa-tramo-${t.clave}-fijo`, label: "Fijo", required: true, error: errorDe(i, "fijo") };
             const PCT: FieldSpec = {
@@ -269,6 +274,16 @@ export function EditorDeTarifa({
                     />
                   </Field>
                 </div>
+                {pesa ? (
+                  <p className="mt-4 flex items-start gap-2 text-body-sm text-warning-foreground">
+                    <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <span>
+                      Con {importe(menor)} {moneda} como denominación más pequeña, un giro de {importe(pesa.giro)} {moneda} pagaría{" "}
+                      {importe(pesa.cobrada)} en vez de {importe(pesa.exacta)}: la tarifa se redondea al alza y el redondeo pesa más
+                      que el porcentaje. En los tramos bajos suele convenir un fijo.
+                    </span>
+                  </p>
+                ) : null}
               </li>
             );
           })}

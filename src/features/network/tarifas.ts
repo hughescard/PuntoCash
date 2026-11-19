@@ -39,7 +39,9 @@ import { monedaDelCatalogo } from "./currencies";
 import { denominacionesDe } from "./denominaciones";
 import { isMotivoValido } from "./sedes";
 import { isGlobal, type Scope } from "./scope";
+import type { GuardaDeRetiroDeDenominacion } from "./denominaciones";
 import {
+  impagablesCon,
   validarTarifaDeGiro,
   type TarifaDeGiro,
   type TarifaWriteResult,
@@ -121,6 +123,32 @@ export function seEnvianGirosEn(moneda: string): boolean {
 export function menorDenominacion(moneda: string): number | null {
   const lista = denominacionesDe(moneda);
   return lista.length === 0 ? null : Math.min(...lista.map((d) => d.valor));
+}
+
+/**
+ * Lo que impide retirar una denominación (decisión del 19/11): que la tarifa
+ * de giros de esa moneda deje de poder cobrarse. Si con lo que queda ya no se
+ * paga el mínimo, un límite o un fijo —o no queda ninguna denominación— se
+ * impide, y PuntoCash corrige antes la tarifa. Se inyecta en
+ * `retirarDenominacion`, como las guardas de una caja en `retirarCaja`:
+ * `denominaciones.ts` no depende de este módulo, que ya depende de él.
+ */
+export const GUARDA_DE_TARIFAS: GuardaDeRetiroDeDenominacion = {
+  impide(moneda, quedan) {
+    const t = politicas.get(moneda);
+    if (!t) return null;
+    if (quedan.length === 0) return ["la tarifa entera: no quedaría ninguna denominación para cobrarla"];
+    const fuera = impagablesCon(t, Math.min(...quedan));
+    return fuera.length === 0 ? null : fuera;
+  },
+};
+
+/** Lo mismo, para la pantalla: si retirar esa denominación dejaría la tarifa sin poder cobrarse, y qué. */
+export function retiroQueImpideLaTarifa(moneda: string, valor: number): readonly string[] | null {
+  const quedan = denominacionesDe(moneda)
+    .map((d) => d.valor)
+    .filter((v) => Math.round(v * 100) !== Math.round(valor * 100));
+  return GUARDA_DE_TARIFAS.impide(moneda, quedan);
 }
 
 /* -------------------------------------------------------------------------

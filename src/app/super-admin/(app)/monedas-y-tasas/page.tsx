@@ -20,6 +20,7 @@ import { TablaDeDenominaciones, type FilaDeDenominaciones } from "./tabla-de-den
 import { todasLasDenominaciones } from "@/features/network/denominaciones";
 import { existenciasEnCajasAbiertas } from "@/features/network/jornadas";
 import { clave } from "@/features/caja/billetes";
+import { retiroQueImpideLaTarifa } from "@/features/network/tarifas";
 
 export const metadata: Metadata = {
   title: "Super administración · Monedas y tasas",
@@ -96,6 +97,7 @@ export default async function SuperAdminMonedasYTasasPage({
           retirada: d.retiradaEl ? fechaCorta(d.retiradaEl) : null,
           cajas: e?.cajas ?? 0,
           unidades: e?.unidades ?? 0,
+          impideTarifa: d.retiradaEl ? null : retiroQueImpideLaTarifa(m.code, d.valor),
         };
       }),
     };

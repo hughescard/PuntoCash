@@ -1,8 +1,14 @@
 import { expect, test } from "@playwright/test";
 
 import { GLOBAL_SCOPE, operatorScope } from "../src/features/network/scope";
+import { denominacionesDe, retirarDenominacion } from "../src/features/network/denominaciones";
 import {
+  calcularTarifa,
   definirTarifaDeGiro,
+  GUARDA_DE_TARIFAS,
+  redondearAlAlza,
+  redondeoQuePesa,
+  retiroQueImpideLaTarifa,
   esPagable,
   inicioDeTramo,
   menorDenominacion,
@@ -138,4 +144,44 @@ test("la auditoría lee la política en una línea", () => {
   expect(resumenDeTarifa({ minimo: 10, tramos: TRAMOS }, cifra)).toBe(
     "Mínimo 10 · de 10 a 100: 3 · más de 100 hasta 500: 1 + 2 % · más de 500: 1,5 %",
   );
+});
+
+test("la tarifa se redondea al alza, al múltiplo de la denominación más pequeña", () => {
+  expect(redondearAlAlza(2.9124, 0.01)).toBe(2.92);
+  expect(redondearAlAlza(2.92, 0.01)).toBe(2.92);
+  expect(redondearAlAlza(29.2, 1)).toBe(30);
+  expect(redondearAlAlza(23.6654, 5)).toBe(25);
+  expect(redondearAlAlza(25, 5)).toBe(25);
+
+  const usd = { tramos: TRAMOS };
+  /* 1 + 2 % de 123,45 = 3,469 → 3,47. */
+  expect(calcularTarifa(usd, 123.45, 0.01)).toEqual({ tramo: 1, fijo: 1, porcentaje: 2, exacta: 3.469, cobrada: 3.47 });
+  /* Sin céntimos ni monedas: el mismo giro paga 5. */
+  expect(calcularTarifa(usd, 123.45, 5).cobrada).toBe(5);
+  /* 1,5 % de 1.000 = 15, que ya es múltiplo de 5. */
+  expect(calcularTarifa(usd, 1000, 5).cobrada).toBe(15);
+});
+
+test("se avisa del tramo en el que el redondeo pesa más que el porcentaje", () => {
+  const t = { minimo: 10, tramos: [T(null, 0, 3)] };
+  expect(redondeoQuePesa(t, 0, 0.01)).toBeNull();
+  expect(redondeoQuePesa(t, 0, 5)).toEqual({ giro: 10, exacta: 0.3, cobrada: 5 });
+  /* Un tramo solo con fijo no tiene porcentaje que redondear. */
+  expect(redondeoQuePesa({ minimo: 10, tramos: [T(null, 5, 0)] }, 0, 5)).toBeNull();
+});
+
+test("no se retira una denominación si la tarifa de giros deja de poder cobrarse", () => {
+  /* Con solo billetes de 5 y 10, el fijo de 3 y el de 1 del dólar no se pagan. */
+  expect(GUARDA_DE_TARIFAS.impide("USD", [5, 10])).toEqual(["el fijo del tramo 1", "el fijo del tramo 2"]);
+  expect(GUARDA_DE_TARIFAS.impide("USD", [])).toHaveLength(1);
+  expect(GUARDA_DE_TARIFAS.impide("USD", [0.01, 1])).toBeNull();
+  /* Sin tarifa, nada lo impide. */
+  expect(GUARDA_DE_TARIFAS.impide("GBP", [50])).toBeNull();
+
+  /* El peso cubano: sin el billete de 1 el más pequeño es el de 3, y el mínimo de 1.000 no se paga. */
+  expect(retiroQueImpideLaTarifa("CUP", 1)).toEqual(["el giro mínimo", "el límite del tramo 1", "el límite del tramo 2", "el fijo del tramo 2"]);
+  expect(retirarDenominacion(GLOBAL_SCOPE, "CUP", 1, new Date(), GUARDA_DE_TARIFAS)).toEqual({ ok: false, reason: "la-usa-una-tarifa" });
+  expect(denominacionesDe("CUP").some((d) => d.valor === 1)).toBe(true);
+  /* Retirar una que no es la más pequeña no cambia nada. */
+  expect(retiroQueImpideLaTarifa("CUP", 1000)).toBeNull();
 });

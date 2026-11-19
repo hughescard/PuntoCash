@@ -99,6 +99,28 @@ test("definir y retirar la tarifa de giros del yen", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Definir la tarifa de giros en JPY" })).toBeVisible();
 });
 
+test("avisa, sin impedirlo, del tramo en el que el redondeo pesa más que el porcentaje", async ({ page }) => {
+  await page.goto("/super-admin/tarifas/giros/JPY");
+  await page.getByLabel(/^Giro mínimo/).fill("10");
+  await tramo(page, 1).getByLabel(/^Fijo/).fill("0");
+  await tramo(page, 1).getByLabel(/^Porcentaje/).fill("2");
+  await expect(tramo(page, 1).getByText(/un giro de 10,00 JPY pagaría 1,00 en vez de 0,20/)).toBeVisible();
+  await tramo(page, 1).getByLabel(/^Fijo/).fill("5");
+  await tramo(page, 1).getByLabel(/^Porcentaje/).fill("0");
+  await expect(tramo(page, 1).getByText(/pagaría/)).toBeHidden();
+});
+
+test("no deja retirar una denominación que la tarifa de giros necesita", async ({ page }) => {
+  await page.goto("/super-admin/monedas-y-tasas?vista=denominaciones");
+  await page.getByRole("button", { name: "Retirar el billete de 1 CUP" }).click();
+  const dialogo = page.getByRole("dialog");
+  await expect(dialogo.getByRole("heading", { name: "No se puede retirar el billete de 1 CUP" })).toBeVisible();
+  await expect(dialogo.getByText(/no se podría cobrar el giro mínimo/)).toBeVisible();
+  await expect(dialogo.getByRole("button", { name: "Retirar la denominación" })).toBeHidden();
+  await dialogo.getByRole("link", { name: "Ir a la tarifa de giros" }).click();
+  await page.waitForURL(/\/super-admin\/tarifas\/giros\/CUP$/);
+});
+
 test("una moneda que no está en el catálogo no tiene editor", async ({ page }) => {
   const r = await page.goto("/super-admin/tarifas/giros/XYZ");
   expect(r?.status()).toBe(404);

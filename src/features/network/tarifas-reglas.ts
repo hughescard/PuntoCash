@@ -122,6 +122,79 @@ export function validarTarifaDeGiro(
 }
 
 /* -------------------------------------------------------------------------
+ * Cuánto se cobra
+ * ---------------------------------------------------------------------- */
+
+/** Lleva una cifra al múltiplo de `menor` igual o superior: la casa no pierde (decisión del 19/11). */
+export function redondearAlAlza(valor: number, menor: number): number {
+  const u = enUnidades(menor);
+  /* Se tolera el ruido de coma flotante antes de subir de escalón: 2,92 no pasa a 2,93. */
+  const escalones = Math.ceil(enUnidades(valor) / u - 1e-9);
+  return (escalones * u) / 1e4;
+}
+
+export interface TarifaCalculada {
+  /** El tramo aplicado, por su posición (desde 0). */
+  tramo: number;
+  fijo: number;
+  porcentaje: number;
+  /** Lo que daría la cuenta, sin redondear: fijo + porcentaje del giro. */
+  exacta: number;
+  /** Lo que se cobra: la cuenta llevada al múltiplo de la denominación más pequeña, al alza. */
+  cobrada: number;
+}
+
+/**
+ * La tarifa de un giro: la del tramo en el que cae lo que recibe el
+ * beneficiario, redondeada al alza a la denominación más pequeña que circula.
+ */
+export function calcularTarifa(tarifa: Pick<TarifaDeGiro, "tramos">, importe: number, menor: number): TarifaCalculada {
+  const t = tramoDe(tarifa, importe);
+  const exacta = t.fijo + (importe * t.porcentaje) / 100;
+  return {
+    tramo: tarifa.tramos.indexOf(t),
+    fijo: t.fijo,
+    porcentaje: t.porcentaje,
+    exacta,
+    cobrada: redondearAlAlza(exacta, menor),
+  };
+}
+
+/**
+ * Un tramo con porcentaje en el que, al principio del tramo, el porcentaje no
+ * llega a la denominación más pequeña: el redondeo pesa más que el porcentaje
+ * y la tarifa real sale muy por encima de lo que dice la tabla. No se impide
+ * (decisión del 19/11): se avisa, porque lo normal es resolverlo con un fijo.
+ */
+export function redondeoQuePesa(
+  tarifa: Pick<TarifaDeGiro, "minimo" | "tramos">,
+  indice: number,
+  menor: number,
+): { giro: number; exacta: number; cobrada: number } | null {
+  const t = tarifa.tramos[indice];
+  if (!t || t.porcentaje <= 0) return null;
+  const giro = inicioDeTramo(tarifa, indice).desde;
+  const parte = (giro * t.porcentaje) / 100;
+  if (parte >= menor) return null;
+  const exacta = t.fijo + parte;
+  return { giro, exacta, cobrada: redondearAlAlza(exacta, menor) };
+}
+
+/**
+ * Qué deja de poder pagarse en una política si la denominación más pequeña
+ * pasa a ser `menor`. Vacío si todo sigue siendo pagable.
+ */
+export function impagablesCon(tarifa: Pick<TarifaDeGiro, "minimo" | "tramos">, menor: number): readonly string[] {
+  const fuera: string[] = [];
+  if (!esPagable(tarifa.minimo, menor)) fuera.push("el giro mínimo");
+  tarifa.tramos.forEach((t, i) => {
+    if (t.hasta !== null && !esPagable(t.hasta, menor)) fuera.push(`el límite del tramo ${i + 1}`);
+    if (!esPagable(t.fijo, menor)) fuera.push(`el fijo del tramo ${i + 1}`);
+  });
+  return fuera;
+}
+
+/* -------------------------------------------------------------------------
  * Cómo se lee
  * ---------------------------------------------------------------------- */
 
