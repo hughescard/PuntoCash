@@ -59,7 +59,7 @@ export default async function SuperAdminTarifasPage() {
                   </div>
                 ) : (
                   <>
-                    <dl className="grid min-w-0 flex-1 grid-cols-1 gap-x-6 gap-y-2 text-body-sm sm:grid-cols-[auto_1fr]">
+                    <dl className="grid min-w-0 flex-1 grid-cols-1 gap-x-6 gap-y-2 text-body-sm sm:grid-cols-[auto_1fr] sm:items-center">
                       <dt className="text-text-secondary">{tarifa.operacion}</dt>
                       <dd className="text-text-primary">
                         Por tramos de importe ·{" "}
@@ -71,7 +71,9 @@ export default async function SuperAdminTarifasPage() {
                         . La paga el remitente.
                       </dd>
                       <dt className="text-text-secondary">{tarifa.sinTarifa}</dt>
-                      <dd className="text-text-primary">Sin tarifa.</dd>
+                      <dd>
+                        <Badge variant="neutral">Sin tarifa</Badge>
+                      </dd>
                     </dl>
                     <Button variant="secondary" asChild className="self-start xl:self-center">
                       <Link href="/super-admin/tarifas/giros">
