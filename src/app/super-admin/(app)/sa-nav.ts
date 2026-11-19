@@ -1,4 +1,5 @@
 import {
+  BadgePercent,
   Building2,
   CalendarClock,
   ChartColumn,
@@ -23,7 +24,7 @@ import type { NavGroup, NavItem } from "@/components/shell/sidebar-nav";
  * Cuatro bloques por lo que la persona viene a hacer, no por el permiso que
  * tiene en cada pantalla: **Red** (quién y dónde: sedes, operadores, cajas,
  * trabajadores), **Oferta** (qué se ofrece: servicios, monedas y tasas,
- * promociones), **Actividad** (qué pasa: jornadas, operaciones, reportes) y
+ * tarifas, promociones), **Actividad** (qué pasa: jornadas, operaciones, reportes) y
  * **Administración** (quién entra a la consola y qué dejó huella). Dentro de
  * cada pantalla, lo que PuntoCash puede o no cambiar ya se ve por sus botones.
  */
@@ -66,6 +67,7 @@ export function superAdminNavGroups(
       items: [
         { href: "/super-admin/servicios", label: "Servicios", icon: LayoutGrid },
         { href: "/super-admin/monedas-y-tasas", label: "Monedas y tasas", icon: Coins },
+        { href: "/super-admin/tarifas", label: "Tarifas", icon: BadgePercent },
         { href: "/super-admin/promociones", label: "Promociones", icon: Megaphone },
       ],
     },
