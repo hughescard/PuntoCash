@@ -19,6 +19,7 @@ import {
 } from "@/features/operations/operations-history";
 import { CardGlyph, DetailCard, DetailList, DetailRow } from "./detail-parts";
 import { entregadoAlCliente, difiereDeLoDebido } from "@/features/operations/entregado";
+import { desgloseDeTarifa } from "@/app/worker/(app)/nueva-operacion/giros/enviar/cotizacion-de-giro";
 
 /**
  * Specialized historical detail for "Giros".
@@ -55,7 +56,11 @@ export function GiroDetail({ operation }: { operation: OperationRecord }): React
 
       <GiroCard operation={operation} isPayout={isPayout} />
 
-      <CashMovementCard operation={operation} isPayout={isPayout} />
+      {isPayout ? (
+        <CashMovementCard operation={operation} isPayout={isPayout} />
+      ) : (
+        <CuentaDelEnvio operation={operation} />
+      )}
     </div>
   );
 }
@@ -280,6 +285,68 @@ function CashMovementCard({ operation, isPayout }: { operation: OperationRecord;
         </DetailList>
         <DetailList>
           <DetailRow label="Moneda" value={currencyLabel(money.currency)} />
+        </DetailList>
+        <DetailList>
+          <DetailRow label="Operación vinculada" value={operation.codigo} numeric />
+        </DetailList>
+      </div>
+    </DetailCard>
+  );
+}
+
+/**
+ * Lo que costó el giro y lo que movió en la caja, leído como una cuenta de
+ * arriba abajo (decisión del 19/11/2026): lo que recibe el beneficiario, la
+ * tarifa y el total cobrado; lo que entregó el cliente y el vuelto, si lo
+ * hubo; y la entrada en caja, que es el único movimiento del libro, neto.
+ *
+ * Sustituye a «Movimiento de efectivo» + «Cómo se movió el efectivo» en el
+ * giro enviado: separadas, sus tres cifras no se relacionaban entre sí.
+ */
+function CuentaDelEnvio({ operation }: { operation: OperationRecord }) {
+  const snapshot = operation.transfer!;
+  const money = operation.amount.kind === "single" ? operation.amount.money : undefined;
+  if (!money) return null;
+  const currency = money.currency;
+  const m = (amount: number) => formatMoney({ amount, currency });
+  const tarifa = snapshot.tarifa;
+  const vuelto = operation.liquidacion?.vuelto?.currency === currency ? operation.liquidacion.vuelto.importe : 0;
+  const total = tarifa?.total ?? money.amount;
+
+  return (
+    <DetailCard title="Movimiento de efectivo" icon={Wallet} contentClassName="gap-5">
+      <DetailList>
+        {tarifa ? (
+          <>
+            <DetailRow label="Recibe el beneficiario" value={m(snapshot.deliveryAmount)} numeric />
+            <DetailRow
+              label="Tarifa"
+              value={
+                <span className="flex flex-col items-end">
+                  <span>{m(tarifa.cobrada)}</span>
+                  {tarifa.porcentaje > 0 ? (
+                    <span className="text-caption font-normal text-text-secondary">{desgloseDeTarifa(tarifa, currency)}</span>
+                  ) : null}
+                </span>
+              }
+              numeric
+            />
+          </>
+        ) : null}
+        <DetailRow label="Total cobrado" value={m(total)} numeric strong />
+        {vuelto > 0 ? (
+          <>
+            <DetailRow label="Entregó el cliente" value={m(total + vuelto)} numeric />
+            <DetailRow label="Vuelto" value={<span className="text-error-foreground">−{m(vuelto)}</span>} numeric />
+          </>
+        ) : null}
+      </DetailList>
+
+      <MovementBox label="Entrada en caja — Giro" value={`+${m(money.amount)}`} tone="positive" />
+
+      <div className="grid grid-cols-1 gap-x-10 xl:grid-cols-2">
+        <DetailList>
+          <DetailRow label="Moneda" value={currencyLabel(currency)} />
         </DetailList>
         <DetailList>
           <DetailRow label="Operación vinculada" value={operation.codigo} numeric />

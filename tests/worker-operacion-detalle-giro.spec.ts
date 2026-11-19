@@ -170,14 +170,17 @@ test.describe("Operation Detail — giro enviado", () => {
 
   test("shows the cash entry, without any balance", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Movimiento de efectivo" })).toBeVisible();
-    await expect(onScreen(page, "Entrada — Giro")).toBeVisible();
+    await expect(onScreen(page, "Entrada en caja — Giro")).toBeVisible();
+    /* La cuenta: lo que llega, la tarifa y el total cobrado. */
+    await expect(onScreen(page, "Recibe el beneficiario")).toBeVisible();
+    await expect(onScreen(page, "150,00 CUP")).toBeVisible();
+    await expect(onScreen(page, "Total cobrado")).toBeVisible();
     /* Entra el giro más su tarifa: 2.500 + 150 del primer tramo del peso cubano. */
     await expect(onScreen(page, "+2.650,00 CUP")).toBeVisible();
     /* Worker opera a ciegas (6/11/2026). */
     await expect(onScreen(page, "Saldo anterior")).toHaveCount(0);
     await expect(onScreen(page, "Saldo resultante")).toHaveCount(0);
     await expect(onScreen(page, "52.500,00 CUP")).toHaveCount(0);
-    await expect(onScreen(page, "Entrada").last()).toBeVisible();
   });
 
   test("shows no raw provider enums anywhere", async ({ page }) => {

@@ -1,7 +1,7 @@
 import { test, expect } from "./worker-fixture";
 import { type Page } from "@playwright/test";
 
-import { abrirPorPantalla, continuarAConfirmar, identificarRemitente } from "./worker-helpers";
+import { abrirPorPantalla, continuarAConfirmar, identificarRemitente, marcarBilletes } from "./worker-helpers";
 
 /*
  * La jornada se siembra con 1.200 EUR, que es lo que abría el fondeo que había
@@ -494,6 +494,38 @@ test.describe("Success — Caja, Operaciones and result", () => {
     await expect(onScreen(page, "Giros").first()).toBeVisible();
     await expect(onScreen(page, "500,00 EUR").first()).toBeVisible();
     await expect(onScreen(page, "Detalle del servicio")).toHaveCount(0);
+  });
+
+  test("el detalle de un giro enviado se lee como una cuenta: llega, tarifa, total, entregó, vuelto y entrada en caja", async ({ page }) => {
+    await goToGiros(page);
+    await fillValidForm(page);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    /* Se le cobran 511: paga con 520 y se le devuelven 9. */
+    await marcarBilletes(page, /^Billetes del cliente de EUR/, 520);
+    await expect(page.getByText("Los billetes cuadran.")).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("button", { name: "Continuar a confirmar" }).click();
+    await page.getByRole("button", { name: "Confirmar envío" }).click();
+    await expect(page.getByRole("heading", { name: "Giro registrado correctamente" })).toBeVisible({ timeout: 10_000 });
+
+    await page.getByRole("link", { name: "Ir a Operaciones" }).click();
+    const giroRow = page.getByRole("table").locator("tbody tr").filter({ hasText: "Giros" }).first();
+    await giroRow.getByRole("link", { name: /^Ver (la operación|el movimiento)/ }).click();
+    await expect(page.getByRole("heading", { name: "Detalle de operación" })).toBeVisible();
+
+    const cuenta = page.getByRole("heading", { name: "Movimiento de efectivo" }).locator("xpath=ancestor::div[contains(@class,'rounded-card')][1]");
+    for (const [etiqueta, valor] of [
+      ["Recibe el beneficiario", "500,00 EUR"],
+      ["Total cobrado", "511,00 EUR"],
+      ["Entregó el cliente", "520,00 EUR"],
+      ["Vuelto", "−9,00 EUR"],
+    ] as const) {
+      await expect(cuenta.locator("div").filter({ has: page.getByText(etiqueta, { exact: true }) }).last()).toContainText(valor);
+    }
+    await expect(cuenta.getByText("1,00 EUR + 2 %")).toBeVisible();
+    await expect(cuenta.getByText("+511,00 EUR")).toBeVisible();
+    /* El vuelto ya está en la cuenta: no hay una segunda tarjeta para él. */
+    await expect(page.getByRole("heading", { name: "Cómo se movió el efectivo" })).toHaveCount(0);
   });
 
   test("Result screen shows both codes, sender, beneficiary and canonical timestamp", async ({ page }) => {
