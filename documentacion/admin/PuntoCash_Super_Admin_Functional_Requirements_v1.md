@@ -1,5 +1,5 @@
 # PuntoCash — Super administración
-## Documento de Requisitos Funcionales (FRD) · v6.1
+## Documento de Requisitos Funcionales (FRD) · v7.0
 
 **Alcance:** la consola de PuntoCash sobre su red, `/super-admin`. No cubre la consola del mercante (`/admin`).
 
@@ -31,9 +31,10 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 7.0 | 19/11/2026 | **Tarifas de servicios.** Sección nueva **Tarifas** en el bloque Oferta (§10, **FR-SA-TAR-1 a TAR-12**, nuevos): qué servicio lleva tarifa, y la **tarifa de giros** de cada moneda —giro mínimo y tramos con fijo y porcentaje—, que PuntoCash define, cambia con motivo y retira con motivo; sin tarifa no se envían giros en esa moneda. Lo cobrado se redondea al alza a la denominación más pequeña que circula. No se retira una denominación que la tarifa necesita (**FR-SA-DEN-10**, nuevo; código `la-usa-una-tarifa`). Auditoría: `tarifa-giro.definida`, `.cambiada` y `.retirada`, área «Tarifas» (**FR-SA-AUD-2**). El detalle de una operación se lee como una **cuenta**: lo que se debía, lo que cambió de manos y el total, y debajo lo que entró o salió de la caja (**FR-SA-OPS-2**). En Reportes, la tarifa de un giro enviado no es volumen (**FR-SA-REP-3**). Navegación y rutas (**FR-SA-SHELL-2**, **FR-SA-NAV-1**); qué puede cada rol (Apéndice A); mensajes (Apéndice C). **Las secciones 10 a 17 pasan a ser 11 a 18** |
 | 6.1 | 16/11/2026 | **Foto del carné de quien cobra.** El detalle de una remesa entregada o de un giro pagado muestra las dos fotos del carné del beneficiario, como en Admin (**FR-SA-OPS-2**; FRD de Admin **FR-AD-OPS-11**; FRD de Worker §6.8). Además, el detalle de una operación enseña de verdad la liquidación y los billetes, que el requisito ya pedía y la pantalla no mostraba, y la ficha del trabajador avisa de que su usuario y su teléfono los puede cambiar él (**FR-SA-TRAB-3**) |
 | 6.0 | 13/11/2026 | **Lo que cambia en esta consola con la iteración 2 de Worker** (billetes, caja ciega, alertas, perfil del trabajador). (1) **Denominaciones**: tercera pestaña de Monedas y tasas, donde PuntoCash mantiene los billetes y monedas de cada divisa para toda la red: añadir, retirar con motivo, reincorporar (§9.7, **FR-SA-DEN-1 a DEN-8**, nuevos; auditoría en §9.8; códigos en el Apéndice C). (2) **Ficha de caja** de solo lectura, `/super-admin/sedes/[id]/cajas/[cajaId]`: la misma que ve el mercante, sin acciones (**FR-SA-EQ-10**, nuevo); se llega desde la ficha de sede y desde Cajas y equipos. (3) **Ficha de sede**: una caja cerrada dice cuándo y quién la cerró y lo que quedó dentro; sin jornadas, «Sin jornadas todavía» (**FR-SA-SEDE-13**). (4) **Aprobaciones**: los tipos de diferencia son los de la caja por billetes —apertura, cierre, composición, movimiento de fondos y recuento; el «ajuste» desaparece—, el detalle enseña los billetes y la referencia según el tipo, y la resolución guarda la cuenta que resolvió (**FR-SA-APR-1, APR-3, APR-5**). (5) **Jornadas y Operaciones**: el detalle enseña los billetes de cada movimiento y la liquidación de cada operación (**FR-SA-JOR-3**, **FR-SA-OPS-2**). (6) **Auditoría**: tipos nuevos (denominaciones, alertas de caja, usuario y teléfono y contraseña cambiados por el trabajador) y un tercer autor, el **trabajador**, con su filtro «Solo trabajadores» (**FR-SA-AUD-1, AUD-2, AUD-3, AUD-10**). (7) **Ficha del trabajador**: su usuario y su teléfono los puede cambiar él (**FR-SA-TRAB-3**). (8) **Tablas**: la fila entera abre su ficha, y las acciones van en el menú «⋯» de la fila (**FR-SA-SHELL-9**, **FR-SA-SHELL-10**, nuevo). (9) **Botones**: uno al lado del otro, y en un aviso una caja por línea (**FR-SA-SHELL-11**, nuevo). (10) Sale la sección «Fuera de alcance»: queda fuera todo lo que el documento no especifica |
-| 5.2 | 03/11/2026 | **PuntoCash resuelve las diferencias de efectivo que quedan sin dueño al traspasar una sede** (§11.3, **FR-SA-APR-1 a APR-5**, nuevos): menú «Aprobaciones», pendiente en Inicio |
+| 5.2 | 03/11/2026 | **PuntoCash resuelve las diferencias de efectivo que quedan sin dueño al traspasar una sede** (§12.3, **FR-SA-APR-1 a APR-5**, nuevos): menú «Aprobaciones», pendiente en Inicio |
 | 5.1 | 03/11/2026 | Un mercante ve cada sede solo desde que es suya; PuntoCash, todo (**FR-SA-DOM-4**) |
 | 5.0 | 03/11/2026 | **Reescritura completa en el formato de la v8 del FRD de Admin.** El documento describe la consola construida, no un diseño previo: una subsección por pantalla y por acción, rechazos con código, auditoría en tablas y «Ver en la demo». Incorpora las decisiones del 03/11: cerrar una sede termina su administración (**FR-SA-ASG-13**); una sede suspendida sin operador se asigna y PuntoCash mantiene su contacto (**FR-SA-SEDE-24**, **FR-SA-ASG-12**); toda credencial entregada es la contraseña (**FR-SA-OPE-16**, **FR-SA-USR-6**); motivo al cambiar un rango ya definido, al retirar una promoción de red y al traspasar el principal (**FR-SA-TASA-16**, **FR-SA-PROM-12**, **FR-SA-USR-10**). Secciones nuevas: Jornadas (**FR-SA-JOR**), Usuarios (**FR-SA-USR**) y Perfil (**FR-SA-PERF**). Los códigos de la v4.2 se conservan donde el requisito sigue; los redefinidos y los retirados se listan abajo |
 | 4.2 | 03/11/2026 | Banderas de la lista ISO (FR-SA-MON-9) |
@@ -71,7 +72,7 @@
 | Bloque | Destinos |
 | --- | --- |
 | Red | Inicio · Sedes · Operadores · Cajas y equipos · Trabajadores |
-| Oferta | Servicios · Monedas y tasas · Promociones |
+| Oferta | Servicios · Monedas y tasas · Tarifas · Promociones |
 | Actividad | Jornadas · Aprobaciones (**FR-SA-APR-1**) · Operaciones · Reportes |
 | Administración | Usuarios (**solo el principal**, **FR-SA-USR-1**) · Auditoría |
 
@@ -111,14 +112,15 @@
 | `/super-admin/trabajadores` · `/[id]` | Trabajadores (§7) |
 | `/super-admin/servicios` | Servicios (§8) |
 | `/super-admin/monedas-y-tasas` (`?vista=sedes`, `?vista=denominaciones`) | Monedas y tasas (§9) |
-| `/super-admin/promociones` · `/nueva` · `/[id]` | Promociones (§10) |
-| `/super-admin/jornadas` · `/[id]` | Jornadas (§11) |
-| `/super-admin/aprobaciones` · `/[id]` | Aprobaciones sin quien las resuelva (§11.3) |
-| `/super-admin/operaciones` · `/[codigo]` | Operaciones (§12) |
-| `/super-admin/reportes` · `GET /super-admin/reportes/exportar/{pdf\|xlsx}` | Reportes (§13) |
-| `/super-admin/auditoria` · `/[id]` · `GET /super-admin/auditoria/exportar` | Auditoría (§14) |
-| `/super-admin/usuarios` · `/nuevo` · `/[id]` · `/[id]/editar` | Usuarios (§15), solo el principal |
-| `/super-admin/perfil` · `/perfil/contrasena` | Perfil (§16) |
+| `/super-admin/tarifas` · `/tarifas/giros` · `/tarifas/giros/[moneda]` | Tarifas (§10) |
+| `/super-admin/promociones` · `/nueva` · `/[id]` | Promociones (§11) |
+| `/super-admin/jornadas` · `/[id]` | Jornadas (§12) |
+| `/super-admin/aprobaciones` · `/[id]` | Aprobaciones sin quien las resuelva (§12.3) |
+| `/super-admin/operaciones` · `/[codigo]` | Operaciones (§13) |
+| `/super-admin/reportes` · `GET /super-admin/reportes/exportar/{pdf\|xlsx}` | Reportes (§14) |
+| `/super-admin/auditoria` · `/[id]` · `GET /super-admin/auditoria/exportar` | Auditoría (§15) |
+| `/super-admin/usuarios` · `/nuevo` · `/[id]` · `/[id]/editar` | Usuarios (§16), solo el principal |
+| `/super-admin/perfil` · `/perfil/contrasena` | Perfil (§17) |
 
 **FR-SA-NAV-2 · Sin selector de alcance.** El alcance de esta consola es la red entera **[A1]**. Donde filtrar por sede u operador es útil, es un filtro de la pantalla, nunca del alcance de la sesión.
 
@@ -832,6 +834,8 @@ Filtros: búsqueda de sede, operador y moneda (con moneda, cada tarjeta muestra 
 
 **FR-SA-DEN-7 · Lo que no se hace.** Una denominación no se borra ni cambia de valor o de tipo: se retira y, si hace falta, se añade la correcta. Una retirada no se vuelve a añadir: se reincorpora (`esta-retirada`).
 
+**FR-SA-DEN-10 · La que necesita una tarifa.** No se retira una denominación si, sin ella, la tarifa de giros de esa moneda deja de poder cobrarse (**FR-SA-TAR-12**). El diálogo lo dice en lugar de pedir el motivo, nombra lo que dejaría de pagarse y lleva a la tarifa.
+
 **FR-SA-DEN-8 · Una moneda nueva.** Una moneda que se añade al catálogo (**FR-SA-MON-9**) llega **sin denominaciones**: hay que añadírselas antes de que una caja pueda operarla en efectivo.
 
 | Condición | Código |
@@ -844,6 +848,7 @@ Filtros: búsqueda de sede, operador y moneda (con moneda, cada tarjeta muestra 
 | Retirar una ya retirada | `ya-retirada` |
 | Reincorporar una vigente | `no-esta-retirada` |
 | Retirar sin motivo válido | `motivo-requerido` |
+| Sin ella, la tarifa de giros de la moneda no se podría cobrar | `la-usa-una-tarifa` |
 | Alcance que no es global | `alcance-insuficiente` |
 
 **Ver en la demo:** Monedas y tasas → Denominaciones → USD: retirar la moneda de 0,25 (dice cuántas quedan en las cajas abiertas), reincorporarla; añadir un billete de 200. Añadir una moneda nueva al catálogo y ver su tarjeta «Sin denominaciones».
@@ -866,9 +871,108 @@ Filtros: búsqueda de sede, operador y moneda (con moneda, cada tarjeta muestra 
 
 ---
 
-## 10. Promociones
+## 10. Tarifas — `/super-admin/tarifas`
 
-### 10.1 Reglas
+Lo que paga el **cliente** por un servicio, además del importe de la operación. Las fija y las mantiene **solo PuntoCash**, para toda la red: no hay valor por sede ni por operador, y el mercante no las ve ni las toca. Lo que el operador paga o gana por cada servicio no es una tarifa y no está en esta sección.
+
+### 10.1 Servicios — `/super-admin/tarifas`
+
+**FR-SA-TAR-1 · Qué servicio lleva tarifa.** Una fila por servicio disponible:
+
+| Servicio | Tarifa |
+| --- | --- |
+| Cambio de moneda | **Sin tarifa.** «El precio para el cliente es la tasa.» |
+| Remesas | **Sin tarifa.** «Cobrada en la captación.» |
+| Giros | **Enviar giro**: por tramos, la paga el remitente al enviar; la fila dice en cuántas monedas se envían giros y lleva a la tarifa de giros (§10.2). **Cobrar giro**: sin tarifa |
+
+Que un servicio lleve tarifa o no es una regla del producto, no un dato: no se cambia desde la consola. Un servicio en construcción no aparece hasta que se defina si la lleva.
+
+### 10.2 Tarifa de giros — `/super-admin/tarifas/giros`
+
+**FR-SA-TAR-2 · Qué es.** Cada moneda en que se envían giros tiene su tarifa: un **giro mínimo** y una **tabla de tramos** por importe. No hay giro máximo. **Sin tarifa no se envían giros en esa moneda**: Enviar giro no la ofrece (FRD de Worker **FR-GE-3**) y el servidor rechaza el giro (`sin-tarifa-de-giro`). Cobrar giro no depende de ella.
+
+**FR-SA-TAR-3 · Tramos.**
+
+- **Sin huecos ni solapes.** El primero empieza en el giro mínimo. Cada tramo llega hasta su límite, **incluido**, y el siguiente empieza justo por encima: «de 10,00 a 100,00», «más de 100,00 hasta 500,00». El último no tiene límite.
+- Cada tramo tiene un **fijo** y un **porcentaje**. Uno de los dos puede ser cero; **los dos no**.
+- El tramo se busca y el porcentaje se aplica sobre **lo que recibe el beneficiario**, no sobre lo que entrega el remitente.
+- Cada giro paga la tarifa de su tramo. No se avisa de los saltos entre tramos.
+
+**FR-SA-TAR-4 · Pantalla.** Una tarjeta por moneda con tarifa: bandera, código y nombre; «Retirada del catálogo» si lo está; giro mínimo; último cambio, con fecha y autor; y los tramos, cada uno con su intervalo, su fijo y su porcentaje. Acciones: «Cambiar» y «Retirar». Debajo, **«Sin tarifa»**: las monedas disponibles del catálogo que no la tienen, cada una con «Definir»; la que no tiene ninguna denominación vigente lo dice y no ofrece «Definir». Una moneda retirada sin tarifa no aparece. En el teléfono, los tramos son una lista.
+
+**Ver en la demo:** Tarifas → Giros. CUP, EUR y USD tienen tarifa; JPY está en «Sin tarifa».
+
+### 10.3 Definir o cambiar — `/super-admin/tarifas/giros/[moneda]`
+
+**FR-SA-TAR-5 · Campos.** Giro mínimo y, por tramo, límite (salvo el último), fijo y porcentaje, con coma o punto decimal. Al cambiar, vienen los valores actuales. «Añadir tramo» lo inserta antes del último, que es el que no tiene límite; un tramo se quita mientras quede al menos uno. La pantalla comprueba mientras se escribe, con los mismos mensajes que el servidor.
+
+**FR-SA-TAR-6 · Reglas.** «Pagable» quiere decir múltiplo de la **denominación más pequeña que circula hoy** de esa moneda (§9.7).
+
+| Regla | Código |
+| --- | --- |
+| Giro mínimo mayor que cero | `minimo-invalido` |
+| Giro mínimo pagable | `minimo-no-pagable` |
+| Al menos un tramo | `sin-tramos` |
+| Límite mayor que cero, salvo en el último tramo | `limite-invalido` |
+| Límite pagable | `limite-no-pagable` |
+| Cada límite mayor que el giro mínimo y que el límite del tramo anterior | `limite-no-creciente` |
+| El último tramo, sin límite | `ultimo-con-limite` |
+| Fijo mayor o igual que cero | `fijo-invalido` |
+| Fijo pagable | `fijo-no-pagable` |
+| Porcentaje de 0 a menos de 100, con 2 decimales como mucho | `porcentaje-invalido` |
+| Fijo y porcentaje no pueden ser cero a la vez | `tramo-sin-tarifa` |
+
+Un error de un tramo lo nombra: «Tramo 2: …».
+
+**FR-SA-TAR-7 · Redondeo de lo cobrado.** Lo que se cobra —fijo más porcentaje— se redondea **al alza** al múltiplo de la denominación más pequeña que circula, para que la casa no pierda: con 1 CUP de mínimo, 29,20 → 30; con 5 USD, 23,67 → 25. Se lee la denominación vigente en el momento de cobrar.
+
+**FR-SA-TAR-8 · Aviso, no prohibición.** Si en un tramo con porcentaje el porcentaje de su primer importe no llega a la denominación más pequeña, el redondeo pesa más que el porcentaje: la tarifa real queda muy por encima de lo escrito. El editor lo avisa en ese tramo, con lo que se cobraría por ese importe, y sugiere un fijo. Se puede guardar igual.
+
+**FR-SA-TAR-9 · Motivo al cambiar.** **Definir** la primera tarifa de una moneda no pide motivo: abre los giros en ella. **Cambiar** una tarifa definida pide **motivo**, porque mueve lo que paga cada cliente.
+
+**FR-SA-TAR-10 · Al guardar.** La tarifa vale **al momento** para los giros nuevos, sin fecha programada. No cambia ningún giro registrado **[R9]**. Un giro que un trabajador tiene a medio registrar se recalcula al confirmar: si la tarifa cambió, no se registra nada y vuelve a cotizarse con el cliente (`tarifa-cambiada`, FRD de Worker **FR-GE-11**).
+
+| Condición | Código |
+| --- | --- |
+| Reglas de **FR-SA-TAR-6** | (sus códigos) |
+| Cambiar sin motivo válido | `motivo-requerido` |
+| No está en el catálogo | `moneda-desconocida` |
+| Retirada del catálogo y sin tarifa | `moneda-retirada` |
+| La moneda no tiene ninguna denominación vigente | `sin-denominaciones` |
+| Alcance que no es global | `alcance-insuficiente` |
+
+Una moneda **retirada** que ya tenía tarifa la conserva, y se puede cambiar y retirar, como su rango (**FR-SA-MON-8**).
+
+**Ver en la demo:** Tarifas → Giros → JPY → Definir: no pide motivo. Con giro mínimo 10 y, en el primer tramo, fijo 0 y porcentaje 2, aparece el aviso: un giro de 10,00 JPY pagaría 1,00 en vez de 0,20. USD → Cambiar: pide motivo.
+
+### 10.4 Retirar
+
+**FR-SA-TAR-11.** Pide **motivo**. Desde ese momento no se envían giros en esa moneda; los que ya se enviaron se siguen cobrando.
+
+| Condición | Código |
+| --- | --- |
+| Motivo no válido | `motivo-requerido` |
+| Ya no tiene tarifa | `sin-tarifa` |
+
+### 10.5 Las denominaciones que la tarifa necesita
+
+**FR-SA-TAR-12.** No se retira una denominación si, con las que quedan, el giro mínimo, un límite o un fijo de la tarifa de esa moneda dejan de ser pagables, o si no queda ninguna denominación. El diálogo dice qué dejaría de poder cobrarse y lleva a la tarifa. Primero se corrige la tarifa; después se retira la denominación (**FR-SA-DEN-10**, código `la-usa-una-tarifa`).
+
+**Ver en la demo:** Monedas y tasas → Denominaciones → CUP: retirar el billete de 1. Con el de 3 como el más pequeño, el giro mínimo de 1.000 CUP ya no se paga: no se retira, y el diálogo lleva a la tarifa del CUP.
+
+### 10.6 Auditoría
+
+| Acción | Evento | Datos |
+| --- | --- | --- |
+| Definir | `tarifa-giro.definida` | Autor, moneda; antes «Sin tarifa», después el giro mínimo y los tramos |
+| Cambiar | `tarifa-giro.cambiada` | Autor, moneda, motivo; antes y después, el giro mínimo y los tramos |
+| Retirar | `tarifa-giro.retirada` | Autor, moneda, motivo; antes el giro mínimo y los tramos, después «Sin tarifa» |
+
+---
+
+## 11. Promociones
+
+### 11.1 Reglas
 
 **FR-SA-PROM-1 · Qué son.** Lo que PuntoCash anuncia en la pantalla informativa de sus sedes. Conviven con las promociones que cada mercante publica para las suyas.
 
@@ -894,11 +998,11 @@ El formulario conserva lo escrito ante un rechazo e incluye la vista previa de l
 
 **Estado.** Programada (aún no empieza), vigente, vencida (terminó o se retiró). Se calcula con la fecha de Cuba.
 
-### 10.2 Listado — `/super-admin/promociones`
+### 11.2 Listado — `/super-admin/promociones`
 
 **FR-SA-PROM-9 · Solo las de red.** Pestañas Vigentes (por defecto), Programadas y Vencidas, con su número. Columnas: título (enlace), dónde se muestra, fechas, quién la publicó (y la fecha de retirada si se retiró). Las de los operadores no están en la lista: cuentan para la saturación y se abren, en lectura, desde la ficha de su sede. Ofrece **Nueva promoción**.
 
-### 10.3 Nueva promoción y edición
+### 11.3 Nueva promoción y edición
 
 `/super-admin/promociones/nueva` para crear. Una promoción de red **no vencida** se edita en su propia ficha, `/super-admin/promociones/[id]`, que ofrece además **Retirar**. Una de red vencida o retirada, o una de un operador, se abre en **solo lectura**.
 
@@ -920,13 +1024,13 @@ El formulario conserva lo escrito ante un rechazo e incluye la vista previa de l
 | Editar una de un operador | `del-operador` |
 | Editar o retirar una vencida | `vencida` |
 
-### 10.4 Retirar
+### 11.4 Retirar
 
 **FR-SA-PROM-12 · Con motivo.** Retirar pide **motivo**. La quita de las pantallas **en el acto** (o impide que llegue a verse, si estaba programada). No se borra: pasa a Vencidas con la fecha y quién la retiró.
 
 **Ver en la demo:** Promociones → abrir una vigente → Retirar.
 
-### 10.5 Auditoría
+### 11.5 Auditoría
 
 **FR-SA-PROM-8** **[RP-21]**
 
@@ -938,9 +1042,9 @@ El formulario conserva lo escrito ante un rechazo e incluye la vista previa de l
 
 ---
 
-## 11. Jornadas
+## 12. Jornadas
 
-### 11.1 Listado — `/super-admin/jornadas`
+### 12.1 Listado — `/super-admin/jornadas`
 
 **FR-SA-JOR-1 · Contenido.** Todas las jornadas de la red, de todas las sedes. Primero las abiertas; después por día de apertura, de la más reciente; después por sede.
 
@@ -956,13 +1060,13 @@ El formulario conserva lo escrito ante un rechazo e incluye la vista previa de l
 
 **FR-SA-JOR-2 · Filtros.** Desde y hasta (por defecto, los últimos 7 días), operador, sede y estado. **Una jornada abierta se muestra siempre**, aunque se abriera antes del periodo: es una caja que nadie cerró. Desde la ficha de un trabajador se llega filtrado por esa persona, con la opción de quitar el filtro.
 
-### 11.2 Detalle — `/super-admin/jornadas/[id]`
+### 12.2 Detalle — `/super-admin/jornadas/[id]`
 
 **FR-SA-JOR-3 · Contenido.** El mismo cuerpo que en Admin (**FR-AD-JOR-***): la jornada, la apertura con lo contado y lo dejado por el cierre anterior, los saldos, el cierre y los movimientos, **con sus billetes** por denominación (**FR-AD-JOR-21**), y el cierre hecho por el trabajador en Worker (**FR-AD-JOR-22**). La cabecera nombra la sede y **el operador de la fecha**. Si sigue abierta de un día anterior, lo señala y dice que forzar el cierre es de su administrador. Si tuvo cierre forzado, quién, cuándo, el motivo y si ya se contó.
 
-**FR-SA-JOR-4 · Sin acciones.** No se fuerza un cierre ni se resuelve una aprobación desde la jornada **[A6]**, **[A14]**. La única aprobación que resuelve PuntoCash es la que no tiene quien la resuelva (§11.3).
+**FR-SA-JOR-4 · Sin acciones.** No se fuerza un cierre ni se resuelve una aprobación desde la jornada **[A6]**, **[A14]**. La única aprobación que resuelve PuntoCash es la que no tiene quien la resuelva (§12.3).
 
-### 11.3 Aprobaciones sin quien las resuelva — `/super-admin/aprobaciones`
+### 12.3 Aprobaciones sin quien las resuelva — `/super-admin/aprobaciones`
 
 **FR-SA-APR-1 · Cuáles.** Una diferencia de efectivo **pendiente** —de apertura, de cierre, de composición, un movimiento de fondos o una diferencia en recuento (**FR-AD-APR-***)— cuya jornada se abrió cuando la sede era de un operador que **ya no la administra**. Nadie de la sede puede resolverla: la empresa de entonces perdió la sede, y la de ahora solo ve su propia etapa (**FR-AD-SCOPE-7**). Las resuelve **PuntoCash** (decisión del 03/11/2026). Las demás son de cada mercante y aquí no aparecen.
 
@@ -987,9 +1091,9 @@ El formulario conserva lo escrito ante un rechazo e incluye la vista previa de l
 
 ---
 
-## 12. Operaciones
+## 13. Operaciones
 
-### 12.1 Listado — `/super-admin/operaciones`
+### 13.1 Listado — `/super-admin/operaciones`
 
 **FR-SA-OPS-1 · Contenido.** Todas las operaciones de la red —completadas, en proceso, rechazadas, fallidas y canceladas—, de la más reciente.
 
@@ -1004,9 +1108,9 @@ El formulario conserva lo escrito ante un rechazo e incluye la vista previa de l
 
 Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, los últimos 7 días), operador, sede, servicio y estado.
 
-### 12.2 Detalle — `/super-admin/operaciones/[codigo]`
+### 13.2 Detalle — `/super-admin/operaciones/[codigo]`
 
-**FR-SA-OPS-2 · Contexto.** Sede, **operador responsable** —el de ese día, y si hoy la administra otro, quién—, caja y equipo, trabajador, jornada y origen (mostrador o solicitud de kiosco). Debajo, el detalle de Worker según el servicio, con **la liquidación** —lo que entró y lo que salió de verdad, con sus billetes y el vuelto— (**FR-OPD-12**). En una remesa entregada o un giro pagado, además, las **dos fotos del carné** de quien cobró, como en Admin (FRD de Admin **FR-AD-OPS-11**).
+**FR-SA-OPS-2 · Contexto.** Sede, **operador responsable** —el de ese día, y si hoy la administra otro, quién—, caja y equipo, trabajador, jornada y origen (mostrador o solicitud de kiosco). Debajo, el detalle de Worker según el servicio (**FR-OPD-12**): la **cuenta del efectivo** —lo que se debía o costó, con la tarifa en un giro enviado; el vuelto, lo pagado en CUP y el redondeo a favor de la casa; el total— y debajo lo que **entró o salió de la caja**, con sus billetes. En una remesa entregada o un giro pagado, además, las **dos fotos del carné** de quien cobró, como en Admin (FRD de Admin **FR-AD-OPS-11**).
 
 **FR-SA-OPS-3 · Por qué.** Es lo que da sentido al historial de asignaciones: una operación de junio en Miramar es de Atlántico, aunque hoy la sede sea de Caribe **[RP-20]**, **[RP-27]**.
 
@@ -1016,13 +1120,13 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 ---
 
-## 13. Reportes — `/super-admin/reportes`
+## 14. Reportes — `/super-admin/reportes`
 
 **FR-SA-REP-1 · Cortes.** El volumen de un periodo por **operador** (por defecto), **sede**, **servicio**, **provincia** o **día**. El corte por día lleva un gráfico; el corte por servicio, si hubo cambio de moneda, la tabla de lo comprado, lo vendido, el volumen y la **posición neta** de cada divisa (que no es volumen).
 
 **FR-SA-REP-2 · Periodo.** Por defecto los últimos 7 días. Atajos: hoy, últimos 7 días, últimos 30 días, mes en curso; o desde y hasta. Máximo **un año**: si se pasa, se recorta y se dice.
 
-**FR-SA-REP-3 · Volumen.** Solo operaciones **completadas**, cada una una vez, por moneda y **sin convertir**. En un cambio, la divisa negociada (compra o venta); en una remesa, lo pagado; en un giro, su importe, enviado o pagado (**FR-AD-REP-***). Sin operaciones, la pantalla lo dice.
+**FR-SA-REP-3 · Volumen.** Solo operaciones **completadas**, cada una una vez, por moneda y **sin convertir**. En un cambio, la divisa negociada (compra o venta); en una remesa, lo pagado; en un giro, su importe, enviado o pagado; en un giro enviado, lo que recibe el beneficiario, **sin la tarifa** (**FR-AD-REP-8**). Sin operaciones, la pantalla lo dice.
 
 **FR-SA-REP-5 · De quién es cada operación.** Del operador que administraba la sede **el día en que se hizo** **[RP-27]**. Una fila «Sin operador» aparece solo si hay operaciones sin dueño, para que las filas sumen el total.
 
@@ -1038,9 +1142,9 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 ---
 
-## 14. Auditoría
+## 15. Auditoría
 
-### 14.1 Registro — `/super-admin/auditoria`
+### 15.1 Registro — `/super-admin/auditoria`
 
 **FR-SA-AUD-1 · Contenido.** Todo acto de gobierno de la red —de PuntoCash y de los mercantes—, del más reciente al más antiguo, **50 a la vez** con «Mostrar más eventos». Sin ventana de fechas obligatoria: quien audita busca un acto, no un periodo.
 
@@ -1062,6 +1166,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 | Operadores | `operador.alta` · `.suspendido` · `.reactivado` · `.baja` · `.acceso-principal-restablecido` |
 | Servicios | `servicio.habilitado` · `.deshabilitado` |
 | Monedas y tasas | `moneda-plataforma.alta` · `.retirada` · `.reincorporada` · `denominacion.alta` · `.retirada` · `.reincorporada` · `rango.definido` · `.cambiado` · `.retirado` · `tasa.fijada-al-limite` · y los del mercante: `moneda-sede.*`, `par.*` |
+| Tarifas | `tarifa-giro.definida` · `.cambiada` · `.retirada` |
 | Promociones | `promocion-red.alta` · `.editada` · `.retirada` · y `promocion-sede.*` |
 | Cajas y equipos | `caja.*` —incluido `caja.alertas-definidas`, las reglas de alerta de una sede—, `equipo-caja.*`, `kiosco.*` (mercante) |
 | Trabajadores | `trabajador.*` (mercante), y `trabajador.datos-propios` (usuario o teléfono) y `trabajador.contrasena-cambiada`, cuyo autor es **el propio trabajador** |
@@ -1072,13 +1177,13 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 **FR-SA-AUD-8 · Lenguaje de negocio.** Ningún evento se muestra con su identificador interno ni con un valor en bruto **[R10]**.
 
-### 14.2 Detalle — `/super-admin/auditoria/[id]`
+### 15.2 Detalle — `/super-admin/auditoria/[id]`
 
 **FR-SA-AUD-7.** Fecha y hora, quién actuó, sobre qué, sede, operador, motivo declarado y, si lo hay, **antes y después**.
 
 **FR-SA-AUD-5 · Enlaces.** Desde la lista y el detalle se llega a la **sede** y al **operador** del evento, y a su **objeto** cuando el evento lo guarda: un **trabajador** (a su ficha) o una **cuenta de PuntoCash** (a su ficha en Usuarios, **solo para el principal**; para los demás es texto).
 
-### 14.3 Reglas
+### 15.3 Reglas
 
 **FR-SA-AUD-6 · Inalterable.** Nadie edita ni borra un evento desde ninguna superficie del producto, tampoco esta **[RP-21]**. No hay controles, ni deshabilitados.
 
@@ -1090,9 +1195,9 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 ---
 
-## 15. Usuarios — cuentas de PuntoCash
+## 16. Usuarios — cuentas de PuntoCash
 
-### 15.1 Quién la ve
+### 16.1 Quién la ve
 
 **FR-SA-USR-1 · Solo el principal.** La sección solo existe para el **principal**: para el resto no está en la navegación, y todas sus rutas responden como inexistentes (**FR-SA-NAV-3**), no como prohibidas. El servidor comprueba que quien actúa es el principal en cada escritura (`no-es-el-principal`).
 
@@ -1100,11 +1205,11 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 **Ver en la demo:** con `jaguilera@puntocash.com`, `/super-admin/usuarios` responde «no encontrado».
 
-### 15.2 Listado — `/super-admin/usuarios`
+### 16.2 Listado — `/super-admin/usuarios`
 
 **FR-SA-USR-3.** Todas las cuentas, activas y desactivadas: el principal primero, después las activas, después por nombre. Datos: nombre (con «Tú» en la propia), identificador, correo enmascarado, estado, alta, último acceso, papel (principal o super administrador). Búsqueda por nombre o identificador. Ofrece **Dar de alta**.
 
-### 15.3 Dar de alta — `/super-admin/usuarios/nuevo`
+### 16.3 Dar de alta — `/super-admin/usuarios/nuevo`
 
 **FR-SA-USR-4 · Campos.**
 
@@ -1121,7 +1226,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 **FR-SA-USR-6 · Credencial.** La confirmación muestra **una sola vez** el identificador y una credencial que **es su contraseña** desde ese instante **[RP-30]**.
 
-### 15.4 Ficha y acciones — `/super-admin/usuarios/[id]`
+### 16.4 Ficha y acciones — `/super-admin/usuarios/[id]`
 
 **FR-SA-USR-7 · Ficha.** Estado, identificador, área, teléfono, correo enmascarado, alta, último acceso y papel. Si está desactivada, lo dice.
 
@@ -1157,7 +1262,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 **Ver en la demo:** Usuarios → Dar de alta; con la credencial mostrada, entrar en `/super-admin/login` con esa cuenta (la contraseña `puntocash` ya no le sirve).
 
-### 15.5 Auditoría
+### 16.5 Auditoría
 
 **FR-SA-USR-11** **[RP-21]**
 
@@ -1171,7 +1276,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 ---
 
-## 16. Perfil
+## 17. Perfil
 
 **FR-SA-PERF-1 · Perfil — `/super-admin/perfil`.** Cualquier sesión. Nombre, identificador, correo enmascarado, teléfono y área, en lectura. El principal ve un enlace a su ficha en Usuarios, donde los corrige; los demás, a quién pedírselo.
 
@@ -1188,7 +1293,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 ---
 
-## 17. Comportamiento transversal
+## 18. Comportamiento transversal
 
 **FR-SA-STATE-1 · Estados de pantalla.** Rigen los de la consola del mercante (**FR-AD-STATE-***): vacío con texto propio por listado y por «sin resultados con estos filtros», error de carga con «Volver a intentarlo», formularios que conservan lo escrito ante un rechazo.
 
@@ -1226,7 +1331,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 | --- | --- | --- | --- |
 | Crear, editar, asignar, revocar, suspender y cerrar sedes | Sí | Sí | No (edita contacto de las suyas) |
 | Dar de alta, suspender y dar de baja operadores; restablecer su principal | Sí | Sí | No |
-| Servicios, catálogo de monedas, rangos, promociones de red | Sí | Sí | No |
+| Servicios, catálogo de monedas, rangos, tarifas, promociones de red | Sí | Sí | No (no ve las tarifas) |
 | Cajas, equipos, trabajadores, administradores, monedas y tasas de una sede | Solo ve | Solo ve | Sí, en sus sedes |
 | Forzar cierres | No | No | Sí |
 | Resolver aprobaciones | Solo las que no tienen quien las resuelva | Ídem | Las de su etapa en sus sedes |
@@ -1256,6 +1361,7 @@ Todas las cuentas usan la contraseña `puntocash` (salvo las que reciban una cre
 | Sede sin cajas | PuntoCash Cerro; Pinar del Río (solo cajas retiradas) |
 | Sede sin Cambio de moneda | PuntoCash Matanzas |
 | Moneda sin rango que esperan sedes | CAD |
+| Monedas con tarifa de giros | CUP, EUR y USD. Las demás no envían giros (Tarifas → Giros) |
 | Caja abierta de un día anterior | PuntoCash Obispo |
 | Diferencias sin quien las resuelva | PuntoCash Miramar, 27 a 29/06/2026 (Aprobaciones) |
 | Cajas con alertas | PuntoCash Vedado y PuntoCash Obispo, según la hora (ficha de caja) |
@@ -1346,9 +1452,31 @@ La demostración trabaja **en memoria**: los cambios duran hasta reiniciar el se
 | Código | Mensaje |
 | --- | --- |
 | `valor-invalido` | Introduce un valor mayor que cero. |
+| `la-usa-una-tarifa` | La tarifa de giros de esta moneda dejaría de poder cobrarse. Corrígela antes en Tarifas. (En el diálogo: «No se puede retirar el billete de 1 CUP», con lo que dejaría de pagarse y «Ir a la tarifa de giros».) |
 | `demasiados-decimales` | Una denominación admite hasta 2 decimales. |
 | `ya-existe` | Esa denominación ya está en el catálogo. |
 | `esta-retirada` | Esa denominación existe pero está retirada: reincorpórala desde su ficha. |
 | `no-existe` | Esa denominación no está en el catálogo. Recarga para ver su estado. |
 | `ya-retirada` | Esa denominación ya está retirada. Recarga para ver su estado. |
 | `no-esta-retirada` | Esa denominación ya se acepta. Recarga para ver su estado. |
+
+**Tarifas (§10).** {moneda} es el código; un error de un tramo empieza por «Tramo {n}:».
+
+| Código | Mensaje |
+| --- | --- |
+| `minimo-invalido` | Escribe el giro mínimo: un importe mayor que cero. |
+| `minimo-no-pagable` | El giro mínimo tiene que poder pagarse con las denominaciones del {moneda}. |
+| `sin-tramos` | Define al menos un tramo. |
+| `limite-invalido` | Escribe hasta qué importe llega el tramo. |
+| `limite-no-pagable` | El límite tiene que poder pagarse con las denominaciones del {moneda}. |
+| `limite-no-creciente` | El límite tiene que ser mayor que el giro mínimo y que el límite del tramo anterior. |
+| `ultimo-con-limite` | El último tramo no tiene límite superior. |
+| `fijo-invalido` | El fijo no puede ser negativo. Escribe 0 si el tramo no lleva fijo. |
+| `fijo-no-pagable` | El fijo tiene que poder pagarse con las denominaciones del {moneda}. |
+| `porcentaje-invalido` | El porcentaje va de 0 a menos de 100, con dos decimales como mucho. Escribe 0 si el tramo no lleva porcentaje. |
+| `tramo-sin-tarifa` | El fijo y el porcentaje no pueden ser cero a la vez: el tramo no cobraría nada. |
+| `motivo-requerido` | Escribe el motivo del cambio: al menos 10 caracteres. |
+| `sin-tarifa` | Los giros en {moneda} ya no tienen tarifa. Recarga para ver su estado. |
+| `moneda-desconocida` | Esa moneda no está en el catálogo. |
+| `moneda-retirada` | El {moneda} está retirado del catálogo: reincorpóralo antes de definirle una tarifa. |
+| `sin-denominaciones` | No circula ninguna denominación del {moneda}: no se puede cobrar ni pagar en efectivo. Añádelas en Monedas y tasas. |

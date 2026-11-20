@@ -49,7 +49,7 @@ import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { PROVINCE_CATALOG, getMunicipalitiesForProvince } from "@/features/geography/cuba-provinces";
 import { findCajaCurrency } from "@/features/caja/caja-data";
 import { useCaja } from "@/features/caja/use-caja";
-import { formatAmount, formatIsoDate } from "@/lib/format";
+import { formatAmount, formatIsoDate, formatMoney } from "@/lib/format";
 import {
   clearPendingWorkerHandoff,
   readPendingWorkerHandoff,
@@ -57,7 +57,17 @@ import {
 } from "@/features/kiosk/self-service-request";
 import { StepCliente } from "../../cambio-moneda/step-cliente";
 import { EMPTY_BENEFICIARY, EMPTY_SENDER, senderFullName, type GiroDraft, type GiroFormValues } from "./giro-types";
-import { NO_ERRORS, hasAnyError, municipalityLabel, provinceLabel, validateGiroForm } from "./giro-validation";
+import {
+  NO_ERRORS,
+  cotizacionDe,
+  hasAnyError,
+  municipalityLabel,
+  provinceLabel,
+  validateGiroForm,
+  type ParaCotizar,
+} from "./giro-validation";
+import { desgloseDeTarifa, errorDeCotizacion } from "./cotizacion-de-giro";
+import type { FormaDeGiro } from "@/features/network/tarifas-reglas";
 import { GiroConfirmation, GiroReview } from "./giro-review-confirm";
 import { GiroResult, type GiroCompleted } from "./giro-result";
 import { confirmGiro } from "./confirm-giro";
@@ -78,7 +88,7 @@ type Step = "remitente" | "registrar" | "revisar" | "efectivo" | "confirmar" | "
 const INITIAL_VALUES: GiroFormValues = {
   sender: EMPTY_SENDER,
   beneficiary: EMPTY_BENEFICIARY,
-  giro: { senderCurrency: "", amountInput: "" },
+  giro: { senderCurrency: "", forma: "llegar", amountInput: "" },
 };
 
 interface InitialFlow {
@@ -101,11 +111,12 @@ function buildInitialFlow(): InitialFlow {
   const handoff = readPendingWorkerHandoff("giros-enviar");
   if (!handoff) return { step: "remitente", values: INITIAL_VALUES, kioskCode: null, kioskSender: null };
 
-  const { sender, beneficiary, senderCurrency, deliveryAmount } = handoff.data;
+  const { sender, beneficiary, senderCurrency, deliveryAmount, forma } = handoff.data;
   const values: GiroFormValues = {
     sender: EMPTY_SENDER,
     beneficiary: { ...EMPTY_BENEFICIARY, ...beneficiary },
-    giro: { senderCurrency, amountInput: formatAmount(deliveryAmount, 2) },
+    /* El kiosco dirá cómo lo pidió el cliente; mientras no lo diga, es lo que tiene que llegar. */
+    giro: { senderCurrency, forma: forma ?? "llegar", amountInput: formatAmount(deliveryAmount, 2) },
   };
   return { step: "remitente", values, kioskCode: handoff.code, kioskSender: sender };
 }
@@ -153,6 +164,8 @@ export function EnviarGiroFlow(): React.JSX.Element {
   const [efectivo, setEfectivo] = React.useState<EfectivoRegistrado | null>(null);
   const [recontando, setRecontando] = React.useState<string | null>(null);
   const [recarga, setRecarga] = React.useState(0);
+  /** Por qué se volvió al giro desde la confirmación: cambió la tarifa. */
+  const [avisoDeTarifa, setAvisoDeTarifa] = React.useState<string | null>(null);
 
   /*
    * Sin jornada abierta esta pantalla no opera — salvo que el flujo ya haya
@@ -165,11 +178,24 @@ export function EnviarGiroFlow(): React.JSX.Element {
    */
   const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
 
-  const enabledCurrencies = MONEDAS;
+  /* Solo las monedas con tarifa de giros: en las demás no se envían giros. */
+  const paraCotizar: ParaCotizar = { tarifas: vista.tarifasDeGiro, denominaciones: vista.denominaciones };
+  const enabledCurrencies = MONEDAS.filter((m) => vista.tarifasDeGiro[m] !== undefined);
+  const sinTarifa = MONEDAS.filter((m) => vista.tarifasDeGiro[m] === undefined);
 
   // Live-computed, gates the button only — never surfaces error text before
   // the worker actually tries to continue (§29 vs. the `errors` state below).
-  const canContinue = customer !== null && !hasAnyError(validateGiroForm(values, enabledCurrencies).errors);
+  const canContinue = customer !== null && !hasAnyError(validateGiroForm(values, enabledCurrencies, paraCotizar).errors);
+
+  /*
+   * Lo que no cotiza (bajo el mínimo, no pagable) se dice mientras se escribe:
+   * con ese error «Continuar» está apagado, y esperar al clic lo escondería.
+   */
+  const cotizacionViva = cotizacionDe(values.giro, paraCotizar);
+  const avisoDeImporte =
+    cotizacionViva && !cotizacionViva.ok && cotizacionViva.reason !== "sin-tarifa"
+      ? errorDeCotizacion(cotizacionViva, values.giro.senderCurrency, values.giro.forma)
+      : undefined;
 
   const dirty = customer !== null || JSON.stringify(values) !== JSON.stringify(INITIAL_VALUES);
 
@@ -182,7 +208,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
     setCustomer(selected);
     setValues(next);
     if (initial.kioskCode) {
-      const result = validateGiroForm(next, enabledCurrencies);
+      const result = validateGiroForm(next, enabledCurrencies, paraCotizar);
       if (result.draft) {
         setDraft(result.draft);
         setStep("revisar");
@@ -203,7 +229,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
 
   function handleContinue(event: React.FormEvent) {
     event.preventDefault();
-    const result = validateGiroForm(values, enabledCurrencies);
+    const result = validateGiroForm(values, enabledCurrencies, paraCotizar);
     setErrors(result.errors);
     if (!result.draft) return;
     setDraft(result.draft);
@@ -231,6 +257,16 @@ export function EnviarGiroFlow(): React.JSX.Element {
         return;
       }
       setConfirmError(outcome.message);
+      /* PuntoCash cambió la tarifa: se trae la nueva y se vuelve al giro para cotizarlo otra vez. */
+      if (outcome.tarifaCambiada) {
+        setAvisoDeTarifa(outcome.message);
+        setConfirmError(undefined);
+        setDraft(null);
+        setEfectivo(null);
+        router.refresh();
+        setStep("registrar");
+        return;
+      }
       if (outcome.revisarBilletes) {
         setRecarga((n) => n + 1);
         setStep("efectivo");
@@ -329,10 +365,13 @@ export function EnviarGiroFlow(): React.JSX.Element {
         </button>
         <header>
           <h1 className="text-screen-title text-text-primary">Billetes del cobro</h1>
-          <p className="mt-2 text-body text-text-secondary">Marca los billetes con los que paga el cliente el giro.</p>
+          <p className="mt-2 text-body text-text-secondary">
+            Marca los billetes con los que paga el cliente el giro y su tarifa:{" "}
+            <span className="pc-numeric font-semibold text-text-primary">{formatMoney({ amount: draft.tarifa.total, currency: draft.senderCurrency })}</span>.
+          </p>
         </header>
         <EfectivoDeOperacion
-          entrada={{ modo: "cobro", currency: draft.senderCurrency, importe: draft.deliveryAmount }}
+          entrada={{ modo: "cobro", currency: draft.senderCurrency, importe: draft.tarifa.total }}
           recargar={recarga}
           inicial={efectivo?.paga}
           onChange={(e) => setEfectivo(e.listo ? e.efectivo : null)}
@@ -405,6 +444,12 @@ export function EnviarGiroFlow(): React.JSX.Element {
         </Alert>
       ) : null}
 
+      {avisoDeTarifa ? (
+        <Alert variant="warning" title="La tarifa de giros cambió">
+          {avisoDeTarifa}
+        </Alert>
+      ) : null}
+
       <Card>
         <CardContent className="grid grid-cols-2 gap-6 py-5 wide:grid-cols-4">
           <InfoItem icon={Wallet} label="Caja" value={CAJA_SUMMARY.register} />
@@ -433,9 +478,12 @@ export function EnviarGiroFlow(): React.JSX.Element {
           />
           <GiroDatosSection
             enabledCurrencies={enabledCurrencies}
+            sinTarifa={sinTarifa}
             currency={values.giro.senderCurrency}
+            forma={values.giro.forma}
             amountInput={values.giro.amountInput}
-            errors={errors.giro}
+            errors={{ ...errors.giro, ...(errors.giro.amount ? {} : avisoDeImporte ? { amount: avisoDeImporte } : {}) }}
+            onChangeForma={(forma) => setValues((prev) => ({ ...prev, giro: { ...prev.giro, forma } }))}
             onChangeCurrency={(currency) =>
               setValues((prev) => ({ ...prev, giro: { ...prev.giro, senderCurrency: currency } }))
             }
@@ -455,7 +503,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
           </div>
         </div>
 
-        <ResumenGiro values={values} />
+        <ResumenGiro values={values} paraCotizar={paraCotizar} />
       </form>
     </div>
     );
@@ -705,16 +753,23 @@ function BeneficiarySection({
 
 function GiroDatosSection({
   enabledCurrencies,
+  sinTarifa,
   currency,
+  forma,
   amountInput,
   errors,
+  onChangeForma,
   onChangeCurrency,
   onChangeAmount,
 }: {
   enabledCurrencies: readonly string[];
+  /** Monedas de la caja sin tarifa de giros: no se ofrecen, y se dice por qué. */
+  sinTarifa: readonly string[];
   currency: string;
+  forma: FormaDeGiro;
   amountInput: string;
   errors: { senderCurrency?: string; amount?: string };
+  onChangeForma: (forma: FormaDeGiro) => void;
   onChangeCurrency: (currency: string) => void;
   onChangeAmount: (value: string) => void;
 }) {
@@ -742,6 +797,39 @@ function GiroDatosSection({
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <ReadOnlyValue label="Método de entrega">Recogida</ReadOnlyValue>
+
+        <fieldset>
+          <legend className="mb-2 text-label text-text-primary">Qué dice el cliente</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {(
+              [
+                { valor: "llegar", titulo: "Que llegue un importe", detalle: "Dice cuánto recibe el beneficiario. Se le suma la tarifa." },
+                { valor: "enviar", titulo: "Enviar un importe", detalle: "Dice cuánto entrega. La tarifa sale de ahí." },
+              ] as const
+            ).map((o) => (
+              <label
+                key={o.valor}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-control border p-3 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary",
+                  forma === o.valor ? "border-primary bg-primary-subtle" : "border-border bg-surface hover:border-border-navy",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="forma-del-giro"
+                  value={o.valor}
+                  checked={forma === o.valor}
+                  onChange={() => onChangeForma(o.valor)}
+                  className="mt-1 size-4 accent-primary"
+                />
+                <span>
+                  <span className="block text-body-sm font-semibold text-text-primary">{o.titulo}</span>
+                  <span className="block text-caption text-text-secondary">{o.detalle}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
@@ -810,10 +898,21 @@ function GiroDatosSection({
                 </ul>
               ) : null}
             </div>
-            {errors.senderCurrency ? <p className="mt-1 text-caption text-error-foreground">{errors.senderCurrency}</p> : null}
+            {errors.senderCurrency ? (
+              <p className="mt-1 text-caption text-error-foreground">{errors.senderCurrency}</p>
+            ) : sinTarifa.length > 0 ? (
+              <p className="mt-1 text-caption text-text-secondary">
+                {sinTarifa.join(", ")} no {sinTarifa.length === 1 ? "aparece" : "aparecen"}: PuntoCash no le ha puesto tarifa de giros.
+              </p>
+            ) : null}
           </div>
 
-          <Field id={amountFieldId} label="Importe a entregar" error={errors.amount} required>
+          <Field
+            id={amountFieldId}
+            label={forma === "llegar" ? "Importe que recibe el beneficiario" : "Importe que entrega el cliente"}
+            error={errors.amount}
+            required
+          >
             <Input
               {...fieldAria({ id: amountFieldId, error: errors.amount, required: true })}
               value={amountInput}
@@ -864,14 +963,18 @@ function TextField({
  * Resumen del giro (right column)
  * ---------------------------------------------------------------------- */
 
-function ResumenGiro({ values }: { values: GiroFormValues }) {
+function ResumenGiro({ values, paraCotizar }: { values: GiroFormValues; paraCotizar: ParaCotizar }) {
   const CAJA_SUMMARY = useCaja().summary;
   const beneficiaryName = values.beneficiary.receiverName.trim();
   const provinceMunicipio =
     values.beneficiary.receiverProvince && values.beneficiary.receiverMunicipality
       ? `${provinceLabel(values.beneficiary.receiverProvince)} / ${municipalityLabel(values.beneficiary.receiverProvince, values.beneficiary.receiverMunicipality)}`
       : undefined;
-  const parsedAmount = values.giro.amountInput.trim() ? values.giro.amountInput : undefined;
+  const currency = values.giro.senderCurrency;
+  /* Se cotiza mientras se escribe; lo que no cotiza deja «—» y el porqué va junto al importe al continuar. */
+  const q = cotizacionDe(values.giro, paraCotizar);
+  const c = q?.ok ? q.value : null;
+  const m = (amount: number) => formatMoney({ amount, currency });
 
   return (
     <Card className="self-start">
@@ -890,27 +993,51 @@ function ResumenGiro({ values }: { values: GiroFormValues }) {
           <SummaryRow label="Beneficiario" value={beneficiaryName || "—"} />
           <SummaryRow label="Provincia / Municipio" value={provinceMunicipio ?? "—"} />
           <SummaryRow label="Método de entrega" value="Recogida" />
-          <SummaryRow label="Moneda" value={values.giro.senderCurrency || "—"} />
+          <SummaryRow label="Moneda" value={currency || "—"} />
+          <SummaryRow label="Recibe el beneficiario" value={c ? m(c.giro) : "—"} />
           <SummaryRow
-            label="Importe"
-            value={
-              parsedAmount && values.giro.senderCurrency
-                ? `${parsedAmount} ${values.giro.senderCurrency}`
-                : "—"
-            }
+            label="Tarifa"
+            value={c ? m(c.tarifa.cobrada) : "—"}
+            /* Solo fijo: el desglose repetiría la cifra. */
+            detail={c && c.tarifa.porcentaje > 0 ? desgloseDeTarifa(c.tarifa, currency) : undefined}
           />
+          <SummaryRow label="Total a cobrar" value={c ? m(c.total) : "—"} strong />
+          {c && c.vuelto > 0 ? <SummaryRow label="Se le devuelve" value={m(c.vuelto)} /> : null}
           <SummaryRow label="Impacto en caja" value="Entrada de efectivo" valueClassName="text-success-foreground" />
         </dl>
+        {c?.siguiente && c.vuelto > 0 ? (
+          <p className="mt-3 text-caption text-text-secondary">
+            De lo que entrega sobran {m(c.vuelto)}: con un giro de {m(c.siguiente.giro)} tendría que entregar{" "}
+            {m(c.siguiente.total)}.
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );
 }
 
-function SummaryRow({ label, value, valueClassName }: { label: string; value: string; valueClassName?: string }) {
+function SummaryRow({
+  label,
+  value,
+  detail,
+  strong = false,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  /** Una segunda línea, más discreta: el desglose de la tarifa. */
+  detail?: string | undefined;
+  /** Lo que se cobra se lee primero. */
+  strong?: boolean;
+  valueClassName?: string;
+}) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-border py-2.5 last:border-b-0 last:pb-0">
-      <dt className="text-body-sm text-text-secondary">{label}</dt>
-      <dd className={cn("text-right text-body-sm font-semibold text-text-primary", valueClassName)}>{value}</dd>
+    <div className="flex items-start justify-between gap-4 border-b border-border py-2.5 last:border-b-0 last:pb-0">
+      <dt className={cn("text-body-sm text-text-secondary", strong && "font-semibold text-text-primary")}>{label}</dt>
+      <dd className={cn("pc-numeric text-right text-body-sm font-semibold text-text-primary", strong && "text-body", valueClassName)}>
+        <span className="block">{value}</span>
+        {detail ? <span className="block text-caption font-normal text-text-secondary">{detail}</span> : null}
+      </dd>
     </div>
   );
 }

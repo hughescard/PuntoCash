@@ -1,6 +1,8 @@
 import { parseAmountInput } from "@/lib/format";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
+import type { Denominacion } from "@/features/caja/billetes";
 import type { BeneficiaryValues, GiroDraft, GiroFormValues, SenderValues } from "./giro-types";
+import { cotizarEnCaja, errorDeCotizacion, tarifaDelGiro, type CotizacionEnCaja, type Tarifas } from "./cotizacion-de-giro";
 
 /** Standard, unremarkable email shape — good enough for a mock KYC boundary. */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -92,18 +94,36 @@ function validateBeneficiary(beneficiary: BeneficiaryValues): BeneficiaryErrors 
   return errors;
 }
 
-function validateGiro(giro: GiroFormValues["giro"], enabledCurrencies: readonly string[]): GiroErrors {
+/** Lo que hace falta para cotizar: la tarifa de cada moneda y sus denominaciones. */
+export interface ParaCotizar {
+  tarifas: Tarifas;
+  denominaciones: Readonly<Record<string, readonly Denominacion[]>>;
+}
+
+/** La cotización de lo escrito, o `null` si todavía no hay moneda o importe que cotizar. */
+export function cotizacionDe(giro: GiroFormValues["giro"], c: ParaCotizar): CotizacionEnCaja | null {
+  const parsed = parseAmountInput(giro.amountInput);
+  if (!giro.senderCurrency || !giro.amountInput.trim() || parsed === null) return null;
+  return cotizarEnCaja(c.tarifas, c.denominaciones, giro.senderCurrency, giro.forma, parsed);
+}
+
+function validateGiro(giro: GiroFormValues["giro"], enabledCurrencies: readonly string[], c: ParaCotizar): GiroErrors {
   const errors: GiroErrors = {};
 
   if (!giro.senderCurrency || !enabledCurrencies.includes(giro.senderCurrency)) {
-    errors.senderCurrency = "Selecciona una moneda habilitada en caja.";
+    errors.senderCurrency = c.tarifas[giro.senderCurrency] || !giro.senderCurrency
+      ? "Selecciona una moneda habilitada en caja."
+      : `En ${giro.senderCurrency} no se envían giros: PuntoCash no le ha puesto tarifa.`;
   }
 
   const parsed = parseAmountInput(giro.amountInput);
   if (!giro.amountInput.trim()) {
-    errors.amount = "Introduce el importe a entregar.";
+    errors.amount = "Introduce el importe.";
   } else if (parsed === null || parsed <= 0) {
     errors.amount = "Introduce un monto válido.";
+  } else if (!errors.senderCurrency) {
+    const q = cotizacionDe(giro, c);
+    if (q && !q.ok) errors.amount = errorDeCotizacion(q, giro.senderCurrency, giro.forma);
   }
 
   return errors;
@@ -125,18 +145,20 @@ export function hasAnyError(errors: GiroFormErrors): boolean {
 export function validateGiroForm(
   values: GiroFormValues,
   enabledCurrencies: readonly string[],
+  c: ParaCotizar,
 ): { errors: GiroFormErrors; draft: GiroDraft | null } {
   const errors: GiroFormErrors = {
     sender: validateSender(values.sender),
     beneficiary: validateBeneficiary(values.beneficiary),
-    giro: validateGiro(values.giro, enabledCurrencies),
+    giro: validateGiro(values.giro, enabledCurrencies, c),
   };
 
   if (hasAnyError(errors)) return { errors, draft: null };
 
-  const parsedAmount = parseAmountInput(values.giro.amountInput);
-  // hasAnyError already guarantees this, but keeps the compiler honest.
-  if (parsedAmount === null) return { errors, draft: null };
+  // hasAnyError already guarantees a quote, but keeps the compiler honest.
+  const q = cotizacionDe(values.giro, c);
+  const politica = c.tarifas[values.giro.senderCurrency];
+  if (!q || !q.ok || !politica) return { errors, draft: null };
 
   return {
     errors,
@@ -144,7 +166,11 @@ export function validateGiroForm(
       sender: { ...values.sender },
       beneficiary: { ...values.beneficiary },
       senderCurrency: values.giro.senderCurrency,
-      deliveryAmount: parsedAmount,
+      deliveryAmount: q.value.giro,
+      tarifa: tarifaDelGiro(politica, q.value),
+      entrega: q.value.entrega,
+      vuelto: q.value.vuelto,
+      ...(q.value.siguiente ? { siguiente: q.value.siguiente } : {}),
     },
   };
 }

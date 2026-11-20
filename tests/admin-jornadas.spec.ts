@@ -67,9 +67,15 @@ test.describe("Jornadas", () => {
     await signInAsAdmin(page, MARTA);
     await page.goto("/admin/jornadas");
     const tarjeta = page.getByRole("main").locator("article:visible").first();
-    /* Un toque en medio de la tarjeta, lejos del trabajador. */
+    /*
+     * Un toque abajo a la derecha de la tarjeta, lejos del trabajador. Con el
+     * aviso de la caja abierta de ayer encima, la tarjeta asoma por debajo de
+     * la barra de navegación del teléfono: el toque se hace sobre la tarjeta
+     * (que Playwright trae a la vista y comprueba que nada la tapa), no sobre
+     * unas coordenadas de la pantalla, que caían en la barra.
+     */
     const caja = (await tarjeta.boundingBox())!;
-    await page.mouse.click(caja.x + caja.width - 40, caja.y + caja.height - 30);
+    await tarjeta.click({ position: { x: caja.width - 40, y: caja.height - 30 } });
     await page.waitForURL(/\/admin\/jornadas\/J-[\w-]+$/);
   });
 

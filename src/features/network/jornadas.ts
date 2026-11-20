@@ -25,6 +25,8 @@
 
 import { desglosarDeMayorAMenor, desglosarFondo, entregarHasta, proponerEntrega, restar, sumar, totalDe, type Billetes } from "@/features/caja/billetes";
 import { denominacionesDe } from "./denominaciones";
+import { calcularTarifa, inicioDeTramo, TARIFAS_SEMBRADAS } from "./tarifas-reglas";
+import type { TarifaDelGiro } from "@/features/operations/operations-history";
 import { estaEnAlcance } from "./assignments";
 import { equipoDeCaja, kioscosDeSede } from "./devices";
 import { registrarOperacionSembrada, type OperacionDeRed } from "./operaciones";
@@ -508,24 +510,28 @@ function sembrar(now: Date, o: OpcionesDeSiembra = {}): Jornada[] {
               deliveryMethod: "pickup" as const,
               senderCurrency: "CUP",
               deliveryAmount: importe,
+              /* El envío paga la tarifa sembrada del peso cubano (19/11/2026): lo que entra en caja es el giro más la tarifa. */
+              ...(envio ? { tarifa: tarifaSembrada(importe) } : {}),
             };
+            /* Lo que mueve la caja: en el envío, el giro más la tarifa; en el pago, solo el giro. */
+            const movido = transfer.tarifa ? transfer.tarifa.total : importe;
             if ((!envio && (saldos.get("CUP") ?? 0) < importe) || noCompleta < 0.1) {
               registrarOperacionSembrada({
                 ...base, servicio: "Giros", estado: "Fallida",
-                amount: { kind: "single", money: { amount: importe, currency: "CUP" } },
+                amount: { kind: "single", money: { amount: movido, currency: "CUP" } },
                 transfer,
               });
               continue;
             }
-            const cashSnapshot = cash("CUP", envio ? importe : -importe);
+            const cashSnapshot = cash("CUP", envio ? movido : -importe);
             mov({
               fechaHora: t.toISOString(), operationCode, currency: "CUP",
-              tipo: envio ? "entrada" : "salida", amount: envio ? importe : -importe,
+              tipo: envio ? "entrada" : "salida", amount: envio ? movido : -importe,
               concepto: envio ? "Envío de giro" : "Pago de giro",
             });
             registrarOperacionSembrada({
               ...base, servicio: "Giros", estado: "Completada",
-              amount: { kind: "single", money: { amount: importe, currency: "CUP" }, cashSnapshot },
+              amount: { kind: "single", money: { amount: movido, currency: "CUP" }, cashSnapshot },
               transfer: { ...transfer, externalStatus: envio ? "READY" : "COMPLETED" },
             });
           }
@@ -704,7 +710,24 @@ function sembrarApertura(
  * la anterior y se descarta junto con lo que se deriva de él —operaciones y
  * solicitudes—, para no mezclar datos de dos siembras.
  */
-const VERSION_DE_SIEMBRA = "2026-11-10.4";
+/**
+ * La tarifa que pagó un giro sembrado en pesos cubanos, con la tarifa con que
+ * arranca la demostración y redondeada al billete de 1 CUP.
+ */
+function tarifaSembrada(giro: number): TarifaDelGiro {
+  const politica = TARIFAS_SEMBRADAS.CUP!;
+  const t = calcularTarifa(politica, giro, 1);
+  return {
+    forma: "llegar",
+    tramo: { ...inicioDeTramo(politica, t.tramo), hasta: politica.tramos[t.tramo]!.hasta },
+    fijo: t.fijo,
+    porcentaje: t.porcentaje,
+    cobrada: t.cobrada,
+    total: giro + t.cobrada,
+  };
+}
+
+const VERSION_DE_SIEMBRA = "2026-11-19.1";
 
 const ALMACEN = globalThis as typeof globalThis & {
   __puntocashJornadas?: Jornada[];

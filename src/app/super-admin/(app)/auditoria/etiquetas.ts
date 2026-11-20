@@ -84,6 +84,14 @@ export const AREAS: readonly AreaDeEventos[] = [
     ],
   },
   {
+    area: "Tarifas",
+    tipos: [
+      { tipo: "tarifa-giro.definida", etiqueta: "Tarifa de giros definida" },
+      { tipo: "tarifa-giro.cambiada", etiqueta: "Tarifa de giros modificada" },
+      { tipo: "tarifa-giro.retirada", etiqueta: "Tarifa de giros retirada" },
+    ],
+  },
+  {
     area: "Promociones",
     tipos: [
       { tipo: "promocion-red.alta", etiqueta: "Promoción de red publicada" },

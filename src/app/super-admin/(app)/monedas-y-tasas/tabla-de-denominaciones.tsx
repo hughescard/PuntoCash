@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Plus } from "lucide-react";
+import Link from "next/link";
+import type { Route } from "next";
+import { ArrowRight, Plus } from "lucide-react";
 
 import {
   Alert,
@@ -48,6 +50,11 @@ export interface DenominacionEnTabla {
   /** Lo que hay ahora en cajas abiertas. */
   cajas: number;
   unidades: number;
+  /**
+   * Lo que de la tarifa de giros de la moneda dejaría de poder cobrarse si se
+   * retira (decisión del 19/11): entonces no se retira. `null` si no impide nada.
+   */
+  impideTarifa: readonly string[] | null;
 }
 
 export interface FilaDeDenominaciones {
@@ -291,6 +298,39 @@ function RetirarDenominacion({
     description: "Al menos 10 caracteres. Queda en la auditoría con tu nombre.",
   };
   const ultima = fila.denominaciones.filter((x) => !x.retirada).length === 1;
+
+  /* Si la tarifa de giros dejaría de poder cobrarse, se dice antes de pedir motivo. */
+  if (d.impideTarifa) {
+    return (
+      <Dialog open onOpenChange={(o) => (o ? undefined : onCerrar())}>
+        <DialogContent size="md">
+          <DialogHeader>
+            <DialogTitle>No se puede retirar {nombreDe(d, fila.code)}</DialogTitle>
+            <DialogDescription>La tarifa de giros en {fila.code} dejaría de poder cobrarse con lo que queda.</DialogDescription>
+          </DialogHeader>
+          <DialogBody className="flex flex-col gap-4">
+            <Alert variant="warning" title="La tarifa de giros la necesita">
+              <p>
+                Sin esta denominación no se podría cobrar {d.impideTarifa.join(", ")}. Cambia antes la tarifa para que se pueda
+                pagar con las denominaciones que quedarían, y vuelve a retirarla.
+              </p>
+            </Alert>
+          </DialogBody>
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={onCerrar}>
+              Cerrar
+            </Button>
+            <Button asChild>
+              <Link href={`/super-admin/tarifas/giros/${fila.code}` as Route}>
+                Ir a la tarifa de giros
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open onOpenChange={(o) => (o ? undefined : onCerrar())}>

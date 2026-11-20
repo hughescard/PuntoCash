@@ -1,10 +1,9 @@
 import * as React from "react";
-import { ClipboardList, Send, UserRound, Wallet } from "lucide-react";
+import { ClipboardList, Send, UserRound } from "lucide-react";
 
 import { Badge, Card, CardContent } from "@/components/ui";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { OperationStatusBadge } from "@/components/patterns/operation-status-badge";
-import { cn } from "@/lib/utils";
 import { formatDateTime, formatMoney, parseIsoDate } from "@/lib/format";
 import { findCajaCurrency } from "@/features/caja/caja-data";
 import {
@@ -19,6 +18,8 @@ import {
 } from "@/features/operations/operations-history";
 import { CardGlyph, DetailCard, DetailList, DetailRow } from "./detail-parts";
 import { entregadoAlCliente, difiereDeLoDebido } from "@/features/operations/entregado";
+import { desgloseDeTarifa } from "@/app/worker/(app)/nueva-operacion/giros/enviar/cotizacion-de-giro";
+import { CuentaDeEfectivo, filasDeUnPago, salidasDeUnPago, type FilaDeCuenta } from "./cuenta-de-efectivo";
 
 /**
  * Specialized historical detail for "Giros".
@@ -55,7 +56,7 @@ export function GiroDetail({ operation }: { operation: OperationRecord }): React
 
       <GiroCard operation={operation} isPayout={isPayout} />
 
-      <CashMovementCard operation={operation} isPayout={isPayout} />
+      {isPayout ? <CuentaDelCobro operation={operation} /> : <CuentaDelEnvio operation={operation} />}
     </div>
   );
 }
@@ -250,89 +251,85 @@ function GiroCard({ operation, isPayout }: { operation: OperationRecord; isPayou
 }
 
 /* -------------------------------------------------------------------------
- * Movimiento de efectivo — the historical register impact
+ * Movimiento de efectivo — la cuenta del giro (19/11/2026)
  * ---------------------------------------------------------------------- */
 
 /**
- * Lo que el giro movió en la caja. Worker opera a ciegas (decisión del
- * 6/11/2026): sin saldo anterior ni resultante; el importe sale de la
- * operación.
+ * Lo que costó el giro y lo que movió en la caja, leído como una cuenta de
+ * arriba abajo: lo que recibe el beneficiario y la tarifa; lo que entregó el
+ * cliente y el vuelto, si lo hubo; y al final el total cobrado, al que llegan
+ * las dos cuentas. Debajo, la entrada en caja, que es el único movimiento del
+ * libro, neto.
  */
-function CashMovementCard({ operation, isPayout }: { operation: OperationRecord; isPayout: boolean }) {
+function CuentaDelEnvio({ operation }: { operation: OperationRecord }) {
+  const snapshot = operation.transfer!;
   const money = operation.amount.kind === "single" ? operation.amount.money : undefined;
   if (!money) return null;
+  const currency = money.currency;
+  const m = (amount: number) => formatMoney({ amount, currency });
+  const tarifa = snapshot.tarifa;
+  const vuelto = operation.liquidacion?.vuelto?.currency === currency ? operation.liquidacion.vuelto.importe : 0;
+  const total = tarifa?.total ?? money.amount;
+
+  const filas: FilaDeCuenta[] = [
+    ...(tarifa
+      ? [
+          { etiqueta: "Recibe el beneficiario", valor: m(snapshot.deliveryAmount) },
+          {
+            etiqueta: "Tarifa",
+            valor: m(tarifa.cobrada),
+            ...(tarifa.porcentaje > 0 ? { detalle: desgloseDeTarifa(tarifa, currency) } : {}),
+          },
+        ]
+      : []),
+    ...(vuelto > 0
+      ? [
+          { etiqueta: "Entregó el cliente", valor: m(total + vuelto) },
+          { etiqueta: "Vuelto", valor: `−${m(vuelto)}`, resta: true },
+        ]
+      : []),
+    /* Cierra la cuenta: es a lo que llegan las dos sumas, giro + tarifa y entregó − vuelto. */
+    { etiqueta: "Total cobrado", valor: m(total), total: true },
+  ];
 
   return (
-    <DetailCard title="Movimiento de efectivo" icon={Wallet} contentClassName="gap-5">
-      <MovementBox
-        label={isPayout ? "Salida — Giro" : "Entrada — Giro"}
-        value={
-          isPayout
-            ? entregadoAlCliente(money, operation.liquidacion).map((m) => `−${formatMoney(m)}`).join(" · ")
-            : `+${formatMoney(money)}`
-        }
-        tone={isPayout ? "negative" : "positive"}
-      />
-
-      <div className="grid grid-cols-1 gap-x-10 xl:grid-cols-3">
-        <DetailList>
-          <DetailRow label="Tipo de movimiento" value={isPayout ? "Salida" : "Entrada"} />
-        </DetailList>
-        <DetailList>
-          <DetailRow label="Moneda" value={currencyLabel(money.currency)} />
-        </DetailList>
-        <DetailList>
-          <DetailRow label="Operación vinculada" value={operation.codigo} numeric />
-        </DetailList>
-      </div>
-    </DetailCard>
+    <CuentaDeEfectivo
+      filas={filas}
+      movimientos={[{ sentido: "entrada", money }]}
+      servicio="Giro"
+      pie={<PieDeLaCuenta currency={currency} codigo={operation.codigo} />}
+    />
   );
 }
 
-function MovementBox({
-  label,
-  value,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  tone?: "neutral" | "positive" | "negative";
-}) {
+/**
+ * Cobrar giro: lo que se debía al beneficiario y cómo se le pagó —con lo que
+ * quedó a favor de la casa por redondeo y la parte pagada en CUP, si la hubo—;
+ * debajo, lo que salió de la caja, por moneda.
+ */
+function CuentaDelCobro({ operation }: { operation: OperationRecord }) {
+  const money = operation.amount.kind === "single" ? operation.amount.money : undefined;
+  if (!money) return null;
+  const debido = { amount: operation.transfer!.deliveryAmount, currency: money.currency };
   return (
-    <div
-      className={cn(
-        "rounded-control border px-4 py-3 text-center",
-        tone === "positive"
-          ? "border-success-border bg-success-subtle"
-          : tone === "negative"
-            ? "border-error-border bg-error-subtle"
-            : "border-border bg-surface-subtle",
-      )}
-    >
-      <p
-        className={cn(
-          "text-caption",
-          tone === "positive"
-            ? "text-success-foreground"
-            : tone === "negative"
-              ? "text-error-foreground"
-              : "text-text-secondary",
-        )}
-      >
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-1 pc-numeric text-section-title font-semibold",
-          tone === "positive"
-            ? "text-success-foreground"
-            : tone === "negative"
-              ? "text-error-foreground"
-              : "text-text-primary",
-        )}
-      >
-        {value}
-      </p>
+    <CuentaDeEfectivo
+      filas={filasDeUnPago(debido, "Importe del giro", operation.liquidacion, "Entregado al beneficiario")}
+      movimientos={salidasDeUnPago(debido, operation.liquidacion)}
+      servicio="Giro"
+      pie={<PieDeLaCuenta currency={money.currency} codigo={operation.codigo} />}
+    />
+  );
+}
+
+function PieDeLaCuenta({ currency, codigo }: { currency: string; codigo: string }) {
+  return (
+    <div className="grid grid-cols-1 gap-x-10 xl:grid-cols-2">
+      <DetailList>
+        <DetailRow label="Moneda" value={currencyLabel(currency)} />
+      </DetailList>
+      <DetailList>
+        <DetailRow label="Operación vinculada" value={codigo} numeric />
+      </DetailList>
     </div>
   );
 }

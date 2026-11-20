@@ -69,7 +69,9 @@ export type DenominacionWriteDenial =
   | "esta-retirada"
   | "no-existe"
   | "ya-retirada"
-  | "no-esta-retirada";
+  | "no-esta-retirada"
+  /** La tarifa de giros de la moneda dejaría de poder cobrarse (ver `GUARDA_DE_TARIFAS`). */
+  | "la-usa-una-tarifa";
 
 type Resultado<T> = { ok: true; value: T } | { ok: false; reason: DenominacionWriteDenial };
 
@@ -90,11 +92,30 @@ export function anadirDenominacion(
   return { ok: true, value: d };
 }
 
-export function retirarDenominacion(scope: Scope, code: string, valor: number, now = new Date()): Resultado<DenominacionDeCatalogo> {
+/**
+ * Lo que otro dominio necesita comprobar antes de que se retire una
+ * denominación. `quedan` son los valores que seguirían vigentes. Devuelve lo
+ * que dejaría de funcionar, o `null` si no impide nada.
+ */
+export interface GuardaDeRetiroDeDenominacion {
+  impide(code: string, quedan: readonly number[]): readonly string[] | null;
+}
+
+const SIN_GUARDA: GuardaDeRetiroDeDenominacion = { impide: () => null };
+
+export function retirarDenominacion(
+  scope: Scope,
+  code: string,
+  valor: number,
+  now = new Date(),
+  guarda: GuardaDeRetiroDeDenominacion = SIN_GUARDA,
+): Resultado<DenominacionDeCatalogo> {
   if (!isGlobal(scope)) return { ok: false, reason: "alcance-insuficiente" };
   const d = buscar(code, valor);
   if (!d) return { ok: false, reason: "no-existe" };
   if (d.retiradaEl) return { ok: false, reason: "ya-retirada" };
+  const quedan = (catalogo.get(code) ?? []).filter((x) => !x.retiradaEl && x !== d).map((x) => x.valor);
+  if (guarda.impide(code, quedan)) return { ok: false, reason: "la-usa-una-tarifa" };
   d.retiradaEl = now.toISOString();
   return { ok: true, value: d };
 }

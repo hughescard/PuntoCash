@@ -12,7 +12,9 @@
  *   divisa) de **venta** (la caja la entrega).
  * - **Remesa**: lo pagado al beneficiario.
  * - **Giro**: el importe del giro, **enviado** (entra efectivo en la caja) o
- *   **pagado** (sale).
+ *   **pagado** (sale). En un giro enviado, lo que recibe el beneficiario: la
+ *   tarifa que pagó el remitente no es volumen, aunque entrara en la caja en
+ *   el mismo movimiento (decisión del 19/11/2026).
  *
  * Solo cuentan las operaciones **completadas**: una rechazada no movió nada.
  * Nunca hay comisiones ni márgenes **[A8]**, y nunca se convierte a una
@@ -50,11 +52,13 @@ export function volumenDeOperacion(o: OperationRecord): Volumen | null {
   }
 
   if (o.transfer) {
+    /* El importe de la operación es lo que entró en caja; la tarifa no cuenta. */
+    const tarifa = o.transfer.transferAction === "send" ? (o.transfer.tarifa?.cobrada ?? 0) : 0;
     return {
       servicio: o.servicio,
       sentido: o.transfer.transferAction === "send" ? "enviado" : "pagado",
       currency: o.amount.money.currency,
-      amount: o.amount.money.amount,
+      amount: Math.round((o.amount.money.amount - tarifa) * 100) / 100,
     };
   }
 

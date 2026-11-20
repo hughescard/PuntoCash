@@ -11,6 +11,7 @@ import {
   type DenominacionWriteDenial,
 } from "@/features/network/denominaciones";
 import { formatoDeDenominacion } from "@/features/caja/billetes";
+import { GUARDA_DE_TARIFAS, retiroQueImpideLaTarifa } from "@/features/network/tarifas";
 import { isMotivoValido, MOTIVO_MIN_LENGTH } from "@/features/network/sedes";
 import { getSuperAdminSession } from "@/features/super-admin/session-server";
 
@@ -30,6 +31,7 @@ const MENSAJE: Record<DenominacionWriteDenial, string> = {
   "no-existe": "Esa denominación no está en el catálogo. Recarga para ver su estado.",
   "ya-retirada": "Esa denominación ya está retirada. Recarga para ver su estado.",
   "no-esta-retirada": "Esa denominación ya se acepta. Recarga para ver su estado.",
+  "la-usa-una-tarifa": "La tarifa de giros de esta moneda dejaría de poder cobrarse. Corrígela antes en Tarifas.",
 };
 
 function cifra(v: FormDataEntryValue | null): number {
@@ -78,8 +80,14 @@ export async function retirarDenominacionAction(_p: ResultadoDenominacion, formD
   const motivo = String(formData.get("motivo") ?? "").trim();
   if (!isMotivoValido(motivo)) return { ok: false, error: `Escribe el motivo: al menos ${MOTIVO_MIN_LENGTH} caracteres.` };
 
-  const r = retirarDenominacion(session.scope, code, valor);
-  if (!r.ok) return { ok: false, error: MENSAJE[r.reason] };
+  const r = retirarDenominacion(session.scope, code, valor, new Date(), GUARDA_DE_TARIFAS);
+  if (!r.ok) {
+    const que = r.reason === "la-usa-una-tarifa" ? retiroQueImpideLaTarifa(code, valor) : null;
+    return {
+      ok: false,
+      error: que ? `Sin esta denominación no se podría cobrar ${que.join(", ")} de la tarifa de giros en ${code}. Corrígela antes en Tarifas.` : MENSAJE[r.reason],
+    };
+  }
 
   registrarEvento({
     actorId: session.user.id,

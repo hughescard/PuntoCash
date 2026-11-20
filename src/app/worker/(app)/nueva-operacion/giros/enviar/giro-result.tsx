@@ -11,7 +11,8 @@ import { findCajaCurrency } from "@/features/caja/caja-data";
 import { senderFullName, type BeneficiaryValues, type SenderValues } from "./giro-types";
 import { municipalityLabel, provinceLabel } from "./giro-validation";
 import { useCaja } from "@/features/caja/use-caja";
-import type { OperationLiquidation } from "@/features/operations/operations-history";
+import type { OperationLiquidation, TarifaDelGiro } from "@/features/operations/operations-history";
+import { desgloseDeTarifa } from "./cotizacion-de-giro";
 import { liquidacionComoLineas } from "../../liquidacion";
 
 /** "🇨🇺 500,00 CUP" — the approved amount treatment for Importe. */
@@ -32,7 +33,10 @@ export interface GiroCompleted {
   sender: SenderValues;
   beneficiary: BeneficiaryValues;
   senderCurrency: string;
+  /** Lo que recibe el beneficiario. */
   deliveryAmount: number;
+  /** La tarifa cobrada; `tarifa.total` es lo que entregó el cliente. */
+  tarifa: TarifaDelGiro;
   /** ISO datetime, captured only at the moment confirmation succeeded. */
   completedAt: string;
   /** El vuelto: consta en el comprobante. */
@@ -68,8 +72,18 @@ export function GiroResult({ completed }: { completed: GiroCompleted }): React.J
             <SummaryRow label="Beneficiario" value={completed.beneficiary.receiverName} />
             <SummaryRow label="Documento del beneficiario" value={completed.beneficiary.receiverIdentification} />
             <SummaryRow
-              label="Importe"
+              label="Recibe el beneficiario"
               value={<MoneyWithFlag amount={completed.deliveryAmount} currency={completed.senderCurrency} />}
+            />
+            <SummaryRow
+              label="Tarifa"
+              value={formatMoney({ amount: completed.tarifa.cobrada, currency: completed.senderCurrency })}
+              {...(completed.tarifa.porcentaje > 0 ? { detail: desgloseDeTarifa(completed.tarifa, completed.senderCurrency) } : {})}
+            />
+            <SummaryRow
+              label="Total cobrado"
+              value={formatMoney({ amount: completed.tarifa.total, currency: completed.senderCurrency })}
+              strong
             />
             <SummaryRow label="Moneda" value={currencyLabel} />
             {liquidacionComoLineas(completed.liquidacion).map((l) => (
@@ -133,8 +147,19 @@ function PrintableGiroReceipt({
           value={`${provinceLabel(beneficiary.receiverProvince)} / ${municipalityLabel(beneficiary.receiverProvince, beneficiary.receiverMunicipality)}`}
         />
         <ReceiptLine
-          label="Importe"
+          label="Recibe el beneficiario"
           value={formatMoney({ amount: completed.deliveryAmount, currency: completed.senderCurrency })}
+        />
+        <ReceiptLine
+          label="Tarifa"
+          value={
+            formatMoney({ amount: completed.tarifa.cobrada, currency: completed.senderCurrency }) +
+            (completed.tarifa.porcentaje > 0 ? ` (${desgloseDeTarifa(completed.tarifa, completed.senderCurrency)})` : "")
+          }
+        />
+        <ReceiptLine
+          label="Total cobrado"
+          value={formatMoney({ amount: completed.tarifa.total, currency: completed.senderCurrency })}
         />
         <ReceiptLine label="Moneda" value={currencyLabel} />
         {liquidacionComoLineas(completed.liquidacion).map((l) => (
@@ -161,17 +186,21 @@ function ReceiptLine({ label, value }: { label: string; value: string }) {
 function SummaryRow({
   label,
   value,
+  detail,
   strong = false,
 }: {
   label: string;
   value: React.ReactNode;
+  /** Una segunda línea, más discreta: el desglose de la tarifa. */
+  detail?: string;
   strong?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-border py-2.5 sm:odd:pr-4 sm:even:pl-4">
       <dt className="text-body-sm text-text-secondary">{label}</dt>
-      <dd className={strong ? "pc-numeric text-body-sm font-bold text-text-primary" : "pc-numeric text-body-sm font-semibold text-text-primary"}>
+      <dd className={strong ? "pc-numeric text-right text-body-sm font-bold text-text-primary" : "pc-numeric text-right text-body-sm font-semibold text-text-primary"}>
         {value}
+        {detail ? <span className="block text-caption font-normal text-text-secondary">{detail}</span> : null}
       </dd>
     </div>
   );

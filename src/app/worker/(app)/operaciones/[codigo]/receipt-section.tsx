@@ -88,6 +88,16 @@ function PrintableReceipt({ operation }: { operation: OperationRecord }) {
               value={`1 ${amount.source.currency} = ${formatRate(amount.appliedRate)} ${amount.destination.currency}`}
             />
           </>
+        ) : operation.transfer?.transferAction === "send" && operation.transfer.tarifa ? (
+          /* Giro enviado: lo que llega, la tarifa y el total (19/11/2026). */
+          <>
+            <ReceiptLine
+              label="Recibe el beneficiario"
+              value={formatMoney({ amount: operation.transfer.deliveryAmount, currency: amount.money.currency })}
+            />
+            <ReceiptLine label="Tarifa" value={formatMoney({ amount: operation.transfer.tarifa.cobrada, currency: amount.money.currency })} />
+            <ReceiptLine label="Total cobrado" value={formatMoney(amount.money)} />
+          </>
         ) : (
           <ReceiptLine label="Importe" value={formatMoney(amount.money)} />
         )}

@@ -181,9 +181,16 @@ test.describe("selector de la cabecera", () => {
     const selector = page.getByRole("banner").getByLabel("Sede que estás viendo");
 
     await page.goto("/admin/jornadas");
-    await selector.selectOption("sede-vedado");
-    await page.waitForLoadState("load");
-    await expect(selector).toHaveValue("sede-vedado");
+    /*
+     * Elegir antes de que la página termine de hidratar cambia el control pero
+     * no lo envía, y al hidratar vuelve a «todas»: bajo carga pasa. Se repite
+     * hasta que la elección se queda.
+     */
+    await expect(async () => {
+      await selector.selectOption("sede-vedado");
+      await page.waitForLoadState("load");
+      await expect(selector).toHaveValue("sede-vedado", { timeout: 3_000 });
+    }).toPass({ timeout: 20_000 });
 
     await page.goto("/admin/sedes");
     await expect(selector).toBeDisabled();
