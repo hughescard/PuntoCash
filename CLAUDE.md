@@ -1,6 +1,6 @@
 # PuntoCash
 
-PuntoCash is a financial services platform for a network of currency exchange houses.
+PuntoCash is a network of agents that provide financial services.
 
 ## Source of truth
 
@@ -220,7 +220,7 @@ PuntoCash fonts, colors or established visual rules.
 The target is not a prototype appearance.
 
 Every approved screen should look suitable for a production financial
-application installed in a real PuntoCash exchange house.
+application installed at a real PuntoCash agent location.
 
 ---
 
