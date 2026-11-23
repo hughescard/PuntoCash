@@ -1,0 +1,38 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/home".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/home
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 text Liudmila Pérez Cienfuegos Cambio S.R.L.
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 button Cerrar sesión
+		7 container Navegación de administración
+			8 container
+				9 text OPERACIÓN
+				10 content list
+					11 link Description: Inicio, Value: staging.puntocash.co/admin/home
+					12 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+					13 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+					14 link Description: Operaciones, Value: staging.puntocash.co/admin/operations
+				15 text SUCURSAL
+				16 content list
+					17 link Description: Sedes, Value: staging.puntocash.co/admin/branches
+					18 link Description: Cajas, Value: staging.puntocash.co/admin/cash-registers
+					19 link Description: Equipos, Value: staging.puntocash.co/admin/devices
+					20 link Description: Trabajadores, Value: staging.puntocash.co/admin/workers
+					21 link Description: Usuarios, Value: staging.puntocash.co/admin/users
+				22 text CONFIGURACIÓN
+				23 content list
+					24 link Description: Monedas, Value: staging.puntocash.co/admin/currencies
+					25 link Description: Tasas, Value: staging.puntocash.co/admin/rates
+					26 link Description: Promociones, Value: staging.puntocash.co/admin/promotions
+					27 link Description: Reportes, Value: staging.puntocash.co/admin/reports
+			28 text PuntoCash · Administración
+		29 heading Hola, Liudmila, Value: 1
+			30 text Hola, Liudmila
+		31 container
+			32 heading Todavía no tienes sedes asignadas, Value: 2
+				33 text Todavía no tienes sedes asignadas
+			34 text Cuando PuntoCash te asigne una sede, aparecerá aquí y podrás empezar a montarla: crear sus cajas, vincular sus equipos y dar de alta a tus trabajadores.
+
+The focused UI element is 0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/home

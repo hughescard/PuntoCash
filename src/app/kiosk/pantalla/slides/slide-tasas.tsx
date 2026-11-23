@@ -4,8 +4,7 @@ import * as React from "react";
 
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cifraDeTablero } from "@/lib/format";
-import type { Branch } from "@/features/branches/branches";
-import { useTablero } from "../tableros";
+import { useTablero, type SedePublica } from "../tableros";
 
 /**
  * "Tasas del día" — the same board and copy as the kiosk's own consultation
@@ -16,9 +15,9 @@ import { useTablero } from "../tableros";
  * landscape TV and spreads out on a vertical screen without scrolling.
  * All sizes are `em` of the signage base size (see `../layout.tsx`).
  */
-export function SlideTasas({ branch }: { branch: Branch }): React.JSX.Element {
+export function SlideTasas({ sede }: { sede: SedePublica }): React.JSX.Element {
   /* El tablero de **esta** sede, el que su mercante fija en `/admin/tasas`. */
-  const tablero = useTablero(branch.id);
+  const tablero = useTablero(sede.id);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

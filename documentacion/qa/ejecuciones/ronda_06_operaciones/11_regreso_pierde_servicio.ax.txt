@@ -1,0 +1,1004 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/operations".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/operations
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			6 text Todas mis sedes
+		318 container
+			319 heading Operaciones, Value: 1
+				320 text Operaciones
+			321 text Lo que tus cajas han hecho con cada cliente, completado o no. Solo lectura.
+		322 button (expanded) Filtros, Secondary Actions: Collapse
+		323 container operations-filters
+			324 text Buscar
+			325 search text field (settable) Buscar, ID: operations-search
+			326 text Desde
+			327 date field (settable) Desde, Value: 2026-10-23, ID: operations-from
+				328 container
+					329 stepper
+					330 stepper
+					331 stepper
+				332 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			333 text Hasta
+			334 date field (settable) Hasta, Value: 2026-10-29, ID: operations-to
+				335 container
+					336 stepper
+					337 stepper
+					338 stepper
+				339 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			340 text Caja
+			341 pop up button (collapsed, settable) Caja, Value: Todas las cajas, ID: operations-register, Secondary Actions: Expand
+				342 menu
+					343 (selected) Todas las cajas
+					344 Caja 01 · PuntoCash Obispo
+					345 Caja 01 · PuntoCash Vedado
+					346 Caja 02 · PuntoCash Obispo
+					347 Caja 02 · PuntoCash Vedado
+					348 Caja 03 · PuntoCash Obispo
+					349 Caja 03 · PuntoCash Vedado
+					350 Caja 04 · PuntoCash Obispo
+					351 Caja 04 · PuntoCash Vedado
+					352 Caja01 · PuntoCash Cerro
+					353 QA-20261029-01 · PuntoCash Obispo
+			354 text Trabajador
+			355 pop up button (collapsed, settable) Trabajador, Value: Todos, ID: operations-worker, Secondary Actions: Expand
+				356 menu
+					357 (selected) Todos
+					358 Endry Perez
+					359 Carlos Díaz
+					360 Marisol Rivas
+					361 Lidia Gómez
+					362 Juan Pérez
+					363 Alberto Fonseca
+			364 text Servicio
+			365 pop up button (collapsed, settable) Servicio, Value: Todos, ID: operations-service, Secondary Actions: Expand
+				366 menu
+					367 (selected) Todos
+					368 Remesas
+					369 Giros - Cobrar
+					370 Giros - Enviar
+					371 Cambio de moneda
+			372 text Estado
+			373 pop up button (collapsed, settable) Estado, Value: Todos, ID: operations-status, Secondary Actions: Expand
+				374 menu
+					375 (selected) Todos
+					376 Completada
+					377 En proceso
+					378 Rechazada
+					379 Fallida
+					380 Cancelada
+		381 content list
+			382 container
+				383 text PC-261029-000001 Completada 29 oct 2026 · 10:00
+				384 definition list
+					385 container SERVICIO
+						386 text SERVICIO
+					387 container
+						388 text Giros  ·  Enviado
+					389 container CLIENTE
+						390 text CLIENTE
+					391 text Endry Pérez
+					392 container IMPORTE
+						393 text IMPORTE
+					394 text 50,00 CUP
+					395 container CAJA Y TRABAJADOR
+						396 text CAJA Y TRABAJADOR
+					397 container
+						398 text Caja01  ·  PuntoCash Cerro Endry Perez
+				399 link Description: Ver operación PC-261029-000001, Value: staging.puntocash.co/admin/operations/PC-261029-000001
+			400 container
+				401 text PC-261025-000005 Completada 24 oct 2026 · 21:03
+				402 definition list
+					403 container SERVICIO
+						404 text SERVICIO
+					405 container
+						406 text Giros  ·  Pagado
+					407 container CLIENTE
+						408 text CLIENTE
+					409 text Ernesto Martínez
+					410 container IMPORTE
+						411 text IMPORTE
+					412 text 6.000,00 CUP
+					413 container CAJA Y TRABAJADOR
+						414 text CAJA Y TRABAJADOR
+					415 container
+						416 text Caja 03  ·  PuntoCash Obispo
+						417 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				418 link Description: Ver operación PC-261025-000005, Value: staging.puntocash.co/admin/operations/PC-261025-000005
+			419 container
+				420 text PC-261025-000003 Completada 24 oct 2026 · 20:48
+				421 definition list
+					422 container SERVICIO
+						423 text SERVICIO
+					424 text Cambio de moneda
+					425 container CLIENTE
+						426 text CLIENTE
+					427 text Arianna Torres
+					428 container IMPORTE
+						429 text IMPORTE
+					430 text 49.140,00 CUP → 120,00 GBP
+					431 container CAJA Y TRABAJADOR
+						432 text CAJA Y TRABAJADOR
+					433 container
+						434 text Caja 03  ·  PuntoCash Vedado
+						435 link Description: Alberto Fonseca, Value: staging.puntocash.co/admin/workers/e88f43ac-32be-430d-b12f-47a8ecde927d
+				436 link Description: Ver operación PC-261025-000003, Value: staging.puntocash.co/admin/operations/PC-261025-000003
+			437 container
+				438 text PC-261025-000002 Completada 24 oct 2026 · 20:27
+				439 definition list
+					440 container SERVICIO
+						441 text SERVICIO
+					442 text Cambio de moneda
+					443 container CLIENTE
+						444 text CLIENTE
+					445 text Lisandra Castillo
+					446 container IMPORTE
+						447 text IMPORTE
+					448 text 20,00 USD → 6.340,00 CUP
+					449 container CAJA Y TRABAJADOR
+						450 text CAJA Y TRABAJADOR
+					451 container
+						452 text Caja 02  ·  PuntoCash Vedado
+						453 link Description: Juan Pérez, Value: staging.puntocash.co/admin/workers/33e4c604-9598-426c-9fe0-2ba24678f671
+				454 link Description: Ver operación PC-261025-000002, Value: staging.puntocash.co/admin/operations/PC-261025-000002
+			455 container
+				456 text PC-261025-000001 Completada 24 oct 2026 · 20:01
+				457 definition list
+					458 container SERVICIO
+						459 text SERVICIO
+					460 text Cambio de moneda
+					461 container CLIENTE
+						462 text CLIENTE
+					463 text Daniela Fernández
+					464 container IMPORTE
+						465 text IMPORTE
+					466 text 30,00 EUR → 10.230,00 CUP
+					467 container CAJA Y TRABAJADOR
+						468 text CAJA Y TRABAJADOR
+					469 container
+						470 text Caja 01  ·  PuntoCash Vedado
+						471 link Description: Lidia Gómez, Value: staging.puntocash.co/admin/workers/251cb85c-9de0-4999-96dc-d8187f487ec2
+				472 link Description: Ver operación PC-261025-000001, Value: staging.puntocash.co/admin/operations/PC-261025-000001
+			473 container
+				474 text PC-261024-000033 Completada 24 oct 2026 · 19:14
+				475 definition list
+					476 container SERVICIO
+						477 text SERVICIO
+					478 container
+						479 text Giros  ·  Enviado
+					480 container CLIENTE
+						481 text CLIENTE
+					482 text Arianna Torres
+					483 container IMPORTE
+						484 text IMPORTE
+					485 text 2.500,00 CUP
+					486 container CAJA Y TRABAJADOR
+						487 text CAJA Y TRABAJADOR
+					488 container
+						489 text Caja 03  ·  PuntoCash Obispo
+						490 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				491 link Description: Ver operación PC-261024-000033, Value: staging.puntocash.co/admin/operations/PC-261024-000033
+			492 container
+				493 text PC-261024-000031 Completada 24 oct 2026 · 18:45
+				494 definition list
+					495 container SERVICIO
+						496 text SERVICIO
+					497 text Cambio de moneda
+					498 container CLIENTE
+						499 text CLIENTE
+					500 text Ernesto Martínez
+					501 container IMPORTE
+						502 text IMPORTE
+					503 text 140,00 GBP → 55.720,00 CUP
+					504 container CAJA Y TRABAJADOR
+						505 text CAJA Y TRABAJADOR
+					506 container
+						507 text Caja 03  ·  PuntoCash Vedado
+						508 link Description: Alberto Fonseca, Value: staging.puntocash.co/admin/workers/e88f43ac-32be-430d-b12f-47a8ecde927d
+				509 link Description: Ver operación PC-261024-000031, Value: staging.puntocash.co/admin/operations/PC-261024-000031
+			510 container
+				511 text PC-261024-000030 Completada 24 oct 2026 · 18:04
+				512 definition list
+					513 container SERVICIO
+						514 text SERVICIO
+					515 text Cambio de moneda
+					516 container CLIENTE
+						517 text CLIENTE
+					518 text Mailén Ortiz
+					519 container IMPORTE
+						520 text IMPORTE
+					521 text 55.420,00 CUP → 170,00 USD
+					522 container CAJA Y TRABAJADOR
+						523 text CAJA Y TRABAJADOR
+					524 container
+						525 text Caja 02  ·  PuntoCash Vedado
+						526 link Description: Juan Pérez, Value: staging.puntocash.co/admin/workers/33e4c604-9598-426c-9fe0-2ba24678f671
+				527 link Description: Ver operación PC-261024-000030, Value: staging.puntocash.co/admin/operations/PC-261024-000030
+			528 container
+				529 text PC-261024-000027 Completada 24 oct 2026 · 17:25
+				530 definition list
+					531 container SERVICIO
+						532 text SERVICIO
+					533 text Cambio de moneda
+					534 container CLIENTE
+						535 text CLIENTE
+					536 text Osvaldo Ramírez
+					537 container IMPORTE
+						538 text IMPORTE
+					539 text 60,00 EUR → 20.520,00 CUP
+					540 container CAJA Y TRABAJADOR
+						541 text CAJA Y TRABAJADOR
+					542 container
+						543 text Caja 03  ·  PuntoCash Obispo
+						544 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				545 link Description: Ver operación PC-261024-000027, Value: staging.puntocash.co/admin/operations/PC-261024-000027
+			546 container
+				547 text PC-261024-000026 Cancelada 24 oct 2026 · 17:12
+				548 definition list
+					549 container SERVICIO
+						550 text SERVICIO
+					551 text Cambio de moneda
+					552 container CLIENTE
+						553 text CLIENTE
+					554 text Arianna Torres
+					555 container IMPORTE
+						556 text IMPORTE
+					557 text 60,00 USD
+					558 container CAJA Y TRABAJADOR
+						559 text CAJA Y TRABAJADOR
+					560 container
+						561 text Caja 01  ·  PuntoCash Vedado
+						562 link Description: Lidia Gómez, Value: staging.puntocash.co/admin/workers/251cb85c-9de0-4999-96dc-d8187f487ec2
+				563 link Description: Ver operación PC-261024-000026, Value: staging.puntocash.co/admin/operations/PC-261024-000026
+			564 container
+				565 text PC-261024-000024 Completada 24 oct 2026 · 16:41
+				566 definition list
+					567 container SERVICIO
+						568 text SERVICIO
+					569 container
+						570 text Giros  ·  Pagado
+					571 container CLIENTE
+						572 text CLIENTE
+					573 text Ernesto Martínez
+					574 container IMPORTE
+						575 text IMPORTE
+					576 text 5.000,00 CUP
+					577 container CAJA Y TRABAJADOR
+						578 text CAJA Y TRABAJADOR
+					579 container
+						580 text Caja 03  ·  PuntoCash Vedado
+						581 link Description: Alberto Fonseca, Value: staging.puntocash.co/admin/workers/e88f43ac-32be-430d-b12f-47a8ecde927d
+				582 link Description: Ver operación PC-261024-000024, Value: staging.puntocash.co/admin/operations/PC-261024-000024
+			583 container
+				584 text PC-261024-000023 Completada 24 oct 2026 · 15:40
+				585 definition list
+					586 container SERVICIO
+						587 text SERVICIO
+					588 container
+						589 text Cambio de moneda Desde el kiosco
+					590 container CLIENTE
+						591 text CLIENTE
+					592 text Ernesto Martínez
+					593 container IMPORTE
+						594 text IMPORTE
+					595 text 45.640,00 CUP → 140,00 USD
+					596 container CAJA Y TRABAJADOR
+						597 text CAJA Y TRABAJADOR
+					598 container
+						599 text Caja 02  ·  PuntoCash Vedado
+						600 link Description: Juan Pérez, Value: staging.puntocash.co/admin/workers/33e4c604-9598-426c-9fe0-2ba24678f671
+				601 link Description: Ver operación PC-261024-000023, Value: staging.puntocash.co/admin/operations/PC-261024-000023
+			602 container
+				603 text PC-261024-000020 Completada 24 oct 2026 · 15:37
+				604 definition list
+					605 container SERVICIO
+						606 text SERVICIO
+					607 container
+						608 text Giros  ·  Enviado
+					609 container CLIENTE
+						610 text CLIENTE
+					611 text Daniela Fernández
+					612 container IMPORTE
+						613 text IMPORTE
+					614 text 14.500,00 CUP
+					615 container CAJA Y TRABAJADOR
+						616 text CAJA Y TRABAJADOR
+					617 container
+						618 text Caja 03  ·  PuntoCash Obispo
+						619 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				620 link Description: Ver operación PC-261024-000020, Value: staging.puntocash.co/admin/operations/PC-261024-000020
+			621 container
+				622 text PC-261024-000018 Completada 24 oct 2026 · 14:38
+				623 definition list
+					624 container SERVICIO
+						625 text SERVICIO
+					626 container
+						627 text Giros  ·  Enviado
+					628 container CLIENTE
+						629 text CLIENTE
+					630 text Yuniesky Hernández
+					631 container IMPORTE
+						632 text IMPORTE
+					633 text 9.000,00 CUP
+					634 container CAJA Y TRABAJADOR
+						635 text CAJA Y TRABAJADOR
+					636 container
+						637 text Caja 03  ·  PuntoCash Vedado
+						638 link Description: Alberto Fonseca, Value: staging.puntocash.co/admin/workers/e88f43ac-32be-430d-b12f-47a8ecde927d
+				639 link Description: Ver operación PC-261024-000018, Value: staging.puntocash.co/admin/operations/PC-261024-000018
+			640 container
+				641 text PC-261024-000017 Completada 24 oct 2026 · 14:22
+				642 definition list
+					643 container SERVICIO
+						644 text SERVICIO
+					645 container
+						646 text Giros  ·  Pagado
+					647 container CLIENTE
+						648 text CLIENTE
+					649 text Ernesto Martínez
+					650 container IMPORTE
+						651 text IMPORTE
+					652 text 4.500,00 CUP
+					653 container CAJA Y TRABAJADOR
+						654 text CAJA Y TRABAJADOR
+					655 container
+						656 text Caja 01  ·  PuntoCash Vedado
+						657 link Description: Lidia Gómez, Value: staging.puntocash.co/admin/workers/251cb85c-9de0-4999-96dc-d8187f487ec2
+				658 link Description: Ver operación PC-261024-000017, Value: staging.puntocash.co/admin/operations/PC-261024-000017
+			659 container
+				660 text PC-261024-000014 Completada 24 oct 2026 · 13:48
+				661 definition list
+					662 container SERVICIO
+						663 text SERVICIO
+					664 container
+						665 text Giros  ·  Pagado Desde el kiosco
+					666 container CLIENTE
+						667 text CLIENTE
+					668 text Mailén Ortiz
+					669 container IMPORTE
+						670 text IMPORTE
+					671 text 11.500,00 CUP
+					672 container CAJA Y TRABAJADOR
+						673 text CAJA Y TRABAJADOR
+					674 container
+						675 text Caja 03  ·  PuntoCash Obispo
+						676 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				677 link Description: Ver operación PC-261024-000014, Value: staging.puntocash.co/admin/operations/PC-261024-000014
+			678 container
+				679 text PC-261024-000013 Completada 24 oct 2026 · 13:16
+				680 definition list
+					681 container SERVICIO
+						682 text SERVICIO
+					683 container
+						684 text Giros  ·  Pagado
+					685 container CLIENTE
+						686 text CLIENTE
+					687 text Arianna Torres
+					688 container IMPORTE
+						689 text IMPORTE
+					690 text 12.000,00 CUP
+					691 container CAJA Y TRABAJADOR
+						692 text CAJA Y TRABAJADOR
+					693 container
+						694 text Caja 02  ·  PuntoCash Vedado
+						695 link Description: Juan Pérez, Value: staging.puntocash.co/admin/workers/33e4c604-9598-426c-9fe0-2ba24678f671
+				696 link Description: Ver operación PC-261024-000013, Value: staging.puntocash.co/admin/operations/PC-261024-000013
+			697 container
+				698 text PC-261024-000011 Cancelada 24 oct 2026 · 12:35
+				699 definition list
+					700 container SERVICIO
+						701 text SERVICIO
+					702 container
+						703 text Giros  ·  Pagado
+					704 container CLIENTE
+						705 text CLIENTE
+					706 text Lisandra Castillo
+					707 container IMPORTE
+						708 text IMPORTE
+					709 text 7.000,00 CUP
+					710 container CAJA Y TRABAJADOR
+						711 text CAJA Y TRABAJADOR
+					712 container
+						713 text Caja 03  ·  PuntoCash Vedado
+						714 link Description: Alberto Fonseca, Value: staging.puntocash.co/admin/workers/e88f43ac-32be-430d-b12f-47a8ecde927d
+				715 link Description: Ver operación PC-261024-000011, Value: staging.puntocash.co/admin/operations/PC-261024-000011
+			716 container
+				717 text PC-261024-000008 Fallida 24 oct 2026 · 12:00
+				718 definition list
+					719 container SERVICIO
+						720 text SERVICIO
+					721 container
+						722 text Giros  ·  Pagado
+					723 container CLIENTE
+						724 text CLIENTE
+					725 text Mailén Ortiz
+					726 container IMPORTE
+						727 text IMPORTE
+					728 text 3.500,00 CUP
+					729 container CAJA Y TRABAJADOR
+						730 text CAJA Y TRABAJADOR
+					731 container
+						732 text Caja 03  ·  PuntoCash Obispo
+						733 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				734 link Description: Ver operación PC-261024-000008, Value: staging.puntocash.co/admin/operations/PC-261024-000008
+			735 container
+				736 text PC-261024-000007 Completada 24 oct 2026 · 11:32
+				737 definition list
+					738 container SERVICIO
+						739 text SERVICIO
+					740 text Cambio de moneda
+					741 container CLIENTE
+						742 text CLIENTE
+					743 text Lisandra Castillo
+					744 container IMPORTE
+						745 text IMPORTE
+					746 text 35.300,00 CUP → 100,00 EUR
+					747 container CAJA Y TRABAJADOR
+						748 text CAJA Y TRABAJADOR
+					749 container
+						750 text Caja 01  ·  PuntoCash Vedado
+						751 link Description: Lidia Gómez, Value: staging.puntocash.co/admin/workers/251cb85c-9de0-4999-96dc-d8187f487ec2
+				752 link Description: Ver operación PC-261024-000007, Value: staging.puntocash.co/admin/operations/PC-261024-000007
+			753 container
+				754 text PC-261024-000006 Completada 24 oct 2026 · 10:52
+				755 definition list
+					756 container SERVICIO
+						757 text SERVICIO
+					758 text Cambio de moneda
+					759 container CLIENTE
+						760 text CLIENTE
+					761 text Daniela Fernández
+					762 container IMPORTE
+						763 text IMPORTE
+					764 text 200,00 EUR → 68.200,00 CUP
+					765 container CAJA Y TRABAJADOR
+						766 text CAJA Y TRABAJADOR
+					767 container
+						768 text Caja 02  ·  PuntoCash Vedado
+						769 link Description: Juan Pérez, Value: staging.puntocash.co/admin/workers/33e4c604-9598-426c-9fe0-2ba24678f671
+				770 link Description: Ver operación PC-261024-000006, Value: staging.puntocash.co/admin/operations/PC-261024-000006
+			771 container
+				772 text PC-261024-000004 Completada 24 oct 2026 · 10:32
+				773 definition list
+					774 container SERVICIO
+						775 text SERVICIO
+					776 container
+						777 text Giros  ·  Enviado
+					778 container CLIENTE
+						779 text CLIENTE
+					780 text Ernesto Martínez
+					781 container IMPORTE
+						782 text IMPORTE
+					783 text 15.000,00 CUP
+					784 container CAJA Y TRABAJADOR
+						785 text CAJA Y TRABAJADOR
+					786 container
+						787 text Caja 03  ·  PuntoCash Vedado
+						788 link Description: Alberto Fonseca, Value: staging.puntocash.co/admin/workers/e88f43ac-32be-430d-b12f-47a8ecde927d
+				789 link Description: Ver operación PC-261024-000004, Value: staging.puntocash.co/admin/operations/PC-261024-000004
+			790 container
+				791 text PC-261024-000001 Completada 24 oct 2026 · 10:11
+				792 definition list
+					793 container SERVICIO
+						794 text SERVICIO
+					795 container
+						796 text Giros  ·  Enviado
+					797 container CLIENTE
+						798 text CLIENTE
+					799 text Yuniesky Hernández
+					800 container IMPORTE
+						801 text IMPORTE
+					802 text 140,00 CUP
+					803 container CAJA Y TRABAJADOR
+						804 text CAJA Y TRABAJADOR
+					805 container
+						806 text Caja 03  ·  PuntoCash Obispo
+						807 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				808 link Description: Ver operación PC-261024-000001, Value: staging.puntocash.co/admin/operations/PC-261024-000001
+			809 container
+				810 text PC-261023-000049 Completada 23 oct 2026 · 16:21
+				811 definition list
+					812 container SERVICIO
+						813 text SERVICIO
+					814 container
+						815 text Giros  ·  Enviado
+					816 container CLIENTE
+						817 text CLIENTE
+					818 text Ernesto Martínez
+					819 container IMPORTE
+						820 text IMPORTE
+					821 text 280,00 CUP
+					822 container CAJA Y TRABAJADOR
+						823 text CAJA Y TRABAJADOR
+					824 container
+						825 text Caja 03  ·  PuntoCash Vedado
+						826 link Description: Lidia Gómez, Value: staging.puntocash.co/admin/workers/251cb85c-9de0-4999-96dc-d8187f487ec2
+				827 link Description: Ver operación PC-261023-000049, Value: staging.puntocash.co/admin/operations/PC-261023-000049
+			828 container
+				829 text PC-261023-000048 Completada 23 oct 2026 · 16:16
+				830 definition list
+					831 container SERVICIO
+						832 text SERVICIO
+					833 text Cambio de moneda
+					834 container CLIENTE
+						835 text CLIENTE
+					836 text Rolando Suárez
+					837 container IMPORTE
+						838 text IMPORTE
+					839 text 43.800,00 CUP → 120,00 EUR
+					840 container CAJA Y TRABAJADOR
+						841 text CAJA Y TRABAJADOR
+					842 container
+						843 text Caja 03  ·  PuntoCash Obispo
+						844 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				845 link Description: Ver operación PC-261023-000048, Value: staging.puntocash.co/admin/operations/PC-261023-000048
+			846 container
+				847 text PC-261023-000047 Completada 23 oct 2026 · 16:11
+				848 definition list
+					849 container SERVICIO
+						850 text SERVICIO
+					851 text Cambio de moneda
+					852 container CLIENTE
+						853 text CLIENTE
+					854 text Arianna Torres
+					855 container IMPORTE
+						856 text IMPORTE
+					857 text 55.420,00 CUP → 170,00 USD
+					858 container CAJA Y TRABAJADOR
+						859 text CAJA Y TRABAJADOR
+					860 container
+						861 text Caja 02  ·  PuntoCash Vedado
+						862 link Description: Alberto Fonseca, Value: staging.puntocash.co/admin/workers/e88f43ac-32be-430d-b12f-47a8ecde927d
+				863 link Description: Ver operación PC-261023-000047, Value: staging.puntocash.co/admin/operations/PC-261023-000047
+			864 container
+				865 text PC-261023-000043 Completada 23 oct 2026 · 15:44
+				866 definition list
+					867 container SERVICIO
+						868 text SERVICIO
+					869 container
+						870 text Giros  ·  Pagado
+					871 container CLIENTE
+						872 text CLIENTE
+					873 text Mailén Ortiz
+					874 container IMPORTE
+						875 text IMPORTE
+					876 text 3.000,00 CUP
+					877 container CAJA Y TRABAJADOR
+						878 text CAJA Y TRABAJADOR
+					879 container
+						880 text Caja 01  ·  PuntoCash Vedado
+						881 link Description: Juan Pérez, Value: staging.puntocash.co/admin/workers/33e4c604-9598-426c-9fe0-2ba24678f671
+				882 link Description: Ver operación PC-261023-000043, Value: staging.puntocash.co/admin/operations/PC-261023-000043
+			883 container
+				884 text PC-261023-000041 Completada 23 oct 2026 · 15:25
+				885 definition list
+					886 container SERVICIO
+						887 text SERVICIO
+					888 text Cambio de moneda
+					889 container CLIENTE
+						890 text CLIENTE
+					891 text Daniela Fernández
+					892 container IMPORTE
+						893 text IMPORTE
+					894 text 45.780,00 CUP → 140,00 USD
+					895 container CAJA Y TRABAJADOR
+						896 text CAJA Y TRABAJADOR
+					897 container
+						898 text Caja 01  ·  PuntoCash Obispo
+						899 link Description: Marisol Rivas, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00
+				900 link Description: Ver operación PC-261023-000041, Value: staging.puntocash.co/admin/operations/PC-261023-000041
+			901 container
+				902 text PC-261023-000040 Completada 23 oct 2026 · 15:02
+				903 definition list
+					904 container SERVICIO
+						905 text SERVICIO
+					906 text Cambio de moneda
+					907 container CLIENTE
+						908 text CLIENTE
+					909 text Ernesto Martínez
+					910 container IMPORTE
+						911 text IMPORTE
+					912 text 170,00 EUR → 57.970,00 CUP
+					913 container CAJA Y TRABAJADOR
+						914 text CAJA Y TRABAJADOR
+					915 container
+						916 text Caja 03  ·  PuntoCash Vedado
+						917 link Description: Lidia Gómez, Value: staging.puntocash.co/admin/workers/251cb85c-9de0-4999-96dc-d8187f487ec2
+				918 link Description: Ver operación PC-261023-000040, Value: staging.puntocash.co/admin/operations/PC-261023-000040
+			919 container
+				920 text PC-261023-000039 Completada 23 oct 2026 · 14:57
+				921 definition list
+					922 container SERVICIO
+						923 text SERVICIO
+					924 text Cambio de moneda
+					925 container CLIENTE
+						926 text CLIENTE
+					927 text Mailén Ortiz
+					928 container IMPORTE
+						929 text IMPORTE
+					930 text 47.450,00 CUP → 130,00 EUR
+					931 container CAJA Y TRABAJADOR
+						932 text CAJA Y TRABAJADOR
+					933 container
+						934 text Caja 03  ·  PuntoCash Obispo
+						935 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				936 link Description: Ver operación PC-261023-000039, Value: staging.puntocash.co/admin/operations/PC-261023-000039
+			937 container
+				938 text PC-261023-000038 Rechazada 23 oct 2026 · 14:55
+				939 definition list
+					940 container SERVICIO
+						941 text SERVICIO
+					942 text Cambio de moneda
+					943 container CLIENTE
+						944 text CLIENTE
+					945 text Osvaldo Ramírez
+					946 container IMPORTE
+						947 text IMPORTE
+					948 text 7.060,00 CUP → 20,00 EUR
+					949 container CAJA Y TRABAJADOR
+						950 text CAJA Y TRABAJADOR
+					951 container
+						952 text Caja 02  ·  PuntoCash Vedado
+						953 link Description: Alberto Fonseca, Value: staging.puntocash.co/admin/workers/e88f43ac-32be-430d-b12f-47a8ecde927d
+				954 link Description: Ver operación PC-261023-000038, Value: staging.puntocash.co/admin/operations/PC-261023-000038
+			955 container
+				956 text PC-261023-000033 Completada 23 oct 2026 · 14:16
+				957 definition list
+					958 container SERVICIO
+						959 text SERVICIO
+					960 text Remesa
+					961 container CLIENTE
+						962 text CLIENTE
+					963 text Arianna Torres
+					964 container IMPORTE
+						965 text IMPORTE
+					966 text 170,00 USD
+					967 container CAJA Y TRABAJADOR
+						968 text CAJA Y TRABAJADOR
+					969 container
+						970 text Caja 01  ·  PuntoCash Obispo
+						971 link Description: Marisol Rivas, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00
+				972 link Description: Ver operación PC-261023-000033, Value: staging.puntocash.co/admin/operations/PC-261023-000033
+			973 container
+				974 text PC-261023-000032 Completada 23 oct 2026 · 13:57
+				975 definition list
+					976 container SERVICIO
+						977 text SERVICIO
+					978 container
+						979 text Cambio de moneda Desde el kiosco
+					980 container CLIENTE
+						981 text CLIENTE
+					982 text Yuniesky Hernández
+					983 container IMPORTE
+						984 text IMPORTE
+					985 text 120,00 GBP → 47.760,00 CUP
+					986 container CAJA Y TRABAJADOR
+						987 text CAJA Y TRABAJADOR
+					988 container
+						989 text Caja 01  ·  PuntoCash Vedado
+						990 link Description: Juan Pérez, Value: …
+				991 link Description: Ver operación PC-261023-000032, Value: …
+			992 container
+				993 text PC-261023-000031 Completada 23 oct 2026 · 13:43
+				994 definition list
+					995 container SERVICIO
+						996 text SERVICIO
+					997 text Cambio de moneda
+					998 container CLIENTE
+						999 text CLIENTE
+					1000 text Mailén Ortiz
+					1001 container IMPORTE
+						1002 text IMPORTE
+					1003 text 24.710,00 CUP → 70,00 EUR
+					1004 container CAJA Y TRABAJADOR
+						1005 text CAJA Y TRABAJADOR
+					1006 container
+						1007 text Caja 03  ·  PuntoCash Vedado
+						1008 link Description: Lidia Gómez, Value: …
+				1009 link Description: Ver operación PC-261023-000031, Value: …
+			1010 container
+				1011 text PC-261023-000030 Completada 23 oct 2026 · 13:39
+				1012 definition list
+					1013 container SERVICIO
+						1014 text SERVICIO
+					1015 container
+						1016 text Giros  ·  Pagado
+					1017 container CLIENTE
+						1018 text CLIENTE
+					1019 text Osvaldo Ramírez
+					1020 container IMPORTE
+						1021 text IMPORTE
+					1022 text 3.000,00 CUP
+					1023 container CAJA Y TRABAJADOR
+						1024 text CAJA Y TRABAJADOR
+					1025 container
+						1026 text Caja 02  ·  PuntoCash Vedado
+						1027 link Description: Alberto Fonseca, Value: …
+				1028 link Description: Ver operación PC-261023-000030, Value: …
+			1029 container
+				1030 text PC-261023-000029 Completada 23 oct 2026 · 13:38
+				1031 definition list
+					1032 container SERVICIO
+						1033 text SERVICIO
+					1034 text Cambio de moneda
+					1035 container CLIENTE
+						1036 text CLIENTE
+					1037 text Lisandra Castillo
+					1038 container IMPORTE
+						1039 text IMPORTE
+					1040 text 110,00 USD → 34.980,00 CUP
+					1041 container CAJA Y TRABAJADOR
+						1042 text CAJA Y TRABAJADOR
+					1043 container
+						1044 text Caja 03  ·  PuntoCash Obispo
+						1045 link Description: Carlos Díaz, Value: …
+				1046 link Description: Ver operación PC-261023-000029, Value: …
+			1047 container
+				1048 text PC-261023-000026 Completada 23 oct 2026 · 13:08
+				1049 definition list
+					1050 container SERVICIO
+						1051 text SERVICIO
+					1052 text Cambio de moneda
+					1053 container CLIENTE
+						1054 text CLIENTE
+					1055 text Arianna Torres
+					1056 container IMPORTE
+						1057 text IMPORTE
+					1058 text 200,00 USD → 63.600,00 CUP
+					1059 container CAJA Y TRABAJADOR
+						1060 text CAJA Y TRABAJADOR
+					1061 container
+						1062 text Caja 01  ·  PuntoCash Obispo
+						1063 link Description: Marisol Rivas, Value: …
+				1064 link Description: Ver operación PC-261023-000026, Value: …
+			1065 container
+				1066 text PC-261023-000023 Completada 23 oct 2026 · 12:24
+				1067 definition list
+					1068 container SERVICIO
+						1069 text SERVICIO
+					1070 text Cambio de moneda
+					1071 container CLIENTE
+						1072 text CLIENTE
+					1073 text Lisandra Castillo
+					1074 container IMPORTE
+						1075 text IMPORTE
+					1076 text 14.120,00 CUP → 40,00 EUR
+					1077 container CAJA Y TRABAJADOR
+						1078 text CAJA Y TRABAJADOR
+					1079 container
+						1080 text Caja 03  ·  PuntoCash Vedado
+						1081 link Description: Lidia Gómez, Value: …
+				1082 link Description: Ver operación PC-261023-000023, Value: …
+			1083 container
+				1084 text PC-261023-000022 Completada 23 oct 2026 · 12:23
+				1085 definition list
+					1086 container SERVICIO
+						1087 text SERVICIO
+					1088 container
+						1089 text Giros  ·  Pagado Desde el kiosco
+					1090 container CLIENTE
+						1091 text CLIENTE
+					1092 text Lisandra Castillo
+					1093 container IMPORTE
+						1094 text IMPORTE
+					1095 text 14.000,00 CUP
+					1096 container CAJA Y TRABAJADOR
+						1097 text CAJA Y TRABAJADOR
+					1098 container
+						1099 text Caja 02  ·  PuntoCash Vedado
+						1100 link Description: Alberto Fonseca, Value: …
+				1101 link Description: Ver operación PC-261023-000022, Value: …
+			1102 container
+				1103 text PC-261023-000021 Completada 23 oct 2026 · 12:18
+				1104 definition list
+					1105 container SERVICIO
+						1106 text SERVICIO
+					1107 container
+						1108 text Cambio de moneda Desde el kiosco
+					1109 container CLIENTE
+						1110 text CLIENTE
+					1111 text Mailén Ortiz
+					1112 container IMPORTE
+						1113 text IMPORTE
+					1114 text 110,00 USD → 34.980,00 CUP
+					1115 container CAJA Y TRABAJADOR
+						1116 text CAJA Y TRABAJADOR
+					1117 container
+						1118 text Caja 03  ·  PuntoCash Obispo
+						1119 link Description: Carlos Díaz, Value: …
+				1120 link Description: Ver operación PC-261023-000021, Value: …
+			1121 container
+				1122 text PC-261023-000020 Completada 23 oct 2026 · 12:11
+				1123 definition list
+					1124 container SERVICIO
+						1125 text SERVICIO
+					1126 container
+						1127 text Giros  ·  Pagado
+					1128 container CLIENTE
+						1129 text CLIENTE
+					1130 text Daniela Fernández
+					1131 container IMPORTE
+						1132 text IMPORTE
+					1133 text 6.000,00 CUP
+					1134 container CAJA Y TRABAJADOR
+						1135 text CAJA Y TRABAJADOR
+					1136 container
+						1137 text Caja 01  ·  PuntoCash Vedado
+						1138 link Description: Juan Pérez, Value: …
+				1139 link Description: Ver operación PC-261023-000020, Value: …
+			1140 container
+				1141 text PC-261023-000018 Completada 23 oct 2026 · 11:59
+				1142 definition list
+					1143 container SERVICIO
+						1144 text SERVICIO
+					1145 container
+						1146 text Remesa Desde el kiosco
+					1147 container CLIENTE
+						1148 text CLIENTE
+					1149 text Yuniesky Hernández
+					1150 container IMPORTE
+						1151 text IMPORTE
+					1152 text 220,00 USD
+					1153 container CAJA Y TRABAJADOR
+						1154 text CAJA Y TRABAJADOR
+					1155 container
+						1156 text Caja 01  ·  PuntoCash Obispo
+						1157 link Description: Marisol Rivas, Value: …
+				1158 link Description: Ver operación PC-261023-000018, Value: …
+			1159 container
+				1160 text PC-261023-000014 Completada 23 oct 2026 · 11:07
+				1161 definition list
+					1162 container SERVICIO
+						1163 text SERVICIO
+					1164 text Cambio de moneda
+					1165 container CLIENTE
+						1166 text CLIENTE
+					1167 text Osvaldo Ramírez
+					1168 container IMPORTE
+						1169 text IMPORTE
+					1170 text 90,00 EUR → 30.690,00 CUP
+					1171 container CAJA Y TRABAJADOR
+						1172 text CAJA Y TRABAJADOR
+					1173 container
+						1174 text Caja 02  ·  PuntoCash Vedado
+						1175 link Description: Alberto Fonseca, Value: …
+				1176 link Description: Ver operación PC-261023-000014, Value: …
+			1177 container
+				1178 text PC-261023-000013 Completada 23 oct 2026 · 11:05
+				1179 definition list
+					1180 container SERVICIO
+						1181 text SERVICIO
+					1182 container
+						1183 text Giros  ·  Enviado
+					1184 container CLIENTE
+						1185 text CLIENTE
+					1186 text Osvaldo Ramírez
+					1187 container IMPORTE
+						1188 text IMPORTE
+					1189 text 13.500,00 CUP
+					1190 container CAJA Y TRABAJADOR
+						1191 text CAJA Y TRABAJADOR
+					1192 container
+						1193 text Caja 03  ·  PuntoCash Vedado
+						1194 link Description: Lidia Gómez, Value: …
+				1195 link Description: Ver operación PC-261023-000013, Value: …
+			1196 container
+				1197 text PC-261023-000011 Completada 23 oct 2026 · 10:59
+				1198 definition list
+					1199 container SERVICIO
+						1200 text SERVICIO
+					1201 text Cambio de moneda
+					1202 container CLIENTE
+						1203 text CLIENTE
+					1204 text Osvaldo Ramírez
+					1205 container IMPORTE
+						1206 text IMPORTE
+					1207 text 62.130,00 CUP → 190,00 USD
+					1208 container CAJA Y TRABAJADOR
+						1209 text CAJA Y TRABAJADOR
+					1210 container
+						1211 text Caja 03  ·  PuntoCash Obispo
+						1212 link Description: Carlos Díaz, Value: …
+				1213 link Description: Ver operación PC-261023-000011, Value: …
+			1214 container
+				1215 text PC-261023-000010 Cancelada 23 oct 2026 · 10:51
+				1216 definition list
+					1217 container SERVICIO
+						1218 text SERVICIO
+					1219 container
+						1220 text Giros  ·  Enviado
+					1221 container CLIENTE
+						1222 text CLIENTE
+					1223 text Mailén Ortiz
+					1224 container IMPORTE
+						1225 text IMPORTE
+					1226 text 2.000,00 CUP
+					1227 container CAJA Y TRABAJADOR
+						1228 text CAJA Y TRABAJADOR
+					1229 container
+						1230 text Caja 01  ·  PuntoCash Obispo
+						1231 link Description: Marisol Rivas, Value: …
+				1232 link Description: Ver operación PC-261023-000010, Value: …
+			1233 container
+				1234 text PC-261023-000009 Completada 23 oct 2026 · 10:24
+				1235 definition list
+					1236 container SERVICIO
+						1237 text SERVICIO
+					1238 text Remesa
+					1239 container CLIENTE
+						1240 text CLIENTE
+					1241 text Arianna Torres
+					1242 container IMPORTE
+						1243 text IMPORTE
+					1244 text 130,00 USD
+					1245 container CAJA Y TRABAJADOR
+						1246 text CAJA Y TRABAJADOR
+					1247 container
+						1248 text Caja 01  ·  PuntoCash Vedado
+						1249 link Description: Juan Pérez, Value: …
+				1250 link Description: Ver operación PC-261023-000009, Value: …
+			1251 container
+				1252 text PC-261023-000005 Completada 23 oct 2026 · 09:51
+				1253 definition list
+					1254 container SERVICIO
+						1255 text SERVICIO
+					1256 text Cambio de moneda
+					1257 container CLIENTE
+						1258 text CLIENTE
+					1259 text Arianna Torres
+					1260 container IMPORTE
+						1261 text IMPORTE
+					1262 text 190,00 USD → 60.230,00 CUP
+					1263 container CAJA Y TRABAJADOR
+						1264 text CAJA Y TRABAJADOR
+					1265 container
+						1266 text Caja 02  ·  PuntoCash Vedado
+						1267 link Description: Alberto Fonseca, Value: …
+				1268 link Description: Ver operación PC-261023-000005, Value: …
+			1269 container
+				1270 text PC-261023-000003 Completada 23 oct 2026 · 09:46
+				1271 definition list
+					1272 container SERVICIO
+						1273 text SERVICIO
+					1274 text Cambio de moneda
+					1275 container CLIENTE
+						1276 text CLIENTE
+					1277 text Yuniesky Hernández
+					1278 container IMPORTE
+						1279 text IMPORTE
+					1280 text 110,00 USD → 34.870,00 CUP
+					1281 container CAJA Y TRABAJADOR
+						1282 text CAJA Y TRABAJADOR
+					1283 container
+						1284 text Caja 03  ·  PuntoCash Vedado
+						1285 link Description: Lidia Gómez, Value: …
+				1286 link Description: Ver operación PC-261023-000003, Value: …
+			1287 container
+				1288 text PC-261023-000002 Completada 23 oct 2026 · 09:42
+				1289 definition list
+					1290 container SERVICIO
+						1291 text SERVICIO
+					1292 text Cambio de moneda
+					1293 container CLIENTE
+						1294 text CLIENTE
+					1295 text Yuniesky Hernández
+					1296 container IMPORTE
+						1297 text IMPORTE
+					1298 text 58.400,00 CUP → 160,00 EUR
+					1299 container CAJA Y TRABAJADOR
+						1300 text CAJA Y TRABAJADOR
+					1301 container
+						1302 text Caja 01  ·  PuntoCash Obispo
+						1303 link Description: Marisol Rivas, Value: …
+				1304 link Description: Ver operación PC-261023-000002, Value: …
+		1305 text Mostrando 50 de 51 operaciones
+		1306 button Mostrar 1 más
+		313 container Navegación de administración
+			314 link Description: Inicio, Value: …
+			315 link Description: Jornadas, Value: …
+			316 link Description: Aprobaciones, Value: …
+			317 button Más
+
+The focused UI element is 322 button (expanded) Filtros, Secondary Actions: Collapse

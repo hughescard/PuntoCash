@@ -1,0 +1,19 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/home".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/home
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 text CHB — PuntoCash Centro Habana
+		7 container
+			8 heading Hola, Idalmis, Value: 1
+				9 text Hola, Idalmis
+			10 text Estás viendo tu sede.
+		11 text Cargando…
+		12 container Navegación de administración
+			13 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			14 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			15 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			16 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/home

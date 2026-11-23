@@ -1,0 +1,32 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/devices/link".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices/link
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		325 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			326 text OBI — PuntoCash Obispo
+		327 container
+			328 heading Vincular un equipo, Value: 1
+				329 text Vincular un equipo
+			330 text Identifica el equipo por su QR o su código de seis cifras, y elige a qué se ata.
+			331 link Description: Volver a Equipos, Value: staging.puntocash.co/admin/devices
+		332 container
+			333 heading Escanear el QR, Value: 3
+				334 text Escanear el QR
+			335 text Usamos la cámara de este dispositivo solo para leer el QR que el equipo tiene en pantalla. No se graba nada ni se envía ninguna imagen.
+			336 button Usar la cámara
+		337 container
+			338 heading Escribir el código, Value: 3
+				339 text Escribir el código
+			340 text Código de seis cifras
+			341 text field (settable) Código de seis cifras, Value: 12345, ID: link-code
+			342 text Escribe los seis caracteres del código.
+			343 button Identificar el equipo
+		138 container Navegación de administración
+			139 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			140 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			141 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			142 button Más
+
+The focused UI element is 343 button Identificar el equipo

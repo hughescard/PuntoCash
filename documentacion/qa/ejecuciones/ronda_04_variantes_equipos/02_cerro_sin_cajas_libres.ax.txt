@@ -1,0 +1,48 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/devices/link?register=40d605f8-1706-4ea1-8a10-9e5645b8f2b3".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices/link?register=40d605f8-1706-4ea1-8a10-9e5645b8f2b3
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			6 text OBI — PuntoCash Obispo
+		95 container
+			96 heading Vincular un equipo, Value: 1
+				97 text Vincular un equipo
+			98 text Identifica el equipo por su QR o su código de seis cifras, y elige a qué se ata.
+			99 link Description: Volver a Equipos, Value: staging.puntocash.co/admin/devices
+		100 container
+			101 text EQUIPO IDENTIFICADO 4EB448
+			102 button Cambiar de equipo
+			130 container
+				131 text No se pudo vincular Elige la caja a la que se ata este equipo.
+			103 container Tipo de equipo*
+				104 container
+					105 text Tipo de equipo *
+				106 radio button (settable, integer) Description: Equipo de caja, Value: 1
+				107 radio button (settable, integer) Description: Kiosco de autoservicio, Value: 0
+			108 text Sede
+			109 pop up button (collapsed, settable) Sede, Value: PuntoCash Cerro, ID: link-branch, Secondary Actions: Expand
+				110 menu
+					111 Elige una sede
+					112 (selected) PuntoCash Cerro
+					113 PuntoCash Obispo
+					114 PuntoCash Vedado
+			115 text Solo aparecen las sedes que administras.
+			116 text Caja
+			117 pop up button (collapsed, settable) Caja, Value: Elige una caja, ID: link-register, Secondary Actions: Expand
+				118 menu
+					119 (selected) Elige una caja
+					129 (disabled) Caja01 · ya tiene
+			124 text Una caja admite un solo equipo a la vez.
+			125 text Etiqueta
+			126 text field (settable) Etiqueta, ID: link-label
+			127 text Opcional. Si la dejas vacía se usa el nombre de la caja.
+			128 button Vincular el equipo
+		90 container Navegación de administración
+			91 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			92 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			93 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			94 button Más
+
+The focused UI element is 128 button Vincular el equipo

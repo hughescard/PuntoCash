@@ -1,0 +1,316 @@
+{
+  "dev_frontend": "7314956f66483929c206d3229ad1e36bcec8d7de",
+  "dev_backend": "d2cd8cdccd4c65ce17fb364e3fc4141b451c80c5",
+  "sha_desplegado_confirmado": false,
+  "regla": "Repetir todas las variantes ya ejecutadas de 51 casos; no cerrar por cambio de codigo; conservar historial.",
+  "casos": [
+    {
+      "id": "PRE-001",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Bloqueado"
+    },
+    {
+      "id": "PRE-002",
+      "estado_anterior": "Aprobado",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Aprobado"
+    },
+    {
+      "id": "PRE-003",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "PRE-004",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "PRE-006",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "PRE-007",
+      "estado_anterior": "Aprobado",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Aprobado"
+    },
+    {
+      "id": "ACC-001",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "ACC-002",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "ACC-003",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "ACC-004",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "ACC-005",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "ACC-006",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "ACC-007",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "ACC-008",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "ACC-016",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "REC-001",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "REC-005",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "NAV-003",
+      "estado_anterior": "Aprobado",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Aprobado"
+    },
+    {
+      "id": "NAV-005",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "NAV-008",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "HOM-005",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "CAJ-001",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "CAJ-002",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "CAJ-004",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "CAJ-005",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "CAJ-007",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "CAJ-008",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "EQ-001",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "EQ-002",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "EQ-003",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "EQ-004",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "EQ-005",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "EQ-008",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "EQ-009",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "JOR-001",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "JOR-002",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "JOR-003",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "JOR-004",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "JOR-005",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "OPS-001",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "OPS-002",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "OPS-003",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "OPS-004",
+      "estado_anterior": "Aprobado",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Aprobado"
+    },
+    {
+      "id": "OPS-006",
+      "estado_anterior": "En curso",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "APR-002",
+      "estado_anterior": "Aprobado",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Aprobado"
+    },
+    {
+      "id": "APR-003",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    },
+    {
+      "id": "APR-004",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "APR-005",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "V-A-01-1",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "V-A-01-2",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "Fallido"
+    },
+    {
+      "id": "V-W-02-1",
+      "estado_anterior": "Fallido",
+      "reprueba": "Ejecutadas las variantes previamente probadas",
+      "resultado_individual": "En curso"
+    }
+  ],
+  "certifica_version_unica": false,
+  "acuerdo_posterior": "La usuaria aclaró que no controla los despliegues y no puede garantizar una pausa. Se continuará por bloques, registrando el despliegue al inicio y al final. Un cambio deja pendientes las comprobaciones afectadas; no se exige que la usuaria detenga staging."
+}

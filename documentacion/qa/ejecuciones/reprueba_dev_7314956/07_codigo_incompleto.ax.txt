@@ -1,0 +1,32 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/devices/link?register=40d605f8-1706-4ea1-8a10-9e5645b8f2b3".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices/link?register=40d605f8-1706-4ea1-8a10-9e5645b8f2b3
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		195 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			196 text OBI — PuntoCash Obispo
+		197 container
+			198 heading Vincular un equipo, Value: 1
+				207 text Vincular un equipo
+			208 text Identifica el equipo por su QR o su código de seis cifras, y elige a qué se ata.
+			199 link Description: Volver a Equipos, Value: staging.puntocash.co/admin/devices
+		209 container
+			210 heading Escanear el QR, Value: 3
+				211 text Escanear el QR
+			212 text Usamos la cámara de este dispositivo solo para leer el QR que el equipo tiene en pantalla. No se graba nada ni se envía ninguna imagen.
+			213 button Usar la cámara
+		214 container
+			215 heading Escribir el código, Value: 3
+				216 text Escribir el código
+			217 text Código de seis cifras
+			218 text field (settable) Código de seis cifras, Value: 12345, ID: link-code
+			219 text Escribe los seis caracteres del código.
+			220 button Identificar el equipo
+		190 container Navegación de administración
+			191 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			192 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			193 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			194 button Más
+
+The focused UI element is 220 button Identificar el equipo

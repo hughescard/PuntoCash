@@ -1,0 +1,35 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/cash-registers/new".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/cash-registers/new
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		8 container
+			9 heading Crear caja, Value: 1
+				10 text Crear caja
+			11 text Un mostrador más en una de tus sedes.
+			12 link Description: Volver a Cajas, Value: staging.puntocash.co/admin/cash-registers
+		13 container
+			14 text Sede
+			15 pop up button (collapsed, settable) Sede, Value: PuntoCash Obispo, ID: new-register-branch, Secondary Actions: Expand
+				16 menu
+					17 Elige una sede
+					18 PuntoCash Cerro
+					19 (selected) PuntoCash Obispo
+					20 PuntoCash Vedado
+			21 text Solo aparecen las sedes que administras.
+			22 text Identificador de la caja
+			23 text field (settable) Identificador de la caja, Value: qa-20261029-01, ID: new-register-name
+			32 text Ya existe una caja con ese identificador en esta sede.
+			24 text Como se la llama en la sucursal: Caja 01, Ventanilla 2, Mostrador principal.
+			25 text La caja nace activa y sin equipo. Para que pueda operar hay que vincularle uno después.
+			26 button Crear caja
+		27 container Navegación de administración
+			28 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			29 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			30 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			31 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/cash-registers/new

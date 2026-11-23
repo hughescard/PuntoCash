@@ -1,0 +1,71 @@
+{
+  "fecha_local": "2026-10-28",
+  "zona": "America/Havana",
+  "proposito": "Fuentes para contexto; no constituyen una entrega nueva ni un resultado de QA.",
+  "archivos": [
+    {
+      "archivo": "clickup_worker_frd_v1.pdf",
+      "origen": "ClickUp 86e38xw7q",
+      "attachment_id": "222e23ea-25a1-44f7-855c-aa130afce172.pdf",
+      "bytes": 466391,
+      "sha256": "6e5c74a69e5c4655b6bf0c5f9234f1dc890660b338d32a71ede326c0eecbc592"
+    },
+    {
+      "archivo": "clickup_worker_prd_v1.pdf",
+      "origen": "ClickUp 86e38xw7q",
+      "attachment_id": "108f07ff-7355-474c-99ae-8a8570638459.pdf",
+      "bytes": 242303,
+      "sha256": "e0364bc1fdc1a23d17207867cc96760ae0817e7f35fed53100e6280c4362794c"
+    },
+    {
+      "archivo": "admin_entrega_2026-10-14.md",
+      "origen": "documentacion/admin/ENTREGA_Admin_de_sede_2026-10-14.md",
+      "commit": "388ba76e31c8400c6c73bc0bfb501f4641d05bdb",
+      "bytes": 11165,
+      "sha256": "8fc2840d501dfb777eb33ac35fb6afe6782c365fd0841042540bba4077c1826f"
+    },
+    {
+      "archivo": "admin_frd_v6.0_2026-10-14.md",
+      "origen": "documentacion/admin/PuntoCash_Admin_Sede_Functional_Requirements_v1.md",
+      "commit": "388ba76e31c8400c6c73bc0bfb501f4641d05bdb",
+      "bytes": 87308,
+      "sha256": "c505af4b891ea78c8a792faeff0571d0f886b0238d1cd64195ae1757cc976d1a"
+    },
+    {
+      "archivo": "admin_prd_v1.0_2026-10-14.md",
+      "origen": "documentacion/admin/PuntoCash_Admin_Sede_PRD_v1.md",
+      "commit": "388ba76e31c8400c6c73bc0bfb501f4641d05bdb",
+      "bytes": 41050,
+      "sha256": "f03a5c0504eee0f7a967e5f7f32607584df67a4b260c369d4fe74656be6dc4ca"
+    },
+    {
+      "archivo": "admin_entrega_2026-10-21.md",
+      "origen": "documentacion/admin/ENTREGA_Admin_de_sede_2026-10-21.md",
+      "commit": "f7accf9fa694bdb27135071c6aba53de3f68aab2",
+      "bytes": 10080,
+      "sha256": "1d4c5a44af0b1dc189ef115115a861c3e934e9b65bf483578d6177ddb8416594"
+    },
+    {
+      "archivo": "admin_frd_v8.0_2026-10-21.md",
+      "origen": "documentacion/admin/PuntoCash_Admin_Sede_Functional_Requirements_v1.md",
+      "commit": "f7accf9fa694bdb27135071c6aba53de3f68aab2",
+      "bytes": 195116,
+      "sha256": "609391b8f87a4ccf0f1f64f90d941d65b7117577253b308e9aff10f394b9675b"
+    },
+    {
+      "archivo": "admin_prd_v1.18_2026-10-21.md",
+      "origen": "documentacion/admin/PuntoCash_Admin_Sede_PRD_v1.md",
+      "commit": "f7accf9fa694bdb27135071c6aba53de3f68aab2",
+      "bytes": 54332,
+      "sha256": "4eb2ff8ef809bf090619f8928afa9cbca0d51a10b49298daec421ffb72a51f34"
+    },
+    {
+      "archivo": "worker_frd_v1.8_referenciado_admin_2026-10-14.md",
+      "origen": "documentacion/worker/PuntoCash_Worker_Functional_Requirements_v1.md",
+      "commit": "388ba76e31c8400c6c73bc0bfb501f4641d05bdb",
+      "bytes": 89432,
+      "sha256": "d7ee9d1aa56cbd1adb4a345ec73d4252e55cea18ed83373b908e7e5fd53a26c4",
+      "nota": "Referencia posterior citada en la nota de Admin del 14/10; no sustituye al PDF original de ClickUp ni demuestra por sí sola ampliación del encargo Worker."
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "date": "2026-10-29T19:48:55.975455+00:00",
+  "cases": [
+    {
+      "id": "ACC-005",
+      "note": "Reto Admin válido con correo enmascarado y fuera del shell. Sin reto vuelve al login sin aviso.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/08_admin_verificacion.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/12_verificacion_sin_reto.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/12_verificacion_sin_reto.png"
+      ]
+    },
+    {
+      "id": "ACC-016",
+      "note": "Cerrar sesión devuelve a login y /admin/home sin sesión vuelve a login. Atrás/reinicio/Worker continúan pendientes.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/10_logout.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/11_home_sin_sesion.ax.txt"
+      ]
+    },
+    {
+      "id": "REC-001",
+      "note": "Vacío muestra validación. Cuenta existente e inexistente reciben mensaje genérico y paso de código. Sin verificación, cambio de contraseña ni comprobación HTTP/Worker.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/14_recuperacion_vacia.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/15_recuperacion_existente.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/16_recuperacion_inexistente.ax.txt"
+      ]
+    },
+    {
+      "id": "REC-005",
+      "note": "Ayuda previa remite al principal para corregir correo. Otras variantes previas pendientes siguen pendientes.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/13_recuperacion_ayuda.ax.txt"
+      ]
+    },
+    {
+      "id": "ACC-002",
+      "note": "Repetidos los vacíos Admin del bloque 01 y ambos vacíos Worker del bloque 02. Se añaden sin usuario y sin contraseña en Worker: las tres variantes muestran solo Completa tus credenciales para continuar, sin error por campo; foco en Iniciar sesión. Base: FR-AUTH-2 y FR-A11Y-1 del PDF original Worker.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/06_worker_vacios_confirmados.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/07_worker_sin_clave.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/08_worker_sin_usuario.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/09_worker_validacion.json"
+      ]
+    },
+    {
+      "id": "ACC-004",
+      "note": "La variante antes ejecutada (campos y envío deshabilitados mientras Verificando) ya se había repetido en 07_admin_enviando del bloque 01; se corrige su clasificación de repetición parcial. En bloque 02 se observó además error de red real: Admin muestra No se pudo conectar con PuntoCash / Ocurrió un error de red, conserva lo escrito y habilita reintento. Worker muestra un rechazo genérico que sugiere revisar credenciales. No se infiere credencial inválida ni se aprueba el caso completo.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/07_admin_enviando.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/04_admin_error_red.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/03_worker_generico_rechazado.ax.txt"
+      ]
+    },
+    {
+      "id": "PRE-001",
+      "note": "Bloque 02: recursos de frontend mantienen dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW; SHA desplegado y versión API siguen sin confirmar. API muestra 502 Bad Gateway y el acceso Admin informa error de red. No se puede continuar la verificación autenticada; se conserva Bloqueado para atribución de versión.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/VERSION_WORKER_INICIAL.json",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/VERSION_WORKER_POST_ACCESO.json",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/VERSION_ADMIN_INICIAL.json",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/VERSION_ADMIN_POST_ACCESO.json",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/05_api_502.ax.txt"
+      ]
+    },
+    {
+      "id": "ACC-001",
+      "note": "Bloque 02: intento Worker genérico no permite acceder. Con error de red en Admin y 502 visible en API no se infiere contraseña incorrecta ni se cuenta un acceso válido. Faltan repetir los accesos anteriores de otras cuentas; sigue En curso.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/03_worker_generico_rechazado.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/04_admin_error_red.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/05_api_502.ax.txt"
+      ]
+    },
+    {
+      "id": "ACC-003",
+      "note": "Bloque 02: cdiaz muestra rechazo genérico, pero el API presenta 502 y Admin error de red. Este intento no demuestra un rechazo por credenciales ni sustituye la variante previa. Repetición sigue parcial; no se registra fallo de la cuenta ni contraseña.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/02_worker_rechazo_cdiaz.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/04_admin_error_red.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/05_api_502.ax.txt"
+      ]
+    }
+  ],
+  "issues": [
+    {
+      "id": "QA-001",
+      "note": "Bloque 02 Worker, tres variantes (ambos vacíos, sin contraseña, sin usuario): foco queda en Iniciar sesión. Contraste FR-AUTH-2 del PDF original Worker; Admin ya repetido en bloque 01. Persiste; no se relaciona con el foco visual de casillas del ticket PUNTOCASH-30.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/06_worker_vacios_confirmados.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/09_worker_validacion.json"
+      ]
+    },
+    {
+      "id": "QA-002",
+      "note": "Bloque 01 de la nueva pasada: abrir verificación Admin sin intento de acceso pendiente vuelve a login sin explicar que debe iniciar sesión de nuevo. Persiste. Base FR-2FA-13 heredada por Admin.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/12_verificacion_sin_reto.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/12_verificacion_sin_reto.png"
+      ]
+    },
+    {
+      "id": "QA-003",
+      "note": "Bloque 02 Worker: con ambos campos vacíos, sin usuario o sin contraseña solo muestra Completa tus credenciales para continuar. Faltan mensajes particulares junto al campo requerido. Base FR-AUTH-2 y FR-A11Y-1 del PDF original Worker. Persiste, comprobado sin depender del API.",
+      "evidence": [
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/06_worker_vacios_confirmados.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/07_worker_sin_clave.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/08_worker_sin_usuario.ax.txt",
+        "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/09_worker_validacion.json"
+      ]
+    }
+  ],
+  "report": "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/bloque_02_worker_equipos/INFORME.md",
+  "run_report": "/home/hughes_card/Documentos/Antilla/Punto Cash/documentacion/qa/ejecuciones/regresion_staging_7549868/INFORME.md"
+}

@@ -6,7 +6,16 @@ import { CircleCheck, Clock, Plus, Printer } from "lucide-react";
 
 import { Alert, Button, Card, CardContent } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
-import { useKioskBranch } from "@/features/kiosk/device-session";
+
+/**
+ * La sede del kiosco, para nombrarla en la solicitud. La pone el layout de
+ * `/kiosk/autoservicio`, que es quien la ha preguntado a la red.
+ */
+const KioskSedeContext = React.createContext<string | null>(null);
+
+export function KioskSedeProvider({ sede, children }: { sede: string | null; children: React.ReactNode }) {
+  return <KioskSedeContext.Provider value={sede}>{children}</KioskSedeContext.Provider>;
+}
 
 /** "14:35" out of the shared "dd/mm/yyyy · hh:mm" format. */
 function timeOf(iso: string): string {
@@ -39,7 +48,7 @@ export function KioskRequestTicket({
   /** Per-service summary rows, composed by the caller. Printed as well. */
   children: React.ReactNode;
 }): React.JSX.Element {
-  const branch = useKioskBranch();
+  const sede = React.useContext(KioskSedeContext);
   const [printFailed, setPrintFailed] = React.useState(false);
 
   function print() {
@@ -67,7 +76,7 @@ export function KioskRequestTicket({
 
         <h1 className="mt-5 text-screen-title text-text-primary">Solicitud lista</h1>
         <p className="mt-2 max-w-md text-body text-text-secondary">
-          Preséntate en cualquier caja{branch ? ` de ${branch.name}` : ""} con este código y un trabajador
+          Preséntate en cualquier caja{sede ? ` de ${sede}` : ""} con este código y un trabajador
           completará la operación con los datos que ya registraste. Lleva tu carné de identidad.
         </p>
 
@@ -111,7 +120,7 @@ export function KioskRequestTicket({
         code={code}
         createdAt={createdAt}
         expiresAt={expiresAt}
-        branchName={branch?.name ?? null}
+        branchName={sede}
       >
         {children}
       </PrintableRequestSlip>

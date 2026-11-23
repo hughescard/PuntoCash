@@ -1,0 +1,95 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/cash-registers".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/cash-registers
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		137 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			138 text OBI — PuntoCash Obispo
+		139 container
+			140 heading Cajas, Value: 1
+				141 text Cajas
+			142 text Los mostradores de cada sede. Una caja necesita un equipo vinculado antes de poder operar.
+			143 link Description: Crear caja, Value: staging.puntocash.co/admin/cash-registers/new
+		144 container PuntoCash Obispo
+			145 heading PuntoCash Obispo, Value: 2, ID: registers-1951777d-e1f8-418e-8ccc-ed0ba7b7e794
+				146 text PuntoCash Obispo
+			147 text 4 cajas activas de 5 en total.
+			148 content list
+				149 container
+					150 text Caja 01 Activa
+					151 definition list
+						152 container EQUIPO
+							153 text EQUIPO
+						154 text Mostrador 1 · Obispo
+						155 container JORNADA
+							156 text JORNADA
+						157 text Cerrada
+						158 container ALTA
+							159 text ALTA
+						160 text 15 ene 2026
+					161 button Retirar
+				162 container
+					163 text Caja 02 Activa
+					164 definition list
+						165 container EQUIPO
+							166 text EQUIPO
+						167 text Sin equipo vinculado
+						168 container JORNADA
+							169 text JORNADA
+						170 text Cerrada
+						171 container ALTA
+							172 text ALTA
+						173 text 15 ene 2026
+					174 button Retirar
+				175 container
+					176 text Caja 03 Activa
+					177 definition list
+						178 container EQUIPO
+							179 text EQUIPO
+						180 text Mostrador 3 · Obispo
+						181 container JORNADA
+							182 text JORNADA
+						183 container
+							184 link Description: Abierta · Carlos Díaz, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+							185 text desde el 24 oct 2026 · 08:23
+						186 container ALTA
+							187 text ALTA
+						188 text 15 ene 2026
+					189 button Retirar
+				190 container
+					191 text Caja 04 Activa
+					192 definition list
+						193 container EQUIPO
+							194 text EQUIPO
+						195 text Sin equipo vinculado
+						196 container JORNADA
+							197 text JORNADA
+						198 text Cerrada
+						199 container ALTA
+							200 text ALTA
+						201 text 15 ene 2026
+					202 button Retirar
+				203 container
+					204 text QA-20261029-01 Retirada
+					205 definition list
+						206 container EQUIPO
+							207 text EQUIPO
+						208 text Sin equipo vinculado
+						209 container JORNADA
+							210 text JORNADA
+						211 text —
+						212 container ALTA
+							213 text ALTA
+						214 text 29 oct 2026
+						221 container MOTIVO DE LA RETIRADA
+							222 text MOTIVO DE LA RETIRADA
+						223 text QA finalizada: caja de prueba sin equipo ni operaciones.
+					215 button Reactivar
+		27 container Navegación de administración
+			28 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			29 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			30 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			31 button Más
+
+The focused UI element is 215 button Reactivar

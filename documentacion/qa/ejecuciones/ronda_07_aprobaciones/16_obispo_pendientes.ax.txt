@@ -1,0 +1,79 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/approvals".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		115 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			116 text OBI — PuntoCash Obispo
+		60 container
+			61 heading Aprobaciones, Value: 1
+				62 text Aprobaciones
+			63 text Las diferencias de efectivo que registran tus trabajadores y esperan tu visto bueno.
+		64 container Estado de las solicitudes
+			65 content list
+				66 link Description: Pendientes 1, Value: staging.puntocash.co/admin/approvals
+				67 link Description: Resueltas 3, Value: staging.puntocash.co/admin/approvals?tab=resolved
+		68 button (expanded) Filtros, Secondary Actions: Collapse
+		69 container approvals-filters
+			70 text Tipo
+			71 pop up button (collapsed, settable) Tipo, Value: Todos, ID: approvals-kind, Secondary Actions: Expand
+				72 menu
+					73 (selected) Todos
+					74 Ajuste de efectivo
+					75 Diferencia de cierre
+					76 Diferencia de apertura
+			77 text Caja
+			78 pop up button (collapsed, settable) Caja, Value: Todas las cajas, ID: approvals-register, Secondary Actions: Expand
+				79 menu
+					80 (selected) Todas las cajas
+					99 Caja 01
+					101 Caja 02
+					103 Caja 03
+					105 Caja 04
+					108 QA-20261029-01
+			81 text Trabajador
+			82 pop up button (collapsed, settable) Trabajador, Value: Todos, ID: approvals-worker, Secondary Actions: Expand
+				83 menu
+					84 (selected) Todos
+					110 Carlos Díaz
+					111 Marisol Rivas
+			85 text Desde
+			86 date field (settable) Desde, ID: approvals-from
+				87 container
+					88 stepper
+					89 stepper
+					90 stepper
+				91 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			92 text Hasta
+			93 date field (settable) Hasta, ID: approvals-to
+				94 container
+					95 stepper
+					96 stepper
+					97 stepper
+				98 pop up button Mostrar selector de fecha Mostrar selector de fecha
+		117 content list
+			148 container
+				149 text Diferencia de cierre 23 oct 2026 · 17:36 Pendiente
+				150 definition list
+					151 container CAJA Y TRABAJADOR
+						152 text CAJA Y TRABAJADOR
+					153 container
+						154 text Caja 03  ·  PuntoCash Obispo Carlos Díaz
+					155 container DIFERENCIA Y MOTIVO
+						156 text DIFERENCIA Y MOTIVO
+					157 container
+						158 text Sobrante +10,00 EUR Sobrante detectado
+					159 container ANTIGÜEDAD
+						160 text ANTIGÜEDAD
+					161 text hace 5 días
+				162 link Description: Ver solicitud: Diferencia de cierre, Caja 03, Carlos Díaz, 23 oct 2026 · 17:36, Value: staging.puntocash.co/admin/approvals/0b744ff8-9ae4-432b-a9e9-ee7d73556c95
+		208 container
+			209 text Mostrando 1 – 1 de 1 solicitudes
+		55 container Navegación de administración
+			56 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			57 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			58 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			59 button Más
+
+The focused UI element is 115 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand

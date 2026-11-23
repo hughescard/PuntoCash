@@ -1,4 +1,5 @@
 import type { ExchangeQuote } from "@/features/exchange/quote";
+import type { ModoDeCambio } from "@/features/kiosk/cambio";
 import type { KioskClientInput, KioskRequest } from "@/features/kiosk/self-service-request";
 
 /**
@@ -6,9 +7,8 @@ import type { KioskClientInput, KioskRequest } from "@/features/kiosk/self-servi
  *
  * Shaped after the Worker flow's own reducer (`@/app/worker/.../cambio-moneda/flow-state.ts`),
  * minus everything that only makes sense once cash is actually involved: there
- * is no Caja here, so there is no cash check and no submit-time revalidation
- * against a register balance — the kiosk only ever prepares numbers for a
- * Worker to act on.
+ * is no Caja here, so there is no cash step — the kiosk prepares everything
+ * that comes before the cash, and the counter finishes it.
  */
 export type StepId = "datos" | "cliente" | "revision" | "solicitud";
 
@@ -32,6 +32,13 @@ export interface FlowState {
   sourceCurrency: string;
   destinationCurrency: string;
   amountInput: string;
+  /** Qué escribe el cliente: lo que entrega o lo que quiere recibir. */
+  modo: ModoDeCambio;
+  /**
+   * Se enciende cuando la red rechazó la solicitud porque la tasa cambió
+   * mientras el cliente la preparaba: el primer paso lo dice.
+   */
+  cotizacionCambiada: boolean;
   /** Committed when leaving step 1, so a later live rate change never rewrites a reviewed request. */
   quote: ExchangeQuote | null;
   client: KioskClientInput;
@@ -44,7 +51,9 @@ export const INITIAL_STATE: FlowState = {
   step: "datos",
   sourceCurrency: "USD",
   destinationCurrency: "CUP",
-  amountInput: "100,00",
+  amountInput: "",
+  modo: "cambiar",
+  cotizacionCambiada: false,
   quote: null,
   client: EMPTY_CLIENT,
   submitting: false,
@@ -57,6 +66,8 @@ export type FlowAction =
   | { type: "set-destination-currency"; currency: string }
   | { type: "set-amount"; value: string }
   | { type: "swap-currencies" }
+  | { type: "set-modo"; modo: ModoDeCambio }
+  | { type: "cotizacion-cambiada" }
   | { type: "commit-quote"; quote: ExchangeQuote }
   | { type: "set-client"; client: KioskClientInput }
   | { type: "go-to-step"; step: StepId }
@@ -94,8 +105,12 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
         sourceCurrency: state.destinationCurrency,
         destinationCurrency: state.sourceCurrency,
       };
+    case "set-modo":
+      return { ...state, touched: true, modo: action.modo, amountInput: "" };
+    case "cotizacion-cambiada":
+      return { ...state, submitting: false, quote: null, step: "datos", cotizacionCambiada: true };
     case "commit-quote":
-      return { ...state, quote: action.quote, step: "cliente" };
+      return { ...state, quote: action.quote, step: "cliente", cotizacionCambiada: false };
     case "set-client":
       return { ...state, touched: true, client: action.client };
     case "go-to-step":

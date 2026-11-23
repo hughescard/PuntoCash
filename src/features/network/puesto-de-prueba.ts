@@ -43,6 +43,8 @@ export interface PuestoDePrueba {
   registerId: string;
   sedeId: string;
   caja: string;
+  /** Con `kiosco`: el kiosco de autoservicio vinculado a la misma sede. */
+  kioscoId?: string;
 }
 
 export interface OpcionesDePuesto {
@@ -70,6 +72,8 @@ export interface OpcionesDePuesto {
   historial?: boolean;
   /** Con `cerrar`: billetes que faltan en el conteo de cierre, y el motivo que se da. */
   diferenciaAlCerrar?: { currency: string; quitar: Record<string, number>; motivo: string; observaciones?: string };
+  /** Vincula además un kiosco de autoservicio a la sede del puesto. */
+  kiosco?: boolean;
 }
 
 let secuencia = 0;
@@ -126,6 +130,20 @@ export function crearPuestoDePrueba(
     label: "Mostrador 3 · Vedado",
   });
   if (!equipo.ok) return { ok: false, error: `equipo: ${equipo.reason}` };
+
+  let kioscoId: string | undefined;
+  if (opciones.kiosco) {
+    const retoKiosco = emitirReto("kiosco", `KIO-P${n}`);
+    if (!retoKiosco) return { ok: false, error: "reto-kiosco" };
+    const kiosco = vincularEquipo(scope, ctx, {
+      reto: { method: "codigo", code: retoKiosco.code },
+      branchId: sede.value.id,
+      by: "Pruebas",
+      label: "Kiosco entrada · Vedado",
+    });
+    if (!kiosco.ok) return { ok: false, error: `kiosco: ${kiosco.reason}` };
+    kioscoId = kiosco.value.id;
+  }
 
   const identifier = `p${n.toLowerCase()}`.slice(0, 30);
   const trabajador = crearTrabajador(scope, ctx, {
@@ -196,6 +214,7 @@ export function crearPuestoDePrueba(
       registerId: caja.value.id,
       sedeId: sede.value.id,
       caja: caja.value.name,
+      ...(kioscoId ? { kioscoId } : {}),
     },
   };
 }

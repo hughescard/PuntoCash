@@ -1,0 +1,19 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/verification".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/verification
+	1 container
+		2 container
+			3 text PUNTO  CASH
+			4 heading Verifica que eres tú, Value: 1
+				5 text Verifica que eres tú
+			6 container
+				7 text Enviamos un código de 6 dígitos a m•••a@antillasf.cu
+			8 text Código de verificación
+			9 text field (settable) Código de verificación
+			10 text El código vence en 4:36.
+			11 button (disabled) Verificar e iniciar sesión
+			12 button (disabled) Reenviar código en 36 s
+			13 text Si el código no llega, revisa la carpeta de correo no deseado antes de reenviarlo.
+			14 button Usar otra cuenta
+			15 text PuntoCash · Sistema interno
+
+The focused UI element is 9 text field (settable) Código de verificación

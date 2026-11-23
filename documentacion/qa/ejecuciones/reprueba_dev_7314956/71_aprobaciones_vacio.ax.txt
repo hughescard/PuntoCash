@@ -1,0 +1,73 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/approvals".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		8 container
+			9 heading Aprobaciones, Value: 1
+				10 text Aprobaciones
+			11 text Las diferencias de efectivo que registran tus trabajadores y esperan tu visto bueno.
+		12 container Estado de las solicitudes
+			13 content list
+				14 link Description: Pendientes 0, Value: staging.puntocash.co/admin/approvals
+				15 link Description: Resueltas 0, Value: staging.puntocash.co/admin/approvals?tab=resolved
+		16 button (expanded) Filtros, Secondary Actions: Collapse
+		17 container approvals-filters
+			18 text Tipo
+			19 pop up button (collapsed, settable) Tipo, Value: Diferencia de cierre, ID: approvals-kind, Secondary Actions: Expand
+				20 menu
+					21 Todos
+					22 Ajuste de efectivo
+					23 (selected) Diferencia de cierre
+					24 Diferencia de apertura
+			25 text Caja
+			26 pop up button (collapsed, settable) Caja, Value: Caja 02 · PuntoCash Vedado, ID: approvals-register, Secondary Actions: Expand
+				27 menu
+					28 Todas las cajas
+					53 Caja 01 · PuntoCash Obispo
+					54 Caja 01 · PuntoCash Vedado
+					55 Caja 02 · PuntoCash Obispo
+					56 (selected) Caja 02 · PuntoCash Vedado
+					57 Caja 03 · PuntoCash Obispo
+					58 Caja 03 · PuntoCash Vedado
+					59 Caja 04 · PuntoCash Obispo
+					60 Caja 04 · PuntoCash Vedado
+					61 Caja01 · PuntoCash Cerro
+					62 QA-20261029-01 · PuntoCash Obispo
+					63 QA-RDEV731-20261029 · PuntoCash Obispo
+			29 text Trabajador
+			30 pop up button (collapsed, settable) Trabajador, Value: Juan Pérez, ID: approvals-worker, Secondary Actions: Expand
+				31 menu
+					32 Todos
+					64 Endry Perez
+					65 Carlos Díaz
+					66 Marisol Rivas
+					67 Lidia Gómez
+					68 (selected) Juan Pérez
+					69 Alberto Fonseca
+			33 text Desde
+			34 date field (settable) Desde, ID: approvals-from
+				35 container
+					36 stepper
+					37 stepper
+					38 stepper
+				39 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			40 text Hasta
+			41 date field (settable) Hasta, ID: approvals-to
+				42 container
+					43 stepper
+					44 stepper
+					45 stepper
+				46 pop up button Mostrar selector de fecha Mostrar selector de fecha
+		70 text Ninguna solicitud coincide con los filtros.
+		71 button Quitar los filtros
+		48 container Navegación de administración
+			49 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			50 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			51 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			52 button Más
+
+The focused UI element is 16 button (expanded) Filtros, Secondary Actions: Collapse

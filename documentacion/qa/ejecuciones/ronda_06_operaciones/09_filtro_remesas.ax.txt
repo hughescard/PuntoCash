@@ -1,0 +1,135 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/operations".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/operations
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			6 text Todas mis sedes
+		318 container
+			319 heading Operaciones, Value: 1
+				320 text Operaciones
+			321 text Lo que tus cajas han hecho con cada cliente, completado o no. Solo lectura.
+		322 button (expanded) Filtros, Secondary Actions: Collapse
+		1266 container operations-filters
+			1267 text Buscar
+			1268 search text field (settable) Buscar, ID: operations-search
+			1269 text Desde
+			1270 date field (settable) Desde, Value: 2026-10-23, ID: operations-from
+				1589 container
+					1599 stepper
+					1600 stepper
+					1601 stepper
+				1593 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			1276 text Hasta
+			1277 date field (settable) Hasta, Value: 2026-10-29, ID: operations-to
+				1594 container
+					1602 stepper
+					1603 stepper
+					1604 stepper
+				1598 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			1283 text Caja
+			1284 pop up button (collapsed, settable) Caja, Value: Todas las cajas, ID: operations-register, Secondary Actions: Expand
+				1285 menu
+					1286 (selected) Todas las cajas
+					1287 Caja 01 · PuntoCash Obispo
+					1288 Caja 01 · PuntoCash Vedado
+					1289 Caja 02 · PuntoCash Obispo
+					1290 Caja 02 · PuntoCash Vedado
+					1291 Caja 03 · PuntoCash Obispo
+					1292 Caja 03 · PuntoCash Vedado
+					1293 Caja 04 · PuntoCash Obispo
+					1294 Caja 04 · PuntoCash Vedado
+					1295 Caja01 · PuntoCash Cerro
+					1296 QA-20261029-01 · PuntoCash Obispo
+			1297 text Trabajador
+			1298 pop up button (collapsed, settable) Trabajador, Value: Todos, ID: operations-worker, Secondary Actions: Expand
+				1299 menu
+					1300 (selected) Todos
+					1301 Endry Perez
+					1302 Carlos Díaz
+					1303 Marisol Rivas
+					1304 Lidia Gómez
+					1305 Juan Pérez
+					1306 Alberto Fonseca
+			1307 text Servicio
+			1308 pop up button (collapsed, settable) Servicio, Value: Remesas, ID: operations-service, Secondary Actions: Expand
+				1309 menu
+					1310 Todos
+					1311 (selected) Remesas
+					1312 Giros - Cobrar
+					1313 Giros - Enviar
+					1314 Cambio de moneda
+			1315 text Estado
+			1316 pop up button (collapsed, settable) Estado, Value: Todos, ID: operations-status, Secondary Actions: Expand
+				1317 menu
+					1318 (selected) Todos
+					1319 Completada
+					1320 En proceso
+					1321 Rechazada
+					1322 Fallida
+					1323 Cancelada
+		1605 content list
+			1606 container
+				1607 text PC-261023-000033 Completada 23 oct 2026 · 14:16
+				1608 definition list
+					1609 container SERVICIO
+						1610 text SERVICIO
+					1611 text Remesa
+					1612 container CLIENTE
+						1613 text CLIENTE
+					1614 text Arianna Torres
+					1615 container IMPORTE
+						1616 text IMPORTE
+					1617 text 170,00 USD
+					1618 container CAJA Y TRABAJADOR
+						1619 text CAJA Y TRABAJADOR
+					1620 container
+						1621 text Caja 01  ·  PuntoCash Obispo
+						1622 link Description: Marisol Rivas, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00
+				1623 link Description: Ver operación PC-261023-000033, Value: staging.puntocash.co/admin/operations/PC-261023-000033
+			1624 container
+				1625 text PC-261023-000018 Completada 23 oct 2026 · 11:59
+				1626 definition list
+					1627 container SERVICIO
+						1628 text SERVICIO
+					1629 container
+						1630 text Remesa Desde el kiosco
+					1631 container CLIENTE
+						1632 text CLIENTE
+					1633 text Yuniesky Hernández
+					1634 container IMPORTE
+						1635 text IMPORTE
+					1636 text 220,00 USD
+					1637 container CAJA Y TRABAJADOR
+						1638 text CAJA Y TRABAJADOR
+					1639 container
+						1640 text Caja 01  ·  PuntoCash Obispo
+						1641 link Description: Marisol Rivas, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00
+				1642 link Description: Ver operación PC-261023-000018, Value: staging.puntocash.co/admin/operations/PC-261023-000018
+			1643 container
+				1644 text PC-261023-000009 Completada 23 oct 2026 · 10:24
+				1645 definition list
+					1646 container SERVICIO
+						1647 text SERVICIO
+					1648 text Remesa
+					1649 container CLIENTE
+						1650 text CLIENTE
+					1651 text Arianna Torres
+					1652 container IMPORTE
+						1653 text IMPORTE
+					1654 text 130,00 USD
+					1655 container CAJA Y TRABAJADOR
+						1656 text CAJA Y TRABAJADOR
+					1657 container
+						1658 text Caja 01  ·  PuntoCash Vedado
+						1659 link Description: Juan Pérez, Value: staging.puntocash.co/admin/workers/33e4c604-9598-426c-9fe0-2ba24678f671
+				1660 link Description: Ver operación PC-261023-000009, Value: staging.puntocash.co/admin/operations/PC-261023-000009
+		1661 text Mostrando 3 de 3 operaciones
+		313 container Navegación de administración
+			314 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			315 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			316 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			317 button Más
+
+The focused UI element is 0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/operations

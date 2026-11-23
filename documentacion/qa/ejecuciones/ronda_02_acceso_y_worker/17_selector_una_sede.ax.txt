@@ -1,0 +1,110 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/home".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/home
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 text CHB — PuntoCash Centro Habana
+		6 text Idalmis Betancourt Centro Divisas S.R.L.
+		7 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		8 button Cerrar sesión
+		9 container Navegación de administración
+			10 container
+				11 text OPERACIÓN
+				12 content list
+					13 link Description: Inicio, Value: staging.puntocash.co/admin/home
+					14 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+					15 link Description: Aprobaciones 3, Value: staging.puntocash.co/admin/approvals
+					16 link Description: Operaciones, Value: staging.puntocash.co/admin/operations
+				17 text SUCURSAL
+				18 content list
+					19 link Description: Sedes, Value: staging.puntocash.co/admin/branches
+					20 link Description: Cajas, Value: staging.puntocash.co/admin/cash-registers
+					21 link Description: Equipos 1, Value: staging.puntocash.co/admin/devices
+					22 link Description: Trabajadores, Value: staging.puntocash.co/admin/workers
+					23 link Description: Usuarios, Value: staging.puntocash.co/admin/users
+				24 text CONFIGURACIÓN
+				25 content list
+					26 link Description: Monedas, Value: staging.puntocash.co/admin/currencies
+					27 link Description: Tasas, Value: staging.puntocash.co/admin/rates
+					28 link Description: Promociones, Value: staging.puntocash.co/admin/promotions
+					29 link Description: Reportes, Value: staging.puntocash.co/admin/reports
+			30 text PuntoCash · Administración
+		31 container
+			32 heading Hola, Idalmis, Value: 1
+				33 text Hola, Idalmis
+			34 text Estás viendo tu sede.
+		35 container Hoy en tus sedes
+			36 heading Hoy en tus sedes, Value: 2
+				37 text Hoy en tus sedes
+			38 container
+				39 text SEDES OPERANDO 1 de 1
+			40 container
+				41 text CAJAS ABIERTAS 2 de 3
+			42 container
+				43 text TRABAJADORES EN TURNO 2
+			44 container
+				45 text OPERACIONES DEL DÍA 0
+			46 container
+				47 text APROBACIONES PENDIENTES 3
+		48 container Requiere tu atención
+			49 heading Requiere tu atención, Value: 2
+				50 text Requiere tu atención
+			51 text Lo que impide que una sede opere encabeza siempre la lista.
+			52 content list
+				53 container
+					54 text PuntoCash Centro Habana tiene una caja sin equipo vinculado En una caja sin equipo nadie puede iniciar sesión. Vincula el equipo del puesto para que pueda operar.
+					55 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices
+				56 container
+					57 text Tienes 3 aprobaciones pendientes La más antigua es de hace 6 días: ajuste de efectivo en Caja 01 de PuntoCash Centro Habana.
+					58 link Description: Revisar aprobaciones, Value: staging.puntocash.co/admin/approvals
+				59 container
+					60 text 2 cajas siguen abiertas desde un día anterior
+					61 link Description: Caja 02 de PuntoCash Centro Habana, Value: staging.puntocash.co/admin/shifts/993f5b99-1fed-4c61-a44a-60c45bced801
+					62 text (la abrió Dayana Moreno el 23 oct 2026 · 08:43) ; 
+					63 link Description: Caja 01 de PuntoCash Centro Habana, Value: staging.puntocash.co/admin/shifts/ffeabb35-8023-4a98-ba43-803b028e424a
+					64 text (la abrió Ismael Fuentes el 24 oct 2026 · 08:28) . Si nadie va a hacer su cierre, puedes forzarlo desde la jornada.
+					65 link Description: Ver jornadas, Value: staging.puntocash.co/admin/shifts
+		66 container Estado por sede
+			67 heading Estado por sede, Value: 2
+				68 text Estado por sede
+			69 text Cada fila lleva a la ficha de su sede.
+			70 table
+				71 row
+					72 cell
+						73 text SEDE
+					74 cell
+						75 text ESTADO
+					76 cell
+						77 text CAJAS
+					78 cell
+						79 text KIOSCOS
+					80 cell
+						81 text TRABAJADORES
+					82 cell
+						83 text JORNADA
+					84 cell
+						85 text EN TURNO
+					86 cell
+						87 text OPERACIONES HOY
+				88 row
+					89 cell
+						90 link Description: PuntoCash Centro Habana, Value: staging.puntocash.co/admin/branches/c7678bde-0f4c-46a8-98c0-ce9441d6637d
+						91 text CHB · Centro Habana, La Habana
+					92 cell
+						93 text Activa
+					94 cell
+						95 text 3 1 sin equipo
+					96 cell
+						97 text 0
+					98 cell
+						99 text 2
+					100 cell
+						101 text 2 de 3 abiertas
+					102 cell
+						103 content list
+							104 text Dayana Moreno
+							105 text Ismael Fuentes
+					106 cell
+						107 text 0
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/home

@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { sinDesbordamientoHorizontal } from "./admin-helpers";
 
 /**
- * Humo de las nueve rutas de `/kiosk` — que todas responden, que cada una
+ * Humo de las rutas de `/kiosk` — que todas responden, que cada una
  * presenta la pantalla que le toca, y que la decisión de vínculo la toma el
  * **servidor**.
  *
@@ -12,19 +12,16 @@ import { sinDesbordamientoHorizontal } from "./admin-helpers";
  * recorrido a mano. Una ruta que deja de compilar, un `h1` que desaparece o
  * un gate que se traga el catálogo no los veía nadie hasta abrir el
  * navegador. Esto no pretende recorrer los flujos —cada uno merece su propio
- * archivo—, sino dejar de dar por buenas nueve rutas sin comprobarlas.
+ * archivo—, sino dejar de dar por buenas sus rutas sin comprobarlas.
  *
  * ── Qué comprueba de verdad ───────────────────────────────────────────────
  * Lo importante no es que el `h1` esté visible —eso lo vería cualquier
  * aserción— sino **quién lo decidió**. Un gate que decide en el cliente
  * también acaba mostrando la pantalla correcta, solo que un fotograma más
- * tarde y respondiendo 200 a rutas que no existen (`device-cookie.ts`
- * explica el precio). Así que cada bloque empieza pidiendo el HTML del
+ * tarde y respondiendo 200 a rutas que no existen. Así que cada bloque empieza pidiendo el HTML del
  * servidor con `page.request`, sin ejecutar nada en la página: lo que ahí
  * venga es, por construcción, lo que decidió el servidor.
  */
-
-const BASE_URL = "http://localhost:3000";
 
 /** Las siete pantallas tras el gate, con el `h1` que presenta cada una. */
 const AUTOSERVICIO = [
@@ -42,9 +39,8 @@ const VINCULACION = "Vincula este kiosco a su sede";
 /* -------------------------------------------------------------------------
  * Sin vínculo — el estado con el que arranca un kiosco recién instalado
  *
- * El `storageState` de `playwright.config.ts` siembra el equipo de **caja**,
- * no el de kiosco, así que este bloque no necesita desactivar nada: tal como
- * llega, el navegador es un kiosco sin vincular.
+ * Un navegador limpio no tiene la cookie del kiosco, así que tal como llega es
+ * un kiosco sin vincular.
  * ---------------------------------------------------------------------- */
 
 test.describe("un kiosco sin vincular", () => {
@@ -92,52 +88,29 @@ test.describe("un kiosco sin vincular", () => {
  * ---------------------------------------------------------------------- */
 
 /**
- * El vínculo que el administrador habría hecho desde su panel. Apunta a
- * **PuntoCash Vedado** porque es la sede con datos simulados completos, la
- * misma que usa el resto de la suite.
- *
- * Un kiosco no lleva `registerId`: pertenece a la sede, no a un mostrador
- * (`device-link.ts`). El vínculo se siembra en los **dos** sitios que deben
- * contar lo mismo —`localStorage`, fuente de verdad del terminal, y la cookie
- * espejo, que es lo que lee el layout del servidor—; sembrar uno solo dejaría
- * al servidor y al cliente en desacuerdo.
+ * Un kiosco que la red ya tiene vinculado: el de la entrada de **PuntoCash
+ * Vedado**, la sede con datos completos que usa el resto de la suite. El
+ * navegador solo guarda su identificador; a qué sede pertenece lo contesta la
+ * red, igual que con las cajas de Worker.
  */
-const KIOSCO_VINCULADO = {
-  status: "linked",
-  deviceId: "KIO-9000-0001",
-  branchId: "sede-vedado",
-  linkedAt: "2026-09-01T08:00:00.000Z",
-  linkMethod: "codigo",
-};
+const KIOSCO_VINCULADO = "KIO-0001-0001";
 
 test.describe("un kiosco vinculado a su sede", () => {
   test.use({
     storageState: {
       cookies: [
         {
-          name: "pc_kiosk_device",
-          value: encodeURIComponent(
-            JSON.stringify({
-              deviceId: KIOSCO_VINCULADO.deviceId,
-              branchId: KIOSCO_VINCULADO.branchId,
-            }),
-          ),
+          name: "pc_kiosco_device",
+          value: KIOSCO_VINCULADO,
           domain: "localhost",
-          path: "/",
+          path: "/kiosk/autoservicio",
           expires: -1,
-          httpOnly: false,
+          httpOnly: true,
           secure: false,
           sameSite: "Lax" as const,
         },
       ],
-      origins: [
-        {
-          origin: BASE_URL,
-          localStorage: [
-            { name: "puntocash.kiosk.device", value: JSON.stringify(KIOSCO_VINCULADO) },
-          ],
-        },
-      ],
+      origins: [],
     },
   });
 
@@ -187,10 +160,10 @@ test.describe("un kiosco vinculado a su sede", () => {
 });
 
 /* -------------------------------------------------------------------------
- * Las dos rutas que no pasan por el gate
+ * La ruta que no pasa por el gate
  * ---------------------------------------------------------------------- */
 
-test.describe("pantalla informativa y simulador", () => {
+test.describe("pantalla informativa", () => {
   /**
    * `/kiosk/pantalla` no tiene sesión de dispositivo: solo muestra
    * información pública, así que quien la instala elige la sede y nadie la
@@ -210,11 +183,30 @@ test.describe("pantalla informativa y simulador", () => {
     await expect(page.getByRole("searchbox", { name: "Buscar sede" })).toBeVisible();
   });
 
-  /** El simulador del panel del administrador, que es lo que vincula los dos terminales. */
-  test("el simulador lista los dos tipos de equipo", async ({ page }) => {
-    await page.goto("/kiosk/simulador-admin");
-    await expect(page.getByRole("heading", { name: "Equipos de la sede", level: 1 })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kioscos de autoservicio" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Cajas" })).toBeVisible();
+  /** La sede que eligió quien instaló la pantalla: lo único que guarda el equipo. */
+  async function conSede(page: import("@playwright/test").Page, sedeId: string): Promise<void> {
+    await page.addInitScript((id) => window.localStorage.setItem("puntocash.kiosk.pantalla.sede", id), sedeId);
+  }
+
+  test("con su sede, anuncia sus tasas", async ({ page }) => {
+    await conSede(page, "sede-vedado");
+    await page.goto("/kiosk/pantalla");
+    await expect(page.getByRole("heading", { name: "Tasas del día" })).toBeVisible();
+  });
+
+  test("una sede que no atiende no anuncia tasas ni promociones", async ({ page }) => {
+    /* Trinidad está suspendida en los datos de muestra. */
+    await conSede(page, "sede-trinidad");
+    await page.goto("/kiosk/pantalla");
+    await expect(page.getByRole("heading", { name: "En este momento no estamos atendiendo" })).toBeVisible();
+    await expect(page.getByText("PuntoCash Trinidad")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tasas del día" })).toBeHidden();
+  });
+
+  test("si su sede ya no existe, vuelve el selector y dice por qué", async ({ page }) => {
+    await conSede(page, "sede-que-ya-no-existe");
+    await page.goto("/kiosk/pantalla");
+    await expect(page.getByRole("heading", { name: "¿En qué sede está esta pantalla?", level: 1 })).toBeVisible();
+    await expect(page.getByText("La sede que mostraba esta pantalla ya no está disponible. Elige otra.")).toBeVisible();
   });
 });

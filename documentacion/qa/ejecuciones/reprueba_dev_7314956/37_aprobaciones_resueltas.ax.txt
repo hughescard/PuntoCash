@@ -1,0 +1,107 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/approvals?tab=resolved".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals?tab=resolved
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		319 container
+			320 heading Aprobaciones, Value: 1
+				321 text Aprobaciones
+			322 text Las diferencias de efectivo que registran tus trabajadores y esperan tu visto bueno.
+		323 container Estado de las solicitudes
+			324 content list
+				325 link Description: Pendientes 6, Value: staging.puntocash.co/admin/approvals
+				326 link Description: Resueltas 5, Value: staging.puntocash.co/admin/approvals?tab=resolved
+		327 button (collapsed) Filtros, Secondary Actions: Expand
+		328 content list
+			421 container
+				422 text Diferencia de cierre 21 oct 2026 · 17:29 Aprobada
+				423 definition list
+					424 container CAJA Y TRABAJADOR
+						425 text CAJA Y TRABAJADOR
+					426 container
+						427 text Caja 01  ·  PuntoCash Vedado Juan Pérez
+					428 container DIFERENCIA Y MOTIVO
+						429 text DIFERENCIA Y MOTIVO
+					430 container
+						431 text Sobrante +200,00 CUP Sobrante detectado
+					432 container RESOLUCIÓN
+						433 text RESOLUCIÓN
+					434 container
+						435 text Aprobada Marta Sánchez · 22 oct 2026 · 17:29
+				436 link Description: Ver solicitud: Diferencia de cierre, Caja 01, Juan Pérez, 21 oct 2026 · 17:29, Value: staging.puntocash.co/admin/approvals/c8977036-c6d5-4e25-bfc4-fb7712e2e523
+			437 container
+				438 text Diferencia de apertura 21 oct 2026 · 08:34 Rechazada
+				439 definition list
+					440 container CAJA Y TRABAJADOR
+						441 text CAJA Y TRABAJADOR
+					442 container
+						443 text Caja 03  ·  PuntoCash Obispo Carlos Díaz
+					444 container DIFERENCIA Y MOTIVO
+						445 text DIFERENCIA Y MOTIVO
+					446 container
+						447 text Faltante −2.000,00 CUP Faltante detectado
+					448 container RESOLUCIÓN
+						449 text RESOLUCIÓN
+					450 container
+						451 text Rechazada Marta Sánchez · 22 oct 2026 · 08:34
+				452 link Description: Ver solicitud: Diferencia de apertura, Caja 03, Carlos Díaz, 21 oct 2026 · 08:34, Value: staging.puntocash.co/admin/approvals/dd3570e1-3a39-4e71-ae8a-fe26adf41d20
+			453 container
+				454 text Ajuste de efectivo 19 oct 2026 · 13:03 Rechazada
+				455 definition list
+					456 container CAJA Y TRABAJADOR
+						457 text CAJA Y TRABAJADOR
+					458 container
+						459 text Caja 01  ·  PuntoCash Obispo Marisol Rivas
+					460 container DIFERENCIA Y MOTIVO
+						461 text DIFERENCIA Y MOTIVO
+					462 container
+						463 text Faltante −20,00 USD Faltante detectado
+					464 container RESOLUCIÓN
+						465 text RESOLUCIÓN
+					466 container
+						467 text Rechazada Marta Sánchez · 20 oct 2026 · 13:03
+				468 link Description: Ver solicitud: Ajuste de efectivo, Caja 01, Marisol Rivas, 19 oct 2026 · 13:03, Value: staging.puntocash.co/admin/approvals/3142bea5-2244-47cf-b0d2-93d235a2d581
+			469 container
+				470 text Diferencia de apertura 19 oct 2026 · 08:25 Aprobada
+				471 definition list
+					472 container CAJA Y TRABAJADOR
+						473 text CAJA Y TRABAJADOR
+					474 container
+						475 text Caja 01  ·  PuntoCash Vedado Juan Pérez
+					476 container DIFERENCIA Y MOTIVO
+						477 text DIFERENCIA Y MOTIVO
+					478 container
+						479 text Reposición +40.000,00 CUP Reposición de fondos
+					480 container RESOLUCIÓN
+						481 text RESOLUCIÓN
+					482 container
+						483 text Aprobada Marta Sánchez · 20 oct 2026 · 08:25
+				484 link Description: Ver solicitud: Diferencia de apertura, Caja 01, Juan Pérez, 19 oct 2026 · 08:25, Value: staging.puntocash.co/admin/approvals/ce0f6cfc-e3e2-4b32-a5ee-c4170250dcd0
+			485 container
+				486 text Diferencia de cierre 18 oct 2026 · 17:38 Rechazada
+				487 definition list
+					488 container CAJA Y TRABAJADOR
+						489 text CAJA Y TRABAJADOR
+					490 container
+						491 text Caja 01  ·  PuntoCash Obispo Carlos Díaz
+					492 container DIFERENCIA Y MOTIVO
+						493 text DIFERENCIA Y MOTIVO
+					494 container
+						495 text Faltante −300,00 CUP Faltante detectado
+					496 container RESOLUCIÓN
+						497 text RESOLUCIÓN
+					498 container
+						499 text Rechazada Marta Sánchez · 19 oct 2026 · 17:38
+				500 link Description: Ver solicitud: Diferencia de cierre, Caja 01, Carlos Díaz, 18 oct 2026 · 17:38, Value: staging.puntocash.co/admin/approvals/13838797-58a3-48c1-8a99-ec1975c62651
+		419 container
+			420 text Mostrando 1 – 5 de 5 solicitudes
+		314 container Navegación de administración
+			315 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			316 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			317 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			318 button Más
+
+The focused UI element is 326 link Description: Resueltas 5, URL: staging.puntocash.co/admin/approvals?tab=resolved

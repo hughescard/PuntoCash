@@ -1,0 +1,73 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/shifts".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/shifts
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		309 combo box (collapsed) Description: Sede que estás viendo, Value: VED — PuntoCash Vedado, Secondary Actions: Expand
+			310 text VED — PuntoCash Vedado
+		8 container
+			9 heading Jornadas, Value: 1
+				10 text Jornadas
+			11 text El día de trabajo de cada caja: quién la abrió, qué movió y cómo cerró.
+		12 container
+			13 text 3 cajas siguen abiertas de un día anterior
+			14 content list
+				18 container
+					19 link Description: Caja 01 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/2c6d5e7f-8d21-408a-b0cf-56f46e6297f9
+					20 text (abierta por Lidia Gómez el 24 oct 2026)
+				24 container
+					25 link Description: Caja 02 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/e837b825-27cc-47c5-9ac5-9897647d24eb
+					26 text (abierta por Juan Pérez el 24 oct 2026)
+				311 container
+					312 link Description: Caja 03 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/58346286-e250-4590-b79d-8553bb15b751
+					313 text (abierta por Alberto Fonseca el 24 oct 2026)
+			30 text Si nadie va a hacer su cierre, puedes forzarlo desde la jornada.
+		31 button (expanded) Filtros, Secondary Actions: Collapse
+		32 container shifts-filters
+			33 text Desde
+			34 date field (settable) Desde, Value: 2026-10-23, ID: shifts-from
+				35 container
+					36 stepper
+					37 stepper
+					38 stepper
+				39 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			40 text Hasta
+			41 date field (settable) Hasta, Value: 2026-10-29, ID: shifts-to
+				42 container
+					43 stepper
+					44 stepper
+					45 stepper
+				46 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			47 text Caja
+			48 pop up button (collapsed, settable) Caja, Value: Todas las cajas, ID: shifts-register, Secondary Actions: Expand
+				49 menu
+					50 (selected) Todas las cajas
+					52 Caja 01
+					54 Caja 02
+					56 Caja 03
+					58 Caja 04
+			62 text Trabajador
+			63 pop up button (collapsed, settable) Trabajador, Value: Todos, ID: shifts-worker, Secondary Actions: Expand
+				64 menu
+					65 (selected) Todos
+					66 Alberto Fonseca
+					69 Juan Pérez
+					70 Lidia Gómez
+			72 text Estado
+			73 pop up button (collapsed, settable) Estado, Value: Cerradas, ID: shifts-state, Secondary Actions: Expand
+				74 menu
+					75 Todas
+					76 Abiertas
+					77 (selected) Cerradas
+					78 Cierres forzados
+			79 checkbox (settable, integer) Description: Solo con diferencia, Value: 1
+		314 text Ninguna jornada coincide con esos filtros.
+		315 button Quitar los filtros
+		304 container Navegación de administración
+			305 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			306 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			307 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			308 button Más
+
+The focused UI element is 309 combo box (collapsed) Description: Sede que estás viendo, Value: VED — PuntoCash Vedado, Secondary Actions: Expand

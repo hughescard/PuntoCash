@@ -1,0 +1,23 @@
+{
+  "dpr": 2,
+  "fecha": "2026-10-29T19:44:57.106Z",
+  "height": 720,
+  "scripts": [
+    "https://staging.puntocash.co/_next/static/chunks/7a50d05c-0419a75bed495da7.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/850-e88a121d9a1dcc48.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/main-app-021f7e23bd95b56f.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/5305-3545e5cbc504dc1d.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/3444-53e6b8aa09b59f8d.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/641-909c467db7616dca.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/app/layout-0d3dad1158ba723b.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/9202-ff1e5dd49358d716.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/7613-c84d3cdd16302fce.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/app/worker/layout-24ad7758b4aabc5d.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/4827-812b79f211f19a00.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/app/worker/login/page-ad61c0a5c4197d76.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/polyfills-42372ed130431b0a.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/webpack-3ce2085e50b281fa.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW"
+  ],
+  "url": "https://staging.puntocash.co/worker/login",
+  "width": 1280
+}

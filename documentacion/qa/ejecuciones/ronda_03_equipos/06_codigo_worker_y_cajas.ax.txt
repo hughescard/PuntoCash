@@ -1,0 +1,49 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/devices/link".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices/link
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		325 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			326 text OBI — PuntoCash Obispo
+		327 container
+			328 heading Vincular un equipo, Value: 1
+				329 text Vincular un equipo
+			330 text Identifica el equipo por su QR o su código de seis cifras, y elige a qué se ata.
+			331 link Description: Volver a Equipos, Value: staging.puntocash.co/admin/devices
+		332 container
+			333 text EQUIPO IDENTIFICADO 4EB448
+			334 button Cambiar de equipo
+			335 container Tipo de equipo*
+				336 container
+					337 text Tipo de equipo *
+				338 radio button (settable, integer) Description: Equipo de caja, Value: 1
+				339 radio button (settable, integer) Description: Kiosco de autoservicio, Value: 0
+			340 text Sede
+			341 pop up button (collapsed, settable) Sede, Value: PuntoCash Obispo, ID: link-branch, Secondary Actions: Expand
+				342 menu
+					343 Elige una sede
+					344 PuntoCash Cerro
+					345 (selected) PuntoCash Obispo
+					346 PuntoCash Vedado
+			347 text Solo aparecen las sedes que administras.
+			348 text Caja
+			349 pop up button (collapsed, settable) Caja, Value: Elige una caja, ID: link-register, Secondary Actions: Expand
+				350 menu
+					351 (selected) Elige una caja
+					357 (disabled) Caja 01 · ya tiene CAJ-0002-0001
+					358 Caja 02
+					359 (disabled) Caja 03 · ya tiene CAJ-0002-0003
+					360 Caja 04
+			352 text Una caja admite un solo equipo a la vez.
+			353 text Etiqueta
+			354 text field (settable) Etiqueta, ID: link-label
+			355 text Opcional. Si la dejas vacía se usa el nombre de la caja.
+			356 button Vincular el equipo
+		138 container Navegación de administración
+			139 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			140 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			141 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			142 button Más
+
+The focused UI element is 0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices/link

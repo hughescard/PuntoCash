@@ -1,0 +1,42 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/shifts/8965a5c0-fe87-4ff3-9048-7e349e5698df/movements/d5b87179-c227-4d0b-a2f2-9cf7df07d8ce".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/shifts/8965a5c0-fe87-4ff3-9048-7e349e5698df/movements/d5b87179-c227-4d0b-a2f2-9cf7df07d8ce
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		60 container
+			61 heading Ajuste de efectivo, Value: 1
+				62 text Ajuste de efectivo
+			63 text Caja 01 · Juan Pérez · 23 oct 2026 · 23 oct 2026
+			64 link Description: Volver a la jornada, Value: staging.puntocash.co/admin/shifts/8965a5c0-fe87-4ff3-9048-7e349e5698df#movements
+		65 definition list
+			66 container FECHA Y HORA
+				67 text FECHA Y HORA
+			68 text 23 oct 2026 · 13:11
+			69 container TIPO
+				70 text TIPO
+			71 text Salida
+			72 container IMPORTE
+				73 text IMPORTE
+			74 text −5,00 EUR
+			75 container SALDO DESPUÉS
+				76 text SALDO DESPUÉS
+			77 text 695,00 EUR
+			78 container OPERACIÓN
+				79 text OPERACIÓN
+			80 text Movimiento interno de caja
+			81 container MOTIVO
+				82 text MOTIVO
+			83 text Otro
+			84 container OBSERVACIONES
+				85 text OBSERVACIONES
+			86 text Error al dar el cambio a un cliente
+		55 container Navegación de administración
+			56 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			57 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			58 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			59 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/shifts/8965a5c0-fe87-4ff3-9048-7e349e5698df/movements/d5b87179-c227-4d0b-a2f2-9cf7df07d8ce

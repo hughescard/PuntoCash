@@ -1,0 +1,62 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/approvals/20e14118-0921-444c-ba2c-5094b2c2261d".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals/20e14118-0921-444c-ba2c-5094b2c2261d
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		8 container
+			9 heading Ajuste de efectivo, Value: 1
+				10 text Ajuste de efectivo
+			11 text Jornada Caja 01 · Juan Pérez · 23 oct 2026 · PuntoCash Vedado Pendiente
+			12 link Description: Volver a Aprobaciones, Value: staging.puntocash.co/admin/approvals
+		13 container
+			14 heading Lo que registró el trabajador, Value: 2
+				15 text Lo que registró el trabajador
+			16 definition list
+				17 container FECHA Y HORA
+					18 text FECHA Y HORA
+				19 text 23 oct 2026 · 13:11
+				20 container TRABAJADOR
+					21 text TRABAJADOR
+				22 link Description: Juan Pérez, Value: staging.puntocash.co/admin/workers/33e4c604-9598-426c-9fe0-2ba24678f671
+				23 container JORNADA
+					24 text JORNADA
+				25 container
+					26 link Description: Caja 01 · Juan Pérez · 23 oct 2026, Value: staging.puntocash.co/admin/shifts/8965a5c0-fe87-4ff3-9048-7e349e5698df
+					27 text Cerrada
+				28 container MONEDA
+					29 text MONEDA
+				30 text EUR
+				31 container SALDO REGISTRADO
+					32 text SALDO REGISTRADO
+				33 text 700,00
+				34 container CONTADO
+					35 text CONTADO
+				36 text 695,00
+				37 container DIFERENCIA
+					38 text DIFERENCIA
+				39 text Diferencia −5,00 EUR
+				40 container MOTIVO DEL TRABAJADOR
+					41 text MOTIVO DEL TRABAJADOR
+				42 text Otro
+				43 container OBSERVACIONES
+					44 text OBSERVACIONES
+				45 text Error al dar el cambio a un cliente
+				46 container MOVIMIENTO
+					47 text MOVIMIENTO
+				48 link Description: Ver el movimiento, Value: staging.puntocash.co/admin/shifts/8965a5c0-fe87-4ff3-9048-7e349e5698df#movements
+		49 container
+			50 heading Resolución, Value: 2
+				51 text Resolución
+			52 text Pendiente hace 5 días.
+			53 button Aprobar
+			54 button Rechazar
+		55 container Navegación de administración
+			56 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			57 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			58 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			59 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals/20e14118-0921-444c-ba2c-5094b2c2261d

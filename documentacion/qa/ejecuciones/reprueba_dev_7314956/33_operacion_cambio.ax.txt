@@ -1,0 +1,78 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/operations/PC-261023-000048".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/operations/PC-261023-000048
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		319 container
+			320 heading Operación PC-261023-000048, Value: 1
+				321 text Operación PC-261023-000048
+			322 text Cambio de moneda · 23 oct 2026 · 16:16 Completada
+			323 link Description: Volver a Operaciones, Value: staging.puntocash.co/admin/operations
+		324 container
+			325 heading Contexto de la operación, Value: 2
+				326 text Contexto de la operación
+			327 definition list
+				328 container SEDE
+					329 text SEDE
+				330 text PuntoCash Obispo
+				331 container CAJA
+					332 text CAJA
+				333 text Caja 03 · Mostrador 3 · Obispo
+				334 container TRABAJADOR
+					335 text TRABAJADOR
+				336 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				337 container JORNADA
+					338 text JORNADA
+				339 container
+					340 link Description: Caja 03 · Carlos Díaz · 23 oct 2026, Value: staging.puntocash.co/admin/shifts/bd694aae-3b34-4c67-b554-822b6e6906ff
+					341 text Cerrada
+				342 container ORIGEN
+					343 text ORIGEN
+				344 text En el mostrador
+		345 container
+			346 heading La operación, Value: 2
+				347 text La operación
+			348 heading Cliente, Value: 3
+				349 text Cliente
+			350 definition list
+				351 container Nombre
+					352 text Nombre
+				353 text Rolando Suárez
+				354 container Documento
+					355 text Documento
+				356 text CI · 82121956789
+				357 container Teléfono
+					358 text Teléfono
+				359 text +53 5 210 0005
+				360 container Nacionalidad
+					361 text Nacionalidad
+				362 text Cuba
+			363 heading Detalle del servicio, Value: 3
+				364 text Detalle del servicio
+			365 text Cliente entrega 43.800,00 CUP Peso cubano Cliente recibe 120,00 EUR Euro
+			366 text Tasa aplicada 1 CUP = 0,0027 EUR
+			367 heading Estado de la operación, Value: 3
+				368 text Estado de la operación
+			369 text La operación se procesó correctamente.
+			370 heading Estado de caja, Value: 3
+				371 text Estado de caja
+			372 definition list
+				373 container Disponible antes
+					374 text Disponible antes
+				375 text 880,00 EUR
+				376 container Entregado al cliente
+					377 text Entregado al cliente
+				378 text 120,00 EUR
+				379 container Disponible después
+					380 text Disponible después
+				381 text 760,00 EUR
+		314 container Navegación de administración
+			315 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			316 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			317 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			318 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/operations/PC-261023-000048

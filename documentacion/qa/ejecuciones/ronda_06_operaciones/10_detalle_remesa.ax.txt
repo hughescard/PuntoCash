@@ -1,0 +1,107 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/operations/PC-261023-000033".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/operations/PC-261023-000033
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			6 text Todas mis sedes
+		318 container
+			319 heading Operación PC-261023-000033, Value: 1
+				320 text Operación PC-261023-000033
+			321 text Remesa · 23 oct 2026 · 14:16 Completada
+			322 link Description: Volver a Operaciones, Value: staging.puntocash.co/admin/operations
+		323 container
+			324 heading Contexto de la operación, Value: 2
+				325 text Contexto de la operación
+			326 definition list
+				327 container SEDE
+					328 text SEDE
+				329 text PuntoCash Obispo
+				330 container CAJA
+					331 text CAJA
+				332 text Caja 01 · Mostrador 1 · Obispo
+				333 container TRABAJADOR
+					334 text TRABAJADOR
+				335 link Description: Marisol Rivas, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00
+				336 container JORNADA
+					337 text JORNADA
+				338 container
+					339 link Description: Caja 01 · Marisol Rivas · 23 oct 2026, Value: staging.puntocash.co/admin/shifts/1bcff86f-3b4b-4677-8ae1-bead082b7553
+					340 text Cierre forzado
+				341 container ORIGEN
+					342 text ORIGEN
+				343 text En el mostrador
+		344 container
+			345 heading La operación, Value: 2
+				346 text La operación
+			347 heading Beneficiario, Value: 3
+				348 text Beneficiario
+			349 definition list
+				350 container Nombre completo
+					351 text Nombre completo
+				352 text Arianna Torres
+				353 container Documento de identidad
+					354 text Documento de identidad
+				355 text 93101389012
+			356 heading Operación, Value: 3
+				357 text Operación
+			358 definition list
+				359 container Código de operación
+					360 text Código de operación
+				361 text PC-261023-000033
+				362 container Servicio
+					363 text Servicio
+				364 text Remesa
+				365 container Fecha y hora
+					366 text Fecha y hora
+				367 text 23/10/2026 · 14:16
+				368 container Trabajador
+					369 text Trabajador
+				370 text Marisol Rivas
+				371 container Caja
+					372 text Caja
+				373 text Caja 01
+			374 heading Remesa, Value: 3
+				375 text Remesa
+			376 definition list
+				377 container Código de remesa
+					378 text Código de remesa
+				379 text PRV-3ED7AB61
+				380 container Método de entrega
+					381 text Método de entrega
+				382 text Recogida
+				383 container Importe entregado
+					384 text Importe entregado
+				385 text 170,00 USD
+				386 container Moneda
+					387 text Moneda
+				388 text USD · Dólar estadounidense
+				389 container Estado de la remesa
+					390 text Estado de la remesa
+				391 text Completada
+			392 heading Movimiento de efectivo, Value: 3
+				393 text Movimiento de efectivo
+			394 text Saldo anterior
+			395 text 320,00 USD
+			396 text Salida (Remesa)
+			397 text −170,00 USD
+			398 text Saldo resultante
+			399 text 150,00 USD
+			400 definition list
+				401 container Tipo de movimiento
+					402 text Tipo de movimiento
+				403 text Salida
+				404 container Moneda
+					405 text Moneda
+				406 text USD · Dólar estadounidense
+				407 container Operación vinculada
+					408 text Operación vinculada
+				409 text PC-261023-000033
+		313 container Navegación de administración
+			314 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			315 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			316 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			317 button Más
+
+The focused UI element is 0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/operations/PC-261023-000033

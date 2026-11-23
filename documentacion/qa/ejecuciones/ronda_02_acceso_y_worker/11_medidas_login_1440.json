@@ -1,0 +1,68 @@
+{
+  "staging": {
+    "headings": [
+      {
+        "box": {
+          "height": 90,
+          "width": 576,
+          "x": 64,
+          "y": 432.5
+        },
+        "font": "Montserrat, \"Montserrat Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "lineHeight": "45px",
+        "size": "36px",
+        "text": "Tu sucursal bajo control, en un solo lugar."
+      },
+      {
+        "box": {
+          "height": 37.5,
+          "width": 173.4375,
+          "x": 1029.28125,
+          "y": 231
+        },
+        "font": "Montserrat, \"Montserrat Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "lineHeight": "37.5px",
+        "size": "30px",
+        "text": "Bienvenido"
+      }
+    ],
+    "viewport": {
+      "dpr": 1,
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "demo": {
+    "headings": [
+      {
+        "box": {
+          "height": 72,
+          "width": 576,
+          "x": 64,
+          "y": 441
+        },
+        "font": "Montserrat, \"Montserrat Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "lineHeight": "36px",
+        "size": "28px",
+        "text": "Tu sucursal bajo control, en un solo lugar."
+      },
+      {
+        "box": {
+          "height": 36,
+          "width": 448,
+          "x": 892,
+          "y": 218.5
+        },
+        "font": "Montserrat, \"Montserrat Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "lineHeight": "36px",
+        "size": "28px",
+        "text": "Bienvenido"
+      }
+    ],
+    "viewport": {
+      "dpr": 1,
+      "height": 900,
+      "width": 1440
+    }
+  }
+}

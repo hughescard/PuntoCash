@@ -1,0 +1,59 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/approvals/0b744ff8-9ae4-432b-a9e9-ee7d73556c95".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals/0b744ff8-9ae4-432b-a9e9-ee7d73556c95
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		8 container
+			9 heading Diferencia de cierre, Value: 1
+				10 text Diferencia de cierre
+			11 text Jornada Caja 03 · Carlos Díaz · 23 oct 2026 · PuntoCash Obispo Pendiente
+			12 link Description: Volver a Aprobaciones, Value: staging.puntocash.co/admin/approvals
+		13 container
+			14 heading Lo que registró el trabajador, Value: 2
+				15 text Lo que registró el trabajador
+			16 definition list
+				17 container FECHA Y HORA
+					18 text FECHA Y HORA
+				19 text 23 oct 2026 · 17:36
+				20 container TRABAJADOR
+					21 text TRABAJADOR
+				22 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				23 container JORNADA
+					24 text JORNADA
+				25 container
+					26 link Description: Caja 03 · Carlos Díaz · 23 oct 2026, Value: staging.puntocash.co/admin/shifts/bd694aae-3b34-4c67-b554-822b6e6906ff
+					27 text Cerrada
+				28 container MONEDA
+					29 text MONEDA
+				30 text EUR
+				31 container SALDO ESPERADO
+					32 text SALDO ESPERADO
+				33 text 760,00
+				34 container CONTADO
+					35 text CONTADO
+				36 text 770,00
+				37 container DIFERENCIA
+					38 text DIFERENCIA
+				39 text Sobrante +10,00 EUR
+				40 container MOTIVO DEL TRABAJADOR
+					41 text MOTIVO DEL TRABAJADOR
+				42 text Sobrante detectado
+				43 container MOVIMIENTO
+					44 text MOVIMIENTO
+				45 link Description: Ver el movimiento, Value: staging.puntocash.co/admin/shifts/bd694aae-3b34-4c67-b554-822b6e6906ff/movements/2f3b4554-290a-4332-9539-fa676ea8e9ec
+		46 container
+			47 heading Resolución, Value: 2
+				48 text Resolución
+			49 text Pendiente hace 5 días.
+			50 button Aprobar
+			51 button Rechazar
+		52 container Navegación de administración
+			53 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			54 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			55 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			56 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals/0b744ff8-9ae4-432b-a9e9-ee7d73556c95

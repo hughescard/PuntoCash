@@ -1,0 +1,166 @@
+{
+  "ronda": "01_acceso_admin",
+  "fecha_local": "2026-10-28 America/Havana",
+  "evidencias": [
+    {
+      "archivo": "01_login_vacio.ax.txt",
+      "bytes": 893,
+      "sha256": "92bb453998f8b4ca80ce3a81c165af6d787cb2632bb153aafbc5e2de7fe886b8"
+    },
+    {
+      "archivo": "01_login_vacio.png",
+      "bytes": 30019,
+      "sha256": "b3dedaca70a9a0e0cd63c80c3ce2e3070d1933ae17684c459dc8133cd9cbb47b",
+      "dimensiones_px": [
+        666,
+        628
+      ]
+    },
+    {
+      "archivo": "02_sin_contrasena.png",
+      "bytes": 27582,
+      "sha256": "d5e5a226dc0826f3b95dcf26f0b85fdf459984522cc22412235e901e8e26b38f",
+      "dimensiones_px": [
+        666,
+        628
+      ]
+    },
+    {
+      "archivo": "03_sin_usuario.ax.txt",
+      "bytes": 876,
+      "sha256": "05b4681163142eb54b83f15c790355964ac68deb801bb4ee23137336043ce806"
+    },
+    {
+      "archivo": "03_sin_usuario.png",
+      "bytes": 26981,
+      "sha256": "71e5b8de4fa5453ef9f85e2a21b95af76e5c188c24349cb1c28ba29f496c3627",
+      "dimensiones_px": [
+        666,
+        628
+      ]
+    },
+    {
+      "archivo": "04_clave_incorrecta.ax.txt",
+      "bytes": 1042,
+      "sha256": "d15a5eb95234e4768bddeb35c91e4d17c560205464e9387896cb071b7f08cac5"
+    },
+    {
+      "archivo": "04_clave_incorrecta.png",
+      "bytes": 30213,
+      "sha256": "decb011c593c57de502f7f40f30c9471588602bde32c7398fe8038bc2fd98215",
+      "dimensiones_px": [
+        666,
+        628
+      ]
+    },
+    {
+      "archivo": "05_cuenta_inexistente.ax.txt",
+      "bytes": 1042,
+      "sha256": "d15a5eb95234e4768bddeb35c91e4d17c560205464e9387896cb071b7f08cac5"
+    },
+    {
+      "archivo": "06_cuenta_desactivada.ax.txt",
+      "bytes": 1042,
+      "sha256": "d15a5eb95234e4768bddeb35c91e4d17c560205464e9387896cb071b7f08cac5"
+    },
+    {
+      "archivo": "07_verificacion.ax.txt",
+      "bytes": 839,
+      "sha256": "592a54da1ccf2a42a9f849ead10d3258d2a1ee37ec4351dc0d110456c72c7795"
+    },
+    {
+      "archivo": "07_verificacion.png",
+      "bytes": 36288,
+      "sha256": "597b34fd2acaa1594d725d660b9fb20ab329d048fb27acee8c719297853f27eb",
+      "dimensiones_px": [
+        868,
+        818
+      ]
+    },
+    {
+      "archivo": "08_inicio_admin.ax.txt",
+      "bytes": 7477,
+      "sha256": "5067ce0a88b3d3b735a1761fe722668edc7fb473ee5917f83e5733c6c41f50f2"
+    },
+    {
+      "archivo": "08_inicio_admin.png",
+      "bytes": 72567,
+      "sha256": "4770ed6da1a7cb3d7e1ef26c35fe6629b97df399eb92f7d84f534bf6afda1816",
+      "dimensiones_px": [
+        1309,
+        818
+      ]
+    },
+    {
+      "archivo": "09_cierre_sesion.ax.txt",
+      "bytes": 1063,
+      "sha256": "c51f103eaeca3e93e93b30b070eca0bfb7532e67a19e97476ad5a18948ca6818"
+    },
+    {
+      "archivo": "10_inicio_sin_sesion.ax.txt",
+      "bytes": 1064,
+      "sha256": "16084a313c1ea67c299911841eb8296474ad5e998fc362a382f4bf120f9ffd1b"
+    },
+    {
+      "archivo": "11_verificacion_sin_reto.ax.txt",
+      "bytes": 1064,
+      "sha256": "16084a313c1ea67c299911841eb8296474ad5e998fc362a382f4bf120f9ffd1b"
+    },
+    {
+      "archivo": "11_verificacion_sin_reto.png",
+      "bytes": 45628,
+      "sha256": "0e1e350e55b373948260bc5e718e79d37528a362a143c1eae907a8a1274da015",
+      "dimensiones_px": [
+        1309,
+        818
+      ]
+    },
+    {
+      "archivo": "12_recuperacion_vacia.ax.txt",
+      "bytes": 1133,
+      "sha256": "9e5ceca1c6c80e39d49f2645e71cc25dfbdd35db6b7abe8cc953c2c5d960d94f"
+    },
+    {
+      "archivo": "12_recuperacion_vacia.png",
+      "bytes": 50172,
+      "sha256": "150b0860f4706b45a61ead23a9c05e925060d4dcd88efd72d0a66f043e0f247e",
+      "dimensiones_px": [
+        1309,
+        818
+      ]
+    },
+    {
+      "archivo": "13_recuperacion_existente.ax.txt",
+      "bytes": 1124,
+      "sha256": "1e4f8519348b2c533f6a87f2da36abc05686f0172e7852c2591db98cf5b15a8c"
+    },
+    {
+      "archivo": "13_recuperacion_existente.png",
+      "bytes": 46524,
+      "sha256": "3cbd8988eeffa2048ec4d7be56a210ec434205cb10ee91fdee6405e25d9c1ea2",
+      "dimensiones_px": [
+        1309,
+        818
+      ]
+    },
+    {
+      "archivo": "14_recuperacion_inexistente.ax.txt",
+      "bytes": 1105,
+      "sha256": "eed5cf8c056aa0f4b72b63716a5de9a056183d457121b7e6c0601bf5e30b0433"
+    },
+    {
+      "archivo": "14_recuperacion_inexistente.png",
+      "bytes": 46806,
+      "sha256": "cf32d8f3b4e3e2793d18f7d547389354502e957cabd4598495aefe4c21518eb0",
+      "dimensiones_px": [
+        1309,
+        818
+      ]
+    },
+    {
+      "archivo": "INFORME.md",
+      "bytes": 8597,
+      "sha256": "0c52e26e2ad0d51ce18ce79cf1d075ff1502a749136c69e0773bd234735e390f"
+    }
+  ]
+}

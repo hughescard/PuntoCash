@@ -12,10 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui";
-import type { Branch } from "@/features/branches/branches";
-import { clearSignageBranch, setSignageBranch, useSignageBranch } from "@/features/kiosk/signage-branch";
+import { clearSignageBranch, setSignageBranch, useSignageBranchId } from "@/features/kiosk/signage-branch";
 import { BranchPicker } from "./branch-picker";
 import { SignageCarousel } from "./signage-carousel";
+import { SlideHeading } from "./slides/slide-tasas";
+import { useSedes, type SedePublica } from "./tableros";
 
 /**
  * Keys that mean "back" on the hardware this screen runs on: Esc on a
@@ -32,13 +33,24 @@ const CONFIRM_TIMEOUT_MS = 20_000;
  * signage carousel (Pantalla FRD §1.1).
  */
 export function SignageScreen(): React.JSX.Element | null {
-  const branch = useSignageBranch();
+  const id = useSignageBranchId();
+  const sedes = useSedes();
 
   // Not hydrated yet: render nothing rather than flash the picker on a
   // screen that already has a sede.
-  if (branch === undefined) return null;
-  if (branch === null) return <BranchPicker onSelect={(chosen) => setSignageBranch(chosen.id)} />;
-  return <ConfiguredSignage branch={branch} />;
+  if (id === undefined) return null;
+  const sede = id ? sedes.find((s) => s.id === id) : undefined;
+  /* La sede que eligió ya no está en la red (cerró): vuelve el selector, y
+     dice por qué, para quien la vea en la sala. */
+  if (!sede) {
+    return (
+      <BranchPicker
+        aviso={id ? "La sede que mostraba esta pantalla ya no está disponible. Elige otra." : null}
+        onSelect={(chosen) => setSignageBranch(chosen.id)}
+      />
+    );
+  }
+  return <ConfiguredSignage sede={sede} />;
 }
 
 /**
@@ -46,7 +58,7 @@ export function SignageScreen(): React.JSX.Element | null {
  * Atrás on the remote, Esc on a keyboard, or the browser's own back — then
  * a confirmation, so a stray press never blanks a working screen.
  */
-function ConfiguredSignage({ branch }: { branch: Branch }): React.JSX.Element {
+function ConfiguredSignage({ sede }: { sede: SedePublica }): React.JSX.Element {
   const [confirming, setConfirming] = React.useState(false);
 
   React.useEffect(() => {
@@ -81,14 +93,14 @@ function ConfiguredSignage({ branch }: { branch: Branch }): React.JSX.Element {
 
   return (
     <>
-      <SignageCarousel branch={branch} />
+      {sede.atiende ? <SignageCarousel sede={sede} /> : <SedeSinAtender sede={sede} />}
 
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent size="md" hideClose>
           <DialogHeader className="pr-6">
             <DialogTitle>¿Cambiar la sede de esta pantalla?</DialogTitle>
             <DialogDescription>
-              Ahora muestra la información de {branch.name}.
+              Ahora muestra la información de {sede.name}.
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
@@ -113,5 +125,23 @@ function ConfiguredSignage({ branch }: { branch: Branch }): React.JSX.Element {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/**
+ * Una sede que no está atendiendo —suspendida, sin mercante o con el
+ * mercante suspendido— no anuncia tasas ni promociones: nadie podría
+ * aplicarlas. La pantalla lo dice, sin explicar el motivo, que no es asunto
+ * del cliente, y vuelve sola al carrusel en cuanto la sede atiende (el
+ * refresco de los tableros trae el cambio).
+ */
+function SedeSinAtender({ sede }: { sede: SedePublica }): React.JSX.Element {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
+      <SlideHeading eyebrow={sede.name} title="En este momento no estamos atendiendo" />
+      <p className="mt-[1.25em] max-w-[36em] text-[1.25em] leading-snug text-text-on-primary-muted">
+        Disculpa las molestias. Puedes consultar otras sucursales de PuntoCash.
+      </p>
+    </div>
   );
 }

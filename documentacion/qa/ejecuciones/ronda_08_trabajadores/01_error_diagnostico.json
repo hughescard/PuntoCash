@@ -1,0 +1,8 @@
+[
+  {
+    "level": "error",
+    "message": "ChunkLoadError: Loading chunk 3444 failed.\n(error: https://staging.puntocash.co/_next/static/chunks/3444-53e6b8aa09b59f8d.js?dpl=dpl_BCps6kDfiw8Qi5dS9QbaibuTPnJs)\n    at r.f.j (https://staging.puntocash.co/_next/static/chunks/webpack-3ce2085e50b281fa.js?dpl=dpl_BCps6kDfiw8Qi5dS9QbaibuTPnJs:1:2833)\n    at https://staging.puntocash.co/_next/static/chunks/webpack-3ce2085e50b281fa.js?dpl=dpl_BCps6kDfiw8Qi5dS9QbaibuTPnJs:1:1226\n    at Array.reduce (<anonymous>)\n    at r.e (https://staging.puntocash.co/_next/static/chunks/webpack-3ce2085e50b281fa.js?dpl=dpl_BCps6kDfiw8Qi5dS9QbaibuTPnJs:1:1205)\n    at c (https://staging.puntocash.co/_next/static/chunks/850-e42823d5495168c6.js?dpl=dpl_BCps6kDfiw8Qi5dS9QbaibuTPnJs:1:73307)\n    at https://staging.puntocash.co/_next/static/chunks/850-e42823d5495168c6.js?dpl=dpl_BCps6kDfiw8Qi5dS9QbaibuTPnJs:1:88227\n    at t (https://staging.puntocash.co/_next/static/chunks/850-e42823d5495168c6.js?dpl=dpl_BCps6kDfiw8Qi5dS9QbaibuTPnJs:1:89685)",
+    "timestamp": "2026-10-29T18:08:11.013Z",
+    "url": "https://staging.puntocash.co/_next/static/chunks/webpack-3ce2085e50b281fa.js?dpl=dpl_BCps6kDfiw8Qi5dS9QbaibuTPnJs"
+  }
+]

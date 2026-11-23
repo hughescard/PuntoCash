@@ -21,14 +21,17 @@ import {
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 import {
-  findSelfServiceRequestByCode,
   kioskClientFullName,
-  markSelfServiceRequestConsumed,
   setPendingWorkerHandoff,
   type KioskRequest,
   type KioskRequestService,
-  type SelfServiceLookupResult,
 } from "@/features/kiosk/self-service-request";
+import type { MotivoDeSolicitudNoValida } from "@/features/network/solicitudes-de-kiosco";
+import {
+  canjearSolicitudDeKioscoAction,
+  consultarSolicitudDeKioscoAction,
+  type SolicitudDeKioscoLeida,
+} from "../../../_actions";
 
 const CATALOG_ROUTE = "/worker/nueva-operacion";
 
@@ -51,7 +54,7 @@ const TARGET: Record<KioskRequestService, { label: string; route: Route }> = {
 const NEXT_STEP: Record<KioskRequestService, { title: string; body: string }> = {
   "cambio-moneda": {
     title: "Verifica el documento del cliente",
-    body: "La tasa se recalcula al continuar. El cliente se busca automáticamente: compara su documento y selecciónalo.",
+    body: "Al continuar se cotiza con la tasa de ahora y pasas directo a identificar al cliente: compara su documento y selecciónalo. Después, el efectivo.",
   },
   remesas: {
     title: "Verifica la identidad del beneficiario",
@@ -59,7 +62,7 @@ const NEXT_STEP: Record<KioskRequestService, { title: string; body: string }> = 
   },
   "giros-enviar": {
     title: "Identifica al remitente y recibe el efectivo",
-    body: "Comprueba el documento del remitente y selecciónalo. El resto del giro ya está completo: cobra el importe y confirma el envío.",
+    body: "Comprueba el documento del remitente y selecciónalo. El resto del giro ya está completo: pasas directo a cobrar el efectivo con la tarifa de ahora.",
   },
   "giros-cobrar": {
     title: "Compara el carné con la persona",
@@ -67,18 +70,24 @@ const NEXT_STEP: Record<KioskRequestService, { title: string; body: string }> = 
   },
 };
 
-const LOOKUP_ERROR: Record<Exclude<SelfServiceLookupResult, { ok: true }>["reason"], { title: string; body: string }> = {
-  "not-found": {
+const LOOKUP_ERROR: Record<MotivoDeSolicitudNoValida, { title: string; body: (sede?: string) => string }> = {
+  "no-encontrada": {
     title: "Código no encontrado",
-    body: "Verifica el código con el cliente. Los códigos de kiosco empiezan por KS-.",
+    body: () => "Verifica el código con el cliente. Los códigos de kiosco empiezan por KS-.",
   },
-  expired: {
+  "otra-sede": {
+    title: "Esta solicitud es de otra sucursal",
+    body: (sede) =>
+      `Se preparó en el kiosco de ${sede ?? "otra sucursal"} y solo se atiende allí. Puedes iniciar la operación manualmente.`,
+  },
+  vencida: {
     title: "Esta solicitud ya venció",
-    body: "Las solicitudes caducan a los 30 minutos. El cliente puede generar una nueva en el kiosco o puedes iniciar la operación manualmente.",
+    body: () =>
+      "Las solicitudes caducan a los 30 minutos. El cliente puede generar una nueva en el kiosco o puedes iniciar la operación manualmente.",
   },
-  consumed: {
+  usada: {
     title: "Esta solicitud ya fue utilizada",
-    body: "Este código ya fue atendido en caja y no puede usarse de nuevo.",
+    body: () => "Este código ya fue atendido en caja y no puede usarse de nuevo.",
   },
 };
 
@@ -88,15 +97,17 @@ const LOOKUP_ERROR: Record<Exclude<SelfServiceLookupResult, { ok: true }>["reaso
  * already prepared, and continues into the matching operation with that data
  * prefilled, so nothing is typed twice.
  *
- * Continuing marks the request as used (one code, one counter visit) and
- * hands the data to the target flow in memory; that flow still runs every one
- * of its own checks (jornada, cash, provider confirmation).
+ * Solo encuentra solicitudes preparadas en un kiosco de la sede de esta caja.
+ * Continuar la gasta en la red (un código, una visita a caja) y pasa los datos
+ * al flujo de destino en memoria; ese flujo sigue haciendo todas sus
+ * comprobaciones (jornada, efectivo, confirmación del proveedor).
  */
 export function SolicitudFlow(): React.JSX.Element {
   const router = useRouter();
   const [code, setCode] = React.useState("");
   const [searching, setSearching] = React.useState(false);
-  const [result, setResult] = React.useState<SelfServiceLookupResult | null>(null);
+  const [result, setResult] = React.useState<SolicitudDeKioscoLeida | null>(null);
+  const [continuing, setContinuing] = React.useState(false);
 
   async function search(event: React.FormEvent) {
     event.preventDefault();
@@ -104,20 +115,28 @@ export function SolicitudFlow(): React.JSX.Element {
     if (!entered || searching) return;
     setSearching(true);
     setResult(null);
-    // Simulated round trip, so the loading state is observable.
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setResult(findSelfServiceRequestByCode(entered));
+    setResult(await consultarSolicitudDeKioscoAction(entered));
     setSearching(false);
   }
 
-  function continueWith(request: KioskRequest) {
-    markSelfServiceRequestConsumed(request.code);
-    setPendingWorkerHandoff(request);
-    router.push(TARGET[request.service].route);
+  /* Al continuar se gasta en la red, y se vuelve a comprobar: si entretanto
+     venció o la atendió otra caja, se dice aquí en vez de abrir el flujo. */
+  async function continueWith(request: KioskRequest) {
+    if (continuing) return;
+    setContinuing(true);
+    const canje = await canjearSolicitudDeKioscoAction(request.code);
+    if (!canje.ok) {
+      setResult(canje);
+      setContinuing(false);
+      return;
+    }
+    setPendingWorkerHandoff(canje.solicitud);
+    router.push(TARGET[canje.solicitud.service].route);
   }
 
-  const found = result?.ok ? result.request : null;
-  const error = result && !result.ok ? LOOKUP_ERROR[result.reason] : null;
+  const found = result?.ok ? result.solicitud : null;
+  const error = result && !result.ok ? LOOKUP_ERROR[result.motivo] : null;
+  const errorBody = result && !result.ok ? error?.body(result.sede) : null;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -157,22 +176,26 @@ export function SolicitudFlow(): React.JSX.Element {
 
           {error ? (
             <Alert id="kiosk-request-error" variant="error" title={error.title} className="mt-4">
-              {error.body}
+              {errorBody}
             </Alert>
           ) : null}
         </CardContent>
       </Card>
 
-      {found ? <RequestSummary request={found} onContinue={() => continueWith(found)} /> : null}
+      {found ? (
+        <RequestSummary request={found} continuing={continuing} onContinue={() => void continueWith(found)} />
+      ) : null}
     </div>
   );
 }
 
 function RequestSummary({
   request,
+  continuing,
   onContinue,
 }: {
   request: KioskRequest;
+  continuing: boolean;
   onContinue: () => void;
 }): React.JSX.Element {
   const target = TARGET[request.service];
@@ -214,7 +237,7 @@ function RequestSummary({
       </Alert>
 
       <div className="flex justify-end">
-        <Button onClick={onContinue}>
+        <Button onClick={onContinue} loading={continuing}>
           Continuar con {target.label.toLowerCase()}
           <ArrowRight aria-hidden="true" />
         </Button>
@@ -226,15 +249,19 @@ function RequestSummary({
 function summaryRows(request: KioskRequest): [string, string][] {
   switch (request.service) {
     case "cambio-moneda": {
-      const { quote, client } = request.data;
+      const { quote, client, modo, importePedido } = request.data;
+      const entrega = formatMoney({ amount: quote.sourceAmount, currency: quote.sourceCurrency });
+      const recibe = formatMoney({
+        amount: modo === "recibir" ? (importePedido ?? quote.destinationAmount) : quote.destinationAmount,
+        currency: quote.destinationCurrency,
+      });
+      /* Lo que el cliente fijó es lo que se mantiene al volver a cotizar; lo
+         otro sale de la tasa del momento. */
       return [
         ["Cliente", kioskClientFullName(client)],
         ["Documento", client.documentNumber],
-        ["Cliente entrega", formatMoney({ amount: quote.sourceAmount, currency: quote.sourceCurrency })],
-        [
-          "Cliente recibe (referencial)",
-          formatMoney({ amount: quote.destinationAmount, currency: quote.destinationCurrency }),
-        ],
+        modo === "recibir" ? ["Quiere recibir", recibe] : ["Cliente entrega", entrega],
+        modo === "recibir" ? ["Entregaría (con la tasa del kiosco)", entrega] : ["Recibiría (con la tasa del kiosco)", recibe],
       ];
     }
     case "remesas": {
@@ -246,7 +273,8 @@ function summaryRows(request: KioskRequest): [string, string][] {
       ];
     }
     case "giros-enviar": {
-      const { sender, beneficiary, senderCurrency, deliveryAmount } = request.data;
+      const { sender, beneficiary, senderCurrency, deliveryAmount, cotizacion } = request.data;
+      const m = (amount: number) => formatMoney({ amount, currency: senderCurrency });
       const province = findProvince(beneficiary.receiverProvince)?.label ?? beneficiary.receiverProvince;
       const municipality =
         findMunicipality(beneficiary.receiverProvince, beneficiary.receiverMunicipality)?.label ??
@@ -256,7 +284,12 @@ function summaryRows(request: KioskRequest): [string, string][] {
         ["Documento del remitente", sender.documentNumber],
         ["Beneficiario", beneficiary.receiverName],
         ["Provincia / Municipio", `${province} / ${municipality}`],
-        ["Importe a enviar", formatMoney({ amount: deliveryAmount, currency: senderCurrency })],
+        ...((cotizacion
+          ? [
+              ["Recibe el beneficiario", m(cotizacion.giro)],
+              ["Total a entregar (con la tarifa del kiosco)", m(cotizacion.total)],
+            ]
+          : [["Importe a enviar", m(deliveryAmount)]]) as [string, string][]),
       ];
     }
     case "giros-cobrar": {

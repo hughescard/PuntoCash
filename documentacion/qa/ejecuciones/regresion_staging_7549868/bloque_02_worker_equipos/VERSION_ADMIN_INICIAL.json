@@ -1,0 +1,27 @@
+{
+  "dpr": 2,
+  "fecha": "2026-10-29T19:46:18.074Z",
+  "height": 641,
+  "scripts": [
+    "https://staging.puntocash.co/_next/static/chunks/7a50d05c-0419a75bed495da7.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/850-e88a121d9a1dcc48.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/main-app-021f7e23bd95b56f.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/5305-3545e5cbc504dc1d.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/3444-53e6b8aa09b59f8d.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/641-909c467db7616dca.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/8027-b46e6ab1feba2999.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/app/layout-0d3dad1158ba723b.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/9202-ff1e5dd49358d716.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/7613-c84d3cdd16302fce.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/9502-c68eea4f4fb9d425.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/app/admin/layout-5ac2eb336bd910c7.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/app/admin/%5B...slug%5D/page-62273282fc99b400.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/22-114bc28313b41e4c.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/4417-17cf7188d9511032.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/app/admin/login/page-221c31bee06d7156.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/polyfills-42372ed130431b0a.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW",
+    "https://staging.puntocash.co/_next/static/chunks/webpack-3ce2085e50b281fa.js?dpl=dpl_GsmaTFKmZBpmsst3WBHsMiiuidyW"
+  ],
+  "url": "https://staging.puntocash.co/admin/login",
+  "width": 591
+}

@@ -1,0 +1,312 @@
+{
+  "consultado_utc": "2026-10-29T19:47:35.207Z",
+  "results": [
+    {
+      "id": "e043adcd-87a4-47a7-adaa-8b9c721ac6b0",
+      "updated_at": "2026-10-29T18:01:48.851791Z",
+      "name": "check/Alerts in worker/home",
+      "sequence_id": 31,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "3c318482-5235-4c2d-a2c3-123e0a477782",
+      "updated_at": "2026-10-29T17:58:04.725715Z",
+      "name": "fix/2fa code focus",
+      "sequence_id": 30,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "b01704a9-8425-404f-8ecb-727fef7a236d",
+      "updated_at": "2026-10-29T17:51:26.562272Z",
+      "name": "fix/add promotion in a close seat handle error",
+      "sequence_id": 28,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "ba49978c-e146-4df4-b289-e23b1596e6f6",
+      "updated_at": "2026-10-29T16:55:56.944761Z",
+      "name": "fix/currencies retire error when seat is closed",
+      "sequence_id": 27,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "8054ed50-01f4-4e5b-add6-fee3f4631153",
+      "updated_at": "2026-10-29T16:49:50.729608Z",
+      "name": "change/deactivate modal in user/{id} to respect design",
+      "sequence_id": 26,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "6112eaa3-1f25-492f-b81a-5788a6f02568",
+      "updated_at": "2026-10-29T16:47:29.221662Z",
+      "name": "change/buttons tyle in users/{id} to respect design",
+      "sequence_id": 25,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "ef40d674-8f2b-455b-9630-f2cf2e88b47f",
+      "updated_at": "2026-10-29T16:43:43.139153Z",
+      "name": "change/Modal in change email in user/{id} to respect desing",
+      "sequence_id": 24,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "6c23ea68-ad8d-4aeb-85cd-3d2b7ec10001",
+      "updated_at": "2026-10-29T16:40:04.877817Z",
+      "name": "change/text warning color on users to respect design",
+      "sequence_id": 23,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "e592e9e2-ad40-467d-a633-6b8a843bfdc6",
+      "updated_at": "2026-10-29T16:35:25.434028Z",
+      "name": "change/seat reasign styles on worker/{id} to respect design",
+      "sequence_id": 22,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "0efcfbea-5bb5-495f-9b82-aa45c7afed9d",
+      "updated_at": "2026-10-29T16:32:16.099273Z",
+      "name": "change/Help worker with access to his account styles to respect design",
+      "sequence_id": 21,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "3991d1e2-8f25-4534-b049-ff91f3ca552a",
+      "updated_at": "2026-10-29T16:29:11.879940Z",
+      "name": "fix/devices/link behavior",
+      "sequence_id": 19,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "b9f74fd6-a457-4442-aa8c-b268e7386af5",
+      "updated_at": "2026-10-29T16:29:10.973194Z",
+      "name": "change/styles in admin/devices/link?register={id} to respect design",
+      "sequence_id": 18,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "b6cb8498-b093-4fca-975f-8477a7b4b36a",
+      "updated_at": "2026-10-29T16:20:33.989348Z",
+      "name": "change/styles in unlink modal to respect design and add link to forec shift closes",
+      "sequence_id": 17,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "28e27420-1958-454d-93df-430d4c88ba4d",
+      "updated_at": "2026-10-29T16:16:18.027733Z",
+      "name": "change/text warning color on admin/devices to respect design",
+      "sequence_id": 16,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "a7043d6f-1ada-4a33-905a-cd4b0a73fa62",
+      "updated_at": "2026-10-29T16:11:45.965272Z",
+      "name": "change/retire cash-register modal to respect design on admin/cash-register",
+      "sequence_id": 14,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "b36e07b7-b622-40f0-bc22-b162804c9d67",
+      "updated_at": "2026-10-29T16:06:17.312122Z",
+      "name": "add/Last shift to seat list on shift column",
+      "sequence_id": 13,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "88bfe695-5bbc-4265-b737-852d808a9979",
+      "updated_at": "2026-10-29T16:03:04.400915Z",
+      "name": "change/seat list styles to respet design",
+      "sequence_id": 12,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "d225beef-82ef-4a84-a083-a42d873e3c6a",
+      "updated_at": "2026-10-29T15:57:13.003797Z",
+      "name": "add/cash-register state to operation/{id} type currencies exchange",
+      "sequence_id": 11,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "c56124db-f651-4cbb-8ed7-c626331cd081",
+      "updated_at": "2026-10-29T15:42:47.075733Z",
+      "name": "change/Operation/{id} type remesa style",
+      "sequence_id": 10,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "036497aa-4ed7-4b40-8d31-ed28f801269e",
+      "updated_at": "2026-10-29T15:25:58.646041Z",
+      "name": "change/In labels change the text style on approvals/{id}",
+      "sequence_id": 9,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "a7ea1f13-732b-418b-8b33-ba12b82018b7",
+      "updated_at": "2026-10-29T15:23:30.293491Z",
+      "name": "change/scroll-y on navbar to scroll-y-none to respect design",
+      "sequence_id": 15,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "8c7ae508-4b21-4dfb-b3fe-078bba7d1044",
+      "updated_at": "2026-10-29T15:23:28.760468Z",
+      "name": "add/Link to /admin/shifts/{id}/movements/{id} on approvals/{id}",
+      "sequence_id": 8,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "45e4c2a8-9755-42f5-92fe-ff68ac208cb7",
+      "updated_at": "2026-10-29T15:23:28.043826Z",
+      "name": "add/button to delet filters on admin/approvals when the data is empty",
+      "sequence_id": 7,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "1e0ab88c-699e-4236-a14d-05e2010c1038",
+      "updated_at": "2026-10-29T15:23:27.312181Z",
+      "name": "add/in table movements on shift/{id} add Link to operation/{code} to info in column operation",
+      "sequence_id": 6,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "93787b33-3079-43cd-83c9-66faef88b9dc",
+      "updated_at": "2026-10-29T15:23:26.541983Z",
+      "name": "change/form card create cash-register",
+      "sequence_id": 5,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "05f5933a-8d62-4900-b6ce-93b8dc811452",
+      "updated_at": "2026-10-29T14:06:17.710189Z",
+      "name": "change/operation detail in worker/operaciones/{id} to respect design",
+      "sequence_id": 43,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "998f0c64-27ea-46d0-a3f9-31f5c6270cc0",
+      "updated_at": "2026-10-29T14:01:42.159231Z",
+      "name": "change/send wire money in worker/new-operation/money-transfers/send",
+      "sequence_id": 41,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "183d48a7-789b-4095-8467-ad145992fca5",
+      "updated_at": "2026-10-29T13:55:24.416434Z",
+      "name": "fix/nacionality select need to be a country select with iso3",
+      "sequence_id": 42,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "4340943e-c73c-412e-bf6f-6b235d006f55",
+      "updated_at": "2026-10-29T13:51:23.680597Z",
+      "name": "change/cash adjust on worker/cash-register/adjust-cash to respect design",
+      "sequence_id": 40,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "ec6d9fd3-bdee-4dfc-9bf8-7a271491f00a",
+      "updated_at": "2026-10-29T13:43:07.370613Z",
+      "name": "change/styles in bill wire money to respect design",
+      "sequence_id": 39,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "9728e5d1-5696-4d9c-80cd-706d0ed23f90",
+      "updated_at": "2026-10-29T00:19:55.553636Z",
+      "name": "fix/behavior in initail refund after complete process",
+      "sequence_id": 38,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "16aa0624-fa13-40f0-95b7-157b9564ff93",
+      "updated_at": "2026-10-29T00:18:48.997766Z",
+      "name": "add/error translate in inital-refund",
+      "sequence_id": 37,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "ee35c1f7-0649-421c-93fc-61216fc5577b",
+      "updated_at": "2026-10-29T00:17:22.096256Z",
+      "name": "add/traduction to this error {     \"success\": false,     \"statusCode\": 400,     \"message\": \"Observations are required for CUP when reason is OTHER\" } in worker/cash-register/initial-funding",
+      "sequence_id": 36,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "a3a97c9f-c6fe-4a0f-86e5-16584a0a9d14",
+      "updated_at": "2026-10-29T00:16:22.045897Z",
+      "name": "check/ in worker/cash-register/initial-funding currencies with jumps info",
+      "sequence_id": 35,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "86d39662-2ff0-4b16-8d42-ec19ab196f36",
+      "updated_at": "2026-10-29T00:14:08.949406Z",
+      "name": "check/Currencies in /worker/cash-register/add-currency?returnTo=initial-funding",
+      "sequence_id": 34,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "36862e7d-f1e4-414a-96bc-4169208899e8",
+      "updated_at": "2026-10-28T23:58:00.433247Z",
+      "name": "delete/ In worker home keep only availables cards",
+      "sequence_id": 33,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "6648861d-0f6d-455c-a8c2-f034bbca629a",
+      "updated_at": "2026-10-28T23:54:03.545673Z",
+      "name": "fix/Exchange currency and remmitte flow",
+      "sequence_id": 32,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "f2ca64a4-d861-47c2-af55-c75050a2cd14",
+      "updated_at": "2026-10-28T22:58:51.085102Z",
+      "name": "fix/add promotion backend error 500",
+      "sequence_id": 29,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "12ae0741-53e9-42cf-bed8-38943d34018e",
+      "updated_at": "2026-10-28T22:32:51.092320Z",
+      "name": "fix/in workers the seat filter is repeated is on header and on the view. This appears in stagging and demo so ask to designer.",
+      "sequence_id": 20,
+      "state": "629f2c47-16d6-4955-909d-a917a7449b7d"
+    },
+    {
+      "id": "567ffef9-676f-43d8-bdea-184ed00ae6d1",
+      "updated_at": "2026-10-28T20:07:23.376681Z",
+      "name": "add/forget password to worker",
+      "sequence_id": 2,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "a8292adc-ee25-483e-b504-44ee099a814c",
+      "updated_at": "2026-10-28T18:37:34.775878Z",
+      "name": "change/deactivate worker modal",
+      "sequence_id": 4,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "251cb129-cc4b-40ee-b2ec-c317a806aff8",
+      "updated_at": "2026-10-28T18:20:15.872743Z",
+      "name": "change/back button on detailView and forms",
+      "sequence_id": 3,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    },
+    {
+      "id": "a7fe05ed-aa80-41bd-a07e-18364b924032",
+      "updated_at": "2026-10-28T18:10:05.688265Z",
+      "name": "change/2fa focus login",
+      "sequence_id": 1,
+      "state": "732636ee-ea0c-4d8b-9201-e9b9e19f19bd"
+    }
+  ],
+  "total_count": 43,
+  "count": 43,
+  "next_cursor": "100:1:0",
+  "prev_cursor": "100:-1:1",
+  "next_page_results": false,
+  "prev_page_results": false
+}

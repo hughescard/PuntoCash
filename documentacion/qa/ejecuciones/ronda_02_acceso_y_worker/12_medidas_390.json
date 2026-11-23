@@ -1,0 +1,16 @@
+{
+  "staging": {
+    "dpr": 1,
+    "height": 844,
+    "scrollWidth": 390,
+    "titleSize": "30px",
+    "width": 390
+  },
+  "demo": {
+    "dpr": 1,
+    "height": 844,
+    "scrollWidth": 390,
+    "titleSize": "28px",
+    "width": 390
+  }
+}

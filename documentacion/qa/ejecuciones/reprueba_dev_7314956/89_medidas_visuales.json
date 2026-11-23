@@ -1,0 +1,116 @@
+[
+  {
+    "label": "89_demo_1440",
+    "dpr": 1,
+    "headings": [
+      {
+        "font": "28px",
+        "text": "Tu sucursal bajo control, en un solo lugar."
+      },
+      {
+        "font": "28px",
+        "text": "Bienvenido"
+      }
+    ],
+    "height": 900,
+    "logoText": [
+      true
+    ],
+    "width": 1440
+  },
+  {
+    "label": "90_staging_1440",
+    "dpr": 1,
+    "headings": [
+      {
+        "font": "36px",
+        "text": "Tu sucursal bajo control, en un solo lugar."
+      },
+      {
+        "font": "30px",
+        "text": "Bienvenido"
+      }
+    ],
+    "height": 900,
+    "logoText": [
+      true
+    ],
+    "width": 1440
+  },
+  {
+    "label": "91_demo_390",
+    "dpr": 1,
+    "headings": [
+      {
+        "font": "28px",
+        "text": "Tu sucursal bajo control, en un solo lugar."
+      },
+      {
+        "font": "28px",
+        "text": "Bienvenido"
+      }
+    ],
+    "height": 844,
+    "logoText": [
+      true
+    ],
+    "width": 390
+  },
+  {
+    "label": "92_staging_390",
+    "dpr": 1,
+    "headings": [
+      {
+        "font": "36px",
+        "text": "Tu sucursal bajo control, en un solo lugar."
+      },
+      {
+        "font": "30px",
+        "text": "Bienvenido"
+      }
+    ],
+    "height": 844,
+    "logoText": [
+      false
+    ],
+    "width": 390
+  },
+  {
+    "label": "93_demo_360",
+    "dpr": 1,
+    "headings": [
+      {
+        "font": "28px",
+        "text": "Tu sucursal bajo control, en un solo lugar."
+      },
+      {
+        "font": "28px",
+        "text": "Bienvenido"
+      }
+    ],
+    "height": 800,
+    "logoText": [
+      true
+    ],
+    "width": 360
+  },
+  {
+    "label": "94_staging_360",
+    "dpr": 1,
+    "headings": [
+      {
+        "font": "36px",
+        "text": "Tu sucursal bajo control, en un solo lugar."
+      },
+      {
+        "font": "30px",
+        "text": "Bienvenido"
+      }
+    ],
+    "height": 800,
+    "logoText": [
+      false
+    ],
+    "width": 360
+  }
+]

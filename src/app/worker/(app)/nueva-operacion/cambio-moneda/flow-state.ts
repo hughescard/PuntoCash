@@ -74,6 +74,12 @@ export interface FlowState {
    */
   kioskCode: string | null;
   kioskClient: KioskClientInput | null;
+  /**
+   * Lo que el kiosco le enseñó al cliente. La caja no lo aplica —cotiza de
+   * nuevo con la tasa de ahora—, pero si no coincide, se lo dice al
+   * trabajador para que se lo explique al cliente.
+   */
+  kioskQuote: ExchangeQuote | null;
 }
 
 /** Fallback demo starting point when no "Buscar solicitud" handoff is pending. */
@@ -92,31 +98,36 @@ const DEFAULT_STATE: FlowState = {
   touched: false,
   kioskCode: null,
   kioskClient: null,
+  kioskQuote: null,
 };
 
 /**
  * Lazy initial state for `useReducer`. If a worker just arrived here from
  * "Buscar solicitud" (`/worker/nueva-operacion/solicitud`), this is the ONE
- * place that prefill is applied — the currency pair and amount the client
- * chose at the kiosk, plus the client's data for step 2. It still lands on step "cambio" rather
- * than skipping to "cliente": the kiosk's quote is minutes old by the time a
- * worker sits down, and this product's rule is that a live quote is always
- * recomputed and freshly committed by the worker pressing Continuar (never a
- * stale one trusted as-is). On step 2 the customer is only pre-searched by
- * the client's document — never auto-selected (Worker PRD R5).
+ * place that prefill is applied: the pair, the way the client asked for it
+ * («cambiar» o «recibir») and the amount, plus the client's data for step 2.
+ *
+ * The flow then re-quotes at once with the sede's rate of NOW and commits it
+ * by itself (`cambio-moneda-flow.tsx`), so the worker lands on «Cliente»: the
+ * kiosk already did everything that comes before the cash. On step 2 the
+ * customer is only pre-searched by the client's document — never
+ * auto-selected (Worker PRD R5).
  */
 export function createInitialState(): FlowState {
   const handoff = readPendingWorkerHandoff("cambio-moneda");
   if (!handoff) return DEFAULT_STATE;
 
-  const { quote } = handoff.data;
+  const { quote, modo = "cambiar", importePedido } = handoff.data;
+  const importe = importePedido ?? (modo === "recibir" ? quote.destinationAmount : quote.sourceAmount);
   return {
     ...DEFAULT_STATE,
     sourceCurrency: quote.sourceCurrency,
     destinationCurrency: quote.destinationCurrency,
-    amountInput: formatAmount(quote.sourceAmount, 2),
+    modo,
+    amountInput: formatAmount(importe, 2),
     kioskCode: handoff.code,
     kioskClient: handoff.data.client,
+    kioskQuote: quote,
   };
 }
 

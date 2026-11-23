@@ -1,0 +1,27 @@
+Browser tab: 6, Title: "PuntoCash", URL: "https://staging.puntocash.co/worker/operations".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/worker/operations
+	2 container
+		3 text PUNTO  CASH
+		4 text CASA DE CAMBIO
+		5 container
+			6 text PUNTOCASH · WORKER
+			7 heading Vincula este equipo como caja, Value: 1
+				8 text Vincula este equipo como caja
+			9 text Este equipo todavía no es la caja de ninguna sede. El administrador de la sede debe vincularlo desde su panel web, en 
+			10 text Equipos
+			11 text , eligiendo la sede y la caja. Se hace una sola vez: después, cada trabajador inicia sesión con su propia cuenta.
+			12 text OPCIÓN 1
+			13 heading Escanea el código QR, Value: 2
+				14 text Escanea el código QR
+			15 image Código QR de este equipo: 4EB448
+			16 text Desde el panel del administrador, en el teléfono o la tableta de la sede.
+			17 text OPCIÓN 2
+			18 heading Escribe este código, Value: 2
+				19 text Escribe este código
+			20 text 4EB 448
+			21 text Este código no cambia: es el de este equipo.
+			22 button Copiar el código
+			23 text En el panel web del administrador, desde cualquier equipo.
+			24 text Esperando la vinculación… esta pantalla cambiará sola.
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/worker/operations

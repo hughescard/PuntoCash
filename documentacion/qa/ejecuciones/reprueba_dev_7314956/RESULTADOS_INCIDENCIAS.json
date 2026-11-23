@@ -1,0 +1,127 @@
+{
+  "QA-013": {
+    "status": "Persiste",
+    "note": "Equipos sigue ordenando vinculadas Obispo antes de Cerro.",
+    "evidence": "01_equipos.ax.txt"
+  },
+  "QA-011": {
+    "status": "Corregido",
+    "note": "Ahora nombra Carlos Díaz, fecha de apertura, que la jornada permanece y ofrece enlace a esa jornada.",
+    "evidence": "02_desvincular_abierta.ax.txt"
+  },
+  "QA-012": {
+    "status": "Persiste parcialmente",
+    "note": "000000 sigue dando paso al formulario; no se muestra caducidad. Ahora se muestra Equipo de caja sin selector de clase.",
+    "evidence": "05_codigo_cero_y_premarca.ax.txt"
+  },
+  "QA-014": {
+    "status": "Persiste",
+    "note": "Sin caja libre sigue sin aviso específico ni enlace a crear; al enviar sin caja solo pide elegirla.",
+    "evidence": "06_cerro_sin_libres.ax.txt"
+  },
+  "QA-009": {
+    "status": "Persiste",
+    "note": "Worker recargado muestra 4EB448 fijo con letras, sin renovación ni caducidad visible.",
+    "evidence": "08_worker_gate.ax.txt"
+  },
+  "QA-016": {
+    "status": "Persiste",
+    "note": "Alta en Cajas sigue mostrando fecha sin autor.",
+    "evidence": "10_cajas.ax.txt"
+  },
+  "QA-015": {
+    "status": "Persiste",
+    "note": "Se sigue mostrando solo equipo, sin jornada ni enlaces de solución; motivo deshabilitado visible.",
+    "evidence": "11_retirar_abierta.ax.txt;12_retirar_solo_equipo.ax.txt"
+  },
+  "QA-017": {
+    "status": "Persiste",
+    "note": "Éxito de alta sigue enlazando al listado /admin/devices, no a vincular.",
+    "evidence": "13_caja_creada.ax.txt"
+  },
+  "QA-018": {
+    "status": "Persiste",
+    "note": "Repetida pérdida de Estado Cierres forzados al recargar Jornadas. Resto de secciones en reprueba.\nOperaciones repite pérdida de Servicio Remesas al volver del detalle.",
+    "evidence": "25_forzadas_antes_recarga.ax.txt;26_forzadas_recarga_pierde.ax.txt;84_remesas.ax.txt;87_remesas_regreso_pierde.ax.txt"
+  },
+  "QA-019": {
+    "status": "Persiste",
+    "note": "La tarjeta sigue Pendiente de conciliar sin aviso superior específico. Aviso de abiertas antiguas sí está.",
+    "evidence": "23_jornadas.ax.txt"
+  },
+  "QA-020": {
+    "status": "Corregido",
+    "note": "Código de operación ahora enlaza desde el libro; PC-261023-000048 aparece como enlace en sus tramos.",
+    "evidence": "30_jornada_cerrada_detalle.ax.txt;31_salidas_eur.ax.txt"
+  },
+  "QA-024": {
+    "status": "Persiste",
+    "note": "Detalle del ajuste +10 EUR revisado frente a la solicitud pendiente conocida.",
+    "evidence": "35_ajuste_cierre.ax.txt"
+  },
+  "QA-022": {
+    "status": "Persiste en histórico",
+    "note": "La jornada sigue mostrando Faltante en la apertura -2000 como movimiento. No se reproduce apertura nueva; se mantiene la limitación fixture/histórico.",
+    "evidence": "40_apertura_historico.ax.txt"
+  },
+  "QA-021": {
+    "status": "Corregido",
+    "note": "Repetidas solicitudes de cierre +10 y ajuste -5: ambas abren el movimiento concreto, no el libro.",
+    "evidence": "41_cierre_pendiente.ax.txt;42_movimiento_desde_solicitud.ax.txt;43_ajuste_efectivo_solicitud.ax.txt;44_movimiento_ajuste_efectivo.ax.txt"
+  },
+  "QA-023": {
+    "status": "Persiste",
+    "note": "Ambos diálogos repiten ausencia de consecuencias; validación 9/10 sigue correcta y ambos cancelados.",
+    "evidence": "45_aprobar_dialogo.ax.txt;46_rechazar_dialogo.ax.txt;47_validacion_motivos.json"
+  },
+  "QA-002": {
+    "status": "Persiste",
+    "note": "Sin intento pendiente vuelve al login sin explicación.",
+    "evidence": "48_verificacion_sin_reto.ax.txt"
+  },
+  "QA-001": {
+    "status": "Persiste",
+    "note": "Admin: ambos vacíos, un campo vacío y rechazo genérico conservan foco fuera del primer campo a corregir. Worker se repite después.\nWorker vacío sigue dejando foco en botón, se añade al Admin ya repetido.",
+    "evidence": "50_admin_ambos_vacios.ax.txt;51_admin_sin_clave.ax.txt;52_admin_sin_usuario.ax.txt;53_admin_clave_incorrecta.ax.txt;95_worker_vacio.ax.txt"
+  },
+  "QA-025": {
+    "status": "Corregido",
+    "note": "Botón Quitar los filtros ahora aparece; probado limpia Tipo/Caja/Trabajador y restaura seis pendientes.",
+    "evidence": "71_aprobaciones_vacio.ax.txt;72_aprobaciones_filtros_limpios.ax.txt"
+  },
+  "QA-008": {
+    "status": "Persiste",
+    "note": "Comparación nueva con demo fija f7accf9 a 1440/390/360: títulos staging 36/30 px frente 28/28; composición sigue distinta.",
+    "evidence": "89_medidas_visuales.json;89_demo_1440.png;90_staging_1440.png;91_demo_390.png;92_staging_390.png;93_demo_360.png;94_staging_360.png"
+  },
+  "QA-010": {
+    "status": "Persiste",
+    "note": "A 390 y 360 staging sigue sin CASA DE CAMBIO bajo logo, presente en demo.",
+    "evidence": "91_demo_390.png;92_staging_390.png;93_demo_360.png;94_staging_360.png"
+  },
+  "QA-003": {
+    "status": "Persiste",
+    "note": "Worker ambos campos vacíos sigue con aviso general sin errores por campo.",
+    "evidence": "95_worker_vacio.ax.txt"
+  },
+  "QA-004": {
+    "status": "Corregido",
+    "note": "A 1440×900 ya no aparece auth.twoFactor.headline; ahora Un paso más para proteger tu jornada.",
+    "evidence": "98_worker_codigo_escritorio.ax.txt;98_worker_codigo_escritorio.png"
+  },
+  "QA-006": {
+    "status": "Observación persiste; alcance por confirmar",
+    "note": "Worker sigue sin enviar al completar seis cifras. Se preserva como diferencia frente a FRD posterior, no como incumplimiento confirmado del PDF inicial.",
+    "evidence": "99_worker_seis_digitos.ax.txt"
+  },
+  "QA-005": {
+    "status": "Observación persiste; alcance por confirmar",
+    "note": "Tras más de 60 s continúa deshabilitado Reenviar mientras corre vigencia de cinco minutos. Se mantiene alcance Worker por confirmar.",
+    "evidence": "100_worker_reenvio_tras_60.ax.txt;100_worker_reenvio_tras_60.png"
+  },
+  "QA-007": {
+    "status": "Persiste",
+    "note": "Terminal sin vínculo sigue permitiendo credenciales y código antes de mostrar la vinculación. Internas bloqueadas por gate.",
+    "evidence": "98_worker_codigo_escritorio.ax.txt;101_worker_tras_verificar.ax.txt;102_worker_operaciones_sin_vinculo.ax.txt"
+  }
+}

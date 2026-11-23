@@ -2,58 +2,102 @@
 
 import * as React from "react";
 
-import { Alert } from "@/components/ui";
-import { DevicePairingPanel, SimulatorLink } from "@/components/patterns/device-pairing-panel";
-import { findBranchById } from "@/features/branches/branches";
-import { ensurePairingChallenge, pairingQrPayload, useKioskDevice } from "@/features/kiosk/device-session";
+import { Alert, Button } from "@/components/ui";
+import { DevicePairingPanel, type EquipoPorVincular } from "@/components/patterns/device-pairing-panel";
+import { prepararKiosco, usarKioscoDeDemostracion } from "./_actions";
+
+export interface KioscoDeDemostracion {
+  id: string;
+  label: string;
+  sede: string;
+}
 
 /**
- * What an unlinked kiosk shows instead of the catalog (Autoservicio FRD §1.1).
+ * Lo que muestra un kiosco sin vincular en lugar del catálogo.
  *
- * Nothing a client can do here: no catalog, no "Inicio", no way around the
- * link. Until an admin links it, this terminal cannot prepare a request.
+ * Nada que un cliente pueda hacer aquí: ni catálogo, ni «Inicio», ni forma de
+ * saltarse el vínculo. El reto lo emite la red y es el mismo que encuentra el
+ * administrador en `/admin/equipos/vincular`; en cuanto lo canjea, el
+ * vigilante del layout lo nota y el kiosco pasa al catálogo de su sede.
  */
-export function KioskPairingScreen(): React.JSX.Element {
-  /* Lee el equipo ella misma, como su gemela de Worker: el servidor puede
-     decidir que esta pantalla es la correcta antes de que el navegador haya
-     podido consultar `localStorage`, así que la copia se pinta de inmediato y
-     el panel del reto aparece en cuanto el equipo lo ha generado. */
-  const device = useKioskDevice();
-  const unlinked = device?.status === "unlinked" ? device : null;
+export function KioskPairingScreen({
+  desvinculadoDe,
+  kioscosDemo,
+}: {
+  desvinculadoDe: string | null;
+  kioscosDemo: readonly KioscoDeDemostracion[];
+}): React.JSX.Element {
+  const [equipo, setEquipo] = React.useState<EquipoPorVincular | null>(null);
 
-  const previousBranch = findBranchById(unlinked?.unlinkedFrom?.branchId);
+  const renovar = React.useCallback(() => {
+    void prepararKiosco().then((estado) => {
+      if (!estado.vinculado) {
+        setEquipo({ deviceId: estado.deviceId, pairing: { code: estado.codigo, expiresAt: estado.expiresAt } });
+      }
+    });
+  }, []);
+
+  React.useEffect(() => {
+    renovar();
+  }, [renovar]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col items-center py-8 text-center">
       <p className="text-overline uppercase text-text-secondary">PuntoCash · Autoservicio</p>
       <h1 className="mt-3 text-screen-title text-text-primary">Vincula este kiosco a su sede</h1>
       <p className="mt-3 max-w-2xl text-body text-text-secondary">
-        Este kiosco todavía no pertenece a ninguna sede. El administrador de la sede debe vincularlo
-        desde su panel web, en <span className="font-semibold text-text-primary">Kioscos de autoservicio</span>,
-        con cualquiera de estas dos opciones.
+        Este kiosco {desvinculadoDe ? "ya no" : "todavía no"} pertenece a ninguna sede. El administrador de la sede
+        debe vincularlo desde su panel web, en <span className="font-semibold text-text-primary">Equipos</span>, con
+        cualquiera de estas dos opciones.
       </p>
 
-      {previousBranch ? (
+      {desvinculadoDe ? (
         <Alert variant="warning" title="Este kiosco fue desvinculado" className="mt-8 w-full text-left">
-          El administrador lo desvinculó de {previousBranch.name}. Para volver a usarlo, debe vincularlo de
-          nuevo.
+          El administrador lo desvinculó de {desvinculadoDe}. Para volver a usarlo, debe vincularlo de nuevo.
         </Alert>
       ) : null}
 
-      {unlinked ? (
+      {equipo ? (
         <DevicePairingPanel
           className="mt-8 w-full"
-          device={unlinked}
-          qrPayload={pairingQrPayload(unlinked)}
-          onExpired={ensurePairingChallenge}
+          device={equipo}
+          qrPayload={`puntocash:kiosco-link:v1:${equipo.deviceId}:${equipo.pairing.code}`}
+          onExpired={renovar}
           demoNote={
             <>
-              Versión de demostración: el panel del administrador aún no existe. Para simular la
-              vinculación, abre <SimulatorLink /> en otra pestaña. El QR es ilustrativo y no se puede
-              escanear.
+              Versión de demostración: el QR es ilustrativo y no se puede escanear. Para vincular, entra en la
+              consola de administración de la sede y teclea el código en Equipos → Vincular equipo.
             </>
           }
         />
+      ) : null}
+
+      {kioscosDemo.length > 0 ? (
+        <section
+          aria-labelledby="kioscos-demo"
+          className="mt-8 w-full rounded-card border border-dashed border-border p-6 text-left"
+        >
+          <h2 id="kioscos-demo" className="text-label font-semibold text-text-primary">
+            Demostración · usar un kiosco ya vinculado
+          </h2>
+          <p className="mt-1 text-body-sm text-text-secondary">
+            En la demostración, este navegador puede hacerse pasar por uno de los kioscos que las sedes ya tienen
+            vinculados. En el producto, el kiosco es la máquina de la sala y no se elige.
+          </p>
+          <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {kioscosDemo.map((k) => (
+              <li key={k.id}>
+                <Button
+                  variant="secondary"
+                  className="w-full justify-start"
+                  onClick={() => void usarKioscoDeDemostracion(k.id)}
+                >
+                  {k.label}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
     </div>
   );

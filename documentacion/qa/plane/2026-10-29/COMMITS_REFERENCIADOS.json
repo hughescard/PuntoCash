@@ -1,0 +1,152 @@
+[
+  {
+    "ticket": "PUNTOCASH-30",
+    "sha": "b7695fbb391cc5a38a00c09ece7009fed2237ec6",
+    "titulo": "fix: 2FA code boxes show a caret where the next digit goes (PUNTOCASH-30)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/b7695fbb391cc5a38a00c09ece7009fed2237ec6"
+  },
+  {
+    "ticket": "PUNTOCASH-28",
+    "sha": "cbdd1ce2366d81f7076e8de8c3a11d6d7e23270c",
+    "titulo": "fix: promotions cannot be published in closed seats (PUNTOCASH-28)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/cbdd1ce2366d81f7076e8de8c3a11d6d7e23270c"
+  },
+  {
+    "ticket": "PUNTOCASH-27",
+    "sha": "f9e2d36b942d841d0e710c4dcc95c34ff1ae488d",
+    "titulo": "fix: closed seats cannot retire currencies (PUNTOCASH-27)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/f9e2d36b942d841d0e710c4dcc95c34ff1ae488d"
+  },
+  {
+    "ticket": "PUNTOCASH-26",
+    "sha": "0d2234be575d52bfa43514376902ff6d90028c74",
+    "titulo": "fix: deactivate user modal as in the design (PUNTOCASH-26)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/0d2234be575d52bfa43514376902ff6d90028c74"
+  },
+  {
+    "ticket": "PUNTOCASH-25",
+    "sha": "1c52d8ff65e3afed90bd46d695a5de8a00d6e678",
+    "titulo": "fix: user detail buttons and layout as in the design (PUNTOCASH-25)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/1c52d8ff65e3afed90bd46d695a5de8a00d6e678"
+  },
+  {
+    "ticket": "PUNTOCASH-24",
+    "sha": "a9dc13f96b4330aad1f59637a59e42d9d1d51f7d",
+    "titulo": "fix: change email modal reason placeholder as in the design (PUNTOCASH-24)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/a9dc13f96b4330aad1f59637a59e42d9d1d51f7d"
+  },
+  {
+    "ticket": "PUNTOCASH-23",
+    "sha": "540c3e6afa0bbd3751695bc718725476445c6e25",
+    "titulo": "fix: users list notice and table as in the design (PUNTOCASH-23)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/540c3e6afa0bbd3751695bc718725476445c6e25"
+  },
+  {
+    "ticket": "PUNTOCASH-22",
+    "sha": "539e1b2c4eeee5529d56b605386c2283db1d7fa8",
+    "titulo": "fix: reassign worker modal as in the design (PUNTOCASH-22)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/539e1b2c4eeee5529d56b605386c2283db1d7fa8"
+  },
+  {
+    "ticket": "PUNTOCASH-21",
+    "sha": "37f11031435b03fb448abb7f54bed15c2fe9f4fd",
+    "titulo": "fix: worker access help screen as in the design (PUNTOCASH-21)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/37f11031435b03fb448abb7f54bed15c2fe9f4fd"
+  },
+  {
+    "ticket": "PUNTOCASH-18",
+    "sha": "36bab38f63158046b336018277108a3d1417284e",
+    "titulo": "fix: link device step 2 as in the design (PUNTOCASH-18)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/36bab38f63158046b336018277108a3d1417284e"
+  },
+  {
+    "ticket": "PUNTOCASH-17",
+    "sha": "195c0a9f17cdba2fb0bd7d8352afb4f8965f9311",
+    "titulo": "feat: unlink device modal shows the open shift and links to force-close it (PUNTOCASH-17)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/195c0a9f17cdba2fb0bd7d8352afb4f8965f9311"
+  },
+  {
+    "ticket": "PUNTOCASH-16",
+    "sha": "48887e6033c8efa7b4b39a2b14a78e88b61d24ef",
+    "titulo": "fix: devices warning title in the warning color (PUNTOCASH-16)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/48887e6033c8efa7b4b39a2b14a78e88b61d24ef"
+  },
+  {
+    "ticket": "PUNTOCASH-14",
+    "sha": "21d4ab2b09f916d8ef08ac22a028616a29e003a1",
+    "titulo": "fix: dialogs and retire cash register modal as in the design (PUNTOCASH-14)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/21d4ab2b09f916d8ef08ac22a028616a29e003a1"
+  },
+  {
+    "ticket": "PUNTOCASH-12",
+    "sha": "b6a00e5f4126c841a03bc7d5627db4185f732c35",
+    "titulo": "fix: branches list styles as in the design (PUNTOCASH-12)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/b6a00e5f4126c841a03bc7d5627db4185f732c35"
+  },
+  {
+    "ticket": "PUNTOCASH-11",
+    "sha": "90fc2acb78c4419e130fc98c306ceeb455b47e12",
+    "titulo": "fix: exchange operation detail typography and flag size (PUNTOCASH-11)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/90fc2acb78c4419e130fc98c306ceeb455b47e12"
+  },
+  {
+    "ticket": "PUNTOCASH-10",
+    "sha": "be05924dc4f8073ad21d2440705eb053c2ca4193",
+    "titulo": "fix: remittance operation detail closer to the design (PUNTOCASH-10)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/be05924dc4f8073ad21d2440705eb053c2ca4193"
+  },
+  {
+    "ticket": "PUNTOCASH-9",
+    "sha": "2271dea82489380b05858549bb437aab5e61aa8d",
+    "titulo": "fix: detail labels use the design's caption style (PUNTOCASH-9)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/2271dea82489380b05858549bb437aab5e61aa8d"
+  },
+  {
+    "ticket": "PUNTOCASH-8",
+    "sha": "0c4921e7ed788df6af62101429d09944bf44e2c3",
+    "titulo": "feat: link approval to its shift movement detail (PUNTOCASH-8)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/0c4921e7ed788df6af62101429d09944bf44e2c3"
+  },
+  {
+    "ticket": "PUNTOCASH-7",
+    "sha": "c798305c9962b430ba816c9f77650e7664d6c08b",
+    "titulo": "feat: clear filters button on empty approvals list (PUNTOCASH-7)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/c798305c9962b430ba816c9f77650e7664d6c08b"
+  },
+  {
+    "ticket": "PUNTOCASH-6",
+    "sha": "722688fa4cb3fcb50ccefeb538ebd75c1223cfc7",
+    "titulo": "feat: link operation codes in shift movements table (PUNTOCASH-6)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/722688fa4cb3fcb50ccefeb538ebd75c1223cfc7"
+  },
+  {
+    "ticket": "PUNTOCASH-15",
+    "sha": "de2388a9b8f94131757ed9ec779969c8ae875232",
+    "titulo": "fix: thin translucent scrollbar in admin sidebar (PUNTOCASH-15)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/de2388a9b8f94131757ed9ec779969c8ae875232"
+  },
+  {
+    "ticket": "PUNTOCASH-5",
+    "sha": "5127e1ab5e9b020c75379d85231553dc081902f9",
+    "titulo": "fix: full-width create cash register card (PUNTOCASH-5)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/5127e1ab5e9b020c75379d85231553dc081902f9"
+  },
+  {
+    "ticket": "PUNTOCASH-4",
+    "sha": "11af355164008ce4fdd5384028e1ff30a535b0ad",
+    "titulo": "fix: show open shift warning in worker dialogs only when there is one (PUNTOCASH-4)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/11af355164008ce4fdd5384028e1ff30a535b0ad"
+  },
+  {
+    "ticket": "PUNTOCASH-3",
+    "sha": "d5fb704df69faace0da4064de846d7d867cc8270",
+    "titulo": "fix: outline back button in page headers and worker detail redesign (PUNTOCASH-3)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/d5fb704df69faace0da4064de846d7d867cc8270"
+  },
+  {
+    "ticket": "PUNTOCASH-1",
+    "sha": "a6e02f0a47ff046fa72a8ec6addfdb6ba5481bdf",
+    "titulo": "fix: keep 2FA code input focused and highlight active box (PUNTOCASH-1)",
+    "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/a6e02f0a47ff046fa72a8ec6addfdb6ba5481bdf"
+  }
+]

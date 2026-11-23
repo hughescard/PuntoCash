@@ -1,0 +1,110 @@
+{
+  "fecha": "2026-10-29",
+  "evidencias": [
+    {
+      "archivo": "01_admin_vacios.ax.txt",
+      "bytes": 925,
+      "sha256": "cec77b6f81b5344b84343c0928aac6a3d4bfef7ec4abd69fd694edfaed2962ab"
+    },
+    {
+      "archivo": "02_admin_sin_clave.ax.txt",
+      "bytes": 889,
+      "sha256": "c217fd9d38101ea8eb608401f3d9d42fc7f59f2735ce45bd54ad30ae87ec318f"
+    },
+    {
+      "archivo": "03_admin_sin_usuario.ax.txt",
+      "bytes": 907,
+      "sha256": "861138525ba92b84a646e673788874be38c5213d88458540781f2139fa267df5"
+    },
+    {
+      "archivo": "04_admin_clave_incorrecta.ax.txt",
+      "bytes": 1074,
+      "sha256": "6a6d5ba62d0abb9cbe2bfda4b075e5713ad86469e76d97215f1c4b4ea31c494d"
+    },
+    {
+      "archivo": "05_admin_cuenta_inexistente.ax.txt",
+      "bytes": 1074,
+      "sha256": "6a6d5ba62d0abb9cbe2bfda4b075e5713ad86469e76d97215f1c4b4ea31c494d"
+    },
+    {
+      "archivo": "06_admin_inactiva.ax.txt",
+      "bytes": 1074,
+      "sha256": "6a6d5ba62d0abb9cbe2bfda4b075e5713ad86469e76d97215f1c4b4ea31c494d"
+    },
+    {
+      "archivo": "07_admin_enviando.ax.txt",
+      "bytes": 916,
+      "sha256": "68a12591fdec5f82fa0668a80f37f9c4c928cc00e6ad8d20fc323774bb2fe54e"
+    },
+    {
+      "archivo": "08_admin_verificacion.ax.txt",
+      "bytes": 841,
+      "sha256": "e59cbcc0b1e7d4a8a1c69c7ee841f3939d010a78482058c295fab9fbfcc3a504"
+    },
+    {
+      "archivo": "09_admin_inicio.ax.txt",
+      "bytes": 6702,
+      "sha256": "9fb8fe3544d631442dee0a36dcb7760747a869ffb8085d126977d39e483d02d0"
+    },
+    {
+      "archivo": "10_logout.ax.txt",
+      "bytes": 862,
+      "sha256": "699b9be0c9c17d2c9d5b2bc5b56564a4e29478a1ec6618a2ae8b4d35f0edeb69"
+    },
+    {
+      "archivo": "11_home_sin_sesion.ax.txt",
+      "bytes": 862,
+      "sha256": "699b9be0c9c17d2c9d5b2bc5b56564a4e29478a1ec6618a2ae8b4d35f0edeb69"
+    },
+    {
+      "archivo": "12_verificacion_sin_reto.ax.txt",
+      "bytes": 862,
+      "sha256": "699b9be0c9c17d2c9d5b2bc5b56564a4e29478a1ec6618a2ae8b4d35f0edeb69"
+    },
+    {
+      "archivo": "12_verificacion_sin_reto.png",
+      "bytes": 25607,
+      "sha256": "7a37f87947cf976f05829d32711494f96c1a72db658b2a633d6bf28dabdf0b00"
+    },
+    {
+      "archivo": "13_recuperacion_ayuda.ax.txt",
+      "bytes": 903,
+      "sha256": "24e8003541406f7ccaac6a7bb47cdb5fc0b93e608c87bf55852b0314d1c1cc14"
+    },
+    {
+      "archivo": "14_recuperacion_vacia.ax.txt",
+      "bytes": 931,
+      "sha256": "e1207bc9ec053d6fbb6b73a10065db71235fbeef16ebf740152fd809e2b888f3"
+    },
+    {
+      "archivo": "15_recuperacion_existente.ax.txt",
+      "bytes": 926,
+      "sha256": "7bb6c575e8ec5f915b29aeef83e303b15e5008cae678604ed7dd2832adadcaa9"
+    },
+    {
+      "archivo": "16_recuperacion_inexistente.ax.txt",
+      "bytes": 898,
+      "sha256": "8854d3393099406a9a0cd8c89f4c928124da31bd006b2a50a98511c2a434f321"
+    },
+    {
+      "archivo": "INFORME.md",
+      "bytes": 4012,
+      "sha256": "ead215ae09c76047bb2d2ad45e67df37cafe81fe30094a334197e1a6ebc9814c"
+    },
+    {
+      "archivo": "SEGUIMIENTO.json",
+      "bytes": 10314,
+      "sha256": "13c8258c2e832a24dce5304d5e7a935608831371d9a52bb9e139131c71db9a33"
+    },
+    {
+      "archivo": "VERSION_FINAL_BLOQUE_01.json",
+      "bytes": 2311,
+      "sha256": "e87cff5f94d7d5960362c7914a95dbb16cd473cd964bf996a232e3f90d3085ff"
+    },
+    {
+      "archivo": "VERSION_INICIAL.json",
+      "bytes": 2311,
+      "sha256": "db235752a3ed29151e30ae0f5df65daf85c3ed7f2e909775fdaa1faf93d8354e"
+    }
+  ]
+}

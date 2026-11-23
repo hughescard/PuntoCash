@@ -1,0 +1,112 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/shifts".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/shifts
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		8 container
+			9 heading Jornadas, Value: 1
+				10 text Jornadas
+			11 text El día de trabajo de cada caja: quién la abrió, qué movió y cómo cerró.
+		12 container
+			13 text 5 cajas siguen abiertas de un día anterior
+			14 content list
+				15 container
+					16 link Description: Caja01 de PuntoCash Cerro, Value: staging.puntocash.co/admin/shifts/9f601bc4-ce8e-4c86-bdd0-5f6dcadafca8
+					17 text (abierta por Endry Perez el 28 oct 2026)
+				18 container
+					19 link Description: Caja 01 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/2c6d5e7f-8d21-408a-b0cf-56f46e6297f9
+					20 text (abierta por Lidia Gómez el 24 oct 2026)
+				21 container
+					22 link Description: Caja 03 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/58346286-e250-4590-b79d-8553bb15b751
+					23 text (abierta por Alberto Fonseca el 24 oct 2026)
+				24 container
+					25 link Description: Caja 02 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/e837b825-27cc-47c5-9ac5-9897647d24eb
+					26 text (abierta por Juan Pérez el 24 oct 2026)
+				27 container
+					28 link Description: Caja 03 de PuntoCash Obispo, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+					29 text (abierta por Carlos Díaz el 24 oct 2026)
+			30 text Si nadie va a hacer su cierre, puedes forzarlo desde la jornada.
+		31 button (expanded) Filtros, Secondary Actions: Collapse
+		32 container shifts-filters
+			33 text Desde
+			34 date field (settable) Desde, Value: 2026-10-23, ID: shifts-from
+				35 container
+					36 stepper
+					37 stepper
+					38 stepper
+				39 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			40 text Hasta
+			41 date field (settable) Hasta, Value: 2026-10-29, ID: shifts-to
+				42 container
+					43 stepper
+					44 stepper
+					45 stepper
+				46 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			47 text Caja
+			48 pop up button (collapsed, settable) Caja, Value: Todas las cajas, ID: shifts-register, Secondary Actions: Expand
+				49 menu
+					50 (selected) Todas las cajas
+					51 Caja 01 · PuntoCash Obispo
+					52 Caja 01 · PuntoCash Vedado
+					53 Caja 02 · PuntoCash Obispo
+					54 Caja 02 · PuntoCash Vedado
+					55 Caja 03 · PuntoCash Obispo
+					56 Caja 03 · PuntoCash Vedado
+					57 Caja 04 · PuntoCash Obispo
+					58 Caja 04 · PuntoCash Vedado
+					59 Caja01 · PuntoCash Cerro
+					60 QA-20261029-01 · PuntoCash Obispo
+					61 QA-RDEV731-20261029 · PuntoCash Obispo
+			62 text Trabajador
+			63 pop up button (collapsed, settable) Trabajador, Value: Todos, ID: shifts-worker, Secondary Actions: Expand
+				64 menu
+					65 (selected) Todos
+					66 Alberto Fonseca
+					67 Carlos Díaz
+					68 Endry Perez Zurdo
+					69 Juan Pérez
+					70 Lidia Gómez
+					71 Marisol Rivas
+			72 text Estado
+			73 pop up button (collapsed, settable) Estado, Value: Cerradas, ID: shifts-state, Secondary Actions: Expand
+				74 menu
+					75 Todas
+					76 Abiertas
+					77 (selected) Cerradas
+					78 Cierres forzados
+			79 checkbox (settable, integer) Description: Solo con diferencia, Value: 1
+		80 content list
+			280 container
+				281 text Caja 03  ·  PuntoCash Obispo Cerrada
+				282 definition list
+					283 container TRABAJADOR
+						284 text TRABAJADOR
+					285 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+					286 container FECHA
+						287 text FECHA
+					288 text 23 oct 2026
+					289 container APERTURA Y CIERRE
+						290 text APERTURA Y CIERRE
+					291 text 08:21 – 17:36
+					292 container OPERACIONES
+						293 text OPERACIONES
+					294 text 6
+					295 container AL ABRIR
+						296 text AL ABRIR
+					297 text Coincide
+					298 container CIERRE
+						299 text CIERRE
+					300 text Sobrante +10,00 EUR
+				301 link Description: Ver jornada de Caja 03, Carlos Díaz, 23 oct 2026, Value: staging.puntocash.co/admin/shifts/bd694aae-3b34-4c67-b554-822b6e6906ff
+		302 container
+			303 text Mostrando 1 – 1 de 1 jornadas
+		304 container Navegación de administración
+			305 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			306 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			307 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			308 button Más
+
+The focused UI element is 79 checkbox (settable, integer) Description: Solo con diferencia, Value: 1

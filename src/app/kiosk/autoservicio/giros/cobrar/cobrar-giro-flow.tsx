@@ -6,10 +6,12 @@ import { ArrowLeft, ArrowRight, BadgeCheck, CircleCheck, KeyRound, Search } from
 
 import { Alert, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/components/ui";
 import { KioskRequestTicket, TicketRow } from "@/components/patterns/kiosk-request-ticket";
+import { KioskAvisoDeCaja } from "@/components/patterns/kiosk-aviso-de-caja";
 import { KioskCancelDialog } from "@/components/patterns/kiosk-cancel-dialog";
 import { formatMoney } from "@/lib/format";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
-import { registerSelfServiceRequest, type KioskRequest } from "@/features/kiosk/self-service-request";
+import type { KioskRequest } from "@/features/kiosk/self-service-request";
+import { registrarSolicitud } from "../../_actions";
 
 /** Where this flow returns to on cancel — the Giros selector. */
 const GIROS_HOME = "/kiosk/autoservicio/giros";
@@ -81,12 +83,13 @@ export function CobrarGiroAutoservicioFlow(): React.JSX.Element {
     setSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, SUBMIT_MS));
 
-    const generated = registerSelfServiceRequest({
+    const result = await registrarSolicitud({
       service: "giros-cobrar",
       data: { code, transfer },
     });
+    if (!result.ok) return router.refresh();
     setSubmitting(false);
-    setRequest(generated);
+    setRequest(result.solicitud);
     setStep("solicitud");
   }
 
@@ -99,6 +102,7 @@ export function CobrarGiroAutoservicioFlow(): React.JSX.Element {
         <TicketRow label="Monto a cobrar">
           {formatMoney({ amount: transfer.deliveryAmount, currency: transfer.payoutCurrency })}
         </TicketRow>
+        <TicketRow label="Trae">Tu carné de identidad</TicketRow>
       </KioskRequestTicket>
     );
   }
@@ -126,9 +130,12 @@ export function CobrarGiroAutoservicioFlow(): React.JSX.Element {
           </CardContent>
         </Card>
 
-        <Alert variant="info" title="Presenta tu documento en caja">
-          El trabajador confirmará tu identidad antes de entregarte el efectivo.
+        <Alert variant="info" title="Presenta tu carné de identidad en caja">
+          El trabajador confirmará tu identidad y fotografiará tu carné por las dos caras antes de entregarte el
+          efectivo. Sin el carné no se puede entregar.
         </Alert>
+
+        <KioskAvisoDeCaja />
 
         <div className="mt-2 flex items-center justify-between gap-4 border-t border-border pt-6">
           <Button variant="secondary" onClick={() => setStep("codigo")}>

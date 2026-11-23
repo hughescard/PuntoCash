@@ -1,5 +1,5 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos Funcionales (FRD) · v2.2
+## Documento de Requisitos Funcionales (FRD) · v2.3
 
 **Alcance:** la aplicación del trabajador de caja, `/worker`. No cubre el kiosco de autoservicio ni las consolas de administración.
 
@@ -13,7 +13,7 @@
 | `../PuntoCash_PRD_v2.md` | La regla **R13** (segundo factor) y los requisitos **RP-*** del producto completo |
 | `../admin/PuntoCash_Admin_Sede_Functional_Requirements_v1.md` | Lo que la administración de sede ve y decide de lo que hace Worker: jornadas, aprobaciones, cajas, alertas, tasas, monedas (**FR-AD-***) |
 | `../admin/PuntoCash_Super_Admin_Functional_Requirements_v1.md` | Lo que fija PuntoCash para toda la red: servicios por sede, catálogo de monedas y de denominaciones, rangos de tasas (**FR-SA-***) |
-| `../kiosko/…` | El kiosco de autoservicio, del que Worker recoge solicitudes (§5.3) |
+| `../kiosko/PuntoCash_Kiosk_Autoservicio_Functional_Requirements_v1.md` (2.0) | El kiosco de autoservicio, del que Worker recoge solicitudes (§5.3) |
 
 ## Cómo leer este documento
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 2.3 | 23/11/2026 | **Buscar solicitud, con el kiosco sobre la red** (FRD de Autoservicio 2.0). La solicitud se busca y se canjea en el servidor; una solicitud de **otra sede** se rechaza nombrándola (**FR-SOL-3**, **FR-SOL-9**, nuevo). «Continuar» vuelve a comprobarla y la consume en el mismo acto (**FR-SOL-5**). El resumen enseña lo que vio el cliente: el modo y el importe pedido del cambio, la cuenta del giro (**FR-SOL-4**). **Cambio de moneda** llega cotizado con la tasa de ahora, en el modo del cliente, y pasa solo a «Cliente»; **Enviar giro** pasa del remitente directamente a «Efectivo», con la tarifa de ahora (**FR-SOL-6**). Si la cifra de ahora no es la que vio el cliente, se avisa con las dos (**FR-SOL-8**, nuevo). Sale de §16 el kiosco con billetes: el kiosco no toca billetes |
 | 2.2 | 19/11/2026 | **Enviar giro cobra la tarifa de giros** que fija PuntoCash (FRD de Super Admin §10). Dos formas de pedirlo —«Que llegue un importe» y «Enviar un importe»—, con la tarifa calculada sobre lo que recibe el beneficiario; giro mínimo; solo las monedas con tarifa; resumen en vivo; revisión, confirmación, resultado y comprobante con lo que llega, la tarifa y el total; el paso «Efectivo» cobra el total; el servidor recalcula la tarifa al confirmar (**FR-GE-3**, **FR-GE-9** a **GE-13**, **FR-GE-15**; **FR-GE-16** a **GE-19**, nuevos; códigos `tarifa-cambiada` y `sin-tarifa-de-giro`). **Cobrar giro** no lleva tarifa (**FR-GC-8**). El kiosco puede mandar la forma (**FR-SOL-4**, **FR-SOL-6**). El **detalle de una operación** se lee como una cuenta, en una sola tarjeta, en todos los servicios (**FR-OPD-12**, **FR-EF-20**) |
 | 2.1 | 16/11/2026 | **Foto del carné de quien cobra.** Entregar una remesa o pagar un giro exige dos fotos del carné del beneficiario, anverso y reverso, hechas con el móvil del trabajador desde un QR de la confirmación; sin ellas no se confirma (§6.8, **FR-CARNE-1 a 10**, nuevos; **FR-RM-12**, **FR-GC-12**). Ruta nueva `/movil/carne/{id}` (**FR-NAV-1**), código `falta-foto-del-carne` y mensajes del enlace del móvil (Apéndice C). **Enviar giro**: el remitente es un cliente registrado, identificado como en Cambio de moneda, y sus datos no se editan en el giro (**FR-GE-2**, nuevo; **FR-GE-3**, **FR-SOL-6**) |
 | 2.0 | 13/11/2026 | **Segunda iteración de Worker. Documento reescrito** en el formato de los FRD de administración (una subsección por pantalla, reglas y códigos, «Ver en la demo», mensajes en el Apéndice C). Lo que cambia de fondo: (1) **Worker opera sobre la red** — la caja, la jornada, las tasas, los servicios y las monedas son los de la sede, y lo que hace el trabajador lo ve la administración al momento (§3). (2) **Worker opera a ciegas**: no ve ningún saldo, ni en pantalla ni en los datos que recibe (§1.6). (3) **La caja lleva billetes**: cada movimiento registra cuántos de cada denominación (§10). (4) **Apertura con totales y cierre a ciegas, billete a billete**, declarados una vez; el cierre es un solo acto y los motivos llegan después (§10.3, §10.6). (5) **Reposición o retiro** y **cambio de billetes**, confirmados por el supervisor nombrado; **recuento** cuando saldrían billetes que los libros no tienen (§10.4, §10.5, §10.7). (6) **Operaciones con billetes**: paso «Efectivo», vuelto, «exacta o no se paga», liquidación (§6). (7) **Cambio de moneda** entre dos divisas y en modo «Recibir un importe» (§7). (8) **Cierre forzado** avisado al trabajador al instante (§11). (9) **Alertas** de la caja, sin cifras (§12). (10) **Perfil** con nombre de usuario, teléfono y contraseña (§13). (11) **Tablas** con una sola regla para abrir filas (§1.4). Salen «Ajustar efectivo», las pantallas Tasas y Alertas, y el simulador de vinculación. |
@@ -503,15 +504,35 @@ Recupera una solicitud generada en el kiosco (`KS-AAMMDD-NNNNNN`) y continúa el
 
 **FR-SOL-2** Solo el código exacto; sin listados ni búsqueda por otro dato **[R4]**.
 
-**FR-SOL-3** Aquí el motivo del rechazo **sí se distingue**: código no encontrado, solicitud vencida (más de 30 minutos) y solicitud ya utilizada.
+**FR-SOL-3** Aquí el motivo del rechazo **sí se distingue** (Apéndice C): código no encontrado, solicitud de otra sede (**FR-SOL-9**), solicitud ya utilizada y solicitud vencida (más de 30 minutos, con el reloj del servidor).
 
-**FR-SOL-4** Una solicitud encontrada se resume con los datos justos para reconocerla: el par y el importe en un cambio; beneficiario e importe al cobrar; remitente, beneficiario e importe al enviar un giro, con la forma si el kiosco la manda.
+**FR-SOL-4** Una solicitud encontrada se resume con los datos justos para reconocerla, y con lo que vio el cliente:
 
-**FR-SOL-5** «Continuar» marca la solicitud como consumida y lleva al flujo de su servicio con los datos. No registra nada.
+| Servicio | Resumen |
+| --- | --- |
+| Cambio de moneda | Cliente y documento; lo que entrega y lo que recibiría con la tasa del kiosco o, si pidió recibir un importe, lo que quiere recibir y lo que entregaría |
+| Cobrar remesa, Cobrar giro | Código, beneficiario e importe a entregar |
+| Enviar giro | Remitente y su documento, beneficiario, provincia y municipio; lo que recibe el beneficiario y el total a entregar con la tarifa del kiosco |
 
-**FR-SOL-6** En Cambio de moneda la cotización del kiosco no se hereda: se vuelve a cotizar con las tasas en vigor. En Cobrar remesa y Cobrar giro, el código dispara la búsqueda por código. En Enviar giro, el documento que dio el cliente lanza la búsqueda del remitente (**FR-GE-2**), y si no está registrado, el alta se rellena con lo que escribió; elegido el remitente, si el resto está completo se salta a la revisión. La solicitud puede traer **cómo lo pidió el cliente** (`forma`: `llegar` o `enviar`, **FR-GE-16**); sin ella, se entiende «Que llegue un importe». La tarifa no se hereda: se calcula con la vigente. La confirmación sigue siendo manual y el código del giro solo nace al confirmar.
+**FR-SOL-5** «Continuar» **canjea** la solicitud en el servidor: la vuelve a comprobar y la consume en el mismo acto, así que dos cajas no pueden atender la misma. Si entretanto venció o la canjeó otra caja, se dice el motivo y no se abre el flujo. Canjeada, lleva al flujo de su servicio con los datos. No registra ninguna operación.
+
+**FR-SOL-6 · Dónde entra cada servicio.**
+
+| Servicio | Qué hace el flujo con la solicitud |
+| --- | --- |
+| Cambio de moneda | Toma el par, el **modo** (**FR-CM-1**) y el importe que pidió el cliente, y **vuelve a cotizar con las tasas en vigor**: la cotización del kiosco no se hereda. Si la caja tiene las dos monedas y el importe se puede cobrar, el paso «Cambio» se confirma solo y el flujo entra en **«Cliente»**, con la búsqueda lanzada por el documento que dio el cliente. Si no, se queda en «Cambio» para que el trabajador lo resuelva |
+| Cobrar remesa, Cobrar giro | El código lanza la búsqueda por código |
+| Enviar giro | El documento que dio el cliente lanza la búsqueda del remitente (**FR-GE-2**); sin registrar, el alta se rellena con lo que escribió. Elegido el remitente, si el resto está completo el flujo pasa **directamente a «Efectivo»** (**FR-GE-15**), con la **forma** del cliente (`llegar` o `enviar`, **FR-GE-16**; sin ella, «Que llegue un importe») y **la tarifa vigente**: la del kiosco no se hereda. Si falta algo, va a «Registrar giro» |
+
+La confirmación sigue siendo manual, el servidor revalida todo al confirmar, y el código del giro solo nace entonces.
 
 **FR-SOL-7** El flujo de destino consume los datos una sola vez.
+
+**FR-SOL-8 · Lo que vio el cliente.** Si la cifra de ahora no es la que el cliente vio en el kiosco, el flujo lo avisa con las dos, para que el trabajador se lo explique antes de seguir: en Cambio de moneda, en «Cliente», lo que entregaba y recibía con la tasa del kiosco y lo que entrega y recibe con la de ahora; en Enviar giro, en «Efectivo», lo que recibía el beneficiario y el total con la tarifa del kiosco y los de ahora. Si coinciden, no hay aviso.
+
+**FR-SOL-9 · Solo en su sede.** Una solicitud se canjea solo en una caja de la sede cuyo kiosco la preparó. En otra sede se rechaza nombrando aquella, y el trabajador puede iniciar la operación a mano.
+
+**Ver en la demo:** en el kiosco de Vedado, preparar un cambio y generar el código; en Worker, con `jperez`, Nueva operación → Buscar solicitud. Con `mrivas` (Obispo), el mismo código da «otra sucursal». Para el aviso de **FR-SOL-8**, cambiar la tasa en Admin → Tasas entre generar el código y buscarlo.
 
 ---
 
@@ -1229,7 +1250,6 @@ Lo entregado según **FR-EF-21**.
 | Diseño del comprobante imprimible | **FR-PRINT-1** |
 | Fotos del carné cifradas en un almacén de ficheros, con su política de conservación | **FR-CARNE-10** |
 | Credencial del equipo emitida y revocada por el servidor | **FR-DEV-7** |
-| Kiosco con billetes: registrar los que entran y aplicar el mismo algoritmo si da vuelto | Fuera de este documento |
 
 ---
 
@@ -1316,6 +1336,17 @@ Cada flujo dice el mensaje con las palabras de su pantalla («el cliente», «el
 | `tarifa-cambiada` | PuntoCash cambió la tarifa mientras registrabas el giro. No se registró nada: revisa el importe y la tarifa nueva con el cliente. |
 | `sin-tarifa-de-giro` | PuntoCash retiró la tarifa de giros en {moneda}: en esa moneda ya no se envían giros. No se registró nada. |
 | `falta-foto-del-carne` | Faltan las fotos del carné del beneficiario. No se registró nada: haz las dos fotos con el móvil. |
+
+### Buscar solicitud
+
+| Motivo | Mensaje |
+| --- | --- |
+| `no-encontrada` | **Código no encontrado.** Verifica el código con el cliente. Los códigos de kiosco empiezan por KS-. |
+| `otra-sede` | **Esta solicitud es de otra sucursal.** Se preparó en el kiosco de {sede} y solo se atiende allí. Puedes iniciar la operación manualmente. |
+| `usada` | **Esta solicitud ya fue utilizada.** Este código ya fue atendido en caja y no puede usarse de nuevo. |
+| `vencida` | **Esta solicitud ya venció.** Las solicitudes caducan a los 30 minutos. El cliente puede generar una nueva en el kiosco o puedes iniciar la operación manualmente. |
+| Tasa distinta de la del kiosco | **La tasa cambió desde que el cliente preparó la solicitud.** En el kiosco vio que entregaba {X} y recibía {Y}. Con la tasa de ahora entrega {X'} y recibe {Y'}. Explícaselo antes de continuar. |
+| Tarifa distinta de la del kiosco | **La tarifa cambió desde que el cliente preparó la solicitud.** En el kiosco vio que el beneficiario recibía {X} y que entregaba {Y}. Con la tarifa de ahora recibe {X'} y entrega {Y'}. Explícaselo antes de cobrar. |
 
 ### Foto del carné, en el móvil
 
