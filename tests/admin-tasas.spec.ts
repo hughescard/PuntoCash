@@ -92,7 +92,7 @@ test.describe("Tasas", () => {
     await dialogo.getByRole("button", { name: "Confirmar la tasa" }).click();
     await expect(dialogo.getByText("Tasa guardada")).toBeVisible();
 
-    const kiosco = await kioscoDe(browser, "sede-vedado");
+    const kiosco = await kioscoDe(browser, KIOSCO_DE_VEDADO);
     await kiosco.goto("/kiosk/autoservicio/tasas");
     const fila = kiosco.locator("div.grid").filter({ hasText: "Libra esterlina" });
     /* Plazo largo: con el servidor recién arrancado, esta es a menudo la
@@ -104,36 +104,30 @@ test.describe("Tasas", () => {
   });
 });
 
-/** Un kiosco vinculado a la sede, como lo siembra `kiosk-smoke.spec.ts`. */
-async function kioscoDe(browser: Browser, branchId: string) {
-  const vinculo = {
-    status: "linked",
-    deviceId: "KIO-9000-0002",
-    branchId,
-    linkedAt: "2026-09-01T08:00:00.000Z",
-    linkMethod: "codigo",
-  };
+/** El kiosco de la entrada de PuntoCash Vedado, que la red ya tiene vinculado. */
+const KIOSCO_DE_VEDADO = "KIO-0001-0001";
+
+/**
+ * Un navegador que es ese kiosco, como en `kiosk-smoke.spec.ts`: solo guarda
+ * su identificador, y a qué sede pertenece lo contesta la red.
+ */
+async function kioscoDe(browser: Browser, terminalId: string) {
   const context = await browser.newContext({
     baseURL: BASE_URL,
     storageState: {
       cookies: [
         {
-          name: "pc_kiosk_device",
-          value: encodeURIComponent(JSON.stringify({ deviceId: vinculo.deviceId, branchId })),
+          name: "pc_kiosco_device",
+          value: terminalId,
           domain: "localhost",
-          path: "/",
+          path: "/kiosk/autoservicio",
           expires: -1,
-          httpOnly: false,
+          httpOnly: true,
           secure: false,
           sameSite: "Lax",
         },
       ],
-      origins: [
-        {
-          origin: BASE_URL,
-          localStorage: [{ name: "puntocash.kiosk.device", value: JSON.stringify(vinculo) }],
-        },
-      ],
+      origins: [],
     },
   });
   return context.newPage();

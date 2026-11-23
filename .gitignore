@@ -45,3 +45,9 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Material local: no va al repositorio
+/outputs/
+/repos reales/
+*.bundle
+/Claude outputs/remitente-en-enviar-giro.zip
