@@ -1,0 +1,206 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/devices".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			6 text Todas mis sedes
+		143 container
+			144 heading Equipos, Value: 1
+				145 text Equipos
+			146 text Las máquinas de tus sedes: la caja de cada mostrador y los kioscos de autoservicio.
+			147 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices/link
+		148 container Tipo de equipo
+			149 link Description: Cajas 9, Value: staging.puntocash.co/admin/devices
+			150 link Description: Kioscos de autoservicio 3, Value: staging.puntocash.co/admin/devices?tab=kiosks
+		151 container
+			152 text 3 de tus cajas no tienen equipo vinculado En una caja sin equipo no puede iniciar sesión ningún trabajador. Vincúlale uno para ponerla a operar.
+		153 content list
+			154 container
+				155 text Caja 02 Sin equipo PuntoCash Obispo
+				156 definition list
+					157 container EQUIPO
+						158 text EQUIPO
+					159 text Sin equipo vinculado
+					160 container VINCULADO
+						161 text VINCULADO
+					162 text —
+					163 container ÚLTIMA ACTIVIDAD
+						164 text ÚLTIMA ACTIVIDAD
+					165 text —
+					166 container JORNADA
+						167 text JORNADA
+					168 text Cerrada
+				169 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices/link?register=40d605f8-1706-4ea1-8a10-9e5645b8f2b3
+			170 container
+				171 text Caja 04 Sin equipo PuntoCash Obispo
+				172 definition list
+					173 container EQUIPO
+						174 text EQUIPO
+					175 text Sin equipo vinculado
+					176 container VINCULADO
+						177 text VINCULADO
+					178 text —
+					179 container ÚLTIMA ACTIVIDAD
+						180 text ÚLTIMA ACTIVIDAD
+					181 text —
+					182 container JORNADA
+						183 text JORNADA
+					184 text Cerrada
+				185 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices/link?register=6dd50192-1343-451e-9349-3aac566fb2f9
+			186 container
+				187 text Caja 04 Sin equipo PuntoCash Vedado
+				188 definition list
+					189 container EQUIPO
+						190 text EQUIPO
+					191 text Sin equipo vinculado
+					192 container VINCULADO
+						193 text VINCULADO
+					194 text —
+					195 container ÚLTIMA ACTIVIDAD
+						196 text ÚLTIMA ACTIVIDAD
+					197 text —
+					198 container JORNADA
+						199 text JORNADA
+					200 text Cerrada
+				201 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices/link?register=8d55d880-2f5f-4c34-9174-f820b3b6cabe
+			202 container
+				203 text Caja 01 PuntoCash Obispo
+				204 definition list
+					205 container EQUIPO
+						206 text EQUIPO
+					207 container
+						208 text Mostrador 1 · Obispo CAJ-0002-0001
+					209 container VINCULADO
+						210 text VINCULADO
+					211 container
+						212 text 20 ene 2026 por Daniel Castro
+					213 container ÚLTIMA ACTIVIDAD
+						214 text ÚLTIMA ACTIVIDAD
+					215 text 29/09/2026 · 17:55
+					216 container JORNADA
+						217 text JORNADA
+					218 text Cerrada
+				219 button Editar etiqueta
+				220 button Desvincular
+			221 container
+				222 text Caja 03 PuntoCash Obispo
+				223 definition list
+					224 container EQUIPO
+						225 text EQUIPO
+					226 container
+						227 text Mostrador 3 · Obispo CAJ-0002-0003
+					228 container VINCULADO
+						229 text VINCULADO
+					230 container
+						231 text 2 mar 2026 por Daniel Castro
+					232 container ÚLTIMA ACTIVIDAD
+						233 text ÚLTIMA ACTIVIDAD
+					234 text 29/09/2026 · 16:30
+					235 container JORNADA
+						236 text JORNADA
+					237 container
+						238 link Description: Abierta · Carlos Díaz, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+						239 text desde el 24 oct 2026 · 08:23
+				240 button Editar etiqueta
+				241 button Desvincular
+			242 container
+				243 text Caja01 PuntoCash Cerro
+				244 definition list
+					245 container EQUIPO
+						246 text EQUIPO
+					247 text La etiqueta
+					248 container VINCULADO
+						249 text VINCULADO
+					250 container
+						251 text 28 oct 2026 por Daniel Castro
+					252 container ÚLTIMA ACTIVIDAD
+						253 text ÚLTIMA ACTIVIDAD
+					254 text 29/10/2026 · 10:06
+					255 container JORNADA
+						256 text JORNADA
+					257 container
+						258 link Description: Abierta · Endry Perez, Value: staging.puntocash.co/admin/shifts/9f601bc4-ce8e-4c86-bdd0-5f6dcadafca8
+						259 text desde el 28 oct 2026 · 20:18
+				260 button Editar etiqueta
+				261 button Desvincular
+			262 container
+				263 text Caja 01 PuntoCash Vedado
+				264 definition list
+					265 container EQUIPO
+						266 text EQUIPO
+					267 container
+						268 text Mostrador 1 · Vedado CAJ-0001-0001
+					269 container VINCULADO
+						270 text VINCULADO
+					271 container
+						272 text 20 ene 2026 por Marta Sánchez
+					273 container ÚLTIMA ACTIVIDAD
+						274 text ÚLTIMA ACTIVIDAD
+					275 text 24/10/2026 · 22:51
+					276 container JORNADA
+						277 text JORNADA
+					278 container
+						279 link Description: Abierta · Lidia Gómez, Value: staging.puntocash.co/admin/shifts/2c6d5e7f-8d21-408a-b0cf-56f46e6297f9
+						280 text desde el 24 oct 2026 · 08:43
+				281 button Editar etiqueta
+				282 button Desvincular
+			283 container
+				284 text Caja 02 PuntoCash Vedado
+				285 definition list
+					286 container EQUIPO
+						287 text EQUIPO
+					288 container
+						289 text Mostrador 2 · Vedado CAJ-0001-0002
+					290 container VINCULADO
+						291 text VINCULADO
+					292 container
+						293 text 20 ene 2026 por Marta Sánchez
+					294 container ÚLTIMA ACTIVIDAD
+						295 text ÚLTIMA ACTIVIDAD
+					296 text 26/09/2026 · 17:05
+					297 container JORNADA
+						298 text JORNADA
+					299 container
+						300 link Description: Abierta · Juan Pérez, Value: staging.puntocash.co/admin/shifts/e837b825-27cc-47c5-9ac5-9897647d24eb
+						301 text desde el 24 oct 2026 · 08:29
+				302 button Editar etiqueta
+				303 button Desvincular
+			304 container
+				305 text Caja 03 PuntoCash Vedado
+				306 definition list
+					307 container EQUIPO
+						308 text EQUIPO
+					309 container
+						310 text Mostrador 3 · Vedado CAJ-0001-0003
+					311 container VINCULADO
+						312 text VINCULADO
+					313 container
+						314 text 1 sept 2026 por Marta Sánchez
+					315 container ÚLTIMA ACTIVIDAD
+						316 text ÚLTIMA ACTIVIDAD
+					317 text 29/09/2026 · 18:40
+					318 container JORNADA
+						319 text JORNADA
+					320 container
+						321 link Description: Abierta · Alberto Fonseca, Value: staging.puntocash.co/admin/shifts/58346286-e250-4590-b79d-8553bb15b751
+						322 text desde el 24 oct 2026 · 08:29
+				323 button Editar etiqueta
+				324 button Desvincular
+		325 container Desvincular el equipo de Caja 03
+			326 heading Desvincular el equipo de Caja 03, Value: 2
+				327 text Desvincular el equipo de Caja 03
+			328 button Cerrar
+			329 text Mostrador 3 · Obispo dejará de ser Caja 03. Volverá a su pantalla de vinculación al instante, y si hay un trabajador con sesión iniciada en él, su sesión termina: lo que tuviera a medias sin confirmar se descarta, y lo ya confirmado se conserva.
+			330 container
+				331 text Desvincular no cierra la jornada Si Caja 03 tiene una jornada abierta, seguirá abierta hasta su cierre, y para hacerlo habrá que vincular un equipo a esa caja. Si prefieres no dejarla sin equipo, puedes forzar el cierre de su jornada desde Jornadas antes de desvincular.
+			332 button Cancelar
+			333 button Desvincular equipo
+		138 container Navegación de administración
+			139 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			140 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			141 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			142 button Más
+
+The focused UI element is 325 container Desvincular el equipo de Caja 03

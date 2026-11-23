@@ -1,0 +1,7 @@
+Browser tab: 8, Title: "502 Bad Gateway", URL: "https://staging.api.puntocash.co/".
+1 AXWebArea 502 Bad Gateway, URL: staging.api.puntocash.co/
+	2 heading 502 Bad Gateway, Value: 1
+		3 text 502 Bad Gateway
+	4 text nginx/1.28.3 (Ubuntu)
+
+The focused UI element is 1 AXWebArea 502 Bad Gateway, URL: staging.api.puntocash.co/

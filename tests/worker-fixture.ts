@@ -24,6 +24,8 @@ export interface Puesto {
   registerId: string;
   sedeId: string;
   caja: string;
+  /** Con `kiosco`: el kiosco de autoservicio de la misma sede. */
+  kioscoId?: string;
 }
 
 interface Opciones {
@@ -43,6 +45,8 @@ interface Opciones {
   conSesion: boolean;
   /** El fondo entra en billetes de todas las denominaciones, como una caja con cambio (no de mayor a menor). */
   conCambio: boolean;
+  /** Vincula además un kiosco de autoservicio a la sede del puesto. */
+  kiosco: boolean;
 }
 
 export const test = base.extend<Opciones & { puesto: Puesto }>({
@@ -57,10 +61,11 @@ export const test = base.extend<Opciones & { puesto: Puesto }>({
   sede: ["sede-vedado", { option: true }],
   conSesion: [true, { option: true }],
   conCambio: [false, { option: true }],
+  kiosco: [false, { option: true }],
 
   puesto: [
-    async ({ request, context, fondos, conCambio, monedas, sede, servicios, giros, cerrada, historial, diferenciaAlCerrar, conSesion }, use) => {
-      const datos = encodeURIComponent(JSON.stringify({ fondos, monedas, sede, giros, conCambio, cerrar: cerrada, historial, ...(diferenciaAlCerrar ? { diferenciaAlCerrar } : {}), ...(servicios ? { servicios } : {}) }));
+    async ({ request, context, fondos, conCambio, kiosco, monedas, sede, servicios, giros, cerrada, historial, diferenciaAlCerrar, conSesion }, use) => {
+      const datos = encodeURIComponent(JSON.stringify({ fondos, monedas, sede, giros, conCambio, kiosco, cerrar: cerrada, historial, ...(diferenciaAlCerrar ? { diferenciaAlCerrar } : {}), ...(servicios ? { servicios } : {}) }));
       /* Un reintento: con seis trabajadores pidiendo puestos a la vez, el
          servidor puede cortar alguna conexión. */
       const pedir = () => request.get(`${WORKER_BASE_URL}/pruebas/puesto?datos=${datos}`);

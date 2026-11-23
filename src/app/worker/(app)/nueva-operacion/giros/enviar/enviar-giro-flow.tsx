@@ -97,6 +97,8 @@ interface InitialFlow {
   kioskCode: string | null;
   /** Lo que el cliente declaró de sí mismo en el kiosco: solo lanza la búsqueda del remitente. */
   kioskSender: KioskClientInput | null;
+  /** La cuenta que el kiosco le enseñó al cliente, para avisar si la de ahora no coincide. */
+  kioskCotizacion: { giro: number; tarifa: number; total: number } | null;
 }
 
 /**
@@ -105,20 +107,28 @@ interface InitialFlow {
  * loaded, not registered → registered here). Opened from "Buscar solicitud",
  * the kiosk request pre-runs that search with the document the client typed,
  * and fills the beneficiary and the giro; once the worker selects the sender,
- * a complete request goes straight to "Revisar giro".
+ * a complete request goes straight to the cash: the client already saw the
+ * whole account (beneficiary, fee, total) on the kiosk. "Revisar giro" stays
+ * one step back.
  */
 function buildInitialFlow(): InitialFlow {
   const handoff = readPendingWorkerHandoff("giros-enviar");
-  if (!handoff) return { step: "remitente", values: INITIAL_VALUES, kioskCode: null, kioskSender: null };
+  if (!handoff) return { step: "remitente", values: INITIAL_VALUES, kioskCode: null, kioskSender: null, kioskCotizacion: null };
 
-  const { sender, beneficiary, senderCurrency, deliveryAmount, forma } = handoff.data;
+  const { sender, beneficiary, senderCurrency, deliveryAmount, forma, cotizacion } = handoff.data;
   const values: GiroFormValues = {
     sender: EMPTY_SENDER,
     beneficiary: { ...EMPTY_BENEFICIARY, ...beneficiary },
-    /* El kiosco dirá cómo lo pidió el cliente; mientras no lo diga, es lo que tiene que llegar. */
+    /* Como lo pidió el cliente en el kiosco; sin forma, lo que tiene que llegar. */
     giro: { senderCurrency, forma: forma ?? "llegar", amountInput: formatAmount(deliveryAmount, 2) },
   };
-  return { step: "remitente", values, kioskCode: handoff.code, kioskSender: sender };
+  return {
+    step: "remitente",
+    values,
+    kioskCode: handoff.code,
+    kioskSender: sender,
+    kioskCotizacion: cotizacion ?? null,
+  };
 }
 
 /** El remitente es un cliente registrado: sus datos se toman tal cual, no se editan en el giro. */
@@ -201,7 +211,8 @@ export function EnviarGiroFlow(): React.JSX.Element {
 
   /**
    * Elegido el remitente, se sigue al formulario del giro. Una solicitud de
-   * kiosco ya trae el resto completo: va directa a Revisar giro.
+   * kiosco ya trae el resto completo, y el cliente ya vio la cuenta: va
+   * directa al efectivo, con la tarifa de ahora.
    */
   function selectSender(selected: Customer) {
     const next = { ...values, sender: senderFromCustomer(selected) };
@@ -211,7 +222,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
       const result = validateGiroForm(next, enabledCurrencies, paraCotizar);
       if (result.draft) {
         setDraft(result.draft);
-        setStep("revisar");
+        setStep("efectivo");
         return;
       }
     }
@@ -363,6 +374,9 @@ export function EnviarGiroFlow(): React.JSX.Element {
         >
           Volver a Revisar giro
         </button>
+        {initial.kioskCotizacion ? (
+          <CuentaDesdeElKiosco antes={initial.kioskCotizacion} ahora={draft} />
+        ) : null}
         <header>
           <h1 className="text-screen-title text-text-primary">Billetes del cobro</h1>
           <p className="mt-2 text-body text-text-secondary">
@@ -1039,5 +1053,29 @@ function SummaryRow({
         {detail ? <span className="block text-caption font-normal text-text-secondary">{detail}</span> : null}
       </dd>
     </div>
+  );
+}
+
+/**
+ * La cuenta que el cliente vio en el kiosco frente a la de ahora. Si la
+ * tarifa cambió entre una y otra, el trabajador tiene que saberlo antes de
+ * cobrar: el cliente llega con la cifra del kiosco en la cabeza (y en papel).
+ */
+function CuentaDesdeElKiosco({
+  antes,
+  ahora,
+}: {
+  antes: { giro: number; tarifa: number; total: number };
+  ahora: GiroDraft;
+}): React.JSX.Element | null {
+  const igual =
+    Math.abs(antes.giro - ahora.deliveryAmount) < 0.005 && Math.abs(antes.total - ahora.tarifa.total) < 0.005;
+  if (igual) return null;
+  const m = (amount: number) => formatMoney({ amount, currency: ahora.senderCurrency });
+  return (
+    <Alert variant="warning" title="La tarifa cambió desde que el cliente preparó la solicitud">
+      En el kiosco vio que el beneficiario recibía {m(antes.giro)} y que entregaba {m(antes.total)}. Con la tarifa de
+      ahora recibe {m(ahora.deliveryAmount)} y entrega {m(ahora.tarifa.total)}. Explícaselo antes de cobrar.
+    </Alert>
   );
 }

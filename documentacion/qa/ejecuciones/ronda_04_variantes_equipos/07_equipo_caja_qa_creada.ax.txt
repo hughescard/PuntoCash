@@ -1,0 +1,114 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/devices".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			6 text OBI — PuntoCash Obispo
+		95 container
+			96 heading Equipos, Value: 1
+				97 text Equipos
+			98 text Las máquinas de tus sedes: la caja de cada mostrador y los kioscos de autoservicio.
+			99 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices/link
+		100 container Tipo de equipo
+			101 link Description: Cajas 5, Value: staging.puntocash.co/admin/devices
+			102 link Description: Kioscos de autoservicio 1, Value: staging.puntocash.co/admin/devices?tab=kiosks
+		103 container
+			104 text 3 de tus cajas no tienen equipo vinculado En una caja sin equipo no puede iniciar sesión ningún trabajador. Vincúlale uno para ponerla a operar.
+		105 content list
+			106 container
+				107 text Caja 02 Sin equipo PuntoCash Obispo
+				108 definition list
+					109 container EQUIPO
+						110 text EQUIPO
+					111 text Sin equipo vinculado
+					112 container VINCULADO
+						113 text VINCULADO
+					114 text —
+					115 container ÚLTIMA ACTIVIDAD
+						116 text ÚLTIMA ACTIVIDAD
+					117 text —
+					118 container JORNADA
+						119 text JORNADA
+					120 text Cerrada
+				121 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices/link?register=40d605f8-1706-4ea1-8a10-9e5645b8f2b3
+			122 container
+				123 text Caja 04 Sin equipo PuntoCash Obispo
+				124 definition list
+					125 container EQUIPO
+						126 text EQUIPO
+					127 text Sin equipo vinculado
+					128 container VINCULADO
+						129 text VINCULADO
+					130 text —
+					131 container ÚLTIMA ACTIVIDAD
+						132 text ÚLTIMA ACTIVIDAD
+					133 text —
+					134 container JORNADA
+						135 text JORNADA
+					136 text Cerrada
+				137 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices/link?register=6dd50192-1343-451e-9349-3aac566fb2f9
+			138 container
+				139 text QA-20261029-01 Sin equipo PuntoCash Obispo
+				140 definition list
+					141 container EQUIPO
+						142 text EQUIPO
+					143 text Sin equipo vinculado
+					144 container VINCULADO
+						145 text VINCULADO
+					146 text —
+					147 container ÚLTIMA ACTIVIDAD
+						148 text ÚLTIMA ACTIVIDAD
+					149 text —
+					150 container JORNADA
+						151 text JORNADA
+					152 text Cerrada
+				153 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices/link?register=61fa4010-08d1-4fe0-be67-5b410aefcea8
+			154 container
+				155 text Caja 01 PuntoCash Obispo
+				156 definition list
+					157 container EQUIPO
+						158 text EQUIPO
+					159 container
+						160 text Mostrador 1 · Obispo CAJ-0002-0001
+					161 container VINCULADO
+						162 text VINCULADO
+					163 container
+						164 text 20 ene 2026 por Daniel Castro
+					165 container ÚLTIMA ACTIVIDAD
+						166 text ÚLTIMA ACTIVIDAD
+					167 text 29/09/2026 · 17:55
+					168 container JORNADA
+						169 text JORNADA
+					170 text Cerrada
+				171 button Editar etiqueta
+				172 button Desvincular
+			173 container
+				174 text Caja 03 PuntoCash Obispo
+				175 definition list
+					176 container EQUIPO
+						177 text EQUIPO
+					178 container
+						179 text Mostrador 3 · Obispo CAJ-0002-0003
+					180 container VINCULADO
+						181 text VINCULADO
+					182 container
+						183 text 2 mar 2026 por Daniel Castro
+					184 container ÚLTIMA ACTIVIDAD
+						185 text ÚLTIMA ACTIVIDAD
+					186 text 29/09/2026 · 16:30
+					187 container JORNADA
+						188 text JORNADA
+					189 container
+						190 link Description: Abierta · Carlos Díaz, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+						191 text desde el 24 oct 2026 · 08:23
+				192 button Editar etiqueta
+				193 button Desvincular
+		90 container Navegación de administración
+			91 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			92 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			93 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			94 button Más
+
+The focused UI element is 0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices

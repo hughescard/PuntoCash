@@ -1,0 +1,174 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/home".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/home
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 container
+			6 combo box (expanded) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Collapse
+				7 text Todas mis sedes
+			8 list Sede que estás viendo
+				9 (selected) Todas mis sedes
+				10 CER — PuntoCash Cerro
+				11 OBI — PuntoCash Obispo
+				12 VED — PuntoCash Vedado
+		13 text Daniel Castro Antilla Servicios Financieros S.R.L.
+		14 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		15 button Cerrar sesión
+		16 container Navegación de administración
+			17 container
+				18 text OPERACIÓN
+				19 content list
+					20 link Description: Inicio, Value: staging.puntocash.co/admin/home
+					21 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+					22 link Description: Aprobaciones 5, Value: staging.puntocash.co/admin/approvals
+					23 link Description: Operaciones, Value: staging.puntocash.co/admin/operations
+				24 text SUCURSAL
+				25 content list
+					26 link Description: Sedes, Value: staging.puntocash.co/admin/branches
+					27 link Description: Cajas, Value: staging.puntocash.co/admin/cash-registers
+					28 link Description: Equipos 3, Value: staging.puntocash.co/admin/devices
+					29 link Description: Trabajadores, Value: staging.puntocash.co/admin/workers
+				30 text CONFIGURACIÓN
+				31 content list
+					32 link Description: Monedas, Value: staging.puntocash.co/admin/currencies
+					33 link Description: Tasas, Value: staging.puntocash.co/admin/rates
+					34 link Description: Promociones, Value: staging.puntocash.co/admin/promotions
+					35 link Description: Reportes, Value: staging.puntocash.co/admin/reports
+			36 text PuntoCash · Administración
+		37 container
+			38 heading Hola, Daniel, Value: 1
+				39 text Hola, Daniel
+			40 text Estás viendo tus 3 sedes. Filtra por una desde la cabecera.
+		41 container Hoy en tus sedes
+			42 heading Hoy en tus sedes, Value: 2
+				43 text Hoy en tus sedes
+			44 container
+				45 text SEDES OPERANDO 3 de 3
+			46 container
+				47 text CAJAS ABIERTAS 5 de 9
+			48 container
+				49 text TRABAJADORES EN TURNO 5
+			50 container
+				51 text OPERACIONES DEL DÍA 0
+			52 container
+				53 text APROBACIONES PENDIENTES 5
+		54 container Requiere tu atención
+			55 heading Requiere tu atención, Value: 2
+				56 text Requiere tu atención
+			57 text Lo que impide que una sede opere encabeza siempre la lista.
+			58 content list
+				59 container
+					60 text PuntoCash Obispo tiene 2 cajas sin equipo vinculado En una caja sin equipo nadie puede iniciar sesión. Vincula el equipo del puesto para que pueda operar.
+					61 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices
+				62 container
+					63 text PuntoCash Vedado tiene una caja sin equipo vinculado En una caja sin equipo nadie puede iniciar sesión. Vincula el equipo del puesto para que pueda operar.
+					64 link Description: Vincular un equipo, Value: staging.puntocash.co/admin/devices
+				65 container
+					66 text PuntoCash Cerro ofrece cambio sin tasas vigentes Sin tasa vigente, las cajas no pueden cambiar esa moneda.
+					67 link Description: Revisar tasas, Value: staging.puntocash.co/admin/rates
+				68 container
+					69 text Tienes 5 aprobaciones pendientes La más antigua es de hace 6 días: diferencia de apertura en Caja 02 de PuntoCash Vedado.
+					70 link Description: Revisar aprobaciones, Value: staging.puntocash.co/admin/approvals
+				71 container
+					72 text 4 cajas siguen abiertas desde un día anterior
+					73 link Description: Caja 03 de PuntoCash Obispo, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+					74 text (la abrió Carlos Díaz el 24 oct 2026 · 08:23) ; 
+					75 link Description: Caja 03 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/58346286-e250-4590-b79d-8553bb15b751
+					76 text (la abrió Alberto Fonseca el 24 oct 2026 · 08:29) ; 
+					77 link Description: Caja 02 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/e837b825-27cc-47c5-9ac5-9897647d24eb
+					78 text (la abrió Juan Pérez el 24 oct 2026 · 08:29) ; 
+					79 link Description: Caja 01 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/2c6d5e7f-8d21-408a-b0cf-56f46e6297f9
+					80 text (la abrió Lidia Gómez el 24 oct 2026 · 08:43) . Si nadie va a hacer su cierre, puedes forzarlo desde la jornada.
+					81 link Description: Ver jornadas, Value: staging.puntocash.co/admin/shifts
+				82 container
+					83 text Caja01 de PuntoCash Cerro está abierta fuera del horario La abrió Endry Perez el 28 oct 2026 · 20:18. Si nadie va a hacer su cierre, puedes forzarlo desde la jornada.
+					84 link Description: Ver la jornada, Value: staging.puntocash.co/admin/shifts/9f601bc4-ce8e-4c86-bdd0-5f6dcadafca8
+				85 container
+					86 text Caja 01 de PuntoCash Obispo tiene un cierre forzado pendiente La jornada de Marisol Rivas se cerró sin contar el efectivo. El primer conteo será el de quien abra la próxima jornada en esta caja.
+					87 link Description: Ver la jornada, Value: staging.puntocash.co/admin/shifts/1bcff86f-3b4b-4677-8ae1-bead082b7553
+				88 container
+					89 text PuntoCash ajustó la tasa del EUR en PuntoCash Obispo La tasa quedó fuera del rango permitido y se corrigió. Revísala.
+					90 link Description: Revisar tasas, Value: staging.puntocash.co/admin/rates
+		91 container Estado por sede
+			92 heading Estado por sede, Value: 2
+				93 text Estado por sede
+			94 text Cada fila lleva a la ficha de su sede.
+			95 table
+				96 row
+					97 cell
+						98 text SEDE
+					99 cell
+						100 text ESTADO
+					101 cell
+						102 text CAJAS
+					103 cell
+						104 text KIOSCOS
+					105 cell
+						106 text TRABAJADORES
+					107 cell
+						108 text JORNADA
+					109 cell
+						110 text EN TURNO
+					111 cell
+						112 text OPERACIONES HOY
+				113 row
+					114 cell
+						115 link Description: PuntoCash Cerro, Value: staging.puntocash.co/admin/branches/6be68185-957c-484f-af2a-db72a61f9fd3
+						116 text CER · Cerro, La Habana
+					117 cell
+						118 text Activa
+					119 cell
+						120 text 1
+					121 cell
+						122 text 0
+					123 cell
+						124 text 1
+					125 cell
+						126 text 1 de 1 abiertas primera a las 20:18
+					127 cell
+						128 content list
+							129 text Endry Perez
+					130 cell
+						131 text 0
+				132 row
+					133 cell
+						134 link Description: PuntoCash Obispo, Value: staging.puntocash.co/admin/branches/1951777d-e1f8-418e-8ccc-ed0ba7b7e794
+						135 text OBI · La Habana Vieja, La Habana
+					136 cell
+						137 text Activa
+					138 cell
+						139 text 4 2 sin equipo
+					140 cell
+						141 text 1
+					142 cell
+						143 text 2
+					144 cell
+						145 text 1 de 4 abiertas
+					146 cell
+						147 content list
+							148 text Carlos Díaz
+					149 cell
+						150 text 0
+				151 row
+					152 cell
+						153 link Description: PuntoCash Vedado, Value: staging.puntocash.co/admin/branches/8dac955d-b970-46bd-a148-4277b2737117
+						154 text VED · Plaza de la Revolución, La Habana
+					155 cell
+						156 text Activa
+					157 cell
+						158 text 4 1 sin equipo
+					159 cell
+						160 text 2
+					161 cell
+						162 text 3
+					163 cell
+						164 text 3 de 4 abiertas
+					165 cell
+						166 content list
+							167 text Alberto Fonseca
+							168 text Juan Pérez
+							169 text Lidia Gómez
+					170 cell
+						171 text 0
+
+The focused UI element is 6 combo box (expanded) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Collapse

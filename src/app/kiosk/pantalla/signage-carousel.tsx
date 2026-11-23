@@ -2,9 +2,7 @@
 
 import * as React from "react";
 
-import type { Branch } from "@/features/branches/branches";
-
-import { usePromociones, useTablero } from "./tableros";
+import { usePromociones, useTablero, type SedePublica } from "./tableros";
 
 import { SlideTasas } from "./slides/slide-tasas";
 import { SlideSucursal } from "./slides/slide-sucursal";
@@ -32,7 +30,7 @@ interface Slide {
  * The position dots are decorative only: nothing here is a button, and
  * nothing on this screen ever expects to be touched.
  */
-export function SignageCarousel({ branch }: { branch: Branch }): React.JSX.Element {
+export function SignageCarousel({ sede }: { sede: SedePublica }): React.JSX.Element {
   const [index, setIndex] = React.useState(0);
 
   /* Una sede sin tasas publicadas —sin Cambio de moneda, o sin ninguna tasa
@@ -40,11 +38,11 @@ export function SignageCarousel({ branch }: { branch: Branch }): React.JSX.Eleme
      rotación. Y **cada promoción vigente es su propia diapositiva**, grande,
      porque se lee desde el otro lado de la sala (decisión del 16/10/2026); sin
      ninguna, no hay diapositiva de promociones. */
-  const conTasas = useTablero(branch.id).length > 0;
-  const promociones = usePromociones(branch.id);
+  const conTasas = useTablero(sede.id).length > 0;
+  const promociones = usePromociones(sede.id);
   const slides: Slide[] = [
-    ...(conTasas ? [{ id: "tasas", label: "Tasas del día", render: () => <SlideTasas branch={branch} /> }] : []),
-    { id: "sucursal", label: "Info de la sucursal", render: () => <SlideSucursal branch={branch} /> },
+    ...(conTasas ? [{ id: "tasas", label: "Tasas del día", render: () => <SlideTasas sede={sede} /> }] : []),
+    { id: "sucursal", label: "Info de la sucursal", render: () => <SlideSucursal sede={sede} /> },
     ...promociones.map((promo) => ({
       id: `promo-${promo.id}`,
       label: promo.titulo,

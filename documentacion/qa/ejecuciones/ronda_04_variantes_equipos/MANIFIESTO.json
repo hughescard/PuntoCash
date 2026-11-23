@@ -1,0 +1,110 @@
+{
+  "fecha": "2026-10-29",
+  "evidencias": [
+    {
+      "archivo": "01_atajo_caja02.ax.txt",
+      "bytes": 2434,
+      "sha256": "f8f1195d39aff655b0c2699e29a2cd70d1d0c4cc660af057f87b4f66da3324f7"
+    },
+    {
+      "archivo": "02_cerro_sin_cajas_libres.ax.txt",
+      "bytes": 2346,
+      "sha256": "3dd063a6458333cfe1f057e9b6c78f561cf072bf1ec1c85b2ac5330289223027"
+    },
+    {
+      "archivo": "02_cerro_sin_cajas_libres.png",
+      "bytes": 31549,
+      "sha256": "2914cfa77a1f7555148da8ed84812e81f8cb4c353fb9ef994a8c4ac8ebf9698b"
+    },
+    {
+      "archivo": "03_cajas_obispo.ax.txt",
+      "bytes": 2811,
+      "sha256": "c21ba6b9be6c24c3cc9fba7d59626f731d6e81c624306d6787d3393a26a7ee0f"
+    },
+    {
+      "archivo": "04_retirar_con_jornada_y_equipo.ax.txt",
+      "bytes": 3464,
+      "sha256": "7e6df1fe63ff0fb744e016889f7f8c1dd0a85dd604b31893bdc596ca7a7f3f37"
+    },
+    {
+      "archivo": "04_retirar_con_jornada_y_equipo.png",
+      "bytes": 38394,
+      "sha256": "6052541f9e056b3bd1f6f3edf164b59610dbefc4990a1d5dfa59e8522ddc4b1b"
+    },
+    {
+      "archivo": "05_retirar_solo_equipo.ax.txt",
+      "bytes": 3464,
+      "sha256": "b12bdbc250aa15ae0619fa46dd2d5167d6016c9220f899ca2f614534ba984780"
+    },
+    {
+      "archivo": "06_caja_qa_creada.ax.txt",
+      "bytes": 3463,
+      "sha256": "c89f1747fcb5120dbab31a02ee408ca08800890c002337d022e9ab3f6d89476e"
+    },
+    {
+      "archivo": "06_caja_qa_creada.png",
+      "bytes": 36880,
+      "sha256": "2af4e0a0552a857297296c97105c1f91714dc6c2b23119912e3e5202182e3812"
+    },
+    {
+      "archivo": "07_equipo_caja_qa_creada.ax.txt",
+      "bytes": 4389,
+      "sha256": "89c5221105204fc8f9a3045c0f7bda4412679779de59165ec38f851d4f74d4fd"
+    },
+    {
+      "archivo": "08_duplicado_rechazado.ax.txt",
+      "bytes": 1784,
+      "sha256": "937de47773f1ff1fe29701d91fc25758f4b7d6ac992511b96670f1d0d279bb7a"
+    },
+    {
+      "archivo": "09_motivo_9_rechazado.ax.txt",
+      "bytes": 3815,
+      "sha256": "a2dfb822039659ff06bc09d1bbcdc07f85ff7c2c3b5d74c642613916ee81b543"
+    },
+    {
+      "archivo": "10_caja_retirada.ax.txt",
+      "bytes": 3703,
+      "sha256": "dff2b3bdc7624d146272098b9f4295dccda8114f92f03d53550d8ced1f3e7636"
+    },
+    {
+      "archivo": "10_caja_retirada.png",
+      "bytes": 36291,
+      "sha256": "58de3e50af636acfae247c5b7aa2dc34811f1181e88ad134df8f689522c7209f"
+    },
+    {
+      "archivo": "11_aviso_reactivacion.ax.txt",
+      "bytes": 3504,
+      "sha256": "0fe875edc72c9234b4571a4c04155dda8fd93b2e221d8cc3b4fce3811bd63f16"
+    },
+    {
+      "archivo": "12_caja_reactivada.ax.txt",
+      "bytes": 3535,
+      "sha256": "80cbaea9e19b9e5349cde15248adf5240c4818a72ae0e3e32be646282adf9b63"
+    },
+    {
+      "archivo": "13_equipo_caja_reactivada.ax.txt",
+      "bytes": 4398,
+      "sha256": "cb9c6f4e83c772760d7ce4a635ba1a9c3b08c9bf68e7e333b7c5397793e70031"
+    },
+    {
+      "archivo": "14_caja_qa_estado_final.ax.txt",
+      "bytes": 3260,
+      "sha256": "c89c7ee7fe91cdc95603491667989030d02133728cde1f0c0c274808fdc77b0a"
+    },
+    {
+      "archivo": "14_caja_qa_estado_final.png",
+      "bytes": 32762,
+      "sha256": "47c1d11704eb2c93ea0f6772b33ebc281e5475e424eb843b38b641dee4eec5cb"
+    },
+    {
+      "archivo": "15_equipos_sin_caja_retirada.ax.txt",
+      "bytes": 3847,
+      "sha256": "9b04581fa302ac5a4b815006233f04486361192624a69cbe5e971d4222abb45e"
+    },
+    {
+      "archivo": "INFORME.md",
+      "bytes": 4529,
+      "sha256": "3b5d36ad77809666d9ab4bf66bf4ad6ad7d02cffbf530b80a00acef787acaedd"
+    }
+  ]
+}

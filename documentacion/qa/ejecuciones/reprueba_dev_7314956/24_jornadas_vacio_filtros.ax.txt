@@ -1,0 +1,89 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/shifts".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/shifts
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		195 container
+			196 heading Jornadas, Value: 1
+				197 text Jornadas
+			198 text El día de trabajo de cada caja: quién la abrió, qué movió y cómo cerró.
+		200 container
+			201 text 5 cajas siguen abiertas de un día anterior
+			202 content list
+				203 container
+					204 link Description: Caja01 de PuntoCash Cerro, Value: staging.puntocash.co/admin/shifts/9f601bc4-ce8e-4c86-bdd0-5f6dcadafca8
+					205 text (abierta por Endry Perez el 28 oct 2026)
+				206 container
+					207 link Description: Caja 01 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/2c6d5e7f-8d21-408a-b0cf-56f46e6297f9
+					208 text (abierta por Lidia Gómez el 24 oct 2026)
+				209 container
+					210 link Description: Caja 03 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/58346286-e250-4590-b79d-8553bb15b751
+					211 text (abierta por Alberto Fonseca el 24 oct 2026)
+				212 container
+					213 link Description: Caja 02 de PuntoCash Vedado, Value: staging.puntocash.co/admin/shifts/e837b825-27cc-47c5-9ac5-9897647d24eb
+					214 text (abierta por Juan Pérez el 24 oct 2026)
+				215 container
+					216 link Description: Caja 03 de PuntoCash Obispo, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+					217 text (abierta por Carlos Díaz el 24 oct 2026)
+			218 text Si nadie va a hacer su cierre, puedes forzarlo desde la jornada.
+		199 button (expanded) Filtros, Secondary Actions: Collapse
+		443 container shifts-filters
+			444 text Desde
+			445 date field (settable) Desde, Value: 2026-10-23, ID: shifts-from
+				446 container
+					447 stepper
+					448 stepper
+					449 stepper
+				450 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			451 text Hasta
+			452 date field (settable) Hasta, Value: 2026-10-29, ID: shifts-to
+				453 container
+					454 stepper
+					455 stepper
+					456 stepper
+				457 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			458 text Caja
+			459 pop up button (collapsed, settable) Caja, Value: Caja 02 · PuntoCash Vedado, ID: shifts-register, Secondary Actions: Expand
+				460 menu
+					461 Todas las cajas
+					462 Caja 01 · PuntoCash Obispo
+					463 Caja 01 · PuntoCash Vedado
+					464 Caja 02 · PuntoCash Obispo
+					465 (selected) Caja 02 · PuntoCash Vedado
+					466 Caja 03 · PuntoCash Obispo
+					467 Caja 03 · PuntoCash Vedado
+					468 Caja 04 · PuntoCash Obispo
+					469 Caja 04 · PuntoCash Vedado
+					470 Caja01 · PuntoCash Cerro
+					471 QA-20261029-01 · PuntoCash Obispo
+					472 QA-RDEV731-20261029 · PuntoCash Obispo
+			473 text Trabajador
+			474 pop up button (collapsed, settable) Trabajador, Value: Todos, ID: shifts-worker, Secondary Actions: Expand
+				475 menu
+					476 (selected) Todos
+					477 Alberto Fonseca
+					478 Carlos Díaz
+					479 Endry Perez Zurdo
+					480 Juan Pérez
+					481 Lidia Gómez
+					482 Marisol Rivas
+			483 text Estado
+			484 pop up button (collapsed, settable) Estado, Value: Cierres forzados, ID: shifts-state, Secondary Actions: Expand
+				485 menu
+					486 Todas
+					487 Abiertas
+					488 Cerradas
+					489 (selected) Cierres forzados
+			490 checkbox (settable, integer) Description: Solo con diferencia, Value: 0
+		491 text Ninguna jornada coincide con esos filtros.
+		492 button Quitar los filtros
+		190 container Navegación de administración
+			191 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			192 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			193 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			194 button Más
+
+The focused UI element is 199 button (expanded) Filtros, Secondary Actions: Collapse

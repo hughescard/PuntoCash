@@ -63,6 +63,14 @@ import {
 import { getContextoDeTrabajo } from "@/features/worker/sesion-servidor";
 import { registroDeWorker } from "@/features/worker/vista";
 import { capturaLista, consumirCaptura, requiereFotoDelCarne } from "@/features/network/fotos-del-carne";
+import {
+  canjearSolicitudDeKiosco,
+  consultarSolicitudDeKiosco,
+  type ConsultaDeSolicitud,
+  type MotivoDeSolicitudNoValida,
+} from "@/features/network/solicitudes-de-kiosco";
+import { findSedeById } from "@/features/network/sedes";
+import type { KioskRequest } from "@/features/kiosk/self-service-request";
 
 
 /**
@@ -481,4 +489,35 @@ export async function explicarRecuentoAction(
     const r = explicarRecuento(ctx, movimientoId, e);
     return r.ok ? { ok: true, value: { motivo: r.value.motivo! } } : r;
   });
+}
+
+/* =========================================================================
+ * Solicitudes del kiosco de autoservicio
+ * ====================================================================== */
+
+export type SolicitudDeKioscoLeida =
+  | { ok: true; solicitud: KioskRequest }
+  | { ok: false; motivo: MotivoDeSolicitudNoValida; sede?: string };
+
+function conNombreDeSede(consulta: ConsultaDeSolicitud): SolicitudDeKioscoLeida {
+  if (consulta.ok) return consulta;
+  return consulta.sede ? { ...consulta, sede: findSedeById(consulta.sede)?.name ?? consulta.sede } : consulta;
+}
+
+/** Lo que el cliente preparó en un kiosco, si es de la sede de esta caja. No la gasta. */
+export async function consultarSolicitudDeKioscoAction(code: string): Promise<SolicitudDeKioscoLeida> {
+  const ctx = await getContextoDeTrabajo();
+  if (!ctx) return { ok: false, motivo: "no-encontrada" };
+  return conNombreDeSede(consultarSolicitudDeKiosco(ctx.sede.id, code));
+}
+
+/**
+ * Gasta la solicitud al continuar con ella: un código, una visita a caja. Se
+ * vuelve a comprobar en el mismo acto, porque pudo vencer o canjearla otra
+ * caja mientras el trabajador la leía.
+ */
+export async function canjearSolicitudDeKioscoAction(code: string): Promise<SolicitudDeKioscoLeida> {
+  const ctx = await getContextoDeTrabajo();
+  if (!ctx) return { ok: false, motivo: "no-encontrada" };
+  return conNombreDeSede(canjearSolicitudDeKiosco(ctx.sede.id, code));
 }

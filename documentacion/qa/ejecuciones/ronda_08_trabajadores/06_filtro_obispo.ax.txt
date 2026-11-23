@@ -1,0 +1,70 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/workers".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/workers
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		132 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			133 text OBI — PuntoCash Obispo
+		8 container
+			9 heading Trabajadores, Value: 1
+				10 text Trabajadores
+			11 text Las personas que operan las cajas de tus sedes.
+			12 link Description: Dar de alta, Value: staging.puntocash.co/admin/workers/new
+		13 text Buscar trabajador
+		14 search text field (settable) Buscar trabajador, ID: workers-search
+		15 text Sede
+		16 pop up button (collapsed, settable) Sede, Value: PuntoCash Obispo, ID: workers-branch, Secondary Actions: Expand
+			17 menu
+				18 Todas mis sedes
+				19 PuntoCash Cerro
+				20 (selected) PuntoCash Obispo
+				21 PuntoCash Vedado
+		22 text Estado
+		23 pop up button (collapsed, settable) Estado, Value: Activos, ID: workers-status, Secondary Actions: Expand
+			24 menu
+				25 (selected) Activos
+				26 Desactivados
+				27 Todos los estados
+		28 content list
+			45 container
+				46 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				47 text Activo PuntoCash Obispo
+				48 definition list
+					49 container IDENTIFICADOR
+						50 text IDENTIFICADOR
+					51 text cdiaz@puntocash.com
+					52 container CORREO DE VERIFICACIÓN
+						53 text CORREO DE VERIFICACIÓN
+					54 text c•••z@puntocash.com
+					55 container ALTA
+						56 text ALTA
+					57 text 1 feb 2026
+					58 container ÚLTIMA JORNADA
+						59 text ÚLTIMA JORNADA
+					60 link Description: Abierta ahora · Caja 03, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+			61 container
+				62 link Description: Marisol Rivas, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00
+				63 text Activo PuntoCash Obispo
+				64 definition list
+					65 container IDENTIFICADOR
+						66 text IDENTIFICADOR
+					67 text mrivas@puntocash.com
+					68 container CORREO DE VERIFICACIÓN
+						69 text CORREO DE VERIFICACIÓN
+					70 text m•••s@puntocash.com
+					71 container ALTA
+						72 text ALTA
+					73 text 1 feb 2026
+					74 container ÚLTIMA JORNADA
+						75 text ÚLTIMA JORNADA
+					76 link Description: 23 oct 2026 · Caja 01, Value: staging.puntocash.co/admin/shifts/1bcff86f-3b4b-4677-8ae1-bead082b7553
+		125 container
+			126 text Mostrando 1 – 2 de 2 trabajadores
+		127 container Navegación de administración
+			128 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			129 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			130 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			131 button Más
+
+The focused UI element is 132 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand

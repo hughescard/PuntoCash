@@ -1,11 +1,10 @@
 import * as React from "react";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { cifraDeTablero } from "@/lib/format";
-import { DEVICE_COOKIE_NAMES, parseDeviceCookie } from "@/features/devices/device-cookie";
 import { tableroPublico } from "@/features/network/rates";
+import { exigirServicioDeKiosco, getKiosco } from "@/features/kiosk/sesion-servidor";
 
 export const metadata: Metadata = {
   title: "Tasas del día",
@@ -19,14 +18,14 @@ export const metadata: Metadata = {
  * información" alongside self-service).
  *
  * El tablero es **el de la sede del kiosco**, leído de `tableroPublico`: lo que
- * su mercante fijó en `/admin/tasas` (**A12**, **FR-AD-DOM-7**). La sede sale
- * de la cookie espejo del vínculo, la misma con la que el layout pinta la
- * cabecera; un kiosco sin vincular no llega hasta aquí.
+ * su mercante fijó en `/admin/tasas`. La sede sale del vínculo del kiosco, el
+ * mismo con el que el layout pinta la cabecera. Una sede que no cambia moneda
+ * no tiene tablero, y la pantalla no existe para su kiosco.
  */
 export default async function KioskTasasPage(): Promise<React.JSX.Element> {
-  const store = await cookies();
-  const device = parseDeviceCookie(store.get(DEVICE_COOKIE_NAMES.kiosco)?.value);
-  const tablero = device ? tableroPublico(device.branchId) : [];
+  await exigirServicioDeKiosco("cambio-moneda");
+  const kiosco = await getKiosco();
+  const tablero = kiosco.estado === "operando" ? tableroPublico(kiosco.sede.id) : [];
 
   if (tablero.length === 0) {
     return (

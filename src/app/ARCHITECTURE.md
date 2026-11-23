@@ -23,8 +23,9 @@ worker/
 ```
 
 A Worker computer carries two sessions. The **device session** (the computer
-is Caja 03 of a sede) is created once by the sede's admin and remembered — see
-`src/features/devices/device-link.ts`, shared with the self-service kiosk. The
+is Caja 03 of a sede) is created once by the sede's admin and remembered by the
+network — see `src/features/network/devices.ts`, shared with the self-service
+kiosk. The
 **Worker session** (a person operating it) is opened with password + second
 factor on top of it.
 
@@ -91,21 +92,23 @@ different people, and each has its own shell:
 kiosk/
   autoservicio/   touch self-service — a client operates this directly
     layout.tsx    AppHeader only (no sidebar), composed from @/components/shell;
-                  wraps every screen in the device gate (pairing until linked)
+                  asks the network what this kiosk is: pairing until linked,
+                  "no disponible" while its sede does not operate
     <servicio>/   one folder per self-service flow (cambio-moneda, remesas, giros/…)
   pantalla/       non-touch signage — played unattended on branch TVs
     layout.tsx    NOT built from @/components/shell — see the exception below
     slides/       one component per rotating slide
-  simulador-admin/  DEMO-ONLY stand-in for the admin panel's "Kioscos de
-                  autoservicio" and "Cajas" sections: links and unlinks the
-                  kiosk and the Worker caja
 ```
 
-- **`/kiosk/autoservicio`** runs on a device linked to one sede. Until the
-  sede's admin links it (QR or code, the WhatsApp/Telegram linked-device
-  pattern — see `src/features/kiosk/device-session.ts`), every route under it
-  renders the pairing screen instead of its own content. The client who uses
-  it never signs in; the device does.
+- **`/kiosk/autoservicio`** runs on a device linked to one sede. The device
+  names itself with a cookie and the network answers what it is
+  (`src/features/kiosk/sesion-servidor.ts`), exactly like a Worker caja. Until
+  the sede's admin links it from `/admin/equipos/vincular` (QR or code, the
+  WhatsApp/Telegram linked-device pattern), every route under it renders the
+  pairing screen. Once linked it only offers the services its sede has
+  enabled, and its requests live in the network
+  (`src/features/network/solicitudes-de-kiosco.ts`), so only a caja of that
+  sede can redeem them. The client who uses it never signs in; the device does.
 - **`/kiosk/autoservicio`** only ever prepares a request — it never moves cash
   and never completes a service on its own (see the domain note atop
   `src/features/kiosk/self-service-request.ts`). Every flow ends on a request
@@ -124,10 +127,6 @@ kiosk/
   a tap it cannot respond to. The only interactive views are configuration:
   the first-start sede picker, and the confirmation that Atrás/Esc opens to
   change the sede (see `src/features/kiosk/signage-branch.ts`).
-- **`/kiosk/simulador-admin`** is not a product. The admin panel does not
-  exist yet, and neither a kiosk nor a Worker caja can be used until an admin
-  links it, so the demo ships this stand-in to link and unlink both. Remove it
-  once `/admin` has its "Kioscos de autoservicio" and "Cajas" sections.
 
 Rules:
 

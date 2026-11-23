@@ -3,12 +3,17 @@
 import * as React from "react";
 import { ChevronRight, MapPin, Search } from "lucide-react";
 
-import { searchBranches, type Branch } from "@/features/branches/branches";
 import { SlideHeading } from "./slides/slide-tasas";
+import { useSedes, type SedePublica } from "./tableros";
+
+/** Minúsculas y sin tildes, para que "camaguey" encuentre "Camagüey". */
+function normalizar(valor: string): string {
+  return valor.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
 
 /**
  * First-start setup of a signage screen (Pantalla FRD §1.1 "Selección de
- * sede"): every sede of the network, a search box that filters as you type,
+ * sede"): every sede of the network that is not closed, a search box that filters as you type,
  * and one tap/click/Enter to choose. There is no link or admin approval —
  * the screen shows public information only, so choosing is all it takes.
  *
@@ -20,9 +25,22 @@ import { SlideHeading } from "./slides/slide-tasas";
  *
  * Sized in `em` of the signage base font, like everything else here.
  */
-export function BranchPicker({ onSelect }: { onSelect: (branch: Branch) => void }): React.JSX.Element {
+export function BranchPicker({
+  aviso,
+  onSelect,
+}: {
+  /** Por qué vuelve el selector en una pantalla que ya tenía sede. */
+  aviso: string | null;
+  onSelect: (sede: SedePublica) => void;
+}): React.JSX.Element {
   const [query, setQuery] = React.useState("");
-  const results = searchBranches(query);
+  /* Las sedes del servidor, no una copia de las de muestra: una sede nueva
+     aparece aquí en cuanto PuntoCash la crea, y una cerrada desaparece. */
+  const sedes = useSedes();
+  const needle = normalizar(query);
+  const results = needle
+    ? sedes.filter((s) => normalizar(`${s.name} ${s.address} ${s.locality}`).includes(needle))
+    : sedes;
   const listRef = React.useRef<HTMLUListElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -64,6 +82,15 @@ export function BranchPicker({ onSelect }: { onSelect: (branch: Branch) => void 
         Elige la sede para mostrar su información. Solo se pide la primera vez; para cambiarla después,
         pulsa Atrás en el mando o Esc en el teclado.
       </p>
+
+      {aviso ? (
+        <p
+          role="status"
+          className="mt-[1em] shrink-0 rounded-control border border-gold/40 bg-gold/10 px-[1em] py-[0.7em] text-[1.05em] text-white"
+        >
+          {aviso}
+        </p>
+      ) : null}
 
       <label className="mt-[1.4em] flex h-[3.2em] shrink-0 items-center gap-[0.8em] rounded-control border-2 border-white/20 bg-white px-[1em] text-navy focus-within:border-gold">
         <Search className="size-[1.3em] shrink-0 text-gray" aria-hidden="true" />

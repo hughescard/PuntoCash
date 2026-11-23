@@ -8,9 +8,10 @@ import type { TasaPublica } from "@/features/network/rates";
 /**
  * Los tableros de tasas que la pantalla puede necesitar, uno por sede.
  *
- * La pantalla elige su sede **en el propio equipo** (`signage-branch.ts`), así
- * que el servidor no sabe cuál es al renderizar: entrega el tablero público de
- * todas —son unas pocas filas cada una— y la pantalla toma el suyo. Lo que
+ * La pantalla elige su sede **en el propio equipo** (`signage-branch.ts`, que
+ * solo guarda su identificador), así que el servidor no sabe cuál es al
+ * renderizar: entrega el tablero público y la ficha de todas —son unas pocas
+ * filas cada una— y la pantalla toma lo suyo. Lo que
  * entrega es exactamente `tableroPublico` del dominio, el mismo origen que lee
  * el kiosco (**A12**).
  *
@@ -26,19 +27,28 @@ const REFRESCO_MS = 30_000;
 const Tableros = React.createContext<Readonly<Record<string, readonly TasaPublica[]>>>({});
 
 /**
- * Lo que la sucursal dice de sí misma en la pantalla: dirección, teléfono y
- * horario ya en líneas. Viaja con los tableros y se refresca con ellos, por
- * la misma razón: lo cambia el administrador de la sede (FR-AD-SEDE-14) y el
- * televisor no se recarga.
+ * Una sede tal como la pantalla puede necesitarla: lo que el selector
+ * enseña y lo que la diapositiva de la sucursal dice de ella. Viene del
+ * servidor y se refresca con los tableros, por la misma razón: el nombre lo
+ * cambia PuntoCash y la dirección, el teléfono y el horario el administrador
+ * de la sede, y el televisor no se recarga.
  */
-export interface FichaPublica {
+export interface SedePublica {
+  id: string;
+  name: string;
   address: string;
   locality: string;
   phone: string;
   horario: readonly string[];
+  /**
+   * Si la sede está atendiendo: suspendida, sin mercante o con el mercante
+   * suspendido no atiende, y la pantalla no anuncia tasas ni promociones que
+   * nadie podría aplicar.
+   */
+  atiende: boolean;
 }
 
-const Fichas = React.createContext<Readonly<Record<string, FichaPublica>>>({});
+const Sedes = React.createContext<readonly SedePublica[]>([]);
 
 /** Una promoción tal como se anuncia: título y texto (**FR-AD-PROM-6**). */
 export interface PromocionPublica {
@@ -53,12 +63,13 @@ const Promociones = React.createContext<Readonly<Record<string, readonly Promoci
 
 export function TablerosProvider({
   tableros,
-  fichas,
+  sedes,
   promociones,
   children,
 }: {
   tableros: Readonly<Record<string, readonly TasaPublica[]>>;
-  fichas: Readonly<Record<string, FichaPublica>>;
+  /** Las sedes que una pantalla puede mostrar: todas menos las cerradas. */
+  sedes: readonly SedePublica[];
   /** Las vigentes de cada sede, ya filtradas por el servidor. */
   promociones: Readonly<Record<string, readonly PromocionPublica[]>>;
   children: React.ReactNode;
@@ -72,9 +83,9 @@ export function TablerosProvider({
 
   return (
     <Tableros.Provider value={tableros}>
-      <Fichas.Provider value={fichas}>
+      <Sedes.Provider value={sedes}>
         <Promociones.Provider value={promociones}>{children}</Promociones.Provider>
-      </Fichas.Provider>
+      </Sedes.Provider>
     </Tableros.Provider>
   );
 }
@@ -84,9 +95,9 @@ export function useTablero(branchId: string): readonly TasaPublica[] {
   return React.useContext(Tableros)[branchId] ?? [];
 }
 
-/** La ficha vigente de una sede, o `null` si el servidor no la conoce. */
-export function useFicha(branchId: string): FichaPublica | null {
-  return React.useContext(Fichas)[branchId] ?? null;
+/** Las sedes que una pantalla puede mostrar, del servidor. */
+export function useSedes(): readonly SedePublica[] {
+  return React.useContext(Sedes);
 }
 
 /** Las promociones vigentes de una sede; vacío si no anuncia ninguna. */

@@ -1,0 +1,75 @@
+{
+  "fecha": "2026-10-29",
+  "evidencias": [
+    {
+      "archivo": "01_jornadas_obispo.ax.txt",
+      "bytes": 4012,
+      "sha256": "f6a303ae4cd5956359d4c6fad10b563c9431761e3734b98f21880404a16c155c"
+    },
+    {
+      "archivo": "02_filtro_forzadas.ax.txt",
+      "bytes": 3679,
+      "sha256": "804a6981b4e71592b95d65bfdd6ed31a620c625589582ac5d09b4d295fd20d1f"
+    },
+    {
+      "archivo": "03_tras_recargar_filtro_perdido.ax.txt",
+      "bytes": 12002,
+      "sha256": "13834e79ec7c42c8c77d44964b3afbaf423543754e86a394ff43a11c06895190"
+    },
+    {
+      "archivo": "04_vacio_por_filtros.ax.txt",
+      "bytes": 3992,
+      "sha256": "bda48f5a690f739c28f7daf35612981bef145178b99adddb3d1e2a2d1d09c078"
+    },
+    {
+      "archivo": "05_cerrada_con_diferencia.ax.txt",
+      "bytes": 4809,
+      "sha256": "8c2344de02f761bc0e16e6c930da0d91e4403507a0af5bafd257c7e21beb5072"
+    },
+    {
+      "archivo": "06_antes_cambiar_sede.ax.txt",
+      "bytes": 5057,
+      "sha256": "339f6ba0172c1a023e578a59d015b2db5b847155585e34b5aeef85be8768a59d"
+    },
+    {
+      "archivo": "07_cambio_sede_conserva_generales.ax.txt",
+      "bytes": 3275,
+      "sha256": "ebced6856d1dffb3befa56862e6cb9cc25dbc881b8d316429b2e2ca26ab3a2ca"
+    },
+    {
+      "archivo": "08_detalle_jornada_cerrada.ax.txt",
+      "bytes": 11803,
+      "sha256": "fe9b78d0ad4d60aecbf28236550ba1a457af9f957f90cbe0d414d67372be58a7"
+    },
+    {
+      "archivo": "09_movimientos_salidas_eur.ax.txt",
+      "bytes": 5088,
+      "sha256": "5ca7a43620f784278fca9ac650b139961b50dcd73554a591e0087704ac71063a"
+    },
+    {
+      "archivo": "10_detalle_movimiento.ax.txt",
+      "bytes": 1877,
+      "sha256": "f73affa50a197ed87f500ed0aada27bc57c7dccfc8513a857105f31e356ef3bf"
+    },
+    {
+      "archivo": "11_operacion_corresponde.ax.txt",
+      "bytes": 3099,
+      "sha256": "8c67707bcf24706761e8b0b844c289a6d488b9044798ce40fb2211cd0b311a63"
+    },
+    {
+      "archivo": "12_regreso_a_jornada.ax.txt",
+      "bytes": 11897,
+      "sha256": "0f58a360a63e8d3196983edd8f88fdca870d00466b740056cef34bf3554d7694"
+    },
+    {
+      "archivo": "12_regreso_a_jornada.png",
+      "bytes": 33290,
+      "sha256": "3c47c60adb898842b455bbf80aa4eb3b32600561eb8848c03b23273e33a1d935"
+    },
+    {
+      "archivo": "INFORME.md",
+      "bytes": 3920,
+      "sha256": "d74cb1fa00447643099c68fe84cb42164486f6431c2f7027ef8f23bc0ded87b4"
+    }
+  ]
+}

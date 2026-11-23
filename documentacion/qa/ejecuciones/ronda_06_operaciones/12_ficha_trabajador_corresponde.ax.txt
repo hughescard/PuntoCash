@@ -1,0 +1,143 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			6 text Todas mis sedes
+		318 container
+			319 heading Marisol Rivas, Value: 1
+				320 text Marisol Rivas
+			321 text mrivas@puntocash.com · PuntoCash Obispo
+			322 link Description: Volver a Trabajadores, Value: staging.puntocash.co/admin/workers
+		323 container
+			324 heading Datos, Value: 2
+				325 text Datos
+			326 definition list
+				327 container ESTADO
+					328 text ESTADO
+				329 text Activo
+				330 container IDENTIFICADOR DE ACCESO
+					331 text IDENTIFICADOR DE ACCESO
+				332 text mrivas@puntocash.com
+				333 container DOCUMENTO
+					334 text DOCUMENTO
+				335 text 79031188204
+				336 text Carné de identidad
+				337 container TELÉFONO
+					338 text TELÉFONO
+				339 text +53 5 000 0000
+				340 container CORREO DE VERIFICACIÓN
+					341 text CORREO DE VERIFICACIÓN
+				342 text m•••s@puntocash.com
+				343 container ALTA
+					344 text ALTA
+				345 text 1 feb 2026
+		346 container
+			347 heading Sede, Value: 2
+				348 text Sede
+			349 link Description: PuntoCash Obispo, Value: staging.puntocash.co/admin/branches/1951777d-e1f8-418e-8ccc-ed0ba7b7e794
+		350 container
+			351 heading Actividad reciente, Value: 2
+				352 text Actividad reciente
+			353 text Ha operado en Caja 01 de PuntoCash Obispo y Caja 03 de PuntoCash Obispo.
+			354 link Description: Ver su volumen por día, Value: staging.puntocash.co/admin/reports?groupBy=day&from=2026-09-30&to=2026-10-29&workerId=e2a42828-9443-428e-8675-78bbccf11c00
+			355 content list
+				356 container
+					357 text Caja 01  ·  PuntoCash Obispo Cierre forzado
+					358 definition list
+						359 container FECHA
+							360 text FECHA
+						361 text 23 oct 2026
+						362 container APERTURA Y CIERRE
+							363 text APERTURA Y CIERRE
+						364 text 08:34 – 26 oct 2026 09:45
+						365 container OPERACIONES
+							366 text OPERACIONES
+						367 text 5
+						368 container CIERRE
+							369 text CIERRE
+						370 container
+							371 text Sin contar Pendiente de conciliar
+					372 link Description: Ver jornada de Caja 01, Marisol Rivas, 23 oct 2026, Value: staging.puntocash.co/admin/shifts/1bcff86f-3b4b-4677-8ae1-bead082b7553
+				373 container
+					374 text Caja 03  ·  PuntoCash Obispo Cerrada
+					375 definition list
+						376 container FECHA
+							377 text FECHA
+						378 text 22 oct 2026
+						379 container APERTURA Y CIERRE
+							380 text APERTURA Y CIERRE
+						381 text 08:29 – 17:38
+						382 container OPERACIONES
+							383 text OPERACIONES
+						384 text 3
+						385 container CIERRE
+							386 text CIERRE
+						387 text Cuadrada
+					388 link Description: Ver jornada de Caja 03, Marisol Rivas, 22 oct 2026, Value: staging.puntocash.co/admin/shifts/76ccb401-837e-4b70-bd30-348a3cbca108
+				389 container
+					390 text Caja 01  ·  PuntoCash Obispo Cerrada
+					391 definition list
+						392 container FECHA
+							393 text FECHA
+						394 text 21 oct 2026
+						395 container APERTURA Y CIERRE
+							396 text APERTURA Y CIERRE
+						397 text 08:39 – 17:35
+						398 container OPERACIONES
+							399 text OPERACIONES
+						400 text 3
+						401 container CIERRE
+							402 text CIERRE
+						403 text Cuadrada
+					404 link Description: Ver jornada de Caja 01, Marisol Rivas, 21 oct 2026, Value: staging.puntocash.co/admin/shifts/4c388b39-85e8-4301-ae40-091c4fbb117a
+				405 container
+					406 text Caja 03  ·  PuntoCash Obispo Cierre forzado
+					407 definition list
+						408 container FECHA
+							409 text FECHA
+						410 text 20 oct 2026
+						411 container APERTURA Y CIERRE
+							412 text APERTURA Y CIERRE
+						413 text 08:43 – 21:40
+						414 container OPERACIONES
+							415 text OPERACIONES
+						416 text 5
+						417 container CIERRE
+							418 text CIERRE
+						419 container
+							420 text Sin contar Contada al abrir la siguiente
+					421 link Description: Ver jornada de Caja 03, Marisol Rivas, 20 oct 2026, Value: staging.puntocash.co/admin/shifts/fd2d1ea1-5a88-467d-b023-8b99675fcdd3
+				422 container
+					423 text Caja 01  ·  PuntoCash Obispo Cerrada
+					424 definition list
+						425 container FECHA
+							426 text FECHA
+						427 text 19 oct 2026
+						428 container APERTURA Y CIERRE
+							429 text APERTURA Y CIERRE
+						430 text 08:24 – 17:28
+						431 container OPERACIONES
+							432 text OPERACIONES
+						433 text 4
+						434 container CIERRE
+							435 text CIERRE
+						436 text Cuadrada
+					437 link Description: Ver jornada de Caja 01, Marisol Rivas, 19 oct 2026, Value: staging.puntocash.co/admin/shifts/6c148640-1993-4e25-8044-758d423d96fa
+		438 container
+			439 heading Acciones, Value: 2
+				440 text Acciones
+			441 link Description: Editar datos, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00/edit
+			442 button Regenerar credencial
+			443 link Description: Ayudar con el acceso, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00/access-help
+			444 button Reasignar a otra sede
+			445 button Desactivar
+		313 container Navegación de administración
+			314 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			315 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			316 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			317 button Más
+
+The focused UI element is 0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00

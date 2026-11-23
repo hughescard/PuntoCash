@@ -1,0 +1,53 @@
+[
+  {
+    "campos": [
+      {
+        "describedBy": null,
+        "invalid": null,
+        "type": "text"
+      },
+      {
+        "describedBy": null,
+        "invalid": null,
+        "type": "password"
+      }
+    ],
+    "focus": "BUTTON",
+    "focusText": "Iniciar sesión",
+    "variante": "ambos vacíos"
+  },
+  {
+    "campos": [
+      {
+        "describedBy": null,
+        "invalid": null,
+        "type": "text"
+      },
+      {
+        "describedBy": null,
+        "invalid": null,
+        "type": "password"
+      }
+    ],
+    "focus": "BUTTON",
+    "focusText": "Iniciar sesión",
+    "variante": "sin contraseña"
+  },
+  {
+    "campos": [
+      {
+        "describedBy": null,
+        "invalid": null,
+        "type": "text"
+      },
+      {
+        "describedBy": null,
+        "invalid": null,
+        "type": "password"
+      }
+    ],
+    "focus": "BUTTON",
+    "focusText": "Iniciar sesión",
+    "variante": "sin usuario"
+  }
+]

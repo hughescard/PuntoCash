@@ -44,8 +44,7 @@ function finderDark(x: number, y: number, cx: number, cy: number): boolean {
  * Draws a QR-shaped matrix (finder and timing patterns, data modules derived
  * deterministically from `payload`) so the pairing screen looks and lays out
  * exactly as it will in production — but it is NOT a scannable code: this
- * demo ships no QR encoder, and the admin's scan is simulated anyway (see
- * `/kiosk/simulador-admin`). The real terminal renders a real QR carrying a
+ * demo draws no real QR here, and the admin links by typing the code. The real terminal renders a real QR carrying a
  * signed, single-use pairing token (Autoservicio FRD FR-AS-LINK-3, Worker FRD FR-DEV-2).
  */
 export function PairingQr({ payload, className }: { payload: string; className?: string }): React.JSX.Element {

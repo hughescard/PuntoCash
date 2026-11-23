@@ -64,8 +64,8 @@ export function StepRevisionAutoservicio({
       </Card>
 
       <Alert variant="info" title="Esto todavía no es una operación">
-        Al confirmar, recibirás un código para completar el cambio en caja. La tasa se recalculará
-        si tarda demasiado en presentarse.
+        Al confirmar, recibirás un código para completar el cambio en caja. Allí se aplica la tasa del
+        momento en que te atiendan.
       </Alert>
     </div>
   );

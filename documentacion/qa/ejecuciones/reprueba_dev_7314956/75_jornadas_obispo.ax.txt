@@ -1,0 +1,97 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/shifts".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/shifts
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		163 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			164 text OBI — PuntoCash Obispo
+		165 container
+			166 heading Jornadas, Value: 1
+				167 text Jornadas
+			168 text El día de trabajo de cada caja: quién la abrió, qué movió y cómo cerró.
+		170 container
+			171 text Una caja sigue abierta de un día anterior
+			172 content list
+				173 container
+					174 link Description: Caja 03 de PuntoCash Obispo, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+					175 text (abierta por Carlos Díaz el 24 oct 2026)
+			176 text Si nadie va a hacer su cierre, puedes forzarlo desde la jornada.
+		169 button (collapsed) Filtros, Secondary Actions: Expand
+		177 content list
+			178 container
+				179 text Caja 03  ·  PuntoCash Obispo Abierta
+				180 definition list
+					181 container TRABAJADOR
+						182 text TRABAJADOR
+					183 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+					184 container FECHA
+						185 text FECHA
+					186 text 24 oct 2026
+					187 container APERTURA Y CIERRE
+						188 text APERTURA Y CIERRE
+					189 text 08:23 – …
+					190 container OPERACIONES
+						191 text OPERACIONES
+					192 text 6
+					193 container AL ABRIR
+						194 text AL ABRIR
+					195 text Coincide
+					196 container CIERRE
+						197 text CIERRE
+					198 text —
+				199 link Description: Ver jornada de Caja 03, Carlos Díaz, 24 oct 2026, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+			200 container
+				201 text Caja 01  ·  PuntoCash Obispo Cierre forzado
+				202 definition list
+					203 container TRABAJADOR
+						204 text TRABAJADOR
+					205 link Description: Marisol Rivas, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00
+					206 container FECHA
+						207 text FECHA
+					208 text 23 oct 2026
+					209 container APERTURA Y CIERRE
+						210 text APERTURA Y CIERRE
+					211 text 08:34 – 26 oct 2026 09:45
+					212 container OPERACIONES
+						213 text OPERACIONES
+					214 text 5
+					215 container AL ABRIR
+						216 text AL ABRIR
+					217 text Coincide
+					218 container CIERRE
+						219 text CIERRE
+					220 container
+						221 text Sin contar Pendiente de conciliar
+				222 link Description: Ver jornada de Caja 01, Marisol Rivas, 23 oct 2026, Value: staging.puntocash.co/admin/shifts/1bcff86f-3b4b-4677-8ae1-bead082b7553
+			223 container
+				224 text Caja 03  ·  PuntoCash Obispo Cerrada
+				225 definition list
+					226 container TRABAJADOR
+						227 text TRABAJADOR
+					228 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+					229 container FECHA
+						230 text FECHA
+					231 text 23 oct 2026
+					232 container APERTURA Y CIERRE
+						233 text APERTURA Y CIERRE
+					234 text 08:21 – 17:36
+					235 container OPERACIONES
+						236 text OPERACIONES
+					237 text 6
+					238 container AL ABRIR
+						239 text AL ABRIR
+					240 text Coincide
+					241 container CIERRE
+						242 text CIERRE
+					243 text Sobrante +10,00 EUR
+				244 link Description: Ver jornada de Caja 03, Carlos Díaz, 23 oct 2026, Value: staging.puntocash.co/admin/shifts/bd694aae-3b34-4c67-b554-822b6e6906ff
+		245 container
+			246 text Mostrando 1 – 3 de 3 jornadas
+		48 container Navegación de administración
+			49 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			50 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			51 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			52 button Más
+
+The focused UI element is 50 link Description: Jornadas, URL: staging.puntocash.co/admin/shifts

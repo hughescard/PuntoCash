@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { exigirServicioDeKiosco } from "@/features/kiosk/sesion-servidor";
 import { GirosAutoservicioSelector } from "./giros-selector";
 
 export const metadata: Metadata = {
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function GirosAutoservicioPage() {
+export default async function GirosAutoservicioPage() {
+  await exigirServicioDeKiosco("giros");
   return <GirosAutoservicioSelector />;
 }

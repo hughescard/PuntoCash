@@ -1,0 +1,178 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/cash-registers".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/cash-registers
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		8 container
+			9 heading Cajas, Value: 1
+				10 text Cajas
+			11 text Los mostradores de cada sede. Una caja necesita un equipo vinculado antes de poder operar.
+			12 link Description: Crear caja, Value: staging.puntocash.co/admin/cash-registers/new
+		13 container PuntoCash Cerro
+			14 heading PuntoCash Cerro, Value: 2, ID: registers-6be68185-957c-484f-af2a-db72a61f9fd3
+				15 text PuntoCash Cerro
+			16 text 1 caja activa de 1 en total.
+			17 content list
+				18 container
+					19 text Caja01 Activa
+					20 definition list
+						21 container EQUIPO
+							22 text EQUIPO
+						23 text La etiqueta
+						24 container JORNADA
+							25 text JORNADA
+						26 container
+							27 link Description: Abierta · Endry Perez, Value: staging.puntocash.co/admin/shifts/9f601bc4-ce8e-4c86-bdd0-5f6dcadafca8
+							28 text desde el 28 oct 2026 · 20:18
+						29 container ALTA
+							30 text ALTA
+						31 text 28 oct 2026
+					32 button Retirar
+		33 container PuntoCash Obispo
+			34 heading PuntoCash Obispo, Value: 2, ID: registers-1951777d-e1f8-418e-8ccc-ed0ba7b7e794
+				35 text PuntoCash Obispo
+			36 text 4 cajas activas de 5 en total.
+			37 content list
+				38 container
+					39 text Caja 01 Activa
+					40 definition list
+						41 container EQUIPO
+							42 text EQUIPO
+						43 text Mostrador 1 · Obispo
+						44 container JORNADA
+							45 text JORNADA
+						46 text Cerrada
+						47 container ALTA
+							48 text ALTA
+						49 text 15 ene 2026
+					50 button Retirar
+				51 container
+					52 text Caja 02 Activa
+					53 definition list
+						54 container EQUIPO
+							55 text EQUIPO
+						56 text Sin equipo vinculado
+						57 container JORNADA
+							58 text JORNADA
+						59 text Cerrada
+						60 container ALTA
+							61 text ALTA
+						62 text 15 ene 2026
+					63 button Retirar
+				64 container
+					65 text Caja 03 Activa
+					66 definition list
+						67 container EQUIPO
+							68 text EQUIPO
+						69 text Mostrador 3 · Obispo
+						70 container JORNADA
+							71 text JORNADA
+						72 container
+							73 link Description: Abierta · Carlos Díaz, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+							74 text desde el 24 oct 2026 · 08:23
+						75 container ALTA
+							76 text ALTA
+						77 text 15 ene 2026
+					78 button Retirar
+				79 container
+					80 text Caja 04 Activa
+					81 definition list
+						82 container EQUIPO
+							83 text EQUIPO
+						84 text Sin equipo vinculado
+						85 container JORNADA
+							86 text JORNADA
+						87 text Cerrada
+						88 container ALTA
+							89 text ALTA
+						90 text 15 ene 2026
+					91 button Retirar
+				92 container
+					93 text QA-20261029-01 Retirada
+					94 definition list
+						95 container EQUIPO
+							96 text EQUIPO
+						97 text Sin equipo vinculado
+						98 container JORNADA
+							99 text JORNADA
+						100 text —
+						101 container ALTA
+							102 text ALTA
+						103 text 29 oct 2026
+						104 container MOTIVO DE LA RETIRADA
+							105 text MOTIVO DE LA RETIRADA
+						106 text QA finalizada: caja de prueba sin equipo ni operaciones.
+					107 button Reactivar
+		108 container PuntoCash Vedado
+			109 heading PuntoCash Vedado, Value: 2, ID: registers-8dac955d-b970-46bd-a148-4277b2737117
+				110 text PuntoCash Vedado
+			111 text 4 cajas activas de 4 en total.
+			112 content list
+				113 container
+					114 text Caja 01 Activa
+					115 definition list
+						116 container EQUIPO
+							117 text EQUIPO
+						118 text Mostrador 1 · Vedado
+						119 container JORNADA
+							120 text JORNADA
+						121 container
+							122 link Description: Abierta · Lidia Gómez, Value: staging.puntocash.co/admin/shifts/2c6d5e7f-8d21-408a-b0cf-56f46e6297f9
+							123 text desde el 24 oct 2026 · 08:43
+						124 container ALTA
+							125 text ALTA
+						126 text 15 ene 2026
+					127 button Retirar
+				128 container
+					129 text Caja 02 Activa
+					130 definition list
+						131 container EQUIPO
+							132 text EQUIPO
+						133 text Mostrador 2 · Vedado
+						134 container JORNADA
+							135 text JORNADA
+						136 container
+							137 link Description: Abierta · Juan Pérez, Value: staging.puntocash.co/admin/shifts/e837b825-27cc-47c5-9ac5-9897647d24eb
+							138 text desde el 24 oct 2026 · 08:29
+						139 container ALTA
+							140 text ALTA
+						141 text 15 ene 2026
+					142 button Retirar
+				143 container
+					144 text Caja 03 Activa
+					145 definition list
+						146 container EQUIPO
+							147 text EQUIPO
+						148 text Mostrador 3 · Vedado
+						149 container JORNADA
+							150 text JORNADA
+						151 container
+							152 link Description: Abierta · Alberto Fonseca, Value: staging.puntocash.co/admin/shifts/58346286-e250-4590-b79d-8553bb15b751
+							153 text desde el 24 oct 2026 · 08:29
+						154 container ALTA
+							155 text ALTA
+						156 text 15 ene 2026
+					157 button Retirar
+				158 container
+					159 text Caja 04 Activa
+					160 definition list
+						161 container EQUIPO
+							162 text EQUIPO
+						163 text Sin equipo vinculado
+						164 container JORNADA
+							165 text JORNADA
+						166 text Cerrada
+						167 container ALTA
+							168 text ALTA
+						169 text 15 ene 2026
+					170 button Retirar
+		171 container Navegación de administración
+			172 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			173 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			174 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			175 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/cash-registers

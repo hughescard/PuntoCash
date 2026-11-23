@@ -1,0 +1,65 @@
+{
+  "fecha": "2026-10-29",
+  "evidencias": [
+    {
+      "archivo": "01_listado.ax.txt",
+      "bytes": 7220,
+      "sha256": "03ee94fc566191169c62759dba68cc199c53780d3552edd8e834d43cd9d59d2b"
+    },
+    {
+      "archivo": "01_listado.png",
+      "bytes": 38847,
+      "sha256": "63fc6979334f4b6c375e0b2351ae142aaf452b912ed1c10c9908bae666cab3b9"
+    },
+    {
+      "archivo": "02_aviso_jornada_abierta.ax.txt",
+      "bytes": 8002,
+      "sha256": "a1bf6d8a74e3212a4406eaf4fd7f246e64f8f7fb7ce990342cad54aa7ffe5281"
+    },
+    {
+      "archivo": "02_aviso_jornada_abierta.png",
+      "bytes": 51744,
+      "sha256": "3fc8fc2123b762cc1e66f59efc131742fc41ed3f18ac7a1eb9dbcc046c03963f"
+    },
+    {
+      "archivo": "03_aviso_jornada_cerrada.ax.txt",
+      "bytes": 8002,
+      "sha256": "f1fc93682eb0f8c80c43ec421ec8a86197952f9d550156413e8b5bea118cf2d6"
+    },
+    {
+      "archivo": "04_filtro_obispo.ax.txt",
+      "bytes": 3911,
+      "sha256": "b9fd83c7b4585fdb2004366ae81d350ebff7dee0d8fe510232a4b36596d7f542"
+    },
+    {
+      "archivo": "05_codigo_cero_identificado.ax.txt",
+      "bytes": 2197,
+      "sha256": "568e6ead0ce544961b43beb2c857709769159041d59f19439efc47cdd296bf8f"
+    },
+    {
+      "archivo": "05_codigo_cero_identificado.png",
+      "bytes": 32929,
+      "sha256": "18992d5d6687bfefb7eab1535c83c634898c12b5e7f608b451f55dc35cb49434"
+    },
+    {
+      "archivo": "06_codigo_worker_y_cajas.ax.txt",
+      "bytes": 2317,
+      "sha256": "5bbdc4206b64b928c5ac4f07604a0552879da2d3df4b76d4b5e4104b82579f13"
+    },
+    {
+      "archivo": "07_codigo_incompleto.ax.txt",
+      "bytes": 1643,
+      "sha256": "f9643b10e1a05ce204d0e58abc03f9ce318c8ebdfc59c1c4ed97f7d60e5b6dd3"
+    },
+    {
+      "archivo": "07_codigo_incompleto.png",
+      "bytes": 33576,
+      "sha256": "1324ceb142cd8c5d8c33565dc51879e376bbc14c6fa5200b5e4acc1c8430a3bf"
+    },
+    {
+      "archivo": "INFORME.md",
+      "bytes": 3133,
+      "sha256": "726644ad985df7cfdf6289ae81df3c0da8cdf399aec19a2e924834966a9a767b"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/approvals/dd3570e1-3a39-4e71-ae8a-fe26adf41d20".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals/dd3570e1-3a39-4e71-ae8a-fe26adf41d20
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		105 container
+			106 heading Diferencia de apertura, Value: 1
+				107 text Diferencia de apertura
+			108 text Jornada Caja 03 · Carlos Díaz · 21 oct 2026 · PuntoCash Obispo Rechazada
+			109 link Description: Volver a Aprobaciones, Value: staging.puntocash.co/admin/approvals
+		110 container
+			111 heading Lo que registró el trabajador, Value: 2
+				112 text Lo que registró el trabajador
+			113 definition list
+				114 container FECHA Y HORA
+					115 text FECHA Y HORA
+				116 text 21 oct 2026 · 08:34
+				117 container TRABAJADOR
+					118 text TRABAJADOR
+				119 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				120 container JORNADA
+					121 text JORNADA
+				122 container
+					123 link Description: Caja 03 · Carlos Díaz · 21 oct 2026, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196
+					124 text Cerrada
+				125 container MONEDA
+					126 text MONEDA
+				127 text CUP
+				128 container LO QUE DEJÓ EL CIERRE ANTERIOR
+					129 text LO QUE DEJÓ EL CIERRE ANTERIOR
+				130 text 19.650,00
+				131 container CONTADO
+					132 text CONTADO
+				133 text 17.650,00
+				134 container DIFERENCIA
+					135 text DIFERENCIA
+				136 text Faltante −2.000,00 CUP
+				137 container MOTIVO DEL TRABAJADOR
+					138 text MOTIVO DEL TRABAJADOR
+				139 text Faltante detectado
+		140 container
+			141 heading Resolución, Value: 2
+				142 text Resolución
+			143 definition list
+				144 container RESULTADO
+					145 text RESULTADO
+				146 text Rechazada
+				147 container RESUELTA POR
+					148 text RESUELTA POR
+				149 text Marta Sánchez
+				150 container FECHA DE RESOLUCIÓN
+					151 text FECHA DE RESOLUCIÓN
+				152 text 22 oct 2026 · 08:34
+				153 container MOTIVO DEL ADMINISTRADOR
+					154 text MOTIVO DEL ADMINISTRADOR
+				155 text El faltante no está justificado; se revisa con el trabajador.
+		100 container Navegación de administración
+			101 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			102 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			103 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			104 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals/dd3570e1-3a39-4e71-ae8a-fe26adf41d20

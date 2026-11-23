@@ -57,10 +57,9 @@ export default async function AdminVincularEquipoPage() {
       })),
     }));
 
-  /* Andamio de la demostración, no del producto: mientras Worker y Kiosco
-     resuelvan su vínculo en el `localStorage` del terminal, su código no llega
-     a este servidor y esta pantalla no tendría ninguno que encontrar
-     (nota de entrega, §8.3). Desaparece con **FR-DEV-8**. */
+  /* Atajo de la demostración, no del producto: dos equipos esperando, para
+     recorrer esta pantalla sin abrir antes una caja o un kiosco en otra
+     pestaña. Los retos de los terminales de verdad también llegan aquí. */
   const retosDemo = retosDeDemostracion().map((reto) => ({
     deviceId: reto.deviceId,
     kind: reto.kind,

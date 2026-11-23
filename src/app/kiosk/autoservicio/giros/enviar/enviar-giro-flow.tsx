@@ -10,7 +10,9 @@ import { KioskCancelDialog } from "@/components/patterns/kiosk-cancel-dialog";
 import { KioskClientForm } from "@/components/patterns/kiosk-client-form";
 import { KioskRequestTicket, TicketRow } from "@/components/patterns/kiosk-request-ticket";
 import { formatMoney, parseAmountInput } from "@/lib/format";
-import { kioskClientFullName, registerSelfServiceRequest } from "@/features/kiosk/self-service-request";
+import { kioskClientFullName } from "@/features/kiosk/self-service-request";
+import { cotizarGiroEnKiosco, errorDeGiro, resumenDeGiro, type GiroDeSede } from "@/features/kiosk/giro";
+import { registrarSolicitud } from "../../_actions";
 import { useHydrated } from "@/lib/use-hydrated";
 import { findMunicipality, findProvince } from "@/features/geography/cuba-provinces";
 import { FLOW_STEPS, INITIAL_STATE, flowReducer, hasMeaningfulData, stepIndex } from "./flow-state";
@@ -18,28 +20,45 @@ import { StepBeneficiario } from "./step-beneficiario";
 import { StepMonto } from "./step-monto";
 import { StepRevisionEnviarGiro } from "./step-revision";
 
-/** Simulated request round trip, so the "generando…" state is observable. */
-const SUBMIT_MS = 700;
-
 /** Where this flow returns to on cancel — the Giros selector, mirroring the Worker's own GIROS_ROUTE convention. */
 const GIROS_HOME = "/kiosk/autoservicio/giros";
 
-export function EnviarGiroAutoservicioFlow(): React.JSX.Element {
+/** La moneda con que abre: el peso si la sede envía en pesos, que es lo más pedido. */
+function monedaInicial(giros: GiroDeSede): string {
+  return giros.monedas.some((m) => m.code === "CUP") ? "CUP" : (giros.monedas[0]?.code ?? "");
+}
+
+export function EnviarGiroAutoservicioFlow({ giros }: { giros: GiroDeSede }): React.JSX.Element {
   const hydrated = useHydrated();
   const router = useRouter();
-  const [state, dispatch] = React.useReducer(flowReducer, INITIAL_STATE);
+  const [state, dispatch] = React.useReducer(flowReducer, undefined, () => ({
+    ...INITIAL_STATE,
+    senderCurrency: monedaInicial(giros),
+  }));
   const [cancelOpen, setCancelOpen] = React.useState(false);
 
   const parsedAmount = parseAmountInput(state.amountInput);
 
-  const amountError = React.useMemo(() => {
-    if (state.amountInput.trim() === "") return "Introduce el monto que vas a entregar.";
-    if (parsedAmount === null) return "Introduce un monto válido.";
-    if (parsedAmount <= 0) return "El monto debe ser mayor que cero.";
-    return undefined;
-  }, [state.amountInput, parsedAmount]);
+  /* La cotización con la tarifa de PuntoCash; vacío no es un error, el botón
+     ya está apagado. */
+  const resultado = React.useMemo(
+    () =>
+      parsedAmount === null || state.amountInput.trim() === ""
+        ? null
+        : cotizarGiroEnKiosco(giros, state.senderCurrency, state.forma, parsedAmount),
+    [giros, state.senderCurrency, state.forma, state.amountInput, parsedAmount],
+  );
+  const cotizacion = resultado?.ok ? resultado.value : null;
+  const amountError =
+    state.amountInput.trim() === ""
+      ? undefined
+      : parsedAmount === null
+        ? "Escribe un monto válido."
+        : resultado && !resultado.ok
+          ? errorDeGiro(resultado, state.senderCurrency, state.forma)
+          : undefined;
 
-  const canContinueFromMonto = Boolean(state.senderCurrency && !amountError);
+  const canContinueFromMonto = Boolean(cotizacion && !amountError);
   const dirty = hasMeaningfulData(state);
 
   function requestCancel() {
@@ -48,20 +67,27 @@ export function EnviarGiroAutoservicioFlow(): React.JSX.Element {
   }
 
   async function confirmRequest() {
-    if (state.submitting || parsedAmount === null || parsedAmount <= 0) return;
+    if (state.submitting || parsedAmount === null || !cotizacion) return;
     dispatch({ type: "submit-start" });
-    await new Promise((resolve) => setTimeout(resolve, SUBMIT_MS));
 
-    const request = registerSelfServiceRequest({
+    const result = await registrarSolicitud({
       service: "giros-enviar",
       data: {
         sender: state.sender,
         beneficiary: state.beneficiary,
         senderCurrency: state.senderCurrency,
         deliveryAmount: parsedAmount,
+        forma: state.forma,
+        cotizacion: resumenDeGiro(cotizacion),
       },
     });
-    dispatch({ type: "submit-success", request });
+    if (!result.ok) {
+      /* La tarifa cambió mientras el cliente escribía: vuelve al monto con la
+         cuenta nueva, que trae el refresco. */
+      if (result.motivo === "cotizacion-cambiada") dispatch({ type: "cotizacion-cambiada" });
+      return router.refresh();
+    }
+    dispatch({ type: "submit-success", request: result.solicitud });
   }
 
   const completed = state.step === "solicitud" && state.request && state.request.service === "giros-enviar";
@@ -84,9 +110,19 @@ export function EnviarGiroAutoservicioFlow(): React.JSX.Element {
         <TicketRow label="Provincia / Municipio">
           {provinceLabel} / {municipalityLabel}
         </TicketRow>
-        <TicketRow label="Monto a enviar">
-          {formatMoney({ amount: data.deliveryAmount, currency: data.senderCurrency })}
-        </TicketRow>
+        {data.cotizacion ? (
+          <>
+            <TicketRow label="Recibe el beneficiario">
+              {formatMoney({ amount: data.cotizacion.giro, currency: data.senderCurrency })}
+            </TicketRow>
+            <TicketRow label="Tarifa">
+              {formatMoney({ amount: data.cotizacion.tarifa, currency: data.senderCurrency })}
+            </TicketRow>
+            <TicketRow label="Total a entregar">
+              {formatMoney({ amount: data.cotizacion.total, currency: data.senderCurrency })}
+            </TicketRow>
+          </>
+        ) : null}
         <TicketRow label="Remitente">{kioskClientFullName(data.sender)}</TicketRow>
       </KioskRequestTicket>
     );
@@ -104,7 +140,7 @@ export function EnviarGiroAutoservicioFlow(): React.JSX.Element {
                 : state.step === "beneficiario"
                   ? "Dinos quién va a cobrarlo."
                   : state.step === "monto"
-                    ? "Elige la moneda y el monto a enviar."
+                    ? "Elige la moneda y el monto. La tarifa es la que aplica la caja."
                     : "Revisa todo antes de generar tu código."}
             </p>
           </div>
@@ -137,20 +173,25 @@ export function EnviarGiroAutoservicioFlow(): React.JSX.Element {
 
         {state.step === "monto" ? (
           <StepMonto
+            monedas={giros.monedas}
             currency={state.senderCurrency}
+            forma={state.forma}
             amountInput={state.amountInput}
             amountError={amountError}
+            cotizacion={amountError ? null : cotizacion}
+            cotizacionCambiada={state.cotizacionCambiada}
+            onFormaChange={(forma) => dispatch({ type: "set-forma", forma })}
             onCurrencyChange={(currency) => dispatch({ type: "set-currency", currency })}
             onAmountChange={(value) => dispatch({ type: "set-amount", value })}
           />
         ) : null}
 
-        {state.step === "revision" && parsedAmount !== null ? (
+        {state.step === "revision" && cotizacion ? (
           <StepRevisionEnviarGiro
             sender={state.sender}
             beneficiary={state.beneficiary}
             senderCurrency={state.senderCurrency}
-            deliveryAmount={parsedAmount}
+            cotizacion={cotizacion}
           />
         ) : null}
 

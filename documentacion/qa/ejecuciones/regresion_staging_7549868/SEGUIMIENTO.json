@@ -1,0 +1,306 @@
+{
+  "frontend_copia_real": "7549868256df700863a54bd8d18446e633c2f493",
+  "backend_copia_real": "d2cd8cdccd4c65ce17fb364e3fc4141b451c80c5",
+  "sha_desplegado_confirmado": false,
+  "pausa_despliegues_garantizada": false,
+  "regla": "Cada actualización de dev requiere repetir todos los casos ya probados, aprobados incluidos. Las referencias funcionales y visuales entregadas permanecen fijas.",
+  "casos": [
+    {
+      "id": "PRE-001",
+      "prueba": "Identificar la versión desplegada",
+      "regresion": "Parcial en bloque 01; faltan variantes previamente ejecutadas"
+    },
+    {
+      "id": "PRE-002",
+      "prueba": "Fijar referencia funcional y visual",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "PRE-003",
+      "prueba": "Preparar cuentas y dos puestos independientes",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "PRE-004",
+      "prueba": "Inventariar datos y saldos antes de operar",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "PRE-006",
+      "prueba": "Comprobar si el segundo factor es real en staging",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "PRE-007",
+      "prueba": "Fijar reglas de trabajo y registro",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "ACC-001",
+      "prueba": "Acceder con usuario y con correo",
+      "regresion": "Parcial en bloque 01; faltan variantes previamente ejecutadas"
+    },
+    {
+      "id": "ACC-002",
+      "prueba": "Validar campos obligatorios del acceso",
+      "regresion": "Variantes previamente ejecutadas repetidas",
+      "resultado": "Fallido; QA-001 y QA-003 persisten.",
+      "observacion": "Repetidos los vacíos Admin del bloque 01 y ambos vacíos Worker del bloque 02. Se añaden sin usuario y sin contraseña en Worker: las tres variantes muestran solo Completa tus credenciales para continuar, sin error por campo; foco en Iniciar sesión. Base: FR-AUTH-2 y FR-A11Y-1 del PDF original Worker.",
+      "evidencia": [
+        "bloque_02_worker_equipos/06_worker_vacios_confirmados.ax.txt",
+        "bloque_02_worker_equipos/07_worker_sin_clave.ax.txt",
+        "bloque_02_worker_equipos/08_worker_sin_usuario.ax.txt",
+        "bloque_02_worker_equipos/09_worker_validacion.json"
+      ]
+    },
+    {
+      "id": "ACC-003",
+      "prueba": "Distinguir rechazo de Admin y rechazo de Worker",
+      "regresion": "Parcial en bloque 01; faltan variantes previamente ejecutadas"
+    },
+    {
+      "id": "ACC-004",
+      "prueba": "Bloquear envíos repetidos y conservar errores de red",
+      "regresion": "Variantes previamente ejecutadas repetidas",
+      "resultado": "En curso; red lenta, doble envío y otras variantes pendientes.",
+      "observacion": "La variante antes ejecutada (campos y envío deshabilitados mientras Verificando) ya se había repetido en 07_admin_enviando del bloque 01; se corrige su clasificación de repetición parcial. En bloque 02 se observó además error de red real: Admin muestra No se pudo conectar con PuntoCash / Ocurrió un error de red, conserva lo escrito y habilita reintento. Worker muestra un rechazo genérico que sugiere revisar credenciales. No se infiere credencial inválida ni se aprueba el caso completo.",
+      "evidencia": [
+        "07_admin_enviando.ax.txt",
+        "bloque_02_worker_equipos/04_admin_error_red.ax.txt",
+        "bloque_02_worker_equipos/03_worker_generico_rechazado.ax.txt"
+      ]
+    },
+    {
+      "id": "ACC-005",
+      "prueba": "Verificación fuera de la estructura autenticada",
+      "regresion": "Variantes previamente ejecutadas repetidas",
+      "resultado": "Repetido el historial ejecutado; caso completo sigue Fallido por QA-002. Worker pendiente.",
+      "observacion": "Reto Admin válido con correo enmascarado y fuera del shell. Sin reto vuelve al login sin aviso.",
+      "evidencia": [
+        "08_admin_verificacion.ax.txt",
+        "12_verificacion_sin_reto.ax.txt",
+        "12_verificacion_sin_reto.png"
+      ]
+    },
+    {
+      "id": "ACC-006",
+      "prueba": "Escribir, pegar y borrar el código",
+      "regresion": "Parcial en bloque 01; faltan variantes previamente ejecutadas"
+    },
+    {
+      "id": "ACC-007",
+      "prueba": "Comprobar vigencia y límites del reto",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "ACC-008",
+      "prueba": "Reenviar código e invalidar el anterior",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "ACC-016",
+      "prueba": "Cerrar sesión y acceder por URL directa",
+      "regresion": "Variantes previamente ejecutadas repetidas",
+      "resultado": "Repetido el historial ejecutado; caso completo sigue En curso.",
+      "observacion": "Cerrar sesión devuelve a login y /admin/home sin sesión vuelve a login. Atrás/reinicio/Worker continúan pendientes.",
+      "evidencia": [
+        "10_logout.ax.txt",
+        "11_home_sin_sesion.ax.txt"
+      ]
+    },
+    {
+      "id": "REC-001",
+      "prueba": "Recuperar acceso sin revelar la cuenta",
+      "regresion": "Variantes previamente ejecutadas repetidas",
+      "resultado": "Repetido el historial ejecutado; caso completo sigue En curso.",
+      "observacion": "Vacío muestra validación. Cuenta existente e inexistente reciben mensaje genérico y paso de código. Sin verificación, cambio de contraseña ni comprobación HTTP/Worker.",
+      "evidencia": [
+        "14_recuperacion_vacia.ax.txt",
+        "15_recuperacion_existente.ax.txt",
+        "16_recuperacion_inexistente.ax.txt"
+      ]
+    },
+    {
+      "id": "REC-005",
+      "prueba": "Ayuda cuando no se puede recibir el correo",
+      "regresion": "Variantes previamente ejecutadas repetidas",
+      "resultado": "Repetido el historial ejecutado; caso completo sigue En curso.",
+      "observacion": "Ayuda previa remite al principal para corregir correo. Otras variantes previas pendientes siguen pendientes.",
+      "evidencia": [
+        "13_recuperacion_ayuda.ax.txt"
+      ]
+    },
+    {
+      "id": "NAV-003",
+      "prueba": "Selector con varias, una y ninguna sede",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "NAV-005",
+      "prueba": "Conservar filtros al cambiar de sede",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "NAV-008",
+      "prueba": "No principal sin sección Usuarios",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "HOM-005",
+      "prueba": "Inicio sin incidencias y sin sedes",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "CAJ-001",
+      "prueba": "Listado por sede y estados vacíos",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "CAJ-002",
+      "prueba": "Crear caja y acceder a vinculación",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "CAJ-004",
+      "prueba": "Rechazar alta inválida o duplicada",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "CAJ-005",
+      "prueba": "Bloquear retirada por jornada o vínculo",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "CAJ-007",
+      "prueba": "Retirar caja y conservar histórico",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "CAJ-008",
+      "prueba": "Reactivar caja retirada",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "EQ-001",
+      "prueba": "Listado de equipos de caja",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "EQ-002",
+      "prueba": "Terminal sin vínculo",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "EQ-003",
+      "prueba": "Identificar por código y por QR",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "EQ-004",
+      "prueba": "Código incorrecto, caducado y reutilizado",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "EQ-005",
+      "prueba": "Elegir sede y caja de equipo de caja",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "EQ-008",
+      "prueba": "Desvincular caja sin jornada",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "EQ-009",
+      "prueba": "Desvincular caja con jornada abierta",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "JOR-001",
+      "prueba": "Listado, orden y recuento de jornadas",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "JOR-002",
+      "prueba": "Todos los filtros de jornadas",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "JOR-003",
+      "prueba": "Avisos de jornadas anteriores y forzadas sin conciliar",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "JOR-004",
+      "prueba": "Abrir detalle y enlaces",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "JOR-005",
+      "prueba": "Libro, filtros y detalle de movimiento",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "OPS-001",
+      "prueba": "Listado de operaciones y expansión",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "OPS-002",
+      "prueba": "Filtros y búsqueda de cualquier fecha",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "OPS-003",
+      "prueba": "Detalle de cambio, remesa, giro enviado y cobrado",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "OPS-004",
+      "prueba": "Contexto y origen de operación",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "OPS-006",
+      "prueba": "Vinculación entre libro y operación",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "APR-002",
+      "prueba": "Listado, orden y pestañas",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "APR-003",
+      "prueba": "Filtros y estados vacíos",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "APR-004",
+      "prueba": "Detalle y relación con jornada/movimiento",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "APR-005",
+      "prueba": "Aprobar y rechazar con motivo",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "V-A-01-1",
+      "prueba": "Acceso · escritorio",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "V-A-01-2",
+      "prueba": "Acceso · adaptación",
+      "regresion": "Pendiente"
+    },
+    {
+      "id": "V-W-02-1",
+      "prueba": "Acceso Worker · escritorio",
+      "regresion": "Pendiente"
+    }
+  ],
+  "ultimo_bloque": "bloque_02_worker_equipos/INFORME.md",
+  "disponibilidad": "El portal carga, pero el servicio staging.api.puntocash.co muestra 502 Bad Gateway. No se pudo llegar a la verificación Worker ni a Equipos autenticado en el bloque 02. No se atribuye causa ni se registra fallo funcional nuevo por ello."
+}

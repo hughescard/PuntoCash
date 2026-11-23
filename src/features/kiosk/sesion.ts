@@ -1,0 +1,25 @@
+/**
+ * LA SESIÓN DEL KIOSCO — la del equipo, no la de una persona.
+ *
+ * El cliente que usa el kiosco nunca se identifica; el equipo sí. Igual que
+ * una caja de Worker, el kiosco se nombra a sí mismo con un identificador que
+ * guarda en una cookie, y **la red** contesta si está vinculado y a qué sede
+ * (`resolverTerminal`). El vínculo lo hace y lo deshace el administrador de la
+ * sede desde su consola; el kiosco solo muestra su reto y pregunta.
+ *
+ * La segunda cookie recuerda la última sede a la que perteneció, para que un
+ * kiosco desvinculado pueda decir de dónde lo desvincularon.
+ *
+ * Este archivo no importa `next/headers`: lo puede usar una prueba.
+ */
+
+export const KIOSK_COOKIE_PATH = "/kiosk/autoservicio";
+export const KIOSK_DEVICE_COOKIE = "pc_kiosco_device";
+export const KIOSK_LAST_BRANCH_COOKIE = "pc_kiosco_ultima_sede";
+
+export const KIOSK_DEVICE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
+
+export function nuevoIdDeKiosco(): string {
+  const n = () => String(Math.floor(Math.random() * 10_000)).padStart(4, "0");
+  return `KIO-${n()}-${n()}`;
+}

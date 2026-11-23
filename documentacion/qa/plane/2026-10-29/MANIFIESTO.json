@@ -1,0 +1,25 @@
+{
+  "fecha": "2026-10-29",
+  "evidencias": [
+    {
+      "archivo": "COMMITS_REFERENCIADOS.json",
+      "bytes": 7256,
+      "sha256": "ffb48e400af29ef5a2f1e7bd944031162a841d50c879743fa061ec232d40cae6"
+    },
+    {
+      "archivo": "DISCUSION_RECONSULTADA.json",
+      "bytes": 3623,
+      "sha256": "6ca76e5da1377f5eb9a6949bfd3361fcaef6cfe730ba6b26616369dfc947508d"
+    },
+    {
+      "archivo": "INFORME.md",
+      "bytes": 13190,
+      "sha256": "b56002217a20af9ab721bc0756c8ec97958aadb51784093a5322a16481dd1f5c"
+    },
+    {
+      "archivo": "TICKETS.json",
+      "bytes": 104329,
+      "sha256": "5776cc471d0e63670592ca2fac52a407f9303be573950b1d2bbe616ec06c377b"
+    }
+  ]
+}

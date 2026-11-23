@@ -1,0 +1,105 @@
+{
+  "fecha": "2026-10-29",
+  "evidencias": [
+    {
+      "archivo": "01_pendientes.ax.txt",
+      "bytes": 5273,
+      "sha256": "dacea647d6bc10217418cd82095dbb77ef424e160755ff30e82d0f43df25bb38"
+    },
+    {
+      "archivo": "02_resueltas.ax.txt",
+      "bytes": 5080,
+      "sha256": "3fb023e980886441271dcca2ee193d896937d0168c96a131182ce6f27a9358ae"
+    },
+    {
+      "archivo": "03_resueltas_tras_recargar.ax.txt",
+      "bytes": 4987,
+      "sha256": "3e75dcbe43031db3d391eb67fc246df2918db33b055f27313217ce6d725d63ed"
+    },
+    {
+      "archivo": "04_apertura_rechazada.ax.txt",
+      "bytes": 2822,
+      "sha256": "1a238aed7268db8335a570e6f064138e6dc70e0d158845aeecd62905566c0fbe"
+    },
+    {
+      "archivo": "05_jornada_apertura_rechazada.ax.txt",
+      "bytes": 10836,
+      "sha256": "a1dc1ddb3b8da83986e152acef363ab0228e8932d5f564f84e104698fd324f09"
+    },
+    {
+      "archivo": "06_cierre_pendiente.ax.txt",
+      "bytes": 2540,
+      "sha256": "797d1ca0565e3ca8d0e90c5fb3b854f8f702fe02552d3db54cca4a69833626af"
+    },
+    {
+      "archivo": "07_dialogo_aprobar_motivo_corto.ax.txt",
+      "bytes": 3046,
+      "sha256": "16b109a4ea9d8de91bb219d86e5a44d17261a1bb2711fbbebf925a007eb99f3b"
+    },
+    {
+      "archivo": "08_dialogo_aprobar.png",
+      "bytes": 34599,
+      "sha256": "b2ccaac60be70ac4470916005bdb948b3e445128472a0c7ab9efd27e902bc507"
+    },
+    {
+      "archivo": "09_dialogo_rechazar.ax.txt",
+      "bytes": 2989,
+      "sha256": "82c77aaac8d7c1b44458cfabd06a53d35e6f4d9e389b731fff7a87c5e54cb554"
+    },
+    {
+      "archivo": "10_validacion_motivos.json",
+      "bytes": 109,
+      "sha256": "b807ae03e986a5b19f2100f6b7cc213eacdfb0e15c017a377906483d522c29d7"
+    },
+    {
+      "archivo": "11_ver_movimiento_abre_libro.ax.txt",
+      "bytes": 11879,
+      "sha256": "237df477b7e1a1e1acbe98aaac957f8f7641d97164a5314f12a577f55e5c299d"
+    },
+    {
+      "archivo": "12_ajuste_cierre_sin_aprobacion.ax.txt",
+      "bytes": 1803,
+      "sha256": "66701d0a949fa7f04bd5873794ae9f100e9a2b57a692cac41bcdbf37fa50206a"
+    },
+    {
+      "archivo": "13_ajuste_pendiente.ax.txt",
+      "bytes": 2632,
+      "sha256": "6e4e4eedda2b348454cb7fcbe062268295f1d86402f58d50d4c7ded0012094ee"
+    },
+    {
+      "archivo": "14_filtro_tipo_caja_trabajador.ax.txt",
+      "bytes": 3628,
+      "sha256": "94978f51789892a6fbee36d3e31e8be4aa1b8a94732f1bc7f81797968a9c7660"
+    },
+    {
+      "archivo": "15_vacio_por_filtros.ax.txt",
+      "bytes": 2924,
+      "sha256": "464a4129fc1f90a62495009b3859a53288b02a893223ddef6c738a568b48ae87"
+    },
+    {
+      "archivo": "15_vacio_sin_quitar_filtros.png",
+      "bytes": 33614,
+      "sha256": "acf687db687a5a2b9ee4faf6f550dbd014de2e4cfa6faa63c0018066d68d5910"
+    },
+    {
+      "archivo": "16_obispo_pendientes.ax.txt",
+      "bytes": 3306,
+      "sha256": "4725c3b3dbbcf89799c8b1f9a7653cac8c37534cb8fe1e5df99e7af0d7d33ebd"
+    },
+    {
+      "archivo": "17_obispo_resueltas.ax.txt",
+      "bytes": 4827,
+      "sha256": "26d4ce92adacf6be3d752cfc4caa0b342326b92938c99c6f1f6f8df6aacca82d"
+    },
+    {
+      "archivo": "17_obispo_resueltas.png",
+      "bytes": 31733,
+      "sha256": "7219224d9190b3bdddfd46f883182f4cab64393123aad233521d8ffd32397b98"
+    },
+    {
+      "archivo": "INFORME.md",
+      "bytes": 5099,
+      "sha256": "51a333e8ca6a9e5bb1f636e6c4ad20577e4b0f30d1a38bf5c5847d6faa3e4bea"
+    }
+  ]
+}

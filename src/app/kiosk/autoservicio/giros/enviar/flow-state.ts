@@ -1,3 +1,4 @@
+import type { FormaDeGiro } from "@/features/kiosk/giro";
 import type { KioskBeneficiaryInput, KioskClientInput, KioskRequest } from "@/features/kiosk/self-service-request";
 
 /**
@@ -41,7 +42,11 @@ export interface FlowState {
   sender: KioskClientInput;
   beneficiary: KioskBeneficiaryInput;
   senderCurrency: string;
+  /** «enviar»: el cliente dice cuánto entrega. «llegar»: cuánto recibe el beneficiario. */
+  forma: FormaDeGiro;
   amountInput: string;
+  /** La red rechazó la solicitud porque la tarifa cambió mientras se preparaba. */
+  cotizacionCambiada: boolean;
   submitting: boolean;
   request: KioskRequest | null;
   touched: boolean;
@@ -51,8 +56,10 @@ export const INITIAL_STATE: FlowState = {
   step: "remitente",
   sender: EMPTY_SENDER,
   beneficiary: EMPTY_BENEFICIARY,
-  senderCurrency: "USD",
+  senderCurrency: "",
+  forma: "llegar",
   amountInput: "",
+  cotizacionCambiada: false,
   submitting: false,
   request: null,
   touched: false,
@@ -63,6 +70,8 @@ export type FlowAction =
   | { type: "set-beneficiary"; beneficiary: KioskBeneficiaryInput }
   | { type: "set-currency"; currency: string }
   | { type: "set-amount"; value: string }
+  | { type: "set-forma"; forma: FormaDeGiro }
+  | { type: "cotizacion-cambiada" }
   | { type: "go-to-step"; step: StepId }
   | { type: "submit-start" }
   | { type: "submit-success"; request: KioskRequest }
@@ -78,8 +87,12 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
       return { ...state, touched: true, senderCurrency: action.currency };
     case "set-amount":
       return { ...state, touched: true, amountInput: action.value };
+    case "set-forma":
+      return { ...state, touched: true, forma: action.forma, amountInput: "" };
+    case "cotizacion-cambiada":
+      return { ...state, submitting: false, step: "monto", cotizacionCambiada: true };
     case "go-to-step":
-      return { ...state, step: action.step };
+      return { ...state, step: action.step, cotizacionCambiada: action.step === "monto" && state.cotizacionCambiada };
     case "submit-start":
       return { ...state, submitting: true };
     case "submit-success":

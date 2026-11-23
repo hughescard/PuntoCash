@@ -1,7 +1,5 @@
 import * as React from "react";
 
-import { findBranchById, type Branch } from "@/features/branches/branches";
-
 /**
  * Which sede a signage screen (`/kiosk/pantalla`) belongs to.
  *
@@ -14,7 +12,10 @@ import { findBranchById, type Branch } from "@/features/branches/branches";
  * that moves to another sede, or one that was set up wrong (Pantalla FRD §1.1).
  *
  * The choice is stored ON THE DEVICE, which is exactly the property the
- * product needs: two TVs in two sedes keep two different answers.
+ * product needs: two TVs in two sedes keep two different answers. Only the
+ * sede's id is stored: its name, its details and whether it is open come
+ * from the server every time, because PuntoCash and the sede's admin change
+ * them after the screen was set up.
  * `localStorage` is the demo's way of doing that; a native or managed-browser
  * build would use its own local settings store.
  */
@@ -60,15 +61,15 @@ function subscribeNever(): () => void {
 }
 
 /**
- * The sede this screen shows. `undefined` until hydrated (so the picker never
- * flashes on a screen that already has a sede), `null` when none is chosen —
- * or when the stored id no longer matches any sede of the network.
+ * The id of the sede this screen shows. `undefined` until hydrated (so the
+ * picker never flashes on a screen that already has a sede), `null` when none
+ * is chosen.
  */
-export function useSignageBranch(): Branch | null | undefined {
+export function useSignageBranchId(): string | null | undefined {
   const id = React.useSyncExternalStore(subscribe, read, () => null);
   const hydrated = React.useSyncExternalStore(subscribeNever, () => true, () => false);
   if (!hydrated) return undefined;
-  return findBranchById(id);
+  return id;
 }
 
 export function setSignageBranch(branchId: string): void {

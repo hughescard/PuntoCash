@@ -1,0 +1,257 @@
+{
+  "EQ-008": {
+    "status": "En curso",
+    "note": "Aviso sin jornada y Cancelar repetidos; conserva vínculo. Desvinculación efectiva sigue sin ejecutar.",
+    "evidence": "03_desvincular_cerrada.ax.txt"
+  },
+  "EQ-009": {
+    "status": "En curso",
+    "note": "QA-011 corregido en aviso; cancelado sin tocar vínculo. No se ejecuta revocación real.",
+    "evidence": "02_desvincular_abierta.ax.txt"
+  },
+  "EQ-001": {
+    "status": "Fallido",
+    "note": "Repetido listado 9 activas/3 sin equipo, Obispo 4/2. Orden QA-013 persiste. Kioscos excluidos.",
+    "evidence": "01_equipos.ax.txt;04_equipos_filtro_obispo.ax.txt"
+  },
+  "EQ-005": {
+    "status": "Fallido",
+    "note": "Premarca Caja 02/Obispo y bloquea ocupadas; cambiar sede limpia caja. Persiste falta de alternativa en Cerro.",
+    "evidence": "05_codigo_cero_y_premarca.ax.txt;06_cerro_sin_libres.ax.txt"
+  },
+  "EQ-003": {
+    "status": "Fallido",
+    "note": "Código Worker aceptado; paso con clase fija Equipo de caja, sin caducidad ni CAJ. QR/cámara no ejecutados antes ni ahora. QA-012 persiste parcialmente.",
+    "evidence": "09_codigo_worker_identificado.ax.txt"
+  },
+  "EQ-004": {
+    "status": "Fallido",
+    "note": "000000 aceptado; 12345 rechazado y conservado. Caducado/reutilizado no ejecutados.",
+    "evidence": "05_codigo_cero_y_premarca.ax.txt;07_codigo_incompleto.ax.txt"
+  },
+  "CAJ-005": {
+    "status": "Fallido",
+    "note": "Ambos bloqueos repetidos y cancelados. QA-015 persiste.",
+    "evidence": "11_retirar_abierta.ax.txt;12_retirar_solo_equipo.ax.txt"
+  },
+  "CAJ-004": {
+    "status": "En curso",
+    "note": "Duplicado con mayúsculas distintas rechazado y conserva datos. Otras variantes no ejecutadas antes siguen pendientes.",
+    "evidence": "15_duplicado.ax.txt"
+  },
+  "CAJ-001": {
+    "status": "Fallido",
+    "note": "Listado repetido con activa/retirada, motivo, recuentos e inclusión/exclusión de Equipos. Alta sin autor persiste QA-016.",
+    "evidence": "10_cajas.ax.txt;21_caja_final_retirada.ax.txt;22_equipos_caja_retirada_fuera.ax.txt"
+  },
+  "CAJ-002": {
+    "status": "Fallido",
+    "note": "Alta nueva normaliza espacios, activa sin equipo/jornada e incorpora Equipos. Siguen faltando autor y acceso directo a vincular, QA-016/017. Caja nueva finalmente retirada.",
+    "evidence": "13_caja_creada.ax.txt;14_caja_nueva_en_equipos.ax.txt"
+  },
+  "CAJ-007": {
+    "status": "En curso",
+    "note": "Repetidos rechazo de 9 caracteres, retirada con 10, motivo guardado y retirada final QA. Sin histórico financiero previo para comprobar conservación de movimientos.",
+    "evidence": "16_motivo_corto.ax.txt;17_caja_retirada.ax.txt;21_caja_final_retirada.ax.txt"
+  },
+  "CAJ-008": {
+    "status": "En curso",
+    "note": "Reactivación conserva ausencia de equipo, vuelve activa y reaparece en Equipos. Sin vínculo previo ni movimientos. Finalmente retirada.",
+    "evidence": "18_aviso_reactivar.ax.txt;19_caja_reactivada.ax.txt;20_reactivada_en_equipos.ax.txt"
+  },
+  "JOR-002": {
+    "status": "En curso",
+    "note": "Repetidos estado/caja/diferencia, vacío y limpieza, cambio de sede limpia persona/caja y conserva generales. Desde/Hasta hoy mantiene cinco abiertas previas. Faltan variantes ya pendientes.",
+    "evidence": "24_jornadas_vacio_filtros.ax.txt;27_cerradas_con_diferencia.ax.txt;28_cambio_sede.ax.txt;29_jornadas_solo_hoy.ax.txt"
+  },
+  "JOR-003": {
+    "status": "Fallido",
+    "note": "Avisos de abiertas antiguas correctos por alcance; falta aviso de cierre forzado pendiente, QA-019 persiste.",
+    "evidence": "23_jornadas.ax.txt;28_cambio_sede.ax.txt"
+  },
+  "JOR-004": {
+    "status": "En curso",
+    "note": "Detalle cerrado y recorrido movimiento→operación→misma jornada repetidos; cabecera, equipo y cifras coherentes. Fila completa/teclado siguen pendientes previos.",
+    "evidence": "30_jornada_cerrada_detalle.ax.txt;34_regreso_jornada.ax.txt"
+  },
+  "OPS-006": {
+    "status": "En curso",
+    "note": "Repetido enlace de libro/movimiento/operación y regreso: 120 EUR sale, 760 queda y 43800 CUP en contrapartida. Sin comprobar no completadas ni detalle contrapartida.",
+    "evidence": "30_jornada_cerrada_detalle.ax.txt;32_movimiento_120eur.ax.txt;33_operacion_cambio.ax.txt;34_regreso_jornada.ax.txt"
+  },
+  "JOR-005": {
+    "status": "Fallido",
+    "note": "Repetidos filtros salidas/EUR, detalle 120 y ajuste +10. QA-020 corregido; QA-024 persiste: ajuste sin estado/enlace de aprobación.",
+    "evidence": "31_salidas_eur.ax.txt;32_movimiento_120eur.ax.txt;35_ajuste_cierre.ax.txt"
+  },
+  "APR-005": {
+    "status": "Fallido",
+    "note": "Repetidos ambos diálogos, validación y cancelación sin resolver. QA-023 persiste.",
+    "evidence": "45_aprobar_dialogo.ax.txt;46_rechazar_dialogo.ax.txt;47_validacion_motivos.json"
+  },
+  "APR-004": {
+    "status": "Fallido",
+    "note": "Repetidos tres tipos, resolución separada, valores/observaciones y origen. QA-021 corregido; QA-022 histórico y QA-024 persisten, sin apertura nueva.",
+    "evidence": "39_apertura_rechazada.ax.txt;40_apertura_historico.ax.txt;41_cierre_pendiente.ax.txt;43_ajuste_efectivo_solicitud.ax.txt;35_ajuste_cierre.ax.txt"
+  },
+  "ACC-005": {
+    "status": "Fallido",
+    "note": "Repetida verificación sin reto: acceso protegido, aviso explicativo ausente. Reto válido se repetirá con login.\nCon intento válido Admin muestra código fuera del shell y correo enmascarado; sin intento QA-002 persiste.",
+    "evidence": "48_verificacion_sin_reto.ax.txt;59_daniel_verificacion.ax.txt"
+  },
+  "REC-001": {
+    "status": "En curso",
+    "note": "Repetidos vacío, existente e inexistente: respuesta genérica sin correo; no se verifica código ni se cambia contraseña. HTTP/Worker siguen pendientes.",
+    "evidence": "56_recuperacion_vacia_y_ayuda.ax.txt;57_recuperacion_existente.ax.txt;58_recuperacion_inexistente.ax.txt"
+  },
+  "REC-005": {
+    "status": "En curso",
+    "note": "Ayuda previa sigue remitiendo al principal para corregir correo. Otras ayudas no ejecutadas antes siguen pendientes.",
+    "evidence": "56_recuperacion_vacia_y_ayuda.ax.txt"
+  },
+  "NAV-008": {
+    "status": "En curso",
+    "note": "Daniel sin Usuarios en menú/DOM (0 enlaces), URL directa sin datos muestra no encontrado. HTTP/otras rutas siguen pendientes.",
+    "evidence": "62_no_principal_menu.ax.txt;63_no_principal_usuarios_directo.ax.txt"
+  },
+  "ACC-016": {
+    "status": "En curso",
+    "note": "Cerrar sesión vuelve a login; acceso directo a home sin sesión volvió a login (49). No se prueba todavía reinicio/Atrás/Worker.",
+    "evidence": "64_cierre_sesion.ax.txt;49_home_sin_sesion.ax.txt"
+  },
+  "HOM-005": {
+    "status": "En curso",
+    "note": "Liudmila sin sedes sigue mostrando estado informativo sin selector y sin datos ficticios. Escenario con sedes sin incidencias sigue pendiente.",
+    "evidence": "67_inicio_sin_sedes.ax.txt"
+  },
+  "NAV-003": {
+    "status": "Aprobado",
+    "note": "Repetidos tres escenarios: Daniel opciones CER/OBI/VED con Todas inicial; Idalmis una sede fija CHB; Liudmila ninguna y sin selector.",
+    "evidence": "61_selector_varias.ax.txt;65_idalmis_inicio.ax.txt;67_inicio_sin_sedes.ax.txt"
+  },
+  "APR-003": {
+    "status": "En curso",
+    "note": "Repetidos filtro compuesto, vacío y limpieza. QA-025 corregido; fechas/otros vacíos nunca ejecutados siguen pendientes.",
+    "evidence": "70_aprobaciones_combo.ax.txt;71_aprobaciones_vacio.ax.txt;72_aprobaciones_filtros_limpios.ax.txt"
+  },
+  "APR-002": {
+    "status": "Aprobado",
+    "note": "Repetido orden/6 pendientes/5 resueltas, pestaña persistente al recargar y Obispo 1 pendiente/3 resueltas. Misma atribución y signos.",
+    "evidence": "36_aprobaciones_pendientes.ax.txt;37_aprobaciones_resueltas.ax.txt;38_resueltas_recarga.ax.txt;73_aprobaciones_obispo_pendiente.ax.txt;74_aprobaciones_obispo_resueltas.ax.txt"
+  },
+  "JOR-001": {
+    "status": "En curso",
+    "note": "Listado repetido: total 10, Obispo 3; abiertas primero, cierre en día posterior con fecha y EUR separado. No se valida conteo financiero exhaustivo.",
+    "evidence": "23_jornadas.ax.txt;75_jornadas_obispo.ax.txt"
+  },
+  "OPS-001": {
+    "status": "En curso",
+    "note": "Paginación 50→51 únicos sin cambios de orden; Remesas tres. No completadas siguen sin probar como antes.",
+    "evidence": "76_operaciones_inicial.ax.txt;77_paginacion.json;84_remesas.ax.txt"
+  },
+  "OPS-002": {
+    "status": "Fallido",
+    "note": "Repetidos fecha hoy, estado Cancelada, búsqueda código/nombre/documento, mensaje de ignorar filtros, borrado y limpieza. QA-018 sigue en retorno. El error de red previo no reaparece.",
+    "evidence": "78_operaciones_solo_hoy.ax.txt;79_operaciones_hoy_cancelada.ax.txt;80_busqueda_codigo.ax.txt;81_busqueda_nombre.ax.txt;82_busqueda_documento.ax.txt;83_busqueda_borrada.ax.txt;87_remesas_regreso_pierde.ax.txt"
+  },
+  "OPS-003": {
+    "status": "En curso",
+    "note": "Cambio y remesa repetidos con datos guardados coherentes; giros/no completadas siguen pendientes anteriores.",
+    "evidence": "33_operacion_cambio.ax.txt;85_remesa_detalle.ax.txt"
+  },
+  "OPS-004": {
+    "status": "Aprobado",
+    "note": "Contexto de mostrador y enlaces a trabajador, jornada y retorno repetidos en cambio/remesa. Kioscos excluidos.",
+    "evidence": "33_operacion_cambio.ax.txt;34_regreso_jornada.ax.txt;85_remesa_detalle.ax.txt;86_trabajador_desde_remesa.ax.txt;87_remesas_regreso_pierde.ax.txt"
+  },
+  "NAV-005": {
+    "status": "Fallido",
+    "note": "Repetidas todas las variantes antes ejecutadas en Jornadas y Operaciones: cambio de sede correcto, persistencia/retorno siguen fallando QA-018.",
+    "evidence": "25_forzadas_antes_recarga.ax.txt;26_forzadas_recarga_pierde.ax.txt;28_cambio_sede.ax.txt;84_remesas.ax.txt;87_remesas_regreso_pierde.ax.txt"
+  },
+  "V-A-01-1": {
+    "status": "Fallido",
+    "note": "Repetida comparación equivalente 1440×900, demo entregada congelada f7accf9 y staging; persiste QA-008.",
+    "evidence": "89_demo_1440.png;90_staging_1440.png;89_medidas_visuales.json"
+  },
+  "V-A-01-2": {
+    "status": "Fallido",
+    "note": "Repetidas capturas 390×844 y 360×800, mismos campos vacíos/foco. QA-008/010 persisten.",
+    "evidence": "91_demo_390.png;92_staging_390.png;93_demo_360.png;94_staging_360.png;89_medidas_visuales.json"
+  },
+  "ACC-002": {
+    "status": "Fallido",
+    "note": "Repetidos tres vacíos Admin y ambos vacíos Worker: foco y mensajes Worker siguen fallando QA-001/003.",
+    "evidence": "50_admin_ambos_vacios.ax.txt;51_admin_sin_clave.ax.txt;52_admin_sin_usuario.ax.txt;95_worker_vacio.ax.txt"
+  },
+  "V-W-02-1": {
+    "status": "En curso",
+    "note": "Repetido texto de error en escritorio a 1440×900: QA-004 corregido. Comparación visual completa Worker frente a entrega sigue pendiente como antes.",
+    "evidence": "98_worker_codigo_escritorio.ax.txt;98_worker_codigo_escritorio.png"
+  },
+  "PRE-001": {
+    "status": "Bloqueado",
+    "note": "Dev FE 7314956 y BE d2cd8cd comprobados; recursos de staging guardados. SHA desplegado no confirmado, no se equipara a dev. Al finalizar, dev remoto avanzó a 7549868 y los recursos de navegador muestran dos identificadores de despliegue distintos. Vercel no accesible en la conexión (404, sin equipos). Se necesita versión fija/commit o ventana sin despliegues para consolidar la regresión. No se actualizó la copia real a 7549868 durante esta pasada.",
+    "evidence": "version_recursos_inicial.json;ALCANCE.json;VERSION_Y_LIMITES.md"
+  },
+  "PRE-002": {
+    "status": "Aprobado",
+    "note": "Nueve fuentes conservadas verificadas por SHA256 sin cambios. Demo fija f7accf9 comparada otra vez con staging a 1440/390/360. No se cambió base funcional por actualizar dev.",
+    "evidence": "88_fuentes_verificadas.json;89_medidas_visuales.json"
+  },
+  "PRE-003": {
+    "status": "En curso",
+    "note": "Repetidos Marta, Daniel, Idalmis, Liudmila y Worker genérico; Carlos rechaza seed igual que antes. Sin dos puestos Worker vinculados ni pruebas de otra empresa.",
+    "evidence": "60_daniel_inicio.ax.txt;65_idalmis_inicio.ax.txt;67_inicio_sin_sedes.ax.txt;68_marta_inicio.ax.txt;96_carlos_rechazo.ax.txt;98_worker_codigo_escritorio.ax.txt"
+  },
+  "PRE-004": {
+    "status": "En curso",
+    "note": "Inventario repetido en Inicio: 3 sedes, 9 cajas activas, 5 abiertas, 5 trabajadores en turno, 6 pendientes, 1 operación hoy. No conciliación por caja/proveedor. Caja QA propia creada y finalmente retirada.",
+    "evidence": "69_marta_inicio_inventario.ax.txt;21_caja_final_retirada.ax.txt"
+  },
+  "PRE-006": {
+    "status": "En curso",
+    "note": "Códigos de prueba 123456/987654/654321 vuelven a permitir acceso Admin en cuentas comprobadas. APP_MODE real y entrega de correo no confirmados; no se aprueban límites por inferencia. Worker manual por terminar.\nWorker acepta 123456 por verificación manual y llega al gate; sin confirmar APP_MODE ni recepción real del correo.",
+    "evidence": "59_daniel_verificacion.ax.txt;60_daniel_inicio.ax.txt;65_idalmis_inicio.ax.txt;67_inicio_sin_sedes.ax.txt;101_worker_tras_verificar.ax.txt"
+  },
+  "PRE-007": {
+    "status": "Aprobado",
+    "note": "Revisadas reglas de clasificación y estados; 51 IDs conservados, fuentes fijas, evidencia nueva y comparación antes/después. Sin borrar resultados ni cerrar por código. Kioscos y Super Admin siguen fuera.",
+    "evidence": "ALCANCE.json;88_fuentes_verificadas.json"
+  },
+  "EQ-002": {
+    "status": "Fallido",
+    "note": "Repetido login/código antes de gate y acceso interno /operations bloqueado; código fijo con letras. QA-007/009 persisten, no se vincula ningún equipo.",
+    "evidence": "95_worker_vacio.ax.txt;98_worker_codigo_escritorio.ax.txt;101_worker_tras_verificar.ax.txt;102_worker_operaciones_sin_vinculo.ax.txt"
+  },
+  "ACC-001": {
+    "status": "En curso",
+    "note": "Repetidos accesos por correo de Marta/Daniel/Idalmis/Liudmila y Worker genérico con código manual hasta gate. Identificador alternativo y puesto vinculado siguen pendientes.",
+    "evidence": "60_daniel_inicio.ax.txt;65_idalmis_inicio.ax.txt;67_inicio_sin_sedes.ax.txt;68_marta_inicio.ax.txt;101_worker_tras_verificar.ax.txt"
+  },
+  "ACC-003": {
+    "status": "En curso",
+    "note": "Repetidos rechazos Admin clave errónea/inexistente/desactivada con mismo mensaje y Worker Carlos con seed rechazado. No se infiere fallo de contraseña del seed. Otras variantes Worker siguen pendientes.",
+    "evidence": "53_admin_clave_incorrecta.ax.txt;54_admin_inexistente.ax.txt;55_admin_desactivada.ax.txt;96_carlos_rechazo.ax.txt"
+  },
+  "ACC-004": {
+    "status": "En curso",
+    "note": "Repetido estado Verificando con campos y envío deshabilitados en Admin. No se repiten dobles envíos/red lenta que nunca se habían ejecutado.",
+    "evidence": "65_idalmis_enviando.ax.txt;66_liudmila_enviando.ax.txt;68_marta_enviando.ax.txt"
+  },
+  "ACC-006": {
+    "status": "En curso",
+    "note": "Admin one-time-code y pegado 12 34-56 vuelven a enviar solos. Worker seis cifras sigue esperando botón; manual avanza. QA-006 alcance pendiente, no se convierte en fallo confirmado.",
+    "evidence": "59_daniel_verificacion.ax.txt;60_daniel_inicio.ax.txt;99_worker_seis_digitos.ax.txt;101_worker_tras_verificar.ax.txt"
+  },
+  "ACC-007": {
+    "status": "En curso",
+    "note": "Repetido contador cinco minutos y espera Worker mayor de 60 s sin reenvío habilitado. QA-005 alcance por confirmar. Caducidad servidor/límites no probados antes siguen pendientes.",
+    "evidence": "98_worker_codigo_escritorio.ax.txt;100_worker_reenvio_tras_60.ax.txt"
+  },
+  "ACC-008": {
+    "status": "En curso",
+    "note": "Repetida espera de reenvío Worker; invalidación del código anterior y agotamiento no se probaron antes ni ahora.",
+    "evidence": "100_worker_reenvio_tras_60.ax.txt"
+  }
+}

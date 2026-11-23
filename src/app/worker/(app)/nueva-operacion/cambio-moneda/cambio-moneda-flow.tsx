@@ -191,6 +191,7 @@ function CambioMonedaOperation(): React.JSX.Element {
 
   const canContinueFromCambio = Boolean(liveQuote && !amountError);
 
+
   /* ---- Navigation ---- */
   /* Monedas que la caja tiene habilitadas y este servicio no puede cambiar,
      porque no hay par con tasa para ellas (**FR-AD-MON-5**: la lista de
@@ -214,6 +215,18 @@ function CambioMonedaOperation(): React.JSX.Element {
       dispatch({ type: "set-destination-currency", currency: validas.find((c) => c !== s)! });
     }
   }, [clave, state]);
+
+  /* Desde una solicitud de kiosco, el primer paso ya lo hizo el cliente: se
+     cotiza con la tasa de ahora y se confirma solo, una vez. Si no se puede
+     (la caja no tiene una de las monedas, el importe ya no se cobra), se queda
+     en el primer paso para que el trabajador lo resuelva. */
+  const kioscoConfirmado = React.useRef(false);
+  React.useEffect(() => {
+    if (kioscoConfirmado.current || !state.kioskCode || state.step !== "cambio" || state.quote) return;
+    kioscoConfirmado.current = true;
+    const enCaja = monedasCambiables.includes(state.sourceCurrency) && monedasCambiables.includes(state.destinationCurrency);
+    if (enCaja && liveQuote && !amountError) dispatch({ type: "commit-quote", quote: liveQuote });
+  }, [state.kioskCode, state.step, state.quote, state.sourceCurrency, state.destinationCurrency, monedasCambiables, liveQuote, amountError]);
 
   const dirty = hasMeaningfulData(state);
 
@@ -374,6 +387,7 @@ function CambioMonedaOperation(): React.JSX.Element {
 
         {state.step === "cliente" && state.quote ? (
           <div className="grid grid-cols-1 gap-6 wide:grid-cols-[minmax(0,1fr)_20rem]">
+            {state.kioskQuote ? <CambioDesdeElKiosco antes={state.kioskQuote} ahora={state.quote} /> : null}
             <StepCliente
               kioskClient={state.kioskClient}
               selectedCustomer={state.customer}
@@ -640,5 +654,28 @@ function ReceiptLine({ label, value }: { label: string; value: string }) {
       <dt style={{ color: "#6B7280" }}>{label}</dt>
       <dd style={{ fontWeight: 600 }}>{value}</dd>
     </div>
+  );
+}
+
+/**
+ * Lo que el cliente vio en el kiosco frente a lo que se aplica ahora. Si la
+ * tasa cambió entre una cosa y otra, el trabajador tiene que saberlo antes de
+ * cobrar: el cliente llega con la cifra del kiosco en la cabeza (y en papel).
+ */
+function CambioDesdeElKiosco({ antes, ahora }: { antes: ExchangeQuote; ahora: ExchangeQuote }): React.JSX.Element | null {
+  const igual =
+    antes.sourceCurrency === ahora.sourceCurrency &&
+    antes.destinationCurrency === ahora.destinationCurrency &&
+    Math.abs(antes.sourceAmount - ahora.sourceAmount) < 0.005 &&
+    Math.abs(antes.destinationAmount - ahora.destinationAmount) < 0.005;
+  if (igual) return null;
+  const monto = (amount: number, currency: string) => formatMoney({ amount, currency });
+  return (
+    <Alert variant="warning" title="La tasa cambió desde que el cliente preparó la solicitud" className="wide:col-span-2">
+      En el kiosco vio que entregaba {monto(antes.sourceAmount, antes.sourceCurrency)} y recibía{" "}
+      {monto(antes.destinationAmount, antes.destinationCurrency)}. Con la tasa de ahora entrega{" "}
+      {monto(ahora.sourceAmount, ahora.sourceCurrency)} y recibe {monto(ahora.destinationAmount, ahora.destinationCurrency)}.
+      Explícaselo antes de continuar.
+    </Alert>
   );
 }

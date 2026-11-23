@@ -1,0 +1,81 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/operations".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/operations
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			6 text Todas mis sedes
+		318 container
+			319 heading Operaciones, Value: 1
+				320 text Operaciones
+			321 text Lo que tus cajas han hecho con cada cliente, completado o no. Solo lectura.
+		322 button (expanded) Filtros, Secondary Actions: Collapse
+		1266 container operations-filters
+			1267 text Buscar
+			1268 search text field (settable) Buscar, ID: operations-search
+			1269 text Desde
+			1270 date field (settable) Desde, Value: 2026-10-29, ID: operations-from
+				1589 container
+					1590 stepper
+					1591 stepper
+					1592 stepper
+				1593 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			1276 text Hasta
+			1277 date field (settable) Hasta, Value: 2026-10-29, ID: operations-to
+				1594 container
+					1595 stepper
+					1596 stepper
+					1597 stepper
+				1598 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			1283 text Caja
+			1284 pop up button (collapsed, settable) Caja, Value: Todas las cajas, ID: operations-register, Secondary Actions: Expand
+				1285 menu
+					1286 (selected) Todas las cajas
+					1287 Caja 01 · PuntoCash Obispo
+					1288 Caja 01 · PuntoCash Vedado
+					1289 Caja 02 · PuntoCash Obispo
+					1290 Caja 02 · PuntoCash Vedado
+					1291 Caja 03 · PuntoCash Obispo
+					1292 Caja 03 · PuntoCash Vedado
+					1293 Caja 04 · PuntoCash Obispo
+					1294 Caja 04 · PuntoCash Vedado
+					1295 Caja01 · PuntoCash Cerro
+					1296 QA-20261029-01 · PuntoCash Obispo
+			1297 text Trabajador
+			1298 pop up button (collapsed, settable) Trabajador, Value: Todos, ID: operations-worker, Secondary Actions: Expand
+				1299 menu
+					1300 (selected) Todos
+					1301 Endry Perez
+					1302 Carlos Díaz
+					1303 Marisol Rivas
+					1304 Lidia Gómez
+					1305 Juan Pérez
+					1306 Alberto Fonseca
+			1307 text Servicio
+			1308 pop up button (collapsed, settable) Servicio, Value: Todos, ID: operations-service, Secondary Actions: Expand
+				1309 menu
+					1310 (selected) Todos
+					1311 Remesas
+					1312 Giros - Cobrar
+					1313 Giros - Enviar
+					1314 Cambio de moneda
+			1315 text Estado
+			1316 pop up button (collapsed, settable) Estado, Value: Cancelada, ID: operations-status, Secondary Actions: Expand
+				1317 menu
+					1318 Todos
+					1319 Completada
+					1320 En proceso
+					1321 Rechazada
+					1322 Fallida
+					1323 (selected) Cancelada
+		1599 container
+			1600 text No se pudo cargar esta pantalla Ocurrió un error de red.
+		1601 button Reintentar
+		313 container Navegación de administración
+			314 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			315 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			316 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			317 button Más
+
+The focused UI element is 1268 search text field (settable) Buscar, ID: operations-search

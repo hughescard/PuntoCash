@@ -1,0 +1,24 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/login".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/login
+	2 container
+		3 container
+			4 text PUNTO  CASH CASA DE CAMBIO
+			5 heading Tu sucursal bajo control, en un solo lugar., Value: 2
+				6 text Tu sucursal bajo control, en un solo lugar.
+			7 text Administración de sede · PuntoCash
+		8 container
+			9 container
+				10 text ADMINISTRACIÓN DE SEDE
+				11 heading Bienvenido, Value: 1
+					12 text Bienvenido
+				13 text Accede con tu cuenta de administrador para gestionar las sedes a tu cargo.
+			14 text Usuario o correo electrónico
+			15 text field (settable) Usuario o correo electrónico
+			16 text Contraseña
+			17 text field (settable) Contraseña
+			18 checkbox Description: Mostrar contraseña, Value: 0
+			19 button Iniciar sesión
+			20 link Description: ¿Olvidaste tu contraseña?, Value: staging.puntocash.co/admin/access-recovery
+			21 text PuntoCash · Sistema interno
+
+The focused UI element is 15 text field (settable) Usuario o correo electrónico

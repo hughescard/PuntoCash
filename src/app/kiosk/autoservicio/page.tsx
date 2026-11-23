@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { ArrowRight } from "lucide-react";
 
 import { KIOSK_RATES_TILE, KIOSK_SERVICES } from "@/features/kiosk/kiosk-catalog";
+import { getKiosco } from "@/features/kiosk/sesion-servidor";
 
 export const metadata: Metadata = {
   title: "Autoservicio",
@@ -18,8 +19,29 @@ export const metadata: Metadata = {
  * client wants to start. No balances, no history, no client data: everything
  * here is public information a stranger walking up can see (§21 "textos
  * orientados al cliente").
+ *
+ * Solo aparecen los servicios que PuntoCash habilitó en la sede del kiosco, y
+ * las tasas solo si la sede cambia moneda: lo que el kiosco ofrece tiene que
+ * poder atenderse en sus cajas.
  */
-export default function KioskAutoservicioHome(): React.JSX.Element {
+export default async function KioskAutoservicioHome(): Promise<React.JSX.Element> {
+  const kiosco = await getKiosco();
+  const habilitados = kiosco.estado === "operando" ? kiosco.servicios : [];
+  const servicios = KIOSK_SERVICES.filter((service) => habilitados.includes(service.id));
+  const conTasas = habilitados.includes("cambio-moneda");
+
+  if (servicios.length === 0) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center py-16 text-center">
+        <p className="text-overline uppercase text-text-secondary">PuntoCash · Autoservicio</p>
+        <h1 className="mt-3 text-screen-title text-text-primary">El autoservicio no está disponible</h1>
+        <p className="mt-3 max-w-xl text-body text-text-secondary">
+          Esta sucursal no ofrece servicios desde el kiosco en este momento. Consulta al personal de la sucursal.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col items-center py-8 text-center">
       <p className="text-overline uppercase text-text-secondary">PuntoCash · Autoservicio</p>
@@ -29,7 +51,7 @@ export default function KioskAutoservicioHome(): React.JSX.Element {
       </p>
 
       <div className="mt-12 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
-        {KIOSK_SERVICES.map((service) => (
+        {servicios.map((service) => (
           <KioskTile
             key={service.id}
             href={`/kiosk/autoservicio/${service.slug}`}
@@ -39,13 +61,15 @@ export default function KioskAutoservicioHome(): React.JSX.Element {
           />
         ))}
 
-        <KioskTile
-          href={`/kiosk/autoservicio/${KIOSK_RATES_TILE.slug}`}
-          icon={KIOSK_RATES_TILE.icon}
-          title={KIOSK_RATES_TILE.name}
-          description={KIOSK_RATES_TILE.description}
-          tone="subtle"
-        />
+        {conTasas ? (
+          <KioskTile
+            href={`/kiosk/autoservicio/${KIOSK_RATES_TILE.slug}`}
+            icon={KIOSK_RATES_TILE.icon}
+            title={KIOSK_RATES_TILE.name}
+            description={KIOSK_RATES_TILE.description}
+            tone="subtle"
+          />
+        ) : null}
       </div>
     </div>
   );

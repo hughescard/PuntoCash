@@ -3,7 +3,6 @@ import type { ExchangeQuote } from "@/features/exchange/quote";
 import type { RemittanceSnapshot } from "@/features/remittances/remittance-provider";
 import type { TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import type { KioskServiceId } from "./kiosk-catalog";
-import { currentKioskDevice } from "./device-session";
 
 /**
  * FRONTEND-ONLY MOCK of the self-service "solicitud" (request) a kiosk
@@ -32,9 +31,10 @@ import { currentKioskDevice } from "./device-session";
  *   giros-cobrar  → giro found automatically; the worker checks the carné
  *                   photo against the person and pays.
  *
- * FRONTEND-ONLY MOCK STORAGE: requests live in `localStorage` (not a plain
- * array) because a demo runs the kiosk and the counter in different browser
- * tabs, which do not share module memory. A real backend replaces this.
+ * Las solicitudes viven en la red (`features/network/solicitudes-de-kiosco.ts`):
+ * las registra el servidor con la sede y el kiosco del vínculo, y solo una
+ * caja de esa sede las canjea. Este módulo tiene únicamente su forma y lo que
+ * el navegador necesita de ellas.
  */
 
 /** Minimal self-declared contact info the kiosk collects — never verified there (Worker PRD R5). */
@@ -65,8 +65,17 @@ export interface KioskBeneficiaryInput {
 }
 
 export interface CambioMonedaRequestData {
+  /** La cotización que vio el cliente, con las tasas de su sede en ese momento. */
   quote: ExchangeQuote;
   client: KioskClientInput;
+  /**
+   * Cómo lo pidió: diciendo cuánto entrega («cambiar») o cuánto quiere
+   * recibir («recibir»). La caja vuelve a cotizar de la misma forma, con las
+   * tasas del momento en que lo atiende. Sin él, «cambiar».
+   */
+  modo?: "cambiar" | "recibir";
+  /** Lo que escribió: lo que entrega con «cambiar», lo que quiere recibir con «recibir». */
+  importePedido?: number;
 }
 
 export interface RemesaRequestData {
@@ -84,10 +93,16 @@ export interface GiroEnviarRequestData {
    */
   deliveryAmount: number;
   /**
-   * Cómo pidió el giro (tarifas, 19/11/2026). El kiosco todavía no lo
-   * pregunta: Worker ya lo lee para cuando lo haga, y sin él entiende «llegar».
+   * Cómo pidió el giro: «enviar», diciendo cuánto entrega, o «llegar»,
+   * diciendo cuánto recibe el beneficiario. Sin él, «llegar».
    */
   forma?: "enviar" | "llegar";
+  /**
+   * Lo que el kiosco le enseñó: lo que recibe el beneficiario, la tarifa y
+   * el total. La caja vuelve a cotizar con la tarifa del momento y, si no
+   * coincide, se lo dice al trabajador.
+   */
+  cotizacion?: { giro: number; tarifa: number; total: number };
 }
 
 export interface GiroCobrarRequestData {
@@ -103,14 +118,12 @@ interface KioskRequestBase {
   /** Set once a Worker picks the request up via "Buscar solicitud" — see `markSelfServiceRequestConsumed`. */
   consumedAt: string | null;
   /**
-   * The sede of the linked kiosk that produced it (see `device-session.ts`).
-   * A request belongs to that sede: in the real product only that sede's
-   * counters can redeem it (Autoservicio FRD FR-AS-DOM-7). The demo's Worker
-   * has no sede of its own yet, so it does not filter on this.
+   * La sede del kiosco que la preparó. Solo una caja de esa sede la canjea:
+   * lo que el cliente vio —tasas, servicios— es lo de esa sede.
    */
-  branchId: string | null;
-  /** Which kiosk produced it — traceability for the sede's admin. */
-  deviceId: string | null;
+  branchId: string;
+  /** El kiosco que la preparó, para poder rastrearla. */
+  deviceId: string;
 }
 
 export type KioskRequest =
@@ -121,74 +134,12 @@ export type KioskRequest =
 
 export type KioskRequestService = KioskRequest["service"];
 
-/** How long a request stays valid before the client would need a new one. */
-const VALIDITY_MINUTES = 30;
-
-const STORAGE_KEY = "puntocash.kiosk.requests";
-
-/** Fallback when storage is unavailable (private mode, blocked site data). */
-let memoryRequests: KioskRequest[] = [];
-
-function loadRequests(): KioskRequest[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as KioskRequest[]) : memoryRequests;
-  } catch {
-    return memoryRequests;
-  }
-}
-
-function saveRequests(list: KioskRequest[]): void {
-  memoryRequests = list;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    // Memory copy above is still valid for this tab.
-  }
-}
-
-/** Continues the day's numbering across tabs instead of restarting at 101. */
-let sequence = 100;
-
-/** "KS-260915-000101" — visually distinct from PC-/RM-/TR- codes (§16 of the Worker PRD). */
-function generateRequestCode(now: Date): string {
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const prefix = `KS-${yy}${mm}${dd}-`;
-  for (const item of loadRequests()) {
-    if (item.code.startsWith(prefix)) sequence = Math.max(sequence, Number(item.code.slice(prefix.length)));
-  }
-  sequence += 1;
-  return `KS-${yy}${mm}${dd}-${String(sequence).padStart(6, "0")}`;
-}
-
-function buildBase(now: Date): KioskRequestBase {
-  const createdAt = now;
-  const expiresAt = new Date(now.getTime() + VALIDITY_MINUTES * 60_000);
-  const device = currentKioskDevice();
-  const linked = device?.status === "linked" ? device : null;
-  return {
-    code: generateRequestCode(now),
-    createdAt: createdAt.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-    consumedAt: null,
-    branchId: linked?.branchId ?? null,
-    deviceId: linked?.deviceId ?? null,
-  };
-}
-
-export function registerSelfServiceRequest(
-  input:
-    | { service: "cambio-moneda"; data: CambioMonedaRequestData }
-    | { service: "remesas"; data: RemesaRequestData }
-    | { service: "giros-enviar"; data: GiroEnviarRequestData }
-    | { service: "giros-cobrar"; data: GiroCobrarRequestData },
-): KioskRequest {
-  const request = { ...buildBase(new Date()), ...input } as KioskRequest;
-  saveRequests([...loadRequests(), request]);
-  return request;
-}
+/** Lo que el kiosco envía; el código, la vigencia, la sede y el kiosco los pone la red. */
+export type KioskRequestInput =
+  | { service: "cambio-moneda"; data: CambioMonedaRequestData }
+  | { service: "remesas"; data: RemesaRequestData }
+  | { service: "giros-enviar"; data: GiroEnviarRequestData }
+  | { service: "giros-cobrar"; data: GiroCobrarRequestData };
 
 /** Maps a home-screen service id to the two possible Giro request flavours. */
 export type KioskFlowId = KioskServiceId | "giros-enviar" | "giros-cobrar";
@@ -211,40 +162,6 @@ export function birthDateFromCubanId(documentNumber: string): string {
   const date = new Date(Date.UTC(year, mm - 1, dd));
   if (date.getUTCFullYear() !== year || date.getUTCMonth() !== mm - 1 || date.getUTCDate() !== dd) return "";
   return `${year}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
-}
-
-function normalizeCode(code: string): string {
-  return code.trim().toUpperCase();
-}
-
-export type SelfServiceLookupResult =
-  | { ok: true; request: KioskRequest }
-  /**
-   * Unlike a client-facing lookup (Worker PRD R4 — one opaque rejection),
-   * this screen is staff-only: a worker benefits from knowing whether a code
-   * was mistyped, has expired, or was already redeemed by a colleague, so
-   * each reason surfaces distinctly here.
-   */
-  | { ok: false; reason: "not-found" | "expired" | "consumed" };
-
-/** `GET`-shaped lookup for Worker's "Buscar solicitud" screen. */
-export function findSelfServiceRequestByCode(code: string, now: Date = new Date()): SelfServiceLookupResult {
-  const normalized = normalizeCode(code);
-  const request = loadRequests().find((item) => item.code === normalized);
-  if (!request) return { ok: false, reason: "not-found" };
-  if (request.consumedAt) return { ok: false, reason: "consumed" };
-  if (new Date(request.expiresAt).getTime() < now.getTime()) return { ok: false, reason: "expired" };
-  return { ok: true, request };
-}
-
-/** Marks a request redeemed so the same `KS-…` code cannot hand off twice. */
-export function markSelfServiceRequestConsumed(code: string, now: Date = new Date()): void {
-  const normalized = normalizeCode(code);
-  saveRequests(
-    loadRequests().map((item) =>
-      item.code === normalized ? { ...item, consumedAt: now.toISOString() } : item,
-    ),
-  );
 }
 
 /**

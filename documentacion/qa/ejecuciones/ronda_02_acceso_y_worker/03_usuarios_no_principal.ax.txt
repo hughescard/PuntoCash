@@ -1,0 +1,38 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/users".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/users
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			6 text Todas mis sedes
+		7 text Daniel Castro Antilla Servicios Financieros S.R.L.
+		8 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		9 button Cerrar sesión
+		10 container Navegación de administración
+			11 container
+				12 text OPERACIÓN
+				13 content list
+					14 link Description: Inicio, Value: staging.puntocash.co/admin/home
+					15 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+					16 link Description: Aprobaciones 5, Value: staging.puntocash.co/admin/approvals
+					17 link Description: Operaciones, Value: staging.puntocash.co/admin/operations
+				18 text SUCURSAL
+				19 content list
+					20 link Description: Sedes, Value: staging.puntocash.co/admin/branches
+					21 link Description: Cajas, Value: staging.puntocash.co/admin/cash-registers
+					22 link Description: Equipos 3, Value: staging.puntocash.co/admin/devices
+					23 link Description: Trabajadores, Value: staging.puntocash.co/admin/workers
+				24 text CONFIGURACIÓN
+				25 content list
+					26 link Description: Monedas, Value: staging.puntocash.co/admin/currencies
+					27 link Description: Tasas, Value: staging.puntocash.co/admin/rates
+					28 link Description: Promociones, Value: staging.puntocash.co/admin/promotions
+					29 link Description: Reportes, Value: staging.puntocash.co/admin/reports
+			30 text PuntoCash · Administración
+		31 container
+			32 heading No encontramos lo que buscabas, Value: 1
+				33 text No encontramos lo que buscabas
+			34 text Es posible que el enlace haya cambiado o que ya no esté disponible. Vuelve a Inicio y continúa desde ahí.
+			35 link Description: Volver a Inicio, Value: staging.puntocash.co/admin/home
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/users

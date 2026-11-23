@@ -7,7 +7,7 @@
  * (regla A4, FR-AD-CAJA-*), no PuntoCash, que solo las ve (regla A14).
  *
  * Una caja es además el objeto al que se vincula un equipo
- * (`@/features/devices/device-link`), así que su ciclo de vida y el del equipo
+ * (`./devices`), así que su ciclo de vida y el del equipo
  * son independientes: retirar una caja exige desvincular antes, y desvincular
  * un equipo no retira su caja ni cierra su jornada (regla A11).
  *

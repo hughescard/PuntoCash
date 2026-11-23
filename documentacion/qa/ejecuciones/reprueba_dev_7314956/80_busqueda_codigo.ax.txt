@@ -1,0 +1,90 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/operations".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/operations
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		8 container
+			9 heading Operaciones, Value: 1
+				10 text Operaciones
+			11 text Lo que tus cajas han hecho con cada cliente, completado o no. Solo lectura.
+		12 button (expanded) Filtros, Secondary Actions: Collapse
+		962 container operations-filters
+			963 text Buscar
+			964 search text field (settable) Buscar, Value: pc-261023-000048, ID: operations-search
+			965 text Desde
+			966 date field (disabled, settable) Desde, Value: 2026-10-29, ID: operations-from
+			972 text Hasta
+			973 date field (disabled, settable) Hasta, Value: 2026-10-29, ID: operations-to
+			979 text Caja
+			980 pop up button (disabled, collapsed, settable) Caja, Value: Todas las cajas, ID: operations-register, Secondary Actions: Expand
+				981 menu
+					982 (selected) Todas las cajas
+					983 Caja 01 · PuntoCash Obispo
+					984 Caja 01 · PuntoCash Vedado
+					985 Caja 02 · PuntoCash Obispo
+					986 Caja 02 · PuntoCash Vedado
+					987 Caja 03 · PuntoCash Obispo
+					988 Caja 03 · PuntoCash Vedado
+					989 Caja 04 · PuntoCash Obispo
+					990 Caja 04 · PuntoCash Vedado
+					991 Caja01 · PuntoCash Cerro
+					992 QA-20261029-01 · PuntoCash Obispo
+					993 QA-RDEV731-20261029 · PuntoCash Obispo
+			994 text Trabajador
+			995 pop up button (disabled, collapsed, settable) Trabajador, Value: Todos, ID: operations-worker, Secondary Actions: Expand
+				996 menu
+					997 (selected) Todos
+					998 Endry Perez
+					999 Carlos Díaz
+					1000 Marisol Rivas
+					1001 Lidia Gómez
+					1002 Juan Pérez
+					1003 Alberto Fonseca
+			1004 text Servicio
+			1005 pop up button (disabled, collapsed, settable) Servicio, Value: Todos, ID: operations-service, Secondary Actions: Expand
+				1006 menu
+					1007 (selected) Todos
+					1008 Remesas
+					1009 Giros - Cobrar
+					1010 Giros - Enviar
+					1011 Cambio de moneda
+			1012 text Estado
+			1013 pop up button (disabled, collapsed, settable) Estado, Value: Cancelada, ID: operations-status, Secondary Actions: Expand
+				1014 menu
+					1015 Todos
+					1016 Completada
+					1017 En proceso
+					1018 Rechazada
+					1019 Fallida
+					1020 (selected) Cancelada
+			1026 text Buscando en todas las fechas; los demás filtros no se aplican mientras buscas.
+		1027 content list
+			1028 container
+				1029 text PC-261023-000048 Completada 23 oct 2026 · 16:16
+				1030 definition list
+					1031 container SERVICIO
+						1032 text SERVICIO
+					1033 text Cambio de moneda
+					1034 container CLIENTE
+						1035 text CLIENTE
+					1036 text Rolando Suárez
+					1037 container IMPORTE
+						1038 text IMPORTE
+					1039 text 43.800,00 CUP → 120,00 EUR
+					1040 container CAJA Y TRABAJADOR
+						1041 text CAJA Y TRABAJADOR
+					1042 container
+						1043 text Caja 03  ·  PuntoCash Obispo
+						1044 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				1045 link Description: Ver operación PC-261023-000048, Value: staging.puntocash.co/admin/operations/PC-261023-000048
+		1046 text Mostrando 1 de 1 operaciones
+		939 container Navegación de administración
+			940 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			941 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			942 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			943 button Más
+
+The focused UI element is 964 search text field (settable) Buscar, Value: pc-261023-000048, ID: operations-search

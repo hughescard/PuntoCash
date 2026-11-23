@@ -1,0 +1,289 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		105 container
+			106 heading Caja 03 · Carlos Díaz · 21 oct 2026, Value: 1
+				107 text Caja 03 · Carlos Díaz · 21 oct 2026
+			108 text Jornada de PuntoCash Obispo, abierta el 21 oct 2026 · 08:34.
+			109 link Description: Volver a Jornadas, Value: staging.puntocash.co/admin/shifts
+		110 container
+			111 heading La jornada, Value: 2
+				112 text La jornada
+			113 definition list
+				114 container ESTADO
+					115 text ESTADO
+				116 text Cerrada
+				117 container TRABAJADOR
+					118 text TRABAJADOR
+				119 link Description: Carlos Díaz, Value: staging.puntocash.co/admin/workers/0c7cf0cd-cd34-4a35-b216-286d7d33c969
+				120 container EQUIPO
+					121 text EQUIPO
+				122 text Mostrador 3 · Obispo · CAJ-0002-0003
+				123 container APERTURA
+					124 text APERTURA
+				125 text 21 oct 2026 · 08:34
+				126 container CIERRE
+					127 text CIERRE
+				128 text 21 oct 2026 · 17:35
+		129 container
+			130 heading Apertura, Value: 2
+				131 text Apertura
+			132 container
+				133 text Comparada con el cierre de la 
+				134 link Description: jornada anterior, Value: staging.puntocash.co/admin/shifts/fd2d1ea1-5a88-467d-b023-8b99675fcdd3
+				135 text  de esta caja (Marisol Rivas, 20 oct 2026 · 21:40).  Ese fue un cierre forzado: lo dejado es el saldo en libros, y este es el primer conteo de la caja desde entonces.
+			136 content list
+				137 container
+					138 text CUP Dejado 19.650,00 Contado 17.650,00 Faltante −2.000,00 CUP Contado al abrir. La jornada anterior de esta caja tuvo un cierre forzado.
+					139 link Description: Rechazada por Marta Sánchez, Value: staging.puntocash.co/admin/approvals/dd3570e1-3a39-4e71-ae8a-fe26adf41d20
+				140 container
+					141 text USD Dejado -40,00 Contado -40,00 Coincide
+				142 container
+					143 text EUR Dejado 950,00 Contado 950,00 Coincide
+		144 container
+			145 heading Saldos, Value: 2
+				146 text Saldos
+			147 table
+				148 row
+					149 cell
+						150 text MONEDA
+					151 cell
+						152 text FONDEO INICIAL
+					153 cell
+						154 text AL CERRAR
+				155 row
+					156 cell
+						157 text CUP
+					158 cell
+						159 text 17.650,00
+					160 cell
+						161 text 20.250,00
+				162 row
+					163 cell
+						164 text USD
+					165 cell
+						166 text -40,00
+					167 cell
+						168 text 0,00
+				169 row
+					170 cell
+						171 text EUR
+					172 cell
+						173 text 950,00
+					174 cell
+						175 text 920,00
+		176 container
+			177 heading Cierre, Value: 2
+				178 text Cierre
+			179 content list
+				180 container
+					181 text CUP Esperado 20.250,00 Contado 20.250,00 Cuadrada
+				182 container
+					183 text USD Esperado 0,00 Contado 0,00 Cuadrada
+				184 container
+					185 text EUR Esperado 920,00 Contado 920,00 Cuadrada
+		186 container movements
+			187 heading Movimientos, Value: 2
+				188 text Movimientos
+			189 text Tipo
+			190 pop up button (collapsed, settable) Tipo, Value: Todos, ID: movements-direction, Secondary Actions: Expand
+				191 menu
+					192 (selected) Todos
+					193 Entradas
+					194 Salidas
+			195 text Moneda
+			196 pop up button (collapsed, settable) Moneda, Value: Todas, ID: movements-currency, Secondary Actions: Expand
+				197 menu
+					198 (selected) Todas
+					199 CUP
+					200 USD
+					201 EUR
+			202 content list
+				203 container
+					204 text Faltante en la apertura Salida
+					205 definition list
+						206 container HORA
+							207 text HORA
+						208 text 08:34
+						209 container OPERACIÓN
+							210 text OPERACIÓN
+						211 text —
+						212 container IMPORTE
+							213 text IMPORTE
+						214 text −2.000,00 CUP
+						215 container SALDO DESPUÉS
+							216 text SALDO DESPUÉS
+						217 text 17.650,00 CUP
+					218 link Description: Ver movimiento Faltante en la apertura de las 08:34, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/30566d5c-d40c-43f8-bcca-723bc75e0e09
+				219 container
+					220 text Envío de giro Entrada
+					221 definition list
+						222 container HORA
+							223 text HORA
+						224 text 09:41
+						225 container OPERACIÓN
+							226 text OPERACIÓN
+						227 link Description: PC-261021-000001, Value: staging.puntocash.co/admin/operations/PC-261021-000001
+						228 container IMPORTE
+							229 text IMPORTE
+						230 text +7.000,00 CUP
+						231 container SALDO DESPUÉS
+							232 text SALDO DESPUÉS
+						233 text 24.650,00 CUP
+					234 link Description: Ver movimiento Envío de giro de las 09:41, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/ea2317ae-c913-4bc7-adce-fa9c2ee8a566
+				235 container
+					236 text Envío de giro Entrada
+					237 definition list
+						238 container HORA
+							239 text HORA
+						240 text 10:49
+						241 container OPERACIÓN
+							242 text OPERACIÓN
+						243 link Description: PC-261021-000010, Value: staging.puntocash.co/admin/operations/PC-261021-000010
+						244 container IMPORTE
+							245 text IMPORTE
+						246 text +120,00 CUP
+						247 container SALDO DESPUÉS
+							248 text SALDO DESPUÉS
+						249 text 24.770,00 CUP
+					250 link Description: Ver movimiento Envío de giro de las 10:49, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/d7d33875-1996-4c12-b7bd-ed9140460361
+				251 container
+					252 text Cambio de moneda Salida
+					253 definition list
+						254 container HORA
+							255 text HORA
+						256 text 11:56
+						257 container OPERACIÓN
+							258 text OPERACIÓN
+						259 link Description: PC-261021-000017, Value: staging.puntocash.co/admin/operations/PC-261021-000017
+						260 container IMPORTE
+							261 text IMPORTE
+						262 text −12.720,00 CUP
+						263 container SALDO DESPUÉS
+							264 text SALDO DESPUÉS
+						265 text 12.050,00 CUP
+					266 link Description: Ver movimiento Cambio de moneda de las 11:56, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/81d65bcf-7aeb-4169-bd16-a825f0b9ec47
+				267 container
+					268 text Cambio de moneda Entrada
+					269 definition list
+						270 container HORA
+							271 text HORA
+						272 text 11:56
+						273 container OPERACIÓN
+							274 text OPERACIÓN
+						275 link Description: PC-261021-000017, Value: staging.puntocash.co/admin/operations/PC-261021-000017
+						276 container IMPORTE
+							277 text IMPORTE
+						278 text +40,00 USD
+						279 container SALDO DESPUÉS
+							280 text SALDO DESPUÉS
+						281 text 0,00 USD
+					282 link Description: Ver movimiento Cambio de moneda de las 11:56, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/833349fe-afa5-4182-a055-b8a891cd2be8
+				283 container
+					284 text Pago de giro Salida
+					285 definition list
+						286 container HORA
+							287 text HORA
+						288 text 13:04
+						289 container OPERACIÓN
+							290 text OPERACIÓN
+						291 link Description: PC-261021-000026, Value: staging.puntocash.co/admin/operations/PC-261021-000026
+						292 container IMPORTE
+							293 text IMPORTE
+						294 text −4.000,00 CUP
+						295 container SALDO DESPUÉS
+							296 text SALDO DESPUÉS
+						297 text 8.050,00 CUP
+					298 link Description: Ver movimiento Pago de giro de las 13:04, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/f8230468-3c48-4b3b-8d49-b53c0189fd39
+				299 container
+					300 text Cambio de moneda Entrada
+					301 definition list
+						302 container HORA
+							303 text HORA
+						304 text 14:12
+						305 container OPERACIÓN
+							306 text OPERACIÓN
+						307 link Description: PC-261021-000036, Value: staging.puntocash.co/admin/operations/PC-261021-000036
+						308 container IMPORTE
+							309 text IMPORTE
+						310 text +29.200,00 CUP
+						311 container SALDO DESPUÉS
+							312 text SALDO DESPUÉS
+						313 text 37.250,00 CUP
+					314 link Description: Ver movimiento Cambio de moneda de las 14:12, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/2b211475-f4d6-47e9-94cd-310cdda5af67
+				315 container
+					316 text Cambio de moneda Salida
+					317 definition list
+						318 container HORA
+							319 text HORA
+						320 text 14:12
+						321 container OPERACIÓN
+							322 text OPERACIÓN
+						323 link Description: PC-261021-000036, Value: staging.puntocash.co/admin/operations/PC-261021-000036
+						324 container IMPORTE
+							325 text IMPORTE
+						326 text −80,00 EUR
+						327 container SALDO DESPUÉS
+							328 text SALDO DESPUÉS
+						329 text 870,00 EUR
+					330 link Description: Ver movimiento Cambio de moneda de las 14:12, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/3abbbb67-c8ac-4acb-bad8-29e986e59135
+				331 container
+					332 text Envío de giro Entrada
+					333 definition list
+						334 container HORA
+							335 text HORA
+						336 text 15:19
+						337 container OPERACIÓN
+							338 text OPERACIÓN
+						339 link Description: PC-261021-000043, Value: staging.puntocash.co/admin/operations/PC-261021-000043
+						340 container IMPORTE
+							341 text IMPORTE
+						342 text +100,00 CUP
+						343 container SALDO DESPUÉS
+							344 text SALDO DESPUÉS
+						345 text 37.350,00 CUP
+					346 link Description: Ver movimiento Envío de giro de las 15:19, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/cb51eeca-cdde-48cf-8699-3004dd515b54
+				347 container
+					348 text Cambio de moneda Entrada
+					349 definition list
+						350 container HORA
+							351 text HORA
+						352 text 16:27
+						353 container OPERACIÓN
+							354 text OPERACIÓN
+						355 link Description: PC-261021-000053, Value: staging.puntocash.co/admin/operations/PC-261021-000053
+						356 container IMPORTE
+							357 text IMPORTE
+						358 text +50,00 EUR
+						359 container SALDO DESPUÉS
+							360 text SALDO DESPUÉS
+						361 text 920,00 EUR
+					362 link Description: Ver movimiento Cambio de moneda de las 16:27, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/269a8df1-cf16-4cc7-a0e9-9376e506d8af
+				363 container
+					364 text Cambio de moneda Salida
+					365 definition list
+						366 container HORA
+							367 text HORA
+						368 text 16:27
+						369 container OPERACIÓN
+							370 text OPERACIÓN
+						371 link Description: PC-261021-000053, Value: staging.puntocash.co/admin/operations/PC-261021-000053
+						372 container IMPORTE
+							373 text IMPORTE
+						374 text −17.100,00 CUP
+						375 container SALDO DESPUÉS
+							376 text SALDO DESPUÉS
+						377 text 20.250,00 CUP
+					378 link Description: Ver movimiento Cambio de moneda de las 16:27, Value: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196/movements/94d754fa-3f78-492d-a026-b82a9f068baa
+		100 container Navegación de administración
+			101 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			102 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			103 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			104 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/shifts/cbe6cd7e-5132-4a5d-9dde-fb6aa760d196

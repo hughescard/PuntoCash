@@ -1,7 +1,8 @@
 import * as React from "react";
 
 import { Alert, Card, CardContent } from "@/components/ui";
-import { formatMoney } from "@/lib/format";
+import type { CotizacionDeGiro } from "@/features/network/tarifas-reglas";
+import { CuentaDelGiro } from "./step-monto";
 import {
   kioskClientFullName,
   type KioskBeneficiaryInput,
@@ -14,12 +15,12 @@ export function StepRevisionEnviarGiro({
   sender,
   beneficiary,
   senderCurrency,
-  deliveryAmount,
+  cotizacion,
 }: {
   sender: KioskClientInput;
   beneficiary: KioskBeneficiaryInput;
   senderCurrency: string;
-  deliveryAmount: number;
+  cotizacion: CotizacionDeGiro;
 }): React.JSX.Element {
   const provinceLabel = findProvince(beneficiary.receiverProvince)?.label ?? beneficiary.receiverProvince;
   const municipalityLabel =
@@ -64,15 +65,7 @@ export function StepRevisionEnviarGiro({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="flex flex-col gap-4 pt-6">
-          <Row label="Monto a enviar">
-            <span className="pc-numeric font-semibold text-text-primary">
-              {formatMoney({ amount: deliveryAmount, currency: senderCurrency })}
-            </span>
-          </Row>
-        </CardContent>
-      </Card>
+      <CuentaDelGiro cotizacion={cotizacion} currency={senderCurrency} />
 
       <Alert variant="info" title="Esto todavía no es una operación">
         Al confirmar, recibirás un código para presentar en caja. Allí entregas el efectivo y recibes

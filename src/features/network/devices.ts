@@ -25,10 +25,8 @@
  *     (`emitirReto`). El terminal lo muestra; no se lo inventa.
  *   · **Vincular y desvincular** son actos del administrador de la sede
  *     (**A10**, **FR-AD-EQ-3**), reciben alcance y lo comprueban.
- *   · `resolverTerminal` es la respuesta del servidor a «quién soy». En la
- *     demostración, Worker y Kiosco todavía leen su propio almacenamiento
- *     (nota de entrega, §8.3); en el producto real preguntan aquí y pintan lo que les
- *     contesten.
+ *   · `resolverTerminal` es la respuesta del servidor a «quién soy». Worker y
+ *     Kiosco preguntan aquí en cada petición y pintan lo que les contesten.
  *
  * ── Lo que esto todavía no es ─────────────────────────────────────────────
  * El identificador del equipo lo escribe el propio navegador, así que es
@@ -38,14 +36,6 @@
  * fabricar desde el cliente, y eso es lo que convierte la vinculación en un
  * control y no en una declaración. Quien implemente el backend firma la
  * credencial y no tiene que mover nada más.
- *
- * ── Mientras dure el tramo ────────────────────────────────────────────────
- * `features/devices/device-link.ts` sigue en el repositorio y exporta nombres
- * que aquí se repiten —`formatPairingCode`, `PairingChallenge`,
- * `PAIRING_VALIDITY_MINUTES`—. No es una duplicación que haya que resolver
- * eligiendo: es el mecanismo viejo, que se retira en cuanto Worker, Kiosco y
- * el simulador pasen a preguntar aquí. Hasta entonces, **lo que gobierna es
- * este módulo** y el otro es el que se va.
  */
 
 import { requireOperatorScope, type Scope } from "./scope";
@@ -606,21 +596,17 @@ export function identificarReto(
 /**
  * Los equipos que, **en la demostración**, esperan que alguien los vincule.
  *
- * En el producto el reto lo emite el propio terminal al arrancar, y el
- * administrador lee las seis cifras de la pantalla del equipo que tiene
- * delante. Aquí todavía no: Worker y Kiosco resuelven su vínculo contra
- * `features/devices/device-link.ts`, que vive en el `localStorage` del
- * navegador del terminal, así que su código **nunca llega a este módulo**,
- * que es del servidor. Sin estos dos, `/admin/equipos/vincular` no tendría
- * ningún código que encontrar y la pantalla no se podría recorrer.
+ * El reto lo emite el propio terminal al arrancar —una caja de Worker o un
+ * kiosco sin vincular—, y el administrador lee las seis cifras de la pantalla
+ * del equipo que tiene delante. Estos dos son un atajo para recorrer
+ * `/admin/equipos/vincular` sin abrir antes un terminal en otra pestaña.
  *
  * Los identificadores no coinciden con ningún equipo ya vinculado, a
  * propósito: uno es una caja y el otro un kiosco, para que las dos ramas de
  * §3.4 —elegir caja, o solo sede— se puedan ver.
  *
- * Esto desaparece cuando el terminal pregunte al servidor quién es
- * (**FR-DEV-8**, nota de entrega §8.3): entonces los retos de verdad estarán aquí
- * y no habrá nada que simular.
+ * Los retos de los terminales de verdad también están aquí; estos solo se
+ * suman a ellos.
  */
 const PREFIJO_DEMO: Record<TerminalKind, string> = {
   caja: "CAJ-0007-",

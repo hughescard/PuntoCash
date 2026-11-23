@@ -1,0 +1,20 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/users".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/users
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		8 container
+			9 heading No encontramos lo que buscabas, Value: 1
+				10 text No encontramos lo que buscabas
+			11 text Es posible que el enlace haya cambiado o que ya no esté disponible. Vuelve a Inicio y continúa desde ahí.
+			12 link Description: Volver a Inicio, Value: staging.puntocash.co/admin/home
+		13 container Navegación de administración
+			14 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			15 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			16 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			17 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/users

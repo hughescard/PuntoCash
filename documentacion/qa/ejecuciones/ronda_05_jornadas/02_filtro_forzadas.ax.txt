@@ -1,0 +1,91 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/shifts".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/shifts
+	1 container
+		2 container PuntoCash
+			3 text PUNTO  CASH
+		4 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		5 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			6 text OBI — PuntoCash Obispo
+		95 container
+			96 heading Jornadas, Value: 1
+				97 text Jornadas
+			98 text El día de trabajo de cada caja: quién la abrió, qué movió y cómo cerró.
+		99 container
+			100 text Una caja sigue abierta de un día anterior
+			101 content list
+				102 container
+					103 link Description: Caja 03 de PuntoCash Obispo, Value: staging.puntocash.co/admin/shifts/3a11b4d3-87c0-43d5-a06f-953e2612d5da
+					104 text (abierta por Carlos Díaz el 24 oct 2026)
+			105 text Si nadie va a hacer su cierre, puedes forzarlo desde la jornada.
+		106 button (expanded) Filtros, Secondary Actions: Collapse
+		177 container shifts-filters
+			178 text Desde
+			179 date field (settable) Desde, Value: 2026-10-23, ID: shifts-from
+				180 container
+					181 stepper
+					182 stepper
+					183 stepper
+				184 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			185 text Hasta
+			186 date field (settable) Hasta, Value: 2026-10-29, ID: shifts-to
+				187 container
+					188 stepper
+					189 stepper
+					190 stepper
+				191 pop up button Mostrar selector de fecha Mostrar selector de fecha
+			192 text Caja
+			193 pop up button (collapsed, settable) Caja, Value: Todas las cajas, ID: shifts-register, Secondary Actions: Expand
+				194 menu
+					195 (selected) Todas las cajas
+					196 Caja 01
+					197 Caja 02
+					198 Caja 03
+					199 Caja 04
+					200 QA-20261029-01
+			201 text Trabajador
+			202 pop up button (collapsed, settable) Trabajador, Value: Todos, ID: shifts-worker, Secondary Actions: Expand
+				203 menu
+					204 (selected) Todos
+					205 Carlos Díaz
+					206 Marisol Rivas
+			207 text Estado
+			208 pop up button (collapsed, settable) Estado, Value: Cierres forzados, ID: shifts-state, Secondary Actions: Expand
+				209 menu
+					210 Todas
+					211 Abiertas
+					212 Cerradas
+					213 (selected) Cierres forzados
+			214 checkbox (settable, integer) Description: Solo con diferencia, Value: 0
+		107 content list
+			130 container
+				131 text Caja 01  ·  PuntoCash Obispo Cierre forzado
+				132 definition list
+					133 container TRABAJADOR
+						134 text TRABAJADOR
+					135 link Description: Marisol Rivas, Value: staging.puntocash.co/admin/workers/e2a42828-9443-428e-8675-78bbccf11c00
+					136 container FECHA
+						137 text FECHA
+					138 text 23 oct 2026
+					139 container APERTURA Y CIERRE
+						140 text APERTURA Y CIERRE
+					141 text 08:34 – 26 oct 2026 09:45
+					142 container OPERACIONES
+						143 text OPERACIONES
+					144 text 5
+					145 container AL ABRIR
+						146 text AL ABRIR
+					147 text Coincide
+					148 container CIERRE
+						149 text CIERRE
+					150 container
+						151 text Sin contar Pendiente de conciliar
+				152 link Description: Ver jornada de Caja 01, Marisol Rivas, 23 oct 2026, Value: staging.puntocash.co/admin/shifts/1bcff86f-3b4b-4677-8ae1-bead082b7553
+		175 container
+			176 text Mostrando 1 – 1 de 1 jornadas
+		90 container Navegación de administración
+			91 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			92 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			93 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			94 button Más
+
+The focused UI element is 106 button (expanded) Filtros, Secondary Actions: Collapse

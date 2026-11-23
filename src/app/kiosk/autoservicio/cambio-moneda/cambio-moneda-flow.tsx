@@ -9,12 +9,10 @@ import { Stepper } from "@/components/patterns/stepper";
 import { KioskCancelDialog } from "@/components/patterns/kiosk-cancel-dialog";
 import { KioskRequestTicket, TicketRow } from "@/components/patterns/kiosk-request-ticket";
 import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import { formatMoney, parseAmountInput } from "@/lib/format";
-import { getExchangeQuote } from "@/features/exchange/quote";
-import {
-  kioskClientFullName,
-  registerSelfServiceRequest,
-} from "@/features/kiosk/self-service-request";
+import { formatAmount, formatMoney, parseAmountInput } from "@/lib/format";
+import { cotizarEnKiosco, noSePuedeCobrar, type CambioDeSede } from "@/features/kiosk/cambio";
+import { kioskClientFullName } from "@/features/kiosk/self-service-request";
+import { registrarSolicitud } from "../_actions";
 import {
   FLOW_STEPS,
   INITIAL_STATE,
@@ -23,37 +21,49 @@ import {
   stepIndex,
 } from "./flow-state";
 import { KioskClientForm } from "@/components/patterns/kiosk-client-form";
+import { KioskAvisoDeCaja } from "@/components/patterns/kiosk-aviso-de-caja";
 import { StepDatos, formatAppliedRate } from "./step-datos";
 import { StepRevisionAutoservicio } from "./step-revision";
 
-/** Simulated request round trip, so the "generando…" state is observable. */
-const SUBMIT_MS = 700;
-
 const KIOSK_HOME = "/kiosk/autoservicio";
 
-export function CambioMonedaAutoservicioFlow(): React.JSX.Element {
+/**
+ * El par con que abre el formulario: dólares a pesos si la sede los cambia,
+ * que es el cambio más pedido; si no, la primera divisa contra el peso.
+ */
+function parInicial(cambio: CambioDeSede): { sourceCurrency: string; destinationCurrency: string } {
+  const codigos = cambio.monedas.map((m) => m.code);
+  const divisa = codigos.includes("USD") ? "USD" : (codigos.find((c) => c !== "CUP") ?? "USD");
+  return { sourceCurrency: divisa, destinationCurrency: "CUP" };
+}
+
+export function CambioMonedaAutoservicioFlow({ cambio }: { cambio: CambioDeSede }): React.JSX.Element {
   const router = useRouter();
-  const [state, dispatch] = React.useReducer(flowReducer, INITIAL_STATE);
+  const [state, dispatch] = React.useReducer(flowReducer, undefined, () => ({ ...INITIAL_STATE, ...parInicial(cambio) }));
   const [cancelOpen, setCancelOpen] = React.useState(false);
 
   const parsedAmount = parseAmountInput(state.amountInput);
+  const pasoDeOrigen = cambio.pasos[state.sourceCurrency];
 
   const liveQuote = React.useMemo(() => {
     if (parsedAmount === null || parsedAmount <= 0) return null;
-    const result = getExchangeQuote({
-      sourceCurrency: state.sourceCurrency,
-      destinationCurrency: state.destinationCurrency,
-      sourceAmount: parsedAmount,
-    });
-    return result.ok ? result.quote : null;
-  }, [parsedAmount, state.sourceCurrency, state.destinationCurrency]);
+    return cotizarEnKiosco(cambio, state.modo, state.sourceCurrency, state.destinationCurrency, parsedAmount);
+  }, [cambio, parsedAmount, state.modo, state.sourceCurrency, state.destinationCurrency]);
 
+  /* Vacío no es un error: el botón ya está apagado. Se dice en cuanto hay algo
+     escrito que no sirve. */
   const amountError = React.useMemo(() => {
-    if (state.amountInput.trim() === "") return "Introduce el monto que vas a entregar.";
-    if (parsedAmount === null) return "Introduce un monto válido.";
+    if (state.amountInput.trim() === "") return undefined;
+    if (parsedAmount === null) return "Escribe un monto válido.";
     if (parsedAmount <= 0) return "El monto debe ser mayor que cero.";
+    /* Lo que entrega el cliente se cobra en billetes y monedas. */
+    if (state.modo === "cambiar" && noSePuedeCobrar(parsedAmount, pasoDeOrigen)) {
+      const paso = pasoDeOrigen ?? 1;
+      return `No se puede entregar en billetes: usa múltiplos de ${formatAmount(paso, Number.isInteger(paso) ? 0 : 2)} ${state.sourceCurrency}.`;
+    }
+    if (!liveQuote) return "Este monto es demasiado pequeño para cambiarlo.";
     return undefined;
-  }, [state.amountInput, parsedAmount]);
+  }, [state.amountInput, state.modo, state.sourceCurrency, parsedAmount, pasoDeOrigen, liveQuote]);
 
   const canContinueFromDatos = Boolean(liveQuote && !amountError);
   const dirty = hasMeaningfulData(state);
@@ -71,13 +81,25 @@ export function CambioMonedaAutoservicioFlow(): React.JSX.Element {
   async function confirmRequest() {
     if (state.submitting || !state.quote) return;
     dispatch({ type: "submit-start" });
-    await new Promise((resolve) => setTimeout(resolve, SUBMIT_MS));
 
-    const request = registerSelfServiceRequest({
+    const result = await registrarSolicitud({
       service: "cambio-moneda",
-      data: { quote: state.quote, client: state.client },
+      data: {
+        quote: state.quote,
+        client: state.client,
+        modo: state.modo,
+        importePedido: parsedAmount ?? undefined,
+      },
     });
-    dispatch({ type: "submit-success", request });
+    if (!result.ok) {
+      /* La tasa cambió mientras el cliente escribía: vuelve al primer paso con
+         las tasas nuevas, que trae el refresco. */
+      if (result.motivo === "cotizacion-cambiada") dispatch({ type: "cotizacion-cambiada" });
+      /* En cualquier otro caso el kiosco ya no puede atender esto: la pantalla
+         se vuelve a pintar con lo que corresponda. */
+      return router.refresh();
+    }
+    dispatch({ type: "submit-success", request: result.solicitud });
   }
 
   const completed = state.step === "solicitud" && state.request;
@@ -107,6 +129,11 @@ export function CambioMonedaAutoservicioFlow(): React.JSX.Element {
         </TicketRow>
         <TicketRow label="Tasa aplicada">{formatAppliedRate(state.quote)}</TicketRow>
         <TicketRow label="A nombre de">{kioskClientFullName(state.client)}</TicketRow>
+        <TicketRow label="Importante">
+          <span className="font-normal text-text-secondary">
+            La caja confirma la cifra al entregarte el dinero, según los billetes que tenga.
+          </span>
+        </TicketRow>
       </KioskRequestTicket>
     );
   }
@@ -119,7 +146,7 @@ export function CambioMonedaAutoservicioFlow(): React.JSX.Element {
             <h1 className="text-screen-title text-text-primary">Cambio de moneda</h1>
             <p className="mt-2 text-body text-text-secondary">
               {state.step === "datos"
-                ? "Elige las monedas y el monto que quieres cambiar."
+                ? "Elige las monedas y el monto. Usamos las tasas de hoy en esta sucursal."
                 : state.step === "cliente"
                   ? "Dinos a nombre de quién dejamos la solicitud."
                   : "Revisa todo antes de generar tu código."}
@@ -134,10 +161,16 @@ export function CambioMonedaAutoservicioFlow(): React.JSX.Element {
 
         {state.step === "datos" ? (
           <StepDatos
+            monedas={cambio.monedas}
+            modo={state.modo}
+            cotizacionCambiada={state.cotizacionCambiada}
+            onModoChange={(modo) => dispatch({ type: "set-modo", modo })}
             sourceCurrency={state.sourceCurrency}
             destinationCurrency={state.destinationCurrency}
             amountInput={state.amountInput}
-            quote={liveQuote}
+            /* Con un monto que no sirve no se enseña ninguna cifra: sería una
+               promesa que la caja no podría cumplir. */
+            quote={amountError ? null : liveQuote}
             amountError={amountError}
             onSourceCurrencyChange={(currency) => dispatch({ type: "set-source-currency", currency })}
             onDestinationCurrencyChange={(currency) =>
@@ -160,7 +193,10 @@ export function CambioMonedaAutoservicioFlow(): React.JSX.Element {
         ) : null}
 
         {state.step === "revision" && state.quote ? (
-          <StepRevisionAutoservicio quote={state.quote} client={state.client} />
+          <>
+            <StepRevisionAutoservicio quote={state.quote} client={state.client} />
+            <KioskAvisoDeCaja />
+          </>
         ) : null}
 
         <div className="mt-2 flex items-center justify-between gap-4 border-t border-border pt-6">

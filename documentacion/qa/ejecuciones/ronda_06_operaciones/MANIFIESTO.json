@@ -1,0 +1,80 @@
+{
+  "fecha": "2026-10-29",
+  "evidencias": [
+    {
+      "archivo": "01_listado_inicial.ax.txt",
+      "bytes": 36028,
+      "sha256": "8da7557493f68834969bbc495b480d6655f2e0d66d4e0a9f6517745f931dd9c7"
+    },
+    {
+      "archivo": "02_paginacion.json",
+      "bytes": 80,
+      "sha256": "3b1050a384a393e747a63ad49afbf80a504468851750e45e591b4ead1b42500b"
+    },
+    {
+      "archivo": "03_solo_hoy.ax.txt",
+      "bytes": 3735,
+      "sha256": "1197da6e3e608355b84c2d666fde80a5ac4c88d7ecffae48e62a492137a32f47"
+    },
+    {
+      "archivo": "04_busqueda_ignora_fecha_estado.ax.txt",
+      "bytes": 3827,
+      "sha256": "116dc788178f084757e3bb9081808719a102de332889d41a19909599b4deda12"
+    },
+    {
+      "archivo": "05_busqueda_nombre_sin_tilde.ax.txt",
+      "bytes": 13662,
+      "sha256": "e37d3619031744032a1ec75d0027804887c3bb911f6ddfcf2682403757b71eb0"
+    },
+    {
+      "archivo": "06_busqueda_documento_parcial.ax.txt",
+      "bytes": 13646,
+      "sha256": "11858174297b11fe272df3df2750444540fa8f83bb02893d600ce15232f01d11"
+    },
+    {
+      "archivo": "07_busqueda_borrada_restaura_filtros.ax.txt",
+      "bytes": 3219,
+      "sha256": "b9bfab024555555e9047e0852e7888d221ac4c3e370e6c8022403c17d4aa5fad"
+    },
+    {
+      "archivo": "08_tras_reintentar.ax.txt",
+      "bytes": 3199,
+      "sha256": "7fe3b1bea3a653327a747deae14e655e01844b186dedd28d6f26f6047a1fcd9c"
+    },
+    {
+      "archivo": "09_filtro_remesas.ax.txt",
+      "bytes": 5382,
+      "sha256": "b795d4927975d8aef3052f8809257b1cb9df6f354b9cef5ee6380b64dc0e243e"
+    },
+    {
+      "archivo": "10_detalle_remesa.ax.txt",
+      "bytes": 3841,
+      "sha256": "f60274501fd9d4c0916704e7732ac096ed90fa6f0bfa51fc471ceae36696c40e"
+    },
+    {
+      "archivo": "11_regreso_pierde_servicio.ax.txt",
+      "bytes": 38084,
+      "sha256": "c8943e16463228320f6f7d99a5a245eaf87bb1c6f7a422eb468adcdc99573af5"
+    },
+    {
+      "archivo": "12_ficha_trabajador_corresponde.ax.txt",
+      "bytes": 5809,
+      "sha256": "b0f724417a74264860050da73b93c263c8bb581b6105ae1505c50f101987c317"
+    },
+    {
+      "archivo": "13_jornadas_abiertas_fuera_fecha.ax.txt",
+      "bytes": 7892,
+      "sha256": "1f604864aa334c7f14c0b0a0aa75d4599a3bf29ec47cef4923cdaaacf80829c8"
+    },
+    {
+      "archivo": "13_jornadas_abiertas_fuera_fecha.png",
+      "bytes": 27120,
+      "sha256": "ec14e6cd140011e98ece5085cb965c1134e920149e40b452f8944554bed95952"
+    },
+    {
+      "archivo": "INFORME.md",
+      "bytes": 4049,
+      "sha256": "35ee319916135ea978b968de37ed178ad868486fdc8da072fd42498dc0aaf0f7"
+    }
+  ]
+}

@@ -2,8 +2,7 @@ import * as React from "react";
 import { Clock, MapPin, Phone } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { Branch } from "@/features/branches/branches";
-import { useFicha } from "../tableros";
+import type { SedePublica } from "../tableros";
 import { SlideHeading } from "./slide-tasas";
 
 /**
@@ -11,19 +10,16 @@ import { SlideHeading } from "./slide-tasas";
  * for the sede this screen was set up for (Pantalla FRD FR-PANT-SUC-1).
  * Three columns on a landscape TV, stacked on a vertical screen.
  *
- * Address, phone and hours come from the server (`useFicha`), not from the
- * `branch` this screen stored when it was set up: the sede's admin edits them
- * (FR-AD-SEDE-14) and the stored copy would never learn. The stored one is
- * only the fallback while the server has not answered.
+ * Everything comes from the server and refreshes with the boards: the
+ * sede's admin edits address, phone and hours, and the TV never reloads.
  */
-export function SlideSucursal({ branch }: { branch: Branch }): React.JSX.Element {
-  const ficha = useFicha(branch.id);
-  const address = ficha ? `${ficha.address}, ${ficha.locality}` : `${branch.address}, ${branch.locality}`;
-  const hours = ficha ? ficha.horario : branch.hours.split("; ");
-  const phone = ficha?.phone ?? branch.phone;
+export function SlideSucursal({ sede }: { sede: SedePublica }): React.JSX.Element {
+  const address = `${sede.address}, ${sede.locality}`;
+  const hours = sede.horario;
+  const phone = sede.phone;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <SlideHeading eyebrow={branch.name} title="Estamos aquí para ayudarte" />
+      <SlideHeading eyebrow={sede.name} title="Estamos aquí para ayudarte" />
 
       <div className="mt-[1.5em] grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-[1.25em] landscape:grid-cols-3">
         <InfoTile icon={MapPin} label="Dirección" value={address} />

@@ -1,0 +1,43 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/devices/link?register=40d605f8-1706-4ea1-8a10-9e5645b8f2b3".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices/link?register=40d605f8-1706-4ea1-8a10-9e5645b8f2b3
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		195 combo box (collapsed) Description: Sede que estás viendo, Value: OBI — PuntoCash Obispo, Secondary Actions: Expand
+			196 text OBI — PuntoCash Obispo
+		197 container
+			198 heading Vincular un equipo, Value: 1
+				207 text Vincular un equipo
+			208 text Identifica el equipo por su QR o su código de seis cifras, y elige a qué se ata.
+			199 link Description: Volver a Equipos, Value: staging.puntocash.co/admin/devices
+		209 container
+			210 heading Equipo de caja, Value: 2
+				211 text Equipo de caja
+			212 text 000000
+			213 text Sede
+			214 pop up button (collapsed, settable) Sede, Value: PuntoCash Obispo, ID: link-branch, Secondary Actions: Expand
+				215 menu
+					216 Elige una sede
+					217 PuntoCash Cerro
+					218 (selected) PuntoCash Obispo
+					219 PuntoCash Vedado
+			220 text Solo aparecen las sedes que administras.
+			221 text Caja
+			222 pop up button (collapsed, settable) Caja, Value: Caja 02, ID: link-register, Secondary Actions: Expand
+				223 menu
+					224 Elige una caja
+					225 (disabled) Caja 01 · ya tiene CAJ-0002-0001
+					226 (selected) Caja 02
+					227 (disabled) Caja 03 · ya tiene CAJ-0002-0003
+					228 Caja 04
+			229 text Una caja admite un solo equipo a la vez.
+			230 button Empezar de nuevo
+			231 button Vincular el equipo
+		190 container Navegación de administración
+			191 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			192 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			193 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			194 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/devices/link?register=40d605f8-1706-4ea1-8a10-9e5645b8f2b3

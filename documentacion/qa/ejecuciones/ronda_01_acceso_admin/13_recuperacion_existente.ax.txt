@@ -1,0 +1,24 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/access-recovery".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/access-recovery
+	2 container
+		3 container
+			4 text PUNTO  CASH CASA DE CAMBIO
+			5 heading Tu sucursal bajo control, en un solo lugar., Value: 2
+				6 text Tu sucursal bajo control, en un solo lugar.
+			7 text Administración de sede · PuntoCash
+		8 container
+			19 container
+				20 heading Revisa tu correo, Value: 1
+					21 text Revisa tu correo
+				22 text Escribe el código que acabamos de enviarte.
+			23 container
+				24 text Si existe esa cuenta, el código ya salió Le acabamos de enviar un código de 6 dígitos a su correo registrado.
+			25 text Código de verificación
+			26 text field (settable) Código de verificación
+			27 text El código caduca en 4:33.
+			28 button (disabled) Comprobar código
+			29 button (disabled) Reenviar código en 0:33
+			30 link Description: Volver a iniciar sesión, Value: staging.puntocash.co/admin/login
+			18 text PuntoCash · Sistema interno
+
+The focused UI element is 26 text field (settable) Código de verificación

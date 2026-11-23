@@ -1,0 +1,2154 @@
+{
+  "consultado_utc": "2026-10-29T19:40:50.975Z",
+  "workspace": "antilla-capital",
+  "project_id": "561f3271-48e0-468b-80b0-f70ac7f14f57",
+  "project": "PuntoCash",
+  "total": 43,
+  "next_page_results": false,
+  "scope": "Tickets no archivados devueltos por listado, incluidos Done",
+  "tickets": [
+    {
+      "id": "e043adcd-87a4-47a7-adaa-8b9c721ac6b0",
+      "identifier": "PUNTOCASH-31",
+      "sequence_id": 31,
+      "name": "check/Alerts in worker/home",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-28T23:50:13.245101Z",
+      "updated_at": "2026-10-29T18:01:48.851791Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"9dc0ee99-b9b7-458d-9cee-94e0f28c1829\" src=\"69ebfa1a-91a8-4507-9904-d4b04bb14e37\" id=\"9dc0ee99-b9b7-458d-9cee-94e0f28c1829\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"eb39a58d-b85a-42d6-9e90-b3c4f3c9c7fa\"></p>",
+      "assignees": [
+        {
+          "id": "1b186591-de7b-44e5-bcbd-b51c4c2eef0a",
+          "name": "Guillermo"
+        }
+      ],
+      "discussion": {
+        "n": 31,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "3c318482-5235-4c2d-a2c3-123e0a477782",
+      "identifier": "PUNTOCASH-30",
+      "sequence_id": 30,
+      "name": "fix/2fa code focus",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T23:03:30.247356Z",
+      "updated_at": "2026-10-29T17:58:04.725715Z",
+      "completed_at": "2026-10-29T17:58:04.664787Z",
+      "description_html": "<div><p>when user type the code cannot do focus on inputs and it feels wrong</p><h3>Hecho</h3><ul><li>Las seis casillas siguen siendo un único campo invisible (como en el demo), para que pegar y autocompletar el código funcionen; lo que faltaba era ver dónde se escribe.</li><li>La casilla que recibe el siguiente dígito muestra un cursor parpadeante, con borde oscuro y halo, como en el demo; las casillas rellenas tienen un borde más marcado y la transición es suave.</li><li>Dígitos a 24 px con la letra de la app (los códigos de equipo siguen en ancho fijo).</li><li>El login de trabajador usa ahora el mismo componente OtpInput que el administrador, así la mejora aplica a todos los 2FA, la recuperación y la vinculación de equipos.</li><li>Extra en la misma pantalla: el panel izquierdo mostraba la clave \"auth.twoFactor.headline\" sin traducir; ahora dice \"Un paso más para proteger tu jornada.\"</li></ul><p>Nota: como en el demo, hacer clic en una casilla concreta no mueve el cursor a esa casilla; siempre está en la siguiente vacía.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 30,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-30",
+          "sha": "b7695fbb391cc5a38a00c09ece7009fed2237ec6",
+          "titulo": "fix: 2FA code boxes show a caret where the next digit goes (PUNTOCASH-30)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/b7695fbb391cc5a38a00c09ece7009fed2237ec6"
+        }
+      ],
+      "cruce_qa": {
+        "incidencias": "QA-004",
+        "nota": "Texto Worker corregido observado en la pasada anterior; reconfirmar en la actual. El foco visual de las casillas es un cambio adicional, distinto de QA-001."
+      }
+    },
+    {
+      "id": "b01704a9-8425-404f-8ecb-727fef7a236d",
+      "identifier": "PUNTOCASH-28",
+      "sequence_id": 28,
+      "name": "fix/add promotion in a close seat handle error",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:56:08.596947Z",
+      "updated_at": "2026-10-29T17:51:26.562272Z",
+      "completed_at": "2026-10-29T17:51:26.489045Z",
+      "description_html": "<div><h3>Hecho</h3><ul><li>Reproducido: al publicar una promoción en \"PuntoCash Cerrada\" el backend responde 409 <code>promotion.seat_closed</code> (con <code>params.seat</code>) y el formulario mostraba \"Ocurrió un error inesperado\".</li><li>Nueva promoción: \"Sedes donde se muestra\" ya no ofrece sedes cerradas; \"Marcar todas\" solo marca las abiertas.</li><li>Editar promoción: si una promoción incluía una sede que se cerró después, esa sede sale del borrador al abrir el formulario, para que guardar no sea rechazado.</li><li>Se tradujo <code>promotion.seat_closed</code> (es/en): \"{nombre de la sede} está cerrada: no se pueden publicar promociones en ella. Quítala de las sedes.\"</li></ul></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 28,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-28",
+          "sha": "cbdd1ce2366d81f7076e8de8c3a11d6d7e23270c",
+          "titulo": "fix: promotions cannot be published in closed seats (PUNTOCASH-28)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/cbdd1ce2366d81f7076e8de8c3a11d6d7e23270c"
+        }
+      ]
+    },
+    {
+      "id": "ba49978c-e146-4df4-b289-e23b1596e6f6",
+      "identifier": "PUNTOCASH-27",
+      "sequence_id": 27,
+      "name": "fix/currencies retire error when seat is closed",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:50:00.400143Z",
+      "updated_at": "2026-10-29T16:55:56.944761Z",
+      "completed_at": "2026-10-29T16:55:56.886744Z",
+      "description_html": "<div><p>When user press retire currency and seat is closed backend return 409 {\"success\":false,\"statusCode\":409,\"message\":\"seat_currency.seat_closed\"}</p><h3>Hecho</h3><ul><li>Reproducido con \"PuntoCash Cerrada\": el diálogo dejaba confirmar y mostraba \"Ocurrió un error inesperado\" porque el código no estaba traducido.</li><li>En una sede cerrada ya no se ofrece \"Retirar\" (ni la columna de acciones), igual que ya no se ofrecía \"Añadir moneda\". En su lugar se muestra \"La sede está cerrada: su lista de monedas ya no se puede cambiar.\"</li><li>Se tradujo <code>seat_currency.seat_closed</code> (es/en) con ese mismo mensaje, por si la sede se cierra con la pantalla abierta.</li></ul><p><strong>Nota sobre el backend:</strong> el código no está documentado en /docs, y <code>GET /api/seat-currencies/{seatId}/{currency}/removal-check</code> responde que se puede retirar aunque la sede esté cerrada; solo el DELETE lo rechaza. Sería mejor que removal-check también lo indicara.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 27,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-27",
+          "sha": "f9e2d36b942d841d0e710c4dcc95c34ff1ae488d",
+          "titulo": "fix: closed seats cannot retire currencies (PUNTOCASH-27)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/f9e2d36b942d841d0e710c4dcc95c34ff1ae488d"
+        }
+      ]
+    },
+    {
+      "id": "8054ed50-01f4-4e5b-add6-fee3f4631153",
+      "identifier": "PUNTOCASH-26",
+      "sequence_id": 26,
+      "name": "change/deactivate modal in user/{id} to respect design",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:47:51.558123Z",
+      "updated_at": "2026-10-29T16:49:50.729608Z",
+      "completed_at": "2026-10-29T16:49:50.666027Z",
+      "description_html": "<div><h3>Hecho</h3><p>Sin imagen en la tarea; se comparó con el modal \"Desactivar\" de la ficha de un usuario en el demo.</p><ul><li>Aviso \"Se puede deshacer\" con el título en azul (info), como el demo.</li><li>Texto del aviso: \"con el mismo identificador y la misma contraseña\" (antes decía \"mismo correo\").</li><li>El motivo pasa de cuadro de texto alto a un campo de una línea con el ejemplo \"Ya no forma parte de la empresa\", igual que el modal de cambiar correo.</li></ul><p><strong>Diferencia por el backend:</strong> el modal mantiene el campo \"Motivo de la desactivación\", que el demo no tiene, porque el backend lo exige (<code>ReasonDto.reason</code>, obligatorio, mínimo 10 caracteres).</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 26,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-26",
+          "sha": "0d2234be575d52bfa43514376902ff6d90028c74",
+          "titulo": "fix: deactivate user modal as in the design (PUNTOCASH-26)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/0d2234be575d52bfa43514376902ff6d90028c74"
+        }
+      ]
+    },
+    {
+      "id": "6112eaa3-1f25-492f-b81a-5788a6f02568",
+      "identifier": "PUNTOCASH-25",
+      "sequence_id": 25,
+      "name": "change/buttons tyle in users/{id} to respect design",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:46:27.198004Z",
+      "updated_at": "2026-10-29T16:47:29.221662Z",
+      "completed_at": "2026-10-29T16:47:29.158326Z",
+      "description_html": "<div><image-component data-id=\"6c8d3977-9821-4138-bf61-3d3bcef84b4c\" src=\"b2016947-5550-4bd5-a044-a3c018378008\" id=\"6c8d3977-9821-4138-bf61-3d3bcef84b4c\" width=\"137px\" height=\"136px\" aspectratio=\"1.0121412803532008\" alignment=\"left\" status=\"uploaded\"></image-component><h3>Hecho</h3><ul><li>Botones de acciones con icono como en el demo: Editar datos (lápiz), Cambiar correo (sobre), Regenerar credencial (llave), Traspasar la administración de usuarios (corona), Desactivar (rojo, persona con X) y Reactivar (persona con check; el demo no tiene un caso de usuario desactivado).</li><li>Aviso \"Al administrador principal no lo desactiva nadie\" con el título en azul (info).</li><li>Distribución como el demo y la ficha de trabajador: \"Datos\" y \"Acciones\" como títulos de sección fuera de tarjeta a todo el ancho; datos en 3 columnas añadiendo \"Identificador de acceso\"; bajo el nombre se muestra el identificador de acceso; teléfono \"—\" si no hay dato.</li></ul><p><strong>Diferencia por el backend:</strong> el teléfono se muestra tal como lo guarda el backend (p. ej. \"+5355550101\"), sin el formato con espacios del demo.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 25,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-25",
+          "sha": "1c52d8ff65e3afed90bd46d695a5de8a00d6e678",
+          "titulo": "fix: user detail buttons and layout as in the design (PUNTOCASH-25)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/1c52d8ff65e3afed90bd46d695a5de8a00d6e678"
+        }
+      ]
+    },
+    {
+      "id": "ef40d674-8f2b-455b-9630-f2cf2e88b47f",
+      "identifier": "PUNTOCASH-24",
+      "sequence_id": 24,
+      "name": "change/Modal in change email in user/{id} to respect desing",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:45:19.216046Z",
+      "updated_at": "2026-10-29T16:43:43.139153Z",
+      "completed_at": "2026-10-29T16:43:43.073748Z",
+      "description_html": "<div><image-component data-id=\"6d909807-a3b2-4478-8b61-cab891f96b70\" id=\"6d909807-a3b2-4478-8b61-cab891f96b70\" width=\"137px\" height=\"136px\" aspectratio=\"1.0121412803532008\" alignment=\"left\" status=\"pending\"></image-component><h3>Hecho</h3><p>La imagen de la tarea no llegó a subirse; se comparó con el modal \"Cambiar correo\" del demo (ficha de un usuario).</p><ul><li>El modal ya coincidía con el diseño gracias a la reestructuración del Modal compartido de la tarea 14 (cabecera, descripción, pie con separador y botones Cancelar / Guardar el correo a la derecha).</li><li>Se añadió el texto de ejemplo \"El dominio estaba mal escrito\" al campo del motivo, igual que en la pantalla equivalente de trabajadores.</li></ul><p><strong>Diferencia con el demo por el backend:</strong> el modal mantiene el campo \"Por qué lo cambias\", que el demo no tiene, porque el backend lo exige (<code>ChangeEmailDto.reason</code>, obligatorio, mínimo 10 caracteres); sin él rechaza el cambio.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 24,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-24",
+          "sha": "a9dc13f96b4330aad1f59637a59e42d9d1d51f7d",
+          "titulo": "fix: change email modal reason placeholder as in the design (PUNTOCASH-24)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/a9dc13f96b4330aad1f59637a59e42d9d1d51f7d"
+        }
+      ]
+    },
+    {
+      "id": "6c23ea68-ad8d-4aeb-85cd-3d2b7ec10001",
+      "identifier": "PUNTOCASH-23",
+      "sequence_id": 23,
+      "name": "change/text warning color on users to respect design",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:42:54.275612Z",
+      "updated_at": "2026-10-29T16:40:04.877817Z",
+      "completed_at": "2026-10-29T16:40:04.775483Z",
+      "description_html": "<div><image-component data-id=\"44860ab0-5d68-469b-8d0f-bc26430ad63a\" id=\"44860ab0-5d68-469b-8d0f-bc26430ad63a\" width=\"137px\" height=\"77px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"pending\"></image-component><h3>Hecho (commit 540c3e6)</h3><p>La imagen de la tarea no llegó a subirse, así que se comparó toda la pantalla /admin/users con /admin/usuarios del demo.</p><ul><li>Aviso \"Esta pantalla es solo tuya\": título en azul (color del aviso informativo) como en el diseño, y una X para cerrarlo; se recuerda en el navegador (localStorage) y no vuelve a salir.</li><li>Buscador con icono de lupa y ancho máximo como el demo.</li><li>\"Tú\" como etiqueta azul junto al nombre.</li><li>Nombre en peso medio; correo en gris; papel \"Administrador\" en gris (el principal sigue en oscuro).</li><li>Botón \"Dar de alta\" con icono de añadir persona.</li><li>AlertBanner admite una opción <code>dismiss</code> para mostrar la X de cierre.</li></ul></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 23,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-23",
+          "sha": "540c3e6afa0bbd3751695bc718725476445c6e25",
+          "titulo": "fix: users list notice and table as in the design (PUNTOCASH-23)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/540c3e6afa0bbd3751695bc718725476445c6e25"
+        }
+      ]
+    },
+    {
+      "id": "e592e9e2-ad40-467d-a633-6b8a843bfdc6",
+      "identifier": "PUNTOCASH-22",
+      "sequence_id": 22,
+      "name": "change/seat reasign styles on worker/{id} to respect design",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:39:27.249142Z",
+      "updated_at": "2026-10-29T16:35:25.434028Z",
+      "completed_at": "2026-10-29T16:35:25.364931Z",
+      "description_html": "<div><image-component data-id=\"0f304db8-eb08-4810-8446-4d0b13079594\" src=\"dcf703b0-e6e6-4e26-bbad-40c609c87c88\" id=\"0f304db8-eb08-4810-8446-4d0b13079594\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\"><strong>Hecho</strong> en dev. Nota: la imagen adjunta es la de PUNTOCASH-21 (ayuda con el acceso); se tomó como referencia el modal «Reasignar a …» del demo (/admin/trabajadores/trb-4 y trb-5).</p><ul><li><p class=\"editor-paragraph-block\">Sin jornada abierta: el aviso «El cambio tiene efecto inmediato» pasa de azul a naranja con el título en color; luego «Nueva sede» y Cancelar / Reasignar.</p></li><li><p class=\"editor-paragraph-block\">Con jornada abierta: ya no se muestra el formulario bloqueado. Como el diseño, solo el aviso «Tiene una jornada abierta» (caja y sede, no se puede reasignar hasta su cierre) y los botones Cancelar / «Ir a la jornada» (detalle de la jornada para cerrarla o forzar el cierre).</p></li><li><p class=\"editor-paragraph-block\">Textos en es y en.</p></li></ul><p class=\"editor-paragraph-block\">En staging ningún trabajador tiene jornada abierta, así que el caso con jornada abierta no se pudo ver con datos reales.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 22,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-22",
+          "sha": "539e1b2c4eeee5529d56b605386c2283db1d7fa8",
+          "titulo": "fix: reassign worker modal as in the design (PUNTOCASH-22)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/539e1b2c4eeee5529d56b605386c2283db1d7fa8"
+        }
+      ]
+    },
+    {
+      "id": "0efcfbea-5bb5-495f-9b82-aa45c7afed9d",
+      "identifier": "PUNTOCASH-21",
+      "sequence_id": 21,
+      "name": "change/Help worker with access to his account styles to respect design",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:36:07.075402Z",
+      "updated_at": "2026-10-29T16:32:16.099273Z",
+      "completed_at": "2026-10-29T16:32:16.035184Z",
+      "description_html": "<div><image-component data-id=\"750b15eb-c8f9-46cd-af4c-41241296cb04\" src=\"2df7393e-96ab-40e0-8cc1-083027034628\" id=\"750b15eb-c8f9-46cd-af4c-41241296cb04\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\"><strong>Hecho</strong> en dev. Referencia: /admin/trabajadores/trb-5/acceso del demo.</p><ul><li><p class=\"editor-paragraph-block\">Subtítulo con el usuario y la sede (antes el correo enmascarado).</p></li><li><p class=\"editor-paragraph-block\">Aviso «Esto no te da acceso a su cuenta» en naranja con el título en color y a todo el ancho (antes azul y a 768 px).</p></li><li><p class=\"editor-paragraph-block\">«Corregir el correo» como sección: título encima de la tarjeta y tarjeta a todo el ancho con la explicación arriba.</p></li><li><p class=\"editor-paragraph-block\">Solo el botón «Guardar el correo» con icono de sobre; se quitó el «Volver» del formulario (ya está «Volver a su ficha» arriba).</p></li></ul><p class=\"editor-paragraph-block\">Se mantiene «Al menos 10 caracteres» en la ayuda del motivo porque el backend exige ese mínimo.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 21,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-21",
+          "sha": "37f11031435b03fb448abb7f54bed15c2fe9f4fd",
+          "titulo": "fix: worker access help screen as in the design (PUNTOCASH-21)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/37f11031435b03fb448abb7f54bed15c2fe9f4fd"
+        }
+      ]
+    },
+    {
+      "id": "3991d1e2-8f25-4534-b049-ff91f3ca552a",
+      "identifier": "PUNTOCASH-19",
+      "sequence_id": 19,
+      "name": "fix/devices/link behavior",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:23:49.047786Z",
+      "updated_at": "2026-10-29T16:29:11.879940Z",
+      "completed_at": "2026-10-29T16:29:11.813108Z",
+      "description_html": "<div><p class=\"editor-paragraph-block\" data-id=\"b6bac3a8-adf8-4ac9-b077-f3570ed7c7b2\">In the demo when user introduce a code, the form makes sure that is a valid device code and know wath kind of device is, a desk or a kiosk. <br>Another question is in the actual version write a device code it feels wrong because i dont know were is the focus input to write</p><p class=\"editor-paragraph-block\"><strong>Cerrada</strong> (decidido con Christopher).</p><ul><li><p class=\"editor-paragraph-block\">Foco al escribir el código: resuelto. La casilla activa del código se resalta (borde y anillo azul marino) desde el cambio de PUNTOCASH-1 en el OtpInput del admin, que usa esta vista.</p></li><li><p class=\"editor-paragraph-block\">Validar el código y saber si es caja o kiosco: no es posible hoy. El backend no tiene ningún endpoint que, dado el número del equipo, diga si existe ni de qué tipo es (solo link-status, que consulta el propio equipo). Por eso el admin elige el tipo en el paso 2 (salvo al entrar desde una caja con ?register=, donde ya se sabe que es caja). Si el backend añade ese endpoint, se puede validar el código y elegir el tipo automáticamente.</p></li></ul></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 19,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [],
+      "cruce_qa": {
+        "incidencias": "QA-012",
+        "nota": "Ticket cerrado por decisión técnica reportada con Christopher: falta endpoint que valide código e identifique tipo. Mantener diferencia funcional y decisión reportada; aceptación de la usuaria no confirmada."
+      }
+    },
+    {
+      "id": "b9f74fd6-a457-4442-aa8c-b268e7386af5",
+      "identifier": "PUNTOCASH-18",
+      "sequence_id": 18,
+      "name": "change/styles in admin/devices/link?register={id} to respect design",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:21:13.406753Z",
+      "updated_at": "2026-10-29T16:29:10.973194Z",
+      "completed_at": "2026-10-29T16:29:10.904450Z",
+      "description_html": "<div><p class=\"editor-paragraph-block\"><strong>Hecho</strong> (commit 36bab38 en dev). Referencia: /admin/equipos/vincular del demo.</p><p class=\"editor-paragraph-block\">El paso 1 (escanear QR / escribir código) ya coincidía con el diseño desde el rediseño anterior (e6bfbd2). Cambios en el paso 2:</p><ul><li><p class=\"editor-paragraph-block\">Tarjeta a todo el ancho con cabecera como el diseño: icono, tipo de equipo y su código.</p></li><li><p class=\"editor-paragraph-block\">«Empezar de nuevo» y «Vincular el equipo» fuera de la tarjeta, a la derecha.</p></li><li><p class=\"editor-paragraph-block\">Con ?register= el tipo es caja: no se pide tipo, solo Sede y Caja. Sin ?register= se mantiene el selector de tipo porque el código no dice si es caja o kiosco.</p></li><li><p class=\"editor-paragraph-block\">La etiqueta solo se pide para kioscos (el backend la exige); en cajas el equipo toma el nombre de la caja y se puede renombrar luego con «Editar etiqueta».</p></li></ul><p class=\"editor-paragraph-block\">Diferencia con el diseño: no hay «El código caduca a las…» porque nuestro código de equipo es fijo.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 18,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-18",
+          "sha": "36bab38f63158046b336018277108a3d1417284e",
+          "titulo": "fix: link device step 2 as in the design (PUNTOCASH-18)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/36bab38f63158046b336018277108a3d1417284e"
+        }
+      ],
+      "cruce_qa": {
+        "incidencias": "QA-009 / QA-012",
+        "nota": "Equipo informa que el código es fijo y falta caducidad; no equivale a cumplimiento del requisito entregado."
+      }
+    },
+    {
+      "id": "b6cb8498-b093-4fca-975f-8477a7b4b36a",
+      "identifier": "PUNTOCASH-17",
+      "sequence_id": 17,
+      "name": "change/styles in unlink modal to respect design and add link to forec shift closes",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:18:59.010428Z",
+      "updated_at": "2026-10-29T16:20:33.989348Z",
+      "completed_at": "2026-10-29T16:20:33.928129Z",
+      "description_html": "<div><image-component data-id=\"0c32d3d9-691a-479f-934d-651377786a9c\" src=\"d11cdc50-ed44-4793-9f24-b6be4cc89170\" id=\"0c32d3d9-691a-479f-934d-651377786a9c\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\"><strong>Hecho</strong> en dev. Referencia: modal «Desvincular el equipo» del demo (/admin/equipos), con y sin jornada abierta.</p><ul><li><p class=\"editor-paragraph-block\">Solo si la caja tiene una jornada abierta: aviso naranja «{Caja} tiene una jornada abierta» con quién la abrió y desde cuándo, y debajo «Si prefieres no dejarla así, puedes forzar el cierre de esa jornada antes de desvincular», con enlace al detalle de la jornada (donde está el cierre forzado). Antes salía siempre un aviso genérico sin enlace.</p></li><li><p class=\"editor-paragraph-block\">Sin jornada abierta: solo la descripción, como en el diseño.</p></li><li><p class=\"editor-paragraph-block\">Botón «Desvincular equipo» azul marino con icono (antes rojo). La estructura del modal ya venía de PUNTOCASH-14.</p></li><li><p class=\"editor-paragraph-block\">La jornada abierta llega al diálogo desde el mismo dato que la columna «Jornada» de Equipos. Textos en es y en.</p></li></ul><p class=\"editor-paragraph-block\">Nota: en staging ninguna caja con equipo tiene jornada abierta, así que el caso con aviso y enlace no se pudo ver con datos reales.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 17,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-17",
+          "sha": "195c0a9f17cdba2fb0bd7d8352afb4f8965f9311",
+          "titulo": "feat: unlink device modal shows the open shift and links to force-close it (PUNTOCASH-17)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/195c0a9f17cdba2fb0bd7d8352afb4f8965f9311"
+        }
+      ],
+      "cruce_qa": {
+        "incidencias": "QA-011",
+        "nota": "Aviso de desvinculación y enlace a jornada: corrección observada; reconfirmar sin desvincular."
+      }
+    },
+    {
+      "id": "28e27420-1958-454d-93df-430d4c88ba4d",
+      "identifier": "PUNTOCASH-16",
+      "sequence_id": 16,
+      "name": "change/text warning color on admin/devices to respect design",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:17:22.867927Z",
+      "updated_at": "2026-10-29T16:16:18.027733Z",
+      "completed_at": "2026-10-29T16:16:17.958651Z",
+      "description_html": "<div><p class=\"editor-paragraph-block\"><strong>Hecho</strong> en dev. Referencia: /admin/equipos del demo.</p><p class=\"editor-paragraph-block\">El aviso «N de tus cajas no tienen equipo vinculado» usa la variante accentTitle de AlertBanner: título en el color de advertencia (#a16207) y cuerpo en texto normal (antes título oscuro y cuerpo al 85 % de opacidad), con 14 px de relleno vertical como en el diseño. «Sin equipo vinculado» ya tenía el color correcto.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 16,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-16",
+          "sha": "48887e6033c8efa7b4b39a2b14a78e88b61d24ef",
+          "titulo": "fix: devices warning title in the warning color (PUNTOCASH-16)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/48887e6033c8efa7b4b39a2b14a78e88b61d24ef"
+        }
+      ]
+    },
+    {
+      "id": "a7043d6f-1ada-4a33-905a-cd4b0a73fa62",
+      "identifier": "PUNTOCASH-14",
+      "sequence_id": 14,
+      "name": "change/retire cash-register modal to respect design on admin/cash-register",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:14:23.157647Z",
+      "updated_at": "2026-10-29T16:11:45.965272Z",
+      "completed_at": "2026-10-29T16:11:45.902728Z",
+      "description_html": "<div><image-component data-id=\"e15050cf-cfd1-4dfc-a285-8941613f922f\" src=\"87e12d77-0471-4634-9ce5-5deec8d0b0aa\" id=\"e15050cf-cfd1-4dfc-a285-8941613f922f\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\"><strong>Hecho</strong> (commit 21d4ab2 en dev). Referencia: modal «Retirar Caja 02» del demo (/admin/cajas).</p><p class=\"editor-paragraph-block\"><strong>Cambio compartido (todos los modales del admin)</strong></p><p class=\"editor-paragraph-block\">El demo usa la misma estructura en todos sus modales, así que se aplicó en los componentes comunes:</p><ul><li><p class=\"editor-paragraph-block\">Modal: panel de 512 px, título de 20 px con la descripción de 14 px debajo, cuerpo con 24 px de margen lateral, botón de cerrar arriba a la derecha y nueva ranura footer: pie separado por una línea con las acciones a la derecha.</p></li><li><p class=\"editor-paragraph-block\">ActionDialog: sus botones (Cancelar/Confirmar, o Cerrar en el resultado) van en ese pie.</p></li></ul><p class=\"editor-paragraph-block\">Esto adelanta parte de las tareas de otros modales (PUNTOCASH-17, 22, 24, 26).</p><p class=\"editor-paragraph-block\"><strong>Modal de retirar caja</strong></p><ul><li><p class=\"editor-paragraph-block\">«No se borra nada» en negrita dentro de la descripción.</p></li><li><p class=\"editor-paragraph-block\">Motivo en un campo de una línea con el placeholder «Por qué se retira esta caja» (antes área de texto).</p></li><li><p class=\"editor-paragraph-block\">Botón «Retirar caja» azul marino con icono de aviso (antes rojo).</p></li><li><p class=\"editor-paragraph-block\">Textos en es y en.</p></li></ul></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 14,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-14",
+          "sha": "21d4ab2b09f916d8ef08ac22a028616a29e003a1",
+          "titulo": "fix: dialogs and retire cash register modal as in the design (PUNTOCASH-14)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/21d4ab2b09f916d8ef08ac22a028616a29e003a1"
+        }
+      ]
+    },
+    {
+      "id": "b36e07b7-b622-40f0-bc22-b162804c9d67",
+      "identifier": "PUNTOCASH-13",
+      "sequence_id": 13,
+      "name": "add/Last shift to seat list on shift column",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:10:57.681270Z",
+      "updated_at": "2026-10-29T16:06:17.312122Z",
+      "completed_at": "2026-10-29T16:06:17.245814Z",
+      "description_html": "<div><p class=\"editor-paragraph-block\"><strong>Sin cambios en el frontend</strong> (decidido con Christopher).</p><p class=\"editor-paragraph-block\">La columna «Jornada» del listado de Sedes ya se comporta como el diseño: muestra «X de Y abiertas · desde HH:MM» cuando hay cajas con jornada abierta y «—» cuando no hay ninguna.</p><p class=\"editor-paragraph-block\">En staging todas las sedes muestran «—» porque ahora mismo ninguna tiene una jornada abierta (today.openCashRegisters = 0 en /api/seats; la única jornada de Obispo terminó con cierre forzado).</p><p class=\"editor-paragraph-block\">El backend no devuelve la última jornada en el listado de sedes (SeatListItemDto solo trae today: openCashRegisters, activeCashRegisters y firstOpeningAt). Si en el futuro se quiere mostrar la última jornada cuando no hay ninguna abierta, haría falta ese campo en /api/seats.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 13,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "88bfe695-5bbc-4265-b737-852d808a9979",
+      "identifier": "PUNTOCASH-12",
+      "sequence_id": 12,
+      "name": "change/seat list styles to respet design",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:05:28.465446Z",
+      "updated_at": "2026-10-29T16:03:04.400915Z",
+      "completed_at": "2026-10-29T16:03:04.290863Z",
+      "description_html": "<div><image-component data-id=\"943d2384-2ccc-41e8-ab30-a6a61fb4d9e5\" src=\"3d583ac2-c6e3-4cfb-be00-5fb4f1c0db20\" id=\"943d2384-2ccc-41e8-ab30-a6a61fb4d9e5\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\"><strong>Hecho</strong> (commit b6a00e5 en dev). Referencia: /admin/sedes del demo.</p><ul><li><p class=\"editor-paragraph-block\">Descripción con el texto del diseño (qué decide PuntoCash y qué mantiene el admin), en es y en.</p></li><li><p class=\"editor-paragraph-block\">Filtros: buscador con lupa (máx. 384 px) y estado de 224 px en una fila.</p></li><li><p class=\"editor-paragraph-block\">Tabla: código en gris y fuente normal; columnas numéricas alineadas a la derecha; «Sin equipo» &gt; 0 en naranja sin negrita (también en las tarjetas de móvil).</p></li></ul><p class=\"editor-paragraph-block\">La columna Jornada se trata en PUNTOCASH-13.</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 12,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-12",
+          "sha": "b6a00e5f4126c841a03bc7d5627db4185f732c35",
+          "titulo": "fix: branches list styles as in the design (PUNTOCASH-12)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/b6a00e5f4126c841a03bc7d5627db4185f732c35"
+        }
+      ]
+    },
+    {
+      "id": "d225beef-82ef-4a84-a083-a42d873e3c6a",
+      "identifier": "PUNTOCASH-11",
+      "sequence_id": 11,
+      "name": "add/cash-register state to operation/{id} type currencies exchange",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:00:06.801698Z",
+      "updated_at": "2026-10-29T15:57:13.003797Z",
+      "completed_at": "2026-10-29T15:57:12.938966Z",
+      "description_html": "<div><image-component data-id=\"b6ec97b8-9f89-4c76-9cae-cd3550131e1b\" id=\"b6ec97b8-9f89-4c76-9cae-cd3550131e1b\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"pending\"></image-component><p class=\"editor-paragraph-block\"><strong>Hecho</strong> (commit 90fc2ac en dev). Referencia: cambio PC-261028-007209 del demo (la imagen de esta tarea no llegó a subirse).</p><p class=\"editor-paragraph-block\"><strong>Sección «Estado de caja»: maquetada, pero no se muestra por falta de datos del backend</strong></p><p class=\"editor-paragraph-block\">La tarjeta «Estado de caja» (Disponible antes, Entregado al cliente, Disponible después) está maquetada como en el diseño (OperationRegisterStateCard, en la columna derecha bajo «Estado de la operación»). Solo se pinta cuando el backend envía cashMovements en el detalle de la operación. La única operación de cambio en staging (PC-260101-000001, datos sembrados) llega con cashMovements = [], por eso no aparece. En cuanto el backend envíe los movimientos de caja de la operación, se mostrará.</p><p class=\"editor-paragraph-block\">Tampoco sale «Nacionalidad» del cliente porque customer.nationality llega null.</p><p class=\"editor-paragraph-block\"><strong>Cambios de estilo para igualar el diseño</strong></p><ul><li><p class=\"editor-paragraph-block\">Cajas de importe (Cliente entrega / Cliente recibe): etiquetas y nombre de moneda a 13 px, importe a 24 px.</p></li><li><p class=\"editor-paragraph-block\">«Tasa aplicada» a 13 px.</p></li><li><p class=\"editor-paragraph-block\">CurrencyFlag: las banderas con tamaño propio salían deformadas (28×14 en vez de 28×20) porque el tamaño por defecto ganaba. Corregido; afecta también a dos pantallas del kiosco y al detalle de operación del trabajador.</p></li></ul></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 11,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-11",
+          "sha": "90fc2acb78c4419e130fc98c306ceeb455b47e12",
+          "titulo": "fix: exchange operation detail typography and flag size (PUNTOCASH-11)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/90fc2acb78c4419e130fc98c306ceeb455b47e12"
+        }
+      ]
+    },
+    {
+      "id": "c56124db-f651-4cbb-8ed7-c626331cd081",
+      "identifier": "PUNTOCASH-10",
+      "sequence_id": 10,
+      "name": "change/Operation/{id} type remesa style",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T21:58:07.378976Z",
+      "updated_at": "2026-10-29T15:42:47.075733Z",
+      "completed_at": "2026-10-29T15:42:46.999909Z",
+      "description_html": "<div><p class=\"editor-paragraph-block\"><strong>Hecho</strong> (commit be05924 en dev). Referencia: remesa PC-261029-007050 del demo.</p><ul><li><p class=\"editor-paragraph-block\">Las tarjetas Beneficiario y Operación de una remesa tienen la misma altura, como en el diseño (los giros mantienen alturas propias).</p></li><li><p class=\"editor-paragraph-block\">Las filas de detalle usan interlineado de 22 px (43 px por fila, como en el diseño). Afecta a todas las filas de detalle (DetailRow).</p></li><li><p class=\"editor-paragraph-block\">Las etiquetas de las cajas de movimiento de efectivo pasan a 13 px y el saldo resultante usa el color de texto principal.</p></li><li><p class=\"editor-paragraph-block\">El código de remesa usa payload.remittanceCode cuando el backend no envía providerReference.</p></li></ul><p class=\"editor-paragraph-block\"><strong>Falta de datos en el backend (staging)</strong></p><p class=\"editor-paragraph-block\">La única remesa en staging (PC-260101-000003, datos sembrados) llega sin estos campos de OperationDetailDto, así que la vista no puede mostrarlos aunque ya los soporta con el formato del diseño:</p><ul><li><p class=\"editor-paragraph-block\">deliveryMethod = null → no sale «Método de entrega».</p></li><li><p class=\"editor-paragraph-block\">providerStatus = null → no sale «Estado de la remesa».</p></li><li><p class=\"editor-paragraph-block\">cashMovements = [] → no sale la tarjeta «Movimiento de efectivo».</p></li><li><p class=\"editor-paragraph-block\">providerReference = null → el código solo viene en payload.remittanceCode.</p></li><li><p class=\"editor-paragraph-block\">context.device = null → la caja sale como «Register 1» en vez de «Caja · Mostrador».</p></li></ul><p class=\"editor-paragraph-block\">Para validarlo visualmente con datos reales hace falta una remesa completa en staging (sembrada por backend o creada con un cobro real).</p></div>",
+      "assignees": [],
+      "discussion": {
+        "n": 10,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-10",
+          "sha": "be05924dc4f8073ad21d2440705eb053c2ca4193",
+          "titulo": "fix: remittance operation detail closer to the design (PUNTOCASH-10)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/be05924dc4f8073ad21d2440705eb053c2ca4193"
+        }
+      ]
+    },
+    {
+      "id": "036497aa-4ed7-4b40-8d31-ed28f801269e",
+      "identifier": "PUNTOCASH-9",
+      "sequence_id": 9,
+      "name": "change/In labels change the text style on approvals/{id}",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T21:54:08.308291Z",
+      "updated_at": "2026-10-29T15:25:58.646041Z",
+      "completed_at": "2026-10-29T15:23:29.494892Z",
+      "description_html": "<image-component data-id=\"4eb71dd8-80a8-4b1a-9064-98c22acaefa8\" src=\"928f06e7-5103-4b21-ad31-5166d47a4f28\" id=\"4eb71dd8-80a8-4b1a-9064-98c22acaefa8\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"f9e54662-04ff-466e-a24f-b1f6f82998b6\"><strong>Hecho</strong> (commit 2271dea en dev)</p><p class=\"editor-paragraph-block\" data-id=\"d26fe2bf-a26b-4a9a-8aef-d93c10872e7d\">Las etiquetas de los detalles (FECHA Y HORA, TRABAJADOR, MONEDA…) usan el estilo del diseño: 13 px, peso normal (antes negrita 600), interlineado 18 px y espaciado entre letras 0,025 em, en gris.</p><ul class=\"list-disc pl-7 space-y-(--list-spacing-y)\" data-id=\"90af05b5-6c6d-48c9-acf6-979cab1e29e1\"><li class=\"not-prose space-y-2\" data-id=\"b39700d8-7230-42be-a6ac-a2d17572e165\"><p class=\"editor-paragraph-block\" data-id=\"9b0b1ef8-e75f-4d2e-8fc0-d65bc7ab72df\">features/admin/components/ui/Fact.tsx: componente de etiqueta y valor de las pantallas de detalle.</p></li><li class=\"not-prose space-y-2\" data-id=\"22604470-3eed-4368-9b8a-957b8c2a632c\"><p class=\"editor-paragraph-block\" data-id=\"e9affd8a-8d38-4be8-a8ae-c9b300a62613\">features/admin/components/branches/BranchDetailView.tsx: tenía una copia del mismo estilo.</p></li></ul><p class=\"editor-paragraph-block\" data-id=\"ba87b805-fb6d-4f71-9228-69acc0d272db\">Como Fact se comparte, el cambio aplica a todas las pantallas de detalle del admin (aprobación, movimiento de jornada, trabajador, usuario, sede, operación). El demo usa ese mismo estilo en todas.</p>",
+      "assignees": [],
+      "discussion": {
+        "n": 9,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-9",
+          "sha": "2271dea82489380b05858549bb437aab5e61aa8d",
+          "titulo": "fix: detail labels use the design's caption style (PUNTOCASH-9)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/2271dea82489380b05858549bb437aab5e61aa8d"
+        }
+      ]
+    },
+    {
+      "id": "a7ea1f13-732b-418b-8b33-ba12b82018b7",
+      "identifier": "PUNTOCASH-15",
+      "sequence_id": 15,
+      "name": "change/scroll-y on navbar to scroll-y-none to respect design",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T22:16:06.354291Z",
+      "updated_at": "2026-10-29T15:23:30.293491Z",
+      "completed_at": "2026-10-29T15:23:30.233469Z",
+      "description_html": "<image-component data-id=\"b4346b74-f302-45e3-987f-d7676e42e9b4\" src=\"66515aae-e26f-41a5-8418-f4ecf6c651fa\" id=\"b4346b74-f302-45e3-987f-d7676e42e9b4\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"abed60ca-dd5a-4a3f-847a-fd3458e7d483\"></p><p class=\"editor-paragraph-block\" data-id=\"37c3f39c-a36f-4d23-b0e7-8d161e168daa\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 15,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-15",
+          "sha": "de2388a9b8f94131757ed9ec779969c8ae875232",
+          "titulo": "fix: thin translucent scrollbar in admin sidebar (PUNTOCASH-15)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/de2388a9b8f94131757ed9ec779969c8ae875232"
+        }
+      ]
+    },
+    {
+      "id": "8c7ae508-4b21-4dfb-b3fe-078bba7d1044",
+      "identifier": "PUNTOCASH-8",
+      "sequence_id": 8,
+      "name": "add/Link to /admin/shifts/{id}/movements/{id} on approvals/{id}",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T21:52:45.245379Z",
+      "updated_at": "2026-10-29T15:23:28.760468Z",
+      "completed_at": "2026-10-29T15:23:28.709019Z",
+      "description_html": "<image-component data-id=\"a162ea8d-d148-4880-8512-c838828d0ce0\" src=\"037c5c05-2dc7-4d38-8c06-a997cf9753b0\" id=\"a162ea8d-d148-4880-8512-c838828d0ce0\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"2bd70ce7-8e4d-43d1-9d46-cee7fb7c9794\"></p><p class=\"editor-paragraph-block\" data-id=\"9c20b0ab-5507-4499-ac0e-138c5081ea2f\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 8,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-8",
+          "sha": "0c4921e7ed788df6af62101429d09944bf44e2c3",
+          "titulo": "feat: link approval to its shift movement detail (PUNTOCASH-8)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/0c4921e7ed788df6af62101429d09944bf44e2c3"
+        }
+      ],
+      "cruce_qa": {
+        "incidencias": "QA-021",
+        "nota": "Solicitud enlaza a su movimiento: corrección observada; reconfirmar cierre y ajuste."
+      }
+    },
+    {
+      "id": "45e4c2a8-9755-42f5-92fe-ff68ac208cb7",
+      "identifier": "PUNTOCASH-7",
+      "sequence_id": 7,
+      "name": "add/button to delet filters on admin/approvals when the data is empty",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T21:50:02.917215Z",
+      "updated_at": "2026-10-29T15:23:28.043826Z",
+      "completed_at": "2026-10-29T15:23:27.977713Z",
+      "description_html": "<image-component data-id=\"873cca3d-d716-41c7-a65e-9d125a99e8f7\" src=\"17f17de7-71e8-4e50-8bcf-b8dc5c9201dd\" id=\"873cca3d-d716-41c7-a65e-9d125a99e8f7\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"0fa18767-dd19-4133-8674-a0d2d836633d\"></p><p class=\"editor-paragraph-block\" data-id=\"2024311f-9f9d-4657-919b-3f8253975972\"></p><p class=\"editor-paragraph-block\" data-id=\"987f0654-01c4-4fd4-9dd3-54d15ff3f761\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 7,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-7",
+          "sha": "c798305c9962b430ba816c9f77650e7664d6c08b",
+          "titulo": "feat: clear filters button on empty approvals list (PUNTOCASH-7)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/c798305c9962b430ba816c9f77650e7664d6c08b"
+        }
+      ],
+      "cruce_qa": {
+        "incidencias": "QA-025",
+        "nota": "Quitar filtros con lista vacía: corrección observada; reconfirmar limpieza conjunta."
+      }
+    },
+    {
+      "id": "1e0ab88c-699e-4236-a14d-05e2010c1038",
+      "identifier": "PUNTOCASH-6",
+      "sequence_id": 6,
+      "name": "add/in table movements on shift/{id} add Link to operation/{code} to info in column operation",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T21:47:16.638331Z",
+      "updated_at": "2026-10-29T15:23:27.312181Z",
+      "completed_at": "2026-10-29T15:23:27.251903Z",
+      "description_html": "<image-component data-id=\"00f98461-7b74-4523-9ce4-8c8e4cb7202d\" src=\"77050a5c-d424-4853-9531-b147b9abeef6\" id=\"00f98461-7b74-4523-9ce4-8c8e4cb7202d\" width=\"305px\" height=\"82px\" aspectratio=\"3.7375\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"b1d04ce4-83a7-4bcc-bf44-20e1b81378f2\"></p><p class=\"editor-paragraph-block\" data-id=\"9c4b199d-2d57-4b07-863b-9063f8fef129\"></p><p class=\"editor-paragraph-block\" data-id=\"e6760106-f5d8-42b1-affb-30c424a4b1d7\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 6,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-6",
+          "sha": "722688fa4cb3fcb50ccefeb538ebd75c1223cfc7",
+          "titulo": "feat: link operation codes in shift movements table (PUNTOCASH-6)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/722688fa4cb3fcb50ccefeb538ebd75c1223cfc7"
+        }
+      ],
+      "cruce_qa": {
+        "incidencias": "QA-020",
+        "nota": "Código de operación en el libro enlazado: corrección observada; reconfirmar ambos tramos."
+      }
+    },
+    {
+      "id": "93787b33-3079-43cd-83c9-66faef88b9dc",
+      "identifier": "PUNTOCASH-5",
+      "sequence_id": 5,
+      "name": "change/form card create cash-register",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T21:39:18.386965Z",
+      "updated_at": "2026-10-29T15:23:26.541983Z",
+      "completed_at": "2026-10-29T15:23:26.472831Z",
+      "description_html": "<image-component data-id=\"eaf3e1a4-86b7-4cc6-bac4-b15b83266c9d\" src=\"f507802b-0a8e-4968-9d90-e0855c64800d\" id=\"eaf3e1a4-86b7-4cc6-bac4-b15b83266c9d\" width=\"305px\" height=\"144px\" aspectratio=\"2.1253164556962023\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"16b18d97-c6d0-41c9-bc47-68b586ffdc19\"></p><p class=\"editor-paragraph-block\" data-id=\"548abd61-d0e7-4172-8409-fd13ade68ea9\"></p><p class=\"editor-paragraph-block\" data-id=\"bef393fc-e6e5-4c38-b0db-d9b2ba8427b9\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 5,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-5",
+          "sha": "5127e1ab5e9b020c75379d85231553dc081902f9",
+          "titulo": "fix: full-width create cash register card (PUNTOCASH-5)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/5127e1ab5e9b020c75379d85231553dc081902f9"
+        }
+      ]
+    },
+    {
+      "id": "05f5933a-8d62-4900-b6ce-93b8dc811452",
+      "identifier": "PUNTOCASH-43",
+      "sequence_id": 43,
+      "name": "change/operation detail in worker/operaciones/{id} to respect design",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T14:06:01.422425Z",
+      "updated_at": "2026-10-29T14:06:17.710189Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"66061077-de87-4251-a65e-dca562fbc0b3\" src=\"1b3928a3-3142-4c03-a327-dd987d1a3b9d\" id=\"66061077-de87-4251-a65e-dca562fbc0b3\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"4bfc29b4-d472-446e-8df3-2faae80a526e\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 43,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "998f0c64-27ea-46d0-a3f9-31f5c6270cc0",
+      "identifier": "PUNTOCASH-41",
+      "sequence_id": 41,
+      "name": "change/send wire money in worker/new-operation/money-transfers/send",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T13:53:52.076059Z",
+      "updated_at": "2026-10-29T14:01:42.159231Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"c61da87d-ecec-4445-80ae-87b004d8f446\" src=\"0cc6e153-d94e-45b8-8f56-2f91009db4d2\" id=\"c61da87d-ecec-4445-80ae-87b004d8f446\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"1f2663dc-0f2e-4054-bbf3-081a0f5164ff\">form have multiple cards in design</p><p class=\"editor-paragraph-block\" data-id=\"f6c5d4c2-3e44-4745-9178-9be962444b61\">currency select is diferent</p><p class=\"editor-paragraph-block\" data-id=\"fbdc6941-371b-4840-a01d-80ac39b7a4a4\">province and municipality select are diferents</p><p class=\"editor-paragraph-block\" data-id=\"2dc50d98-7aaa-458e-8e62-cfdfd5ccd0c7\">check process have a diferent design too</p><p class=\"editor-paragraph-block\" data-id=\"bee6ae36-1635-4ac3-8543-3a0f31ebc5b8\">recipt section has a diferent design</p><p class=\"editor-paragraph-block\" data-id=\"133890b5-17b7-4b3d-a506-7f41422f4c33\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 41,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "183d48a7-789b-4095-8467-ad145992fca5",
+      "identifier": "PUNTOCASH-42",
+      "sequence_id": 42,
+      "name": "fix/nacionality select need to be a country select with iso3",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T13:55:24.349347Z",
+      "updated_at": "2026-10-29T13:55:24.416434Z",
+      "completed_at": null,
+      "description_html": "<p></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 42,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "4340943e-c73c-412e-bf6f-6b235d006f55",
+      "identifier": "PUNTOCASH-40",
+      "sequence_id": 40,
+      "name": "change/cash adjust on worker/cash-register/adjust-cash to respect design",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T13:47:47.326562Z",
+      "updated_at": "2026-10-29T13:51:23.680597Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"effac2e5-28fe-4d9e-87f7-383b0277334e\" src=\"2993c06e-b3e4-4517-9fa5-bf65ea2bafd9\" id=\"effac2e5-28fe-4d9e-87f7-383b0277334e\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"03a15f15-91e5-4996-a349-005b96836fe8\">parent div width is diferent</p><p class=\"editor-paragraph-block\" data-id=\"6537c69d-1c38-406c-b7ea-6aa98d4d674f\">currency select is diferent</p><p class=\"editor-paragraph-block\" data-id=\"36608bd1-7c55-4f4c-9091-63cd308b11d8\">reson select is diferent</p><p class=\"editor-paragraph-block\" data-id=\"dc8a5662-7dfa-4565-a045-15746aec26c7\">summary screen width is diferent</p>",
+      "assignees": [],
+      "discussion": {
+        "n": 40,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "ec6d9fd3-bdee-4dfc-9bf8-7a271491f00a",
+      "identifier": "PUNTOCASH-39",
+      "sequence_id": 39,
+      "name": "change/styles in bill wire money to respect design",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T13:43:00.506452Z",
+      "updated_at": "2026-10-29T13:43:07.370613Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"48585956-4878-4c46-b7ee-66878a63cac4\" src=\"30af2e7d-4078-44b0-bd22-5f4612554309\" id=\"48585956-4878-4c46-b7ee-66878a63cac4\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"b2126c5e-4d49-4302-8de8-8fa3d807d09c\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 39,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "9728e5d1-5696-4d9c-80cd-706d0ed23f90",
+      "identifier": "PUNTOCASH-38",
+      "sequence_id": 38,
+      "name": "fix/behavior in initail refund after complete process",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T00:19:18.339624Z",
+      "updated_at": "2026-10-29T00:19:55.553636Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"da3d623c-0f93-4365-8a9d-03ee75844be2\" src=\"8e4ab4f6-7d25-4ca8-bd00-009cda111097\" id=\"da3d623c-0f93-4365-8a9d-03ee75844be2\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"642523a2-220f-48ad-a4ac-d0cfcc5c4ddf\">user never sees this view</p>",
+      "assignees": [],
+      "discussion": {
+        "n": 38,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "16aa0624-fa13-40f0-95b7-157b9564ff93",
+      "identifier": "PUNTOCASH-37",
+      "sequence_id": 37,
+      "name": "add/error translate in inital-refund",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T00:18:09.891953Z",
+      "updated_at": "2026-10-29T00:18:48.997766Z",
+      "completed_at": null,
+      "description_html": "<p class=\"editor-paragraph-block\" data-id=\"c2cfad2f-3c92-482d-8def-91aec8d72e80\">{<br>\"success\": false,<br>\"statusCode\": 400,<br>\"message\": \"CUP: a surplus can't be explained with \"SHORTAGE_DETECTED\"\"<br>}</p><p class=\"editor-paragraph-block\" data-id=\"fc20ea62-a74f-47af-b2e4-e687e83171bb\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 37,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "ee35c1f7-0649-421c-93fc-61216fc5577b",
+      "identifier": "PUNTOCASH-36",
+      "sequence_id": 36,
+      "name": "add/traduction to this error {     \"success\": false,     \"statusCode\": 400,     \"message\": \"Observations are required for CUP when reason is OTHER\" } in worker/cash-register/initial-funding",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T00:17:22.033937Z",
+      "updated_at": "2026-10-29T00:17:22.096256Z",
+      "completed_at": null,
+      "description_html": "<p></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 36,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "a3a97c9f-c6fe-4a0f-86e5-16584a0a9d14",
+      "identifier": "PUNTOCASH-35",
+      "sequence_id": 35,
+      "name": "check/ in worker/cash-register/initial-funding currencies with jumps info",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T00:16:01.186230Z",
+      "updated_at": "2026-10-29T00:16:22.045897Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"e8655751-55ca-459d-8c12-8f06dc06ba6f\" src=\"a298c24f-8ca4-4ef0-ae68-741444476a3e\" id=\"e8655751-55ca-459d-8c12-8f06dc06ba6f\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"6e5fc24f-467f-4427-b3b4-4abdec861d7e\">in demo this is not the behavior</p>",
+      "assignees": [],
+      "discussion": {
+        "n": 35,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "86d39662-2ff0-4b16-8d42-ec19ab196f36",
+      "identifier": "PUNTOCASH-34",
+      "sequence_id": 34,
+      "name": "check/Currencies in /worker/cash-register/add-currency?returnTo=initial-funding",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-29T00:01:42.104126Z",
+      "updated_at": "2026-10-29T00:14:08.949406Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"fc529d20-af3f-4eda-a4e8-19ff30ae9f50\" src=\"44b11852-41aa-43d0-bb0d-a61fbed0bf1e\" id=\"fc529d20-af3f-4eda-a4e8-19ff30ae9f50\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"0847eda5-f296-4d25-94f3-4c4fb15b6e4e\">do not have the same style as demo<br>do not have only the available currencies in the seat<br>do not have the same behavior as demo</p><p class=\"editor-paragraph-block\" data-id=\"d5fced9a-2c62-48ef-a9ad-8d14754927a8\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 34,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "36862e7d-f1e4-414a-96bc-4169208899e8",
+      "identifier": "PUNTOCASH-33",
+      "sequence_id": 33,
+      "name": "delete/ In worker home keep only availables cards",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-28T23:57:46.844323Z",
+      "updated_at": "2026-10-28T23:58:00.433247Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"c5f57a22-b16b-49f8-ba21-f8f64dfaed03\" src=\"01a39e46-af8f-4864-a54d-14fe9cdeece3\" id=\"c5f57a22-b16b-49f8-ba21-f8f64dfaed03\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"24fb49d7-54f4-4f31-89bf-f0623354e2af\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 33,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "6648861d-0f6d-455c-a8c2-f034bbca629a",
+      "identifier": "PUNTOCASH-32",
+      "sequence_id": 32,
+      "name": "fix/Exchange currency and remmitte flow",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-28T23:53:05.849694Z",
+      "updated_at": "2026-10-28T23:54:03.545673Z",
+      "completed_at": null,
+      "description_html": "<image-component data-id=\"3f214e7d-f98c-4a04-8630-d6dc7f227cee\" src=\"f0c9f7ef-eb10-4697-ae76-563c5b41e8ef\" id=\"3f214e7d-f98c-4a04-8630-d6dc7f227cee\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"a58f1726-1db9-42e1-966c-b909f09025eb\">in both cases in demo if shift is close the interface show this warning.<br>check styles too</p><p class=\"editor-paragraph-block\" data-id=\"db8b3ee9-c49d-4f4f-8b41-bbdfc912530c\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 32,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "f2ca64a4-d861-47c2-af55-c75050a2cd14",
+      "identifier": "PUNTOCASH-29",
+      "sequence_id": 29,
+      "name": "fix/add promotion backend error 500",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-28T22:58:27.893048Z",
+      "updated_at": "2026-10-28T22:58:51.085102Z",
+      "completed_at": null,
+      "description_html": "<p class=\"editor-paragraph-block\" data-id=\"21642fa3-3e05-47cd-9e22-44d663ca9bf6\">curl --url '<a target=\"_blank\" class=\"text-accent-secondary underline underline-offset-[3px] hover:text-accent-primary transition-colors cursor-pointer\" href=\"https://staging.api.puntocash.co/api/promotions\" rel=\"noopener noreferrer\">https://staging.api.puntocash.co/api/promotions</a>' <br>-H 'Accept: application/json' <br>-H 'Accept-Language: es-US,es-419;q=0.9,es;q=0.8,en;q=0.7' <br>-H 'Authorization: Bearer [REDACTADO]' <br>-H 'Connection: keep-alive' <br>-H 'Content-Type: multipart/form-data; boundary=----WebKitFormBoundarySkC1kUElqSOSxsio' <br>-H 'Origin: <a target=\"_blank\" class=\"text-accent-secondary underline underline-offset-[3px] hover:text-accent-primary transition-colors cursor-pointer\" href=\"https://staging.puntocash.co\" rel=\"noopener noreferrer\">https://staging.puntocash.co</a>' <br>-H 'Referer: <a target=\"_blank\" class=\"text-accent-secondary underline underline-offset-[3px] hover:text-accent-primary transition-colors cursor-pointer\" href=\"https://staging.puntocash.co/\" rel=\"noopener noreferrer\">https://staging.puntocash.co/</a>' <br>-H 'Sec-Fetch-Dest: empty' <br>-H 'Sec-Fetch-Mode: cors' <br>-H 'Sec-Fetch-Site: same-site' <br>-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36' <br>-H 'sec-ch-ua: \"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"' <br>-H 'sec-ch-ua-mobile: ?0' <br>-H 'sec-ch-ua-platform: \"Linux\"' <br>-H 'x-register-key: [REDACTADO]' <br>--data-raw $'------WebKitFormBoundarySkC1kUElqSOSxsio\\r\\nContent-Disposition: form-data; name=\"title\"\\r\\n\\r\\nPromocion\\r\\n------WebKitFormBoundarySkC1kUElqSOSxsio\\r\\nContent-Disposition: form-data; name=\"body\"\\r\\n\\r\\nPromocion de prueba\\r\\n------WebKitFormBoundarySkC1kUElqSOSxsio\\r\\nContent-Disposition: form-data; name=\"seatIds\"\\r\\n\\r\\n[\"847a47bf-47dc-4e6d-b7ef-7c9224662a74\",\"98c856b7-6cbf-440f-98cf-28b0c5fee6c6\"]\\r\\n------WebKitFormBoundarySkC1kUElqSOSxsio\\r\\nContent-Disposition: form-data; name=\"startDate\"\\r\\n\\r\\n2026-10-28\\r\\n------WebKitFormBoundarySkC1kUElqSOSxsio\\r\\nContent-Disposition: form-data; name=\"endDate\"\\r\\n\\r\\n2027-03-30\\r\\n------WebKitFormBoundarySkC1kUElqSOSxsio\\r\\nContent-Disposition: form-data; name=\"image\"; filename=\"Screenshot from 2026-03-27 10-22-29.png\"\\r\\nContent-Type: image/png\\r\\n\\r\\n\\r\\n------WebKitFormBoundarySkC1kUElqSOSxsio--\\r\\n'</p><p class=\"editor-paragraph-block\" data-id=\"6f375afd-486e-42d7-8d68-12d58d683c75\"></p><p class=\"editor-paragraph-block\" data-id=\"d4475d76-52be-4eac-b681-f6980f9a2655\">error: {<br>\"success\": false,<br>\"statusCode\": 500,<br>\"message\": \"Object storage is not configured (S3_BUCKET / S3_PUBLIC_BASE_URL)\"<br>}</p>",
+      "assignees": [],
+      "discussion": {
+        "n": 29,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "12ae0741-53e9-42cf-bed8-38943d34018e",
+      "identifier": "PUNTOCASH-20",
+      "sequence_id": 20,
+      "name": "fix/in workers the seat filter is repeated is on header and on the view. This appears in stagging and demo so ask to designer.",
+      "state": "Todo",
+      "state_group": "unstarted",
+      "created_at": "2026-10-28T22:32:51.016262Z",
+      "updated_at": "2026-10-28T22:32:51.092320Z",
+      "completed_at": null,
+      "description_html": "<p></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 20,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "567ffef9-676f-43d8-bdea-184ed00ae6d1",
+      "identifier": "PUNTOCASH-2",
+      "sequence_id": 2,
+      "name": "add/forget password to worker",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T17:30:42.669934Z",
+      "updated_at": "2026-10-28T20:07:23.376681Z",
+      "completed_at": "2026-10-28T20:07:23.282873Z",
+      "description_html": "<image-component data-id=\"640b4f21-395a-46e2-951d-16fe61ee7bc4\" src=\"7777c6ba-279e-47ef-b1a8-02dfe551fe75\" id=\"640b4f21-395a-46e2-951d-16fe61ee7bc4\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"a330ae02-384a-43fa-80f7-a69b871f368f\"></p><p class=\"editor-paragraph-block\" data-id=\"6a43b44e-7ffe-41b6-8cdf-4de7ea81f2d6\"></p><p class=\"editor-paragraph-block\" data-id=\"1ea787c8-008a-455b-b334-98b3712637b7\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 2,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": []
+    },
+    {
+      "id": "a8292adc-ee25-483e-b504-44ee099a814c",
+      "identifier": "PUNTOCASH-4",
+      "sequence_id": 4,
+      "name": "change/deactivate worker modal",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T17:36:50.549190Z",
+      "updated_at": "2026-10-28T18:37:34.775878Z",
+      "completed_at": "2026-10-28T18:37:34.710109Z",
+      "description_html": "<image-component data-id=\"50e72e59-2785-44a6-adf3-34b3290d529f\" src=\"1a17e5d5-483c-4633-8471-494e608e33de\" id=\"50e72e59-2785-44a6-adf3-34b3290d529f\" width=\"305px\" height=\"212px\" aspectratio=\"1.4395604395604396\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"ec7fbac0-359e-4eb5-8d65-bb0a53d98a03\">it should  look like this only when the worker haves a shift open </p><p class=\"editor-paragraph-block\" data-id=\"03d2ccca-b75f-440f-84b3-475378f90022\"></p><p class=\"editor-paragraph-block\" data-id=\"8c106a20-ea00-4057-bd0e-49d3866346f8\"></p><p class=\"editor-paragraph-block\" data-id=\"fc5e4360-ff46-4eed-ace1-5fcb8b74af55\"></p><p class=\"editor-paragraph-block\" data-id=\"421d77c5-8331-48bd-b7a0-fa1a87e466e8\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 4,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-4",
+          "sha": "11af355164008ce4fdd5384028e1ff30a535b0ad",
+          "titulo": "fix: show open shift warning in worker dialogs only when there is one (PUNTOCASH-4)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/11af355164008ce4fdd5384028e1ff30a535b0ad"
+        }
+      ]
+    },
+    {
+      "id": "251cb129-cc4b-40ee-b2ec-c317a806aff8",
+      "identifier": "PUNTOCASH-3",
+      "sequence_id": 3,
+      "name": "change/back button on detailView and forms",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T17:33:48.925099Z",
+      "updated_at": "2026-10-28T18:20:15.872743Z",
+      "completed_at": "2026-10-28T18:20:15.803878Z",
+      "description_html": "<image-component data-id=\"11b7b861-1091-4a12-92bc-db4cf909205b\" src=\"c1d1fd8e-e4cf-4def-a9fb-b03a81ce65ad\" id=\"11b7b861-1091-4a12-92bc-db4cf909205b\" width=\"305px\" height=\"172px\" aspectratio=\"1.7777777777777777\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"29d30704-eb44-435a-a6eb-adaf1da7b303\">this is how it should look like</p><p class=\"editor-paragraph-block\" data-id=\"00989eec-0719-440d-b634-3faa56450578\"></p><p class=\"editor-paragraph-block\" data-id=\"9996558c-4a2c-4899-b754-3986fe5a1161\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 3,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-3",
+          "sha": "d5fb704df69faace0da4064de846d7d867cc8270",
+          "titulo": "fix: outline back button in page headers and worker detail redesign (PUNTOCASH-3)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/d5fb704df69faace0da4064de846d7d867cc8270"
+        }
+      ]
+    },
+    {
+      "id": "a7fe05ed-aa80-41bd-a07e-18364b924032",
+      "identifier": "PUNTOCASH-1",
+      "sequence_id": 1,
+      "name": "change/2fa focus login",
+      "state": "Done",
+      "state_group": "completed",
+      "created_at": "2026-10-28T17:20:04.186217Z",
+      "updated_at": "2026-10-28T18:10:05.688265Z",
+      "completed_at": "2026-10-28T18:10:05.552515Z",
+      "description_html": "<image-component data-id=\"595297c8-e0c8-455d-ac46-8d29406928ec\" src=\"e67b3d0f-4f93-4c0e-968d-b965bb145a7e\" id=\"595297c8-e0c8-455d-ac46-8d29406928ec\" width=\"299px\" height=\"335px\" aspectratio=\"0.890961262553802\" alignment=\"left\" status=\"uploaded\"></image-component><p class=\"editor-paragraph-block\" data-id=\"96e36c33-fab4-4c5a-a227-d02cae7fc8b9\">The input not is selected when you are typing</p><p class=\"editor-paragraph-block\" data-id=\"e33a4364-008f-40d5-91aa-010dcdbe6770\"></p><p class=\"editor-paragraph-block\" data-id=\"ced7a991-87b0-469f-a07a-2e1959a3ead1\"></p>",
+      "assignees": [],
+      "discussion": {
+        "n": 1,
+        "comments": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        },
+        "links": {
+          "grouped_by": null,
+          "sub_grouped_by": null,
+          "total_count": 0,
+          "next_cursor": "100:1:0",
+          "prev_cursor": "100:-1:1",
+          "next_page_results": false,
+          "prev_page_results": false,
+          "count": 0,
+          "total_pages": 0,
+          "total_results": 0,
+          "extra_stats": null,
+          "results": []
+        }
+      },
+      "commits_en_copia_dev": [
+        {
+          "ticket": "PUNTOCASH-1",
+          "sha": "a6e02f0a47ff046fa72a8ec6addfdb6ba5481bdf",
+          "titulo": "fix: keep 2FA code input focused and highlight active box (PUNTOCASH-1)",
+          "url": "https://github.com/AntiCapDevs/punto-cash-frontend/commit/a6e02f0a47ff046fa72a8ec6addfdb6ba5481bdf"
+        }
+      ]
+    }
+  ]
+}

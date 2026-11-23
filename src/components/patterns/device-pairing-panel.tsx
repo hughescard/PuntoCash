@@ -4,8 +4,18 @@ import * as React from "react";
 import { Clock, KeyRound, QrCode } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui";
-import { formatPairingCode, type UnlinkedDevice } from "@/features/devices/device-link";
 import { PairingQr } from "./pairing-qr";
+
+/** "482913" → "482 913": la agrupación que muestra el terminal y teclea el administrador. */
+function formatPairingCode(code: string): string {
+  return `${code.slice(0, 3)} ${code.slice(3)}`;
+}
+
+/** Lo que el panel necesita del equipo sin vincular: su identificador y su reto vigente. */
+export interface EquipoPorVincular {
+  deviceId: string;
+  pairing: { code: string; expiresAt: string };
+}
 
 /** "09:41" — minutes and seconds left on the current pairing challenge. */
 function formatRemaining(ms: number): string {
@@ -34,7 +44,7 @@ export function DevicePairingPanel({
   demoNote,
   className,
 }: {
-  device: UnlinkedDevice;
+  device: EquipoPorVincular;
   qrPayload: string;
   /** Called once the current challenge has expired — the caller renews it. */
   onExpired: () => void;
@@ -128,19 +138,5 @@ function MethodHeading({
       <span className="text-overline uppercase text-text-secondary">{step}</span>
       <h2 className="text-section-title text-text-primary">{title}</h2>
     </div>
-  );
-}
-
-/** Link to the demo's admin simulator, for the pairing screens' demo footnote. */
-export function SimulatorLink(): React.JSX.Element {
-  return (
-    <a
-      href="/kiosk/simulador-admin"
-      target="_blank"
-      rel="noreferrer"
-      className="font-semibold text-primary underline underline-offset-2 outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-primary"
-    >
-      /kiosk/simulador-admin
-    </a>
   );
 }

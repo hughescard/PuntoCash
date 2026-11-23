@@ -1,0 +1,239 @@
+{
+  "ronda": "02_acceso_y_worker",
+  "fecha_local": "2026-10-28 America/Havana",
+  "evidencias": [
+    {
+      "archivo": "01_admin_sin_sedes.ax.txt",
+      "bytes": 2045,
+      "sha256": "70cef79b4ce2372359369ecc72b990738ede3090df185785917432d9f98c7022"
+    },
+    {
+      "archivo": "01_admin_sin_sedes_1440.png",
+      "bytes": 50568,
+      "sha256": "183afdb7bbeedb87f46bd7cb13809f6ff113742ea214d6b30bac423f1342e22d",
+      "dimensiones_px": [
+        1440,
+        900
+      ]
+    },
+    {
+      "archivo": "02_no_principal_menu.ax.txt",
+      "bytes": 7401,
+      "sha256": "13f7fe16e00f810ff303396b81bad3dbcae24b26da584a3e79518bbe2cdb5caf"
+    },
+    {
+      "archivo": "02_no_principal_menu_1440.png",
+      "bytes": 109500,
+      "sha256": "2e0a30abb4f2364fbfae5753b707e91af121687d50d40503fd6fde8365416cd5",
+      "dimensiones_px": [
+        1440,
+        900
+      ]
+    },
+    {
+      "archivo": "03_usuarios_no_principal.ax.txt",
+      "bytes": 2089,
+      "sha256": "9e203f35c686907027dff3e397b3253d4cadcc1f0cf927f1436dcb4b07eea673"
+    },
+    {
+      "archivo": "03_usuarios_no_principal.png",
+      "bytes": 49138,
+      "sha256": "8ed0007444f9fd60b861bedc26ae3cd3b4bbea7d2b07bdb700126f7c47d57509",
+      "dimensiones_px": [
+        1440,
+        900
+      ]
+    },
+    {
+      "archivo": "04_worker_login_vacio.ax.txt",
+      "bytes": 1040,
+      "sha256": "a874875b2776f1216cdc70dcaab0507bcaeed35fe96807d8bfabcaaf3e1045a3"
+    },
+    {
+      "archivo": "04_worker_login_vacio.png",
+      "bytes": 52548,
+      "sha256": "853a69cb6bed8a274f23e63540bf483a868db7e5579ed485f517d47174d72f03",
+      "dimensiones_px": [
+        1280,
+        720
+      ]
+    },
+    {
+      "archivo": "05_worker_cdiaz_rechazo.ax.txt",
+      "bytes": 1154,
+      "sha256": "e4ab6f7919b5aa8a481e4cc14277047a9dd50fcead51c7e62a60cedb19d29876"
+    },
+    {
+      "archivo": "05_worker_cdiaz_rechazo.png",
+      "bytes": 54070,
+      "sha256": "ca5d7bb76ecebdcae38962b127c0ea50af76c0f496d3ac9587699466cd86b776",
+      "dimensiones_px": [
+        1280,
+        720
+      ]
+    },
+    {
+      "archivo": "06_worker_codigo_inicial.ax.txt",
+      "bytes": 1136,
+      "sha256": "333688cee0ee544152bc81c26b06c0e57d3d74e58dd8599432314a565c4a2f6a"
+    },
+    {
+      "archivo": "06_worker_codigo_inicial.png",
+      "bytes": 59803,
+      "sha256": "41d77e761cb91bda8af27724cac6abd318a7c33054885e5ceac0ddfc5489dbab",
+      "dimensiones_px": [
+        1253,
+        705
+      ]
+    },
+    {
+      "archivo": "07_demo_admin_login_1440.png",
+      "bytes": 54735,
+      "sha256": "84e855c4119123e52c990c481bcd614c01eea2ef3f5761c4872f21ff60d905ef",
+      "dimensiones_px": [
+        1440,
+        900
+      ]
+    },
+    {
+      "archivo": "08_worker_reenvio_tras_60s.ax.txt",
+      "bytes": 1136,
+      "sha256": "54c19dd96c230a4738db9f6cd200d4867f0486000e43ef77fec2ee0eed17e1ed"
+    },
+    {
+      "archivo": "08_worker_reenvio_tras_60s.png",
+      "bytes": 59857,
+      "sha256": "35e9e5d05d22cfb0575c1951e66ecd97e7f2062da24a0a226583c08916bffc95",
+      "dimensiones_px": [
+        1253,
+        705
+      ]
+    },
+    {
+      "archivo": "09_worker_seis_digitos_sin_envio.ax.txt",
+      "bytes": 1174,
+      "sha256": "4b6422d05831a682764d64c056ca8146e608a7c1628fd938893d46cad5b1e5e3"
+    },
+    {
+      "archivo": "09_worker_seis_digitos_sin_envio.png",
+      "bytes": 60960,
+      "sha256": "b5d2d535f24b445157bdaf90653eb88ad421ffc455722079c65564a9bc83f10c",
+      "dimensiones_px": [
+        1253,
+        705
+      ]
+    },
+    {
+      "archivo": "10_staging_admin_login_1440.png",
+      "bytes": 58530,
+      "sha256": "9d55c13c2fd2b608a28b285220fa8bb168be74100b8346722ee8d3415c5eaaa6",
+      "dimensiones_px": [
+        1440,
+        900
+      ]
+    },
+    {
+      "archivo": "11_medidas_login_1440.json",
+      "bytes": 1565,
+      "sha256": "9f5e30144239c4bf74ced753bb01495795fe359f0f468341e36c44cac3adf073"
+    },
+    {
+      "archivo": "12_demo_admin_login_390.png",
+      "bytes": 26318,
+      "sha256": "a136a5846652ef5e0a6d523abe830c964fbe8cdef2f6f1dfb178941524d795a7",
+      "dimensiones_px": [
+        390,
+        844
+      ]
+    },
+    {
+      "archivo": "12_medidas_390.json",
+      "bytes": 237,
+      "sha256": "78f5c81e85ba824934a034be12b96834e063386627a1615ae2e4800fa0aff26e"
+    },
+    {
+      "archivo": "12_staging_admin_login_390.png",
+      "bytes": 26154,
+      "sha256": "d567abfaac327d040684a81dda271728bb7c417ee3176b36fbf58eef49c7dbeb",
+      "dimensiones_px": [
+        390,
+        844
+      ]
+    },
+    {
+      "archivo": "13_worker_vinculacion.ax.txt",
+      "bytes": 1283,
+      "sha256": "ecfd03e86ec9d1ade7eaa0db2fe6a1ad3d55e6018e781465fa051f9928eae851"
+    },
+    {
+      "archivo": "13_worker_vinculacion.png",
+      "bytes": 52506,
+      "sha256": "4e11dacdcdacec062adf804f97ebd6251109a8ab7fd32f1854bdaa14003bd761",
+      "dimensiones_px": [
+        1253,
+        705
+      ]
+    },
+    {
+      "archivo": "14_demo_admin_login_360.png",
+      "bytes": 24888,
+      "sha256": "c6df762b358aaa8cc4c2059506c0d0e68875c99886613a2394d2fb3cb164938a",
+      "dimensiones_px": [
+        360,
+        800
+      ]
+    },
+    {
+      "archivo": "14_medidas_360.json",
+      "bytes": 237,
+      "sha256": "fb3f84c5235734f8792b58b427e1b68f321f820479d266ef3e5b5c282b1e852b"
+    },
+    {
+      "archivo": "14_staging_admin_login_360.png",
+      "bytes": 25309,
+      "sha256": "7da899aa66df2426ca240ef4aff8ba62903295b7a0e9eb73b170448ac4fccf78",
+      "dimensiones_px": [
+        360,
+        800
+      ]
+    },
+    {
+      "archivo": "15_worker_operaciones_sin_vinculo.ax.txt",
+      "bytes": 1302,
+      "sha256": "b0374a6fbfb95fc10403c9f3128047d27c434d04d2449d71a04b5d0c12306f44"
+    },
+    {
+      "archivo": "16_selector_varias_sedes.ax.txt",
+      "bytes": 7642,
+      "sha256": "018c10dada7ced78a86086edc3306ce9394d9d03167675bf16f4b2df007022f6"
+    },
+    {
+      "archivo": "16_selector_varias_sedes.png",
+      "bytes": 115195,
+      "sha256": "1bd2d2a83218e11dedd7ab4954d86c7e6f6eb419f396881114f712bb218012a9",
+      "dimensiones_px": [
+        1440,
+        900
+      ]
+    },
+    {
+      "archivo": "17_selector_una_sede.ax.txt",
+      "bytes": 4555,
+      "sha256": "1ca4e790b8f9e2a8c63070ac1327fef41f9d2d855c37a18e1fae8d9eff088eca"
+    },
+    {
+      "archivo": "17_selector_una_sede_1440.png",
+      "bytes": 108079,
+      "sha256": "00a2a1797c30746d576774745407ff84ff03ddea1b235a57ae076c9135790709",
+      "dimensiones_px": [
+        1440,
+        900
+      ]
+    },
+    {
+      "archivo": "INFORME.md",
+      "bytes": 16011,
+      "sha256": "1fbd05be06958759cb2418a55b77d79acca574fe7c2fda9dddd2467f5ff3cec5"
+    }
+  ]
+}

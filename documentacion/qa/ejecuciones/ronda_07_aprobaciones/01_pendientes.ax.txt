@@ -1,0 +1,117 @@
+Browser tab: 2, Title: "PuntoCash", URL: "https://staging.puntocash.co/admin/approvals".
+1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals
+	2 container
+		3 container PuntoCash
+			4 text PUNTO  CASH
+		5 link Description: Perfil, Value: staging.puntocash.co/admin/profile
+		6 combo box (collapsed) Description: Sede que estás viendo, Value: Todas mis sedes, Secondary Actions: Expand
+			7 text Todas mis sedes
+		8 container
+			9 heading Aprobaciones, Value: 1
+				10 text Aprobaciones
+			11 text Las diferencias de efectivo que registran tus trabajadores y esperan tu visto bueno.
+		12 container Estado de las solicitudes
+			13 content list
+				14 link Description: Pendientes 6, Value: staging.puntocash.co/admin/approvals
+				15 link Description: Resueltas 5, Value: staging.puntocash.co/admin/approvals?tab=resolved
+		16 button (collapsed) Filtros, Secondary Actions: Expand
+		17 content list
+			18 container
+				19 text Diferencia de apertura 22 oct 2026 · 08:40 Pendiente
+				20 definition list
+					21 container CAJA Y TRABAJADOR
+						22 text CAJA Y TRABAJADOR
+					23 container
+						24 text Caja 02  ·  PuntoCash Vedado Juan Pérez
+					25 container DIFERENCIA Y MOTIVO
+						26 text DIFERENCIA Y MOTIVO
+					27 container
+						28 text Retiro −500,00 USD Retiro de fondos
+					29 container ANTIGÜEDAD
+						30 text ANTIGÜEDAD
+					31 text hace 7 días
+				32 link Description: Ver solicitud: Diferencia de apertura, Caja 02, Juan Pérez, 22 oct 2026 · 08:40, Value: staging.puntocash.co/admin/approvals/192ca8ed-33dc-44a7-9b8f-c7374dd86b08
+			33 container
+				34 text Ajuste de efectivo 23 oct 2026 · 13:11 Pendiente
+				35 definition list
+					36 container CAJA Y TRABAJADOR
+						37 text CAJA Y TRABAJADOR
+					38 container
+						39 text Caja 01  ·  PuntoCash Vedado Juan Pérez
+					40 container DIFERENCIA Y MOTIVO
+						41 text DIFERENCIA Y MOTIVO
+					42 container
+						43 text Diferencia −5,00 EUR Otro
+					44 container ANTIGÜEDAD
+						45 text ANTIGÜEDAD
+					46 text hace 5 días
+				47 link Description: Ver solicitud: Ajuste de efectivo, Caja 01, Juan Pérez, 23 oct 2026 · 13:11, Value: staging.puntocash.co/admin/approvals/20e14118-0921-444c-ba2c-5094b2c2261d
+			48 container
+				49 text Diferencia de cierre 23 oct 2026 · 17:36 Pendiente
+				50 definition list
+					51 container CAJA Y TRABAJADOR
+						52 text CAJA Y TRABAJADOR
+					53 container
+						54 text Caja 03  ·  PuntoCash Obispo Carlos Díaz
+					55 container DIFERENCIA Y MOTIVO
+						56 text DIFERENCIA Y MOTIVO
+					57 container
+						58 text Sobrante +10,00 EUR Sobrante detectado
+					59 container ANTIGÜEDAD
+						60 text ANTIGÜEDAD
+					61 text hace 5 días
+				62 link Description: Ver solicitud: Diferencia de cierre, Caja 03, Carlos Díaz, 23 oct 2026 · 17:36, Value: staging.puntocash.co/admin/approvals/0b744ff8-9ae4-432b-a9e9-ee7d73556c95
+			63 container
+				64 text Diferencia de apertura 28 oct 2026 · 20:18 Pendiente
+				65 definition list
+					66 container CAJA Y TRABAJADOR
+						67 text CAJA Y TRABAJADOR
+					68 container
+						69 text Caja01  ·  PuntoCash Cerro Endry Perez
+					70 container DIFERENCIA Y MOTIVO
+						71 text DIFERENCIA Y MOTIVO
+					72 container
+						73 text Diferencia +1.000,00 CUP Otro
+					74 container ANTIGÜEDAD
+						75 text ANTIGÜEDAD
+					76 text hace 15 h
+				77 link Description: Ver solicitud: Diferencia de apertura, Caja01, Endry Perez, 28 oct 2026 · 20:18, Value: staging.puntocash.co/admin/approvals/38d29831-368c-4c55-9814-bc86c9549cdb
+			78 container
+				79 text Diferencia de apertura 28 oct 2026 · 20:18 Pendiente
+				80 definition list
+					81 container CAJA Y TRABAJADOR
+						82 text CAJA Y TRABAJADOR
+					83 container
+						84 text Caja01  ·  PuntoCash Cerro Endry Perez
+					85 container DIFERENCIA Y MOTIVO
+						86 text DIFERENCIA Y MOTIVO
+					87 container
+						88 text Diferencia +1.000,00 USD Otro
+					89 container ANTIGÜEDAD
+						90 text ANTIGÜEDAD
+					91 text hace 15 h
+				92 link Description: Ver solicitud: Diferencia de apertura, Caja01, Endry Perez, 28 oct 2026 · 20:18, Value: staging.puntocash.co/admin/approvals/5a512e90-c462-4bb6-a28d-8d5b532fb94c
+			93 container
+				94 text Ajuste de efectivo 29 oct 2026 · 09:51 Pendiente
+				95 definition list
+					96 container CAJA Y TRABAJADOR
+						97 text CAJA Y TRABAJADOR
+					98 container
+						99 text Caja01  ·  PuntoCash Cerro Endry Perez
+					100 container DIFERENCIA Y MOTIVO
+						101 text DIFERENCIA Y MOTIVO
+					102 container
+						103 text Diferencia +99.000,00 CUP Error de registro
+					104 container ANTIGÜEDAD
+						105 text ANTIGÜEDAD
+					106 text hace 1 h
+				107 link Description: Ver solicitud: Ajuste de efectivo, Caja01, Endry Perez, 29 oct 2026 · 09:51, Value: staging.puntocash.co/admin/approvals/cb24712a-3cd5-464b-ba4d-b1e37f9cb3d9
+		108 container
+			109 text Mostrando 1 – 6 de 6 solicitudes
+		110 container Navegación de administración
+			111 link Description: Inicio, Value: staging.puntocash.co/admin/home
+			112 link Description: Jornadas, Value: staging.puntocash.co/admin/shifts
+			113 link Description: Aprobaciones, Value: staging.puntocash.co/admin/approvals
+			114 button Más
+
+The focused UI element is 1 AXWebArea PuntoCash, URL: staging.puntocash.co/admin/approvals

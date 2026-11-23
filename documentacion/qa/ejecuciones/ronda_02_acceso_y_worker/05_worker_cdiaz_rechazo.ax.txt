@@ -1,0 +1,25 @@
+Browser tab: 3, Title: "PuntoCash", URL: "https://staging.puntocash.co/worker/login".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/worker/login
+	1 container
+		2 container
+			3 text PUNTO  CASH CASA DE CAMBIO
+			4 heading Tu puntopara operar con seguridad., Value: 2
+				5 text Tu punto para operar con seguridad.
+			6 text Plataforma operativa PuntoCash
+		7 container
+			8 heading Bienvenido, Value: 1
+				9 text Bienvenido
+			10 text Accede a tu cuenta de PuntoCash para comenzar tu jornada.
+			22 text No fue posible iniciar sesión. Comprueba tus credenciales e inténtalo de nuevo. Usuario o correo electrónico
+			12 image
+			13 text field (settable) Usuario o correo electrónico, Value: <redacted>
+			14 text Contraseña
+			15 image
+			16 text field (settable) Contraseña Mostrar contraseña, Value: <redacted>
+			17 checkbox Description: Mostrar contraseña, Value: 0
+				18 image
+			19 button Iniciar sesión
+			20 link Description: ¿Olvidaste tu contraseña?, Value: staging.puntocash.co/worker/access-recovery
+		21 text PuntoCash · Sistema interno
+
+The focused UI element is 0 AXWebArea PuntoCash, URL: staging.puntocash.co/worker/login

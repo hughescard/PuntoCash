@@ -85,7 +85,8 @@ reversible y queda auditado.
 ## La vinculación de equipos vive en el servidor
 
 Hasta el Paso 3 había dos registros para lo mismo, contra FR-AD-DOM-4: este, y
-el `localStorage` de cada terminal (`features/devices/device-link.ts`). Y no
+el `localStorage` de cada terminal (el antiguo `features/devices/device-link.ts`,
+ya retirado: Worker y Kiosco preguntan aquí). Y no
 era un descuido reparable con un puente: son dos navegadores distintos, así que
 mientras la verdad viviera en el terminal, vincular desde `/admin/equipos` no
 podía ser más que una fachada.
@@ -168,9 +169,7 @@ dice «cierre».
 ## Decisiones que conviene conocer antes de tocar esto
 
 **Las guardas de jornada y de equipo se inyectan, no se importan.** El estado
-de la jornada vive en `caja-data.ts` y el vínculo del equipo en
-`devices/device-link.ts`, que lee `localStorage` y por tanto solo existe en el
-navegador. Pasarlas como parámetro mantiene este dominio comprobable fuera de
+de la jornada y el vínculo del equipo viven en otros módulos. Pasarlas como parámetro mantiene este dominio comprobable fuera de
 un navegador y evita que `network` dependa de la caja o del DOM:
 
 ```ts

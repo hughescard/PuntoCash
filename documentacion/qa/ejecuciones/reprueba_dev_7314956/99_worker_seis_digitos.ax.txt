@@ -1,0 +1,25 @@
+Browser tab: 6, Title: "PuntoCash", URL: "https://staging.puntocash.co/worker/login".
+0 AXWebArea PuntoCash, URL: staging.puntocash.co/worker/login
+	1 container
+		2 container
+			3 text PUNTO  CASH CASA DE CAMBIO
+			4 heading Un paso máspara proteger tu jornada., Value: 2
+				5 text Un paso más para proteger tu jornada.
+			6 text Verificación en dos pasos · PuntoCash
+		22 container
+			23 heading Verifica tu identidad, Value: 1
+				24 text Verifica tu identidad
+			25 text Introduce el código de verificación de seis dígitos enviado a tu método de seguridad. w•••r@demo.cash
+		26 container
+			27 text Código de verificación
+			28 text field (settable) Código de verificación, Value: <redacted>
+			29 text El código vence en 4:37.
+			30 button Verificar y acceder
+			31 button (disabled) Reenviar código en 4:37
+		32 text Si el código no llega, revisa la carpeta de correo no deseado antes de reenviarlo.
+		33 button Volver al inicio de sesión
+			34 image
+			35 text Volver al inicio de sesión
+		21 text PuntoCash · Sistema interno
+
+The focused UI element is 28 text field (settable) Código de verificación, Value: <redacted>

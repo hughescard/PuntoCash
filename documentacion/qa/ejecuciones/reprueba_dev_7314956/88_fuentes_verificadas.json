@@ -1,0 +1,38 @@
+[
+  {
+    "archivo": "clickup_worker_frd_v1.pdf",
+    "ok": true
+  },
+  {
+    "archivo": "clickup_worker_prd_v1.pdf",
+    "ok": true
+  },
+  {
+    "archivo": "admin_entrega_2026-10-14.md",
+    "ok": true
+  },
+  {
+    "archivo": "admin_frd_v6.0_2026-10-14.md",
+    "ok": true
+  },
+  {
+    "archivo": "admin_prd_v1.0_2026-10-14.md",
+    "ok": true
+  },
+  {
+    "archivo": "admin_entrega_2026-10-21.md",
+    "ok": true
+  },
+  {
+    "archivo": "admin_frd_v8.0_2026-10-21.md",
+    "ok": true
+  },
+  {
+    "archivo": "admin_prd_v1.18_2026-10-21.md",
+    "ok": true
+  },
+  {
+    "archivo": "worker_frd_v1.8_referenciado_admin_2026-10-14.md",
+    "ok": true
+  }
+]
