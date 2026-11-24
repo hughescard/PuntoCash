@@ -89,6 +89,8 @@ export interface VistaDeCaja {
    * comprobar al registrar.
    */
   tarifasDeGiro: Readonly<Record<string, Pick<TarifaDeGiro, "minimo" | "tramos">>>;
+  /** Desde cuándo rige cada una (ISO), como `tasasDesde`: si PuntoCash la cambió a media jornada, el trabajador lo ve. */
+  tarifasDesde: Readonly<Record<string, string>>;
 }
 
 /** Cuántos días de libro se envían a la pantalla de Caja. */
@@ -220,6 +222,12 @@ export function armarVista(ctx: ContextoDeCaja, estado: EstadoDeCaja, now = new 
         .map((s) => [s.currency, tarifaDeGiro(s.currency)] as const)
         .filter((x): x is readonly [string, TarifaDeGiro] => x[1] !== null)
         .map(([code, t]) => [code, { minimo: t.minimo, tramos: t.tramos }]),
+    ),
+    tarifasDesde: Object.fromEntries(
+      estado.saldos
+        .map((s) => [s.currency, tarifaDeGiro(s.currency)] as const)
+        .filter((x): x is readonly [string, TarifaDeGiro] => x[1] !== null)
+        .map(([code, t]) => [code, t.updatedAt]),
     ),
   };
 }

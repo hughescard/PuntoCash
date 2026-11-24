@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight } from "lucide-react";
 
-import { KIOSK_RATES_TILE, KIOSK_SERVICES } from "@/features/kiosk/kiosk-catalog";
+import { KIOSK_RATES_TILE, KIOSK_SERVICES, KIOSK_TARIFAS_TILE } from "@/features/kiosk/kiosk-catalog";
 import { getKiosco } from "@/features/kiosk/sesion-servidor";
 
 export const metadata: Metadata = {
@@ -29,6 +29,8 @@ export default async function KioskAutoservicioHome(): Promise<React.JSX.Element
   const habilitados = kiosco.estado === "operando" ? kiosco.servicios : [];
   const servicios = KIOSK_SERVICES.filter((service) => habilitados.includes(service.id));
   const conTasas = habilitados.includes("cambio-moneda");
+  /* Hoy solo Giros lleva tarifa; un servicio nuevo con tarifa se añade aquí. */
+  const conTarifas = habilitados.includes("giros");
 
   if (servicios.length === 0) {
     return (
@@ -50,7 +52,10 @@ export default async function KioskAutoservicioHome(): Promise<React.JSX.Element
         Toca un servicio para comenzar. Al final recibirás un código para completarlo en caja.
       </p>
 
-      <div className="mt-12 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
+      {/* Primero lo que se hace; debajo, lo que solo se consulta. Con cinco
+          mosaicos en dos columnas la última tarjeta quedaba huérfana y fuera
+          de la pantalla del kiosco. */}
+      <div className="mt-12 grid w-full grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {servicios.map((service) => (
           <KioskTile
             key={service.id}
@@ -60,17 +65,31 @@ export default async function KioskAutoservicioHome(): Promise<React.JSX.Element
             description={service.description}
           />
         ))}
-
-        {conTasas ? (
-          <KioskTile
-            href={`/kiosk/autoservicio/${KIOSK_RATES_TILE.slug}`}
-            icon={KIOSK_RATES_TILE.icon}
-            title={KIOSK_RATES_TILE.name}
-            description={KIOSK_RATES_TILE.description}
-            tone="subtle"
-          />
-        ) : null}
       </div>
+
+      {conTasas || conTarifas ? (
+        <div className="mt-5 grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
+          {conTasas ? (
+            <KioskTile
+              href={`/kiosk/autoservicio/${KIOSK_RATES_TILE.slug}`}
+              icon={KIOSK_RATES_TILE.icon}
+              title={KIOSK_RATES_TILE.name}
+              description={KIOSK_RATES_TILE.description}
+              tone="subtle"
+            />
+          ) : null}
+
+          {conTarifas ? (
+            <KioskTile
+              href={`/kiosk/autoservicio/${KIOSK_TARIFAS_TILE.slug}`}
+              icon={KIOSK_TARIFAS_TILE.icon}
+              title={KIOSK_TARIFAS_TILE.name}
+              description={KIOSK_TARIFAS_TILE.description}
+              tone="subtle"
+            />
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { alertasActivas, tituloDeAlerta } from "@/features/network/alertas";
 import { antiguedad } from "../aprobaciones/formato";
 import { diaEnCuba, fechaYHora, hora, jornadaDeCaja } from "../jornadas/formato";
 import { JornadaCelda } from "../cajas/cajas-de-sede";
+import { avisosAgrupados, detalleDeAviso, tituloDeAviso } from "../tarifas/datos";
 
 export const metadata: Metadata = {
   title: "Administración de sede · Inicio",
@@ -96,6 +97,10 @@ export default async function AdminInicioPage() {
       .filter((t) => red.motivoSinCotizacion(sede.id, t.code) === "sin-rango")
       .map((t) => ({ sede, code: t.code })),
   );
+  /* PuntoCash definió, cambió o retiró la tarifa de giros de una moneda que
+     sus sedes manejan (decisión del 24/11/2026). Como la tasa ajustada: sigue
+     aquí hasta que alguien de la empresa la da por vista en Tarifas. */
+  const avisosDeTarifa = avisosAgrupados(sedes);
   /* FR-AD-HOME-2, las de la operación del día. Una caja abierta fuera del
      horario de su sede es una caja que nadie cerró —incluye la que sigue
      abierta de un día anterior—; una sede en horario sin ninguna caja abierta
@@ -176,6 +181,7 @@ export default async function AdminInicioPage() {
         fueraDeHorario.length === 0 &&
         diferencias.length === 0 &&
         fijadas.length === 0 &&
+        avisosDeTarifa.length === 0 &&
         conAlertas.length === 0 &&
         sinAbrirEnHorario.length === 0 ? (
           <Card>
@@ -298,6 +304,15 @@ export default async function AdminInicioPage() {
                 detail="La tasa se conserva y vuelve si el rango vuelve, pero mientras tanto esa moneda no se cotiza ni aparece en el tablero."
                 href={`/admin/tasas/${f.sede.id}`}
                 action="Ver las tasas"
+              />
+            ))}
+            {avisosDeTarifa.map((a) => (
+              <AtencionItem
+                key={`tarifa-${a.tipo}-${a.moneda}`}
+                title={tituloDeAviso(a)}
+                detail={detalleDeAviso(a)}
+                href="/admin/tarifas/giros"
+                action="Ver las tarifas"
               />
             ))}
             {sinAbrirEnHorario.map((fila) => (
@@ -532,6 +547,7 @@ function AtencionItem({
     | "/admin/monedas"
     | "/admin/aprobaciones"
     | `/admin/tasas/${string}`
+    | "/admin/tarifas/giros"
     | `/admin/jornadas/${string}`
     | `/admin/sedes/${string}`;
   action: string;

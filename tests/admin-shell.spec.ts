@@ -24,6 +24,7 @@ const DESTINOS = [
   "Administradores",
   "Monedas",
   "Tasas",
+  "Tarifas",
   "Promociones",
   "Reportes",
 ];

@@ -1,5 +1,5 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos Funcionales (FRD) · v2.3
+## Documento de Requisitos Funcionales (FRD) · v2.4
 
 **Alcance:** la aplicación del trabajador de caja, `/worker`. No cubre el kiosco de autoservicio ni las consolas de administración.
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 2.4 | 24/11/2026 | **Tarifas vigentes en Inicio.** Bloque nuevo, entre Tasas vigentes y Accesos rápidos, con la tarifa de giros de las monedas de la caja, para contestar al cliente que pregunta cuánto cobran (**FR-HOME-5**, **FR-HOME-7**, nuevo). Va **por servicio**: un servicio nuevo con tarifa es un grupo más. No es una pantalla (como Tasas, que tampoco la tiene) y no cambia ninguna regla de Enviar giro |
 | 2.3 | 23/11/2026 | **Buscar solicitud, con el kiosco sobre la red** (FRD de Autoservicio 2.0). La solicitud se busca y se canjea en el servidor; una solicitud de **otra sede** se rechaza nombrándola (**FR-SOL-3**, **FR-SOL-9**, nuevo). «Continuar» vuelve a comprobarla y la consume en el mismo acto (**FR-SOL-5**). El resumen enseña lo que vio el cliente: el modo y el importe pedido del cambio, la cuenta del giro (**FR-SOL-4**). **Cambio de moneda** llega cotizado con la tasa de ahora, en el modo del cliente, y pasa solo a «Cliente»; **Enviar giro** pasa del remitente directamente a «Efectivo», con la tarifa de ahora (**FR-SOL-6**). Si la cifra de ahora no es la que vio el cliente, se avisa con las dos (**FR-SOL-8**, nuevo). Sale de §16 el kiosco con billetes: el kiosco no toca billetes |
 | 2.2 | 19/11/2026 | **Enviar giro cobra la tarifa de giros** que fija PuntoCash (FRD de Super Admin §10). Dos formas de pedirlo —«Que llegue un importe» y «Enviar un importe»—, con la tarifa calculada sobre lo que recibe el beneficiario; giro mínimo; solo las monedas con tarifa; resumen en vivo; revisión, confirmación, resultado y comprobante con lo que llega, la tarifa y el total; el paso «Efectivo» cobra el total; el servidor recalcula la tarifa al confirmar (**FR-GE-3**, **FR-GE-9** a **GE-13**, **FR-GE-15**; **FR-GE-16** a **GE-19**, nuevos; códigos `tarifa-cambiada` y `sin-tarifa-de-giro`). **Cobrar giro** no lleva tarifa (**FR-GC-8**). El kiosco puede mandar la forma (**FR-SOL-4**, **FR-SOL-6**). El **detalle de una operación** se lee como una cuenta, en una sola tarjeta, en todos los servicios (**FR-OPD-12**, **FR-EF-20**) |
 | 2.1 | 16/11/2026 | **Foto del carné de quien cobra.** Entregar una remesa o pagar un giro exige dos fotos del carné del beneficiario, anverso y reverso, hechas con el móvil del trabajador desde un QR de la confirmación; sin ellas no se confirma (§6.8, **FR-CARNE-1 a 10**, nuevos; **FR-RM-12**, **FR-GC-12**). Ruta nueva `/movil/carne/{id}` (**FR-NAV-1**), código `falta-foto-del-carne` y mensajes del enlace del móvil (Apéndice C). **Enviar giro**: el remitente es un cliente registrado, identificado como en Cambio de moneda, y sus datos no se editan en el giro (**FR-GE-2**, nuevo; **FR-GE-3**, **FR-SOL-6**) |
@@ -443,6 +444,7 @@ Destino de «¿Olvidaste tu contraseña?» (**FR-AUTH-6**). Es la vía para eleg
 | Servicios que la caja presta | PuntoCash, por sede | **FR-SA-SERV-*** |
 | Monedas que puede tener la caja | El administrador de la sede (lista de monedas de la sede) | **FR-AD-MON-2** |
 | Tasas de compra y venta, y cuáles están en vigor | El administrador de la sede, dentro del rango de PuntoCash | **FR-AD-TASA-***, **FR-SA-TASA-*** |
+| Tarifa de giros de cada moneda | PuntoCash, para toda la red | **FR-SA-TAR-*** |
 | Denominaciones de cada moneda | PuntoCash, para toda la red | **FR-SA-DEN-*** |
 | Supervisores que pueden reponer, retirar o cambiar billetes | Los administradores activos de la empresa que opera la sede | **FR-CAJA-40** |
 | Límites de las alertas | El administrador de la sede | **FR-AD-ALE-*** |
@@ -459,6 +461,7 @@ Destino de «¿Olvidaste tu contraseña?» (**FR-AUTH-6**). Es la vía para eleg
 | Avisos | Aviso de caja (**FR-CTX-3**) y alertas de la caja (§12) |
 | Mi caja | Nombre de la caja; «Jornada abierta» o «Sin jornada abierta» y la sede; las **monedas** de la caja con su bandera, **sin importes** (§1.6); «Ver caja» |
 | Tasas vigentes | Por cada moneda con tasa **en vigor**: compra, venta y **desde cuándo rige** («hoy · 14:30» o «14 oct · 14:30»). Debajo, **«No se cambian hoy»**: las monedas de la lista de la sede sin tasa en vigor, cada una con su porqué (**FR-HOME-6**). Si la sede no tiene Cambio de moneda o ninguna tasa en vigor, lo dice |
+| Tarifas vigentes | Lo que paga el cliente además del importe, **por servicio** (**FR-HOME-7**) |
 | Accesos rápidos | Los servicios **disponibles** y **habilitados en la sede**, más «Ver todos los servicios» |
 | Operaciones recientes | Las cinco últimas de esta caja: hora, cliente, servicio, importe y estado; cada fila abre la operación (**FR-TAB-1**); «Ver todas las operaciones» |
 
@@ -473,6 +476,17 @@ Inicio no ejecuta nada ni cambia ningún estado.
 | La sede no tiene CUP en su lista | «La sede no tiene CUP para cambiarla» |
 
 **Ver en la demo:** Caja 03 de PuntoCash Vedado, `jperez`: CHF y MXN salen en «No se cambian hoy».
+
+**FR-HOME-7 · Tarifas vigentes.** Para que el trabajador conteste delante del cliente sin empezar una operación. Solo lectura.
+
+- **Por servicio.** Un grupo por cada servicio de la sede que lleva tarifa (**FR-SA-TAR-1**); hoy, **Enviar giro**, con la indicación de quién la paga y sobre qué se calcula (**FR-SA-TAR-1**, **FR-SA-TAR-3**). Un servicio nuevo con tarifa es otro grupo.
+- **Por moneda.** Una entrada por cada moneda **de la caja** con tarifa: bandera y código; **desde cuándo rige** (**FR-SA-TAR-4**); el **giro mínimo**; y cada tramo con lo que se paga («3,00 USD», «1,00 USD + 2 %», «1,5 %»). Los tramos se rotulan por su límite superior, «Hasta 100,00», y el último, «Más de 500,00»: el giro mínimo está justo encima.
+- **Monedas sin tarifa.** Las monedas de la caja a las que PuntoCash no ha puesto tarifa se nombran aparte: **en ellas no se envían giros** (**FR-SA-TAR-2**).
+- **Pie.** Los servicios de la sede **sin tarifa** (Cambio de moneda, Remesas y Cobrar giro) y que las fija PuntoCash, iguales en todas las sedes.
+- **Cuándo no sale.** Si la sede no ofrece ningún servicio con tarifa, el bloque no aparece.
+- **Informativo.** El importe exacto de un giro lo calcula Enviar giro (**FR-GE-18**); aquí no se redondea nada ni se pide ningún dato.
+
+**Ver en la demo:** Caja 03 de PuntoCash Vedado, `jperez`, Inicio: entre Tasas vigentes y Accesos rápidos, Enviar giro con USD, EUR y CUP, y «No se envía en GBP».
 
 ---
 

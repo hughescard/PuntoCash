@@ -1,5 +1,5 @@
 # PuntoCash — Pantalla informativa de la sede
-## Documento de Requisitos Funcionales (FRD) · v2.0
+## Documento de Requisitos Funcionales (FRD) · v2.1
 
 **Alcance:** la pantalla informativa no táctil de una sede, `/kiosk/pantalla`: elegir su sede, y mostrar en rotación sus tasas, sus datos y sus promociones. El kiosco táctil de autoservicio tiene su propio documento.
 
@@ -11,8 +11,8 @@
 | --- | --- |
 | `../PuntoCash_PRD_v2.md` | El producto completo y las reglas **R1–R13**, citadas aquí como **[R#]** |
 | `PuntoCash_Kiosk_Autoservicio_Functional_Requirements_v1.md` (2.0) | El kiosco de autoservicio, que muestra el mismo tablero de tasas (**FR-AS-NAV-2**) |
-| `../admin/PuntoCash_Admin_Sede_Functional_Requirements_v1.md` | Las tasas que fija el operador de la sede (**FR-AD-TASA-***), sus promociones (**FR-AD-PROM-***) y la ficha de la sede |
-| `../admin/PuntoCash_Super_Admin_Functional_Requirements_v1.md` | El registro de sedes de la red, su estado y las promociones de red |
+| `../admin/PuntoCash_Admin_Sede_Functional_Requirements_v1.md` | Las tasas que fija el operador de la sede (**FR-AD-TASA-***), sus promociones (**FR-AD-PROM-***), la ficha de la sede y las tarifas que ve su administración (**FR-AD-TAR-***) |
+| `../admin/PuntoCash_Super_Admin_Functional_Requirements_v1.md` | El registro de sedes de la red, su estado, las promociones de red y la tarifa de giros (**FR-SA-TAR-***) |
 
 ## Cómo leer este documento
 
@@ -25,6 +25,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 2.1 | 24/11/2026 | **Diapositiva de tarifas de giros.** Entra en el carrusel justo después de Tasas del día cuando la sede ofrece Giros y tiene al menos una moneda con tarifa (**FR-PANT-CAR-1**, **FR-PANT-TARIFAS-1** a **TARIFAS-3**, nuevos). Sus datos llegan y se refrescan como los demás (**FR-PANT-DATA-9**, nuevo) |
 | 2.0 | 23/11/2026 | **Documento reescrito** en el formato de los FRD de Worker y de administración, describiendo el sistema y no la demostración. Lo que cambia de fondo: (1) **Los datos son de la red**: el tablero es el que fija el operador de la sede, los datos de la sede salen del registro de sedes y las promociones son las vigentes de esa sede; la pantalla los vuelve a pedir cada 30 s y los cambios aparecen sin recargar (§7). (2) **El tablero coincide con lo que se aplica**: son las mismas tasas en vigor con las que cotizan la caja y el kiosco (**FR-PANT-TASAS-1**, **TASAS-3**). (3) **Cada promoción es su propia diapositiva**, con imagen si la tiene, y sin promociones no hay diapositiva; la de tasas solo entra si la sede publica tasas (**FR-PANT-CAR-1**, **FR-PANT-PROMO-1**). (4) **Sede que no atiende**: la pantalla lo dice en lugar de anunciar tasas y promociones (**FR-PANT-SEDE-8**, nuevo). (5) **Sede cerrada**: desaparece del selector, y una pantalla que la mostraba vuelve a pedir sede con un aviso (**FR-PANT-SEDE-2**, **SEDE-4**). (6) **La pantalla guarda solo qué sede eligió**; el nombre, la ficha y si atiende los da el servidor cada vez (**FR-PANT-SEDE-4**) |
 | 1.4 | 22/09/2026 | Selección de sede en el propio equipo |
 | 1.3 | 22/09/2026 | El tablero debe mostrar las mismas tasas con las que cotiza la sede |
@@ -93,6 +94,7 @@ La pantalla no se vincula ni tiene sesión: solo exhibe información pública. B
 | Diapositiva | Cuándo entra |
 | --- | --- |
 | Tasas del día | Si la sede tiene al menos una tasa en vigor |
+| Tarifas de giros | Si la sede ofrece Giros y tiene al menos una moneda con tarifa (**FR-PANT-TARIFAS-1**) |
 | Información de la sucursal | Siempre |
 | Una por cada promoción vigente | Si la sede tiene promociones vigentes hoy |
 
@@ -115,6 +117,16 @@ La pantalla no se vincula ni tiene sesión: solo exhibe información pública. B
 **FR-PANT-TASAS-3 · Las tasas que se aplican.** Las cifras son las mismas con las que cotizan en ese momento las cajas y el kiosco de la sede. Un pie dice que son precios en CUP y que están sujetas a cambio sin previo aviso.
 
 **Ver en la demo:** con la pantalla en PuntoCash Vedado, cambiar la tasa del USD en Admin → Tasas como `marta@malecon-sf.cu` y esperar: el tablero cambia sin recargar.
+
+### Tarifas de giros
+
+**FR-PANT-TARIFAS-1 · Diapositiva.** Las tarifas de giro **de la sede de la pantalla** (**FR-SA-TAR-***): una columna por moneda de la lista de la sede con tarifa, con su bandera, código y nombre; el **giro mínimo**; y cada tramo, por lo que recibe quien cobra, con lo que se paga de tarifa («3,00 USD», «1,00 USD + 2 %», «1,5 %»). Es lo mismo que enseña la consulta del kiosco (FRD de Autoservicio **FR-AS-TAR-1**). Solo entra en la rotación si la sede ofrece Giros y tiene al menos una moneda con tarifa; si no, no hay diapositiva.
+
+**FR-PANT-TARIFAS-2** Solo lectura. Un pie dice quién la paga y sobre qué se calcula, que cobrar un giro no tiene tarifa, y que las fija PuntoCash, iguales en todas las sucursales.
+
+**FR-PANT-TARIFAS-3 · Las tarifas que se cobran.** Las cifras son las mismas con las que cobra en ese momento la caja de la sede. Una tarifa cambiada por PuntoCash aparece sin recargar (**FR-PANT-DATA-8**).
+
+**Ver en la demo:** con la pantalla en PuntoCash Vedado, esperar a la segunda diapositiva (12 s): CUP, USD y EUR. Cambiar la tarifa del USD en Super Admin (`emarrero@puntocash.com`, Tarifas → Giros → USD → Cambiar) y esperar.
 
 ---
 
@@ -140,13 +152,15 @@ La pantalla no se vincula ni tiene sesión: solo exhibe información pública. B
 
 **FR-PANT-DATA-3 · Tasas.** Las tasas en vigor de la sede, que cambian cuando las cambia su operador, sin desplegar nada. Solo las monedas que la sede cambia.
 
+**FR-PANT-DATA-9 · Tarifas.** Las tarifas de giro de las monedas de la sede, que cambian cuando PuntoCash las cambia, sin desplegar nada. Solo las de una sede que ofrece Giros.
+
 **FR-PANT-DATA-4 · Sedes.** La lista del selector y los datos de cada sede salen del registro de sedes de la red, administrado centralmente.
 
 **FR-PANT-DATA-5 · Promociones.** Campañas con fecha de inicio y fin, que se dan de alta, se editan y se retiran desde las consolas (**FR-AD-PROM-***), sin cambio de código. La pantalla muestra solo las vigentes hoy.
 
 **FR-PANT-DATA-7 · Un solo origen.** La pantalla, el kiosco y cualquier otro cliente leen las tasas, los datos de sede y las promociones del mismo origen, nunca de copias que haya que sincronizar.
 
-**FR-PANT-DATA-8 · Refresco.** La pantalla vuelve a pedir al servidor sus datos cada **30 s**. Los cambios de tasas, de ficha, de promociones y de si la sede atiende aparecen sin recargar y sin reiniciar el carrusel.
+**FR-PANT-DATA-8 · Refresco.** La pantalla vuelve a pedir al servidor sus datos cada **30 s**. Los cambios de tasas, de tarifas, de ficha, de promociones y de si la sede atiende aparecen sin recargar y sin reiniciar el carrusel.
 
 ---
 

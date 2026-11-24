@@ -9,6 +9,7 @@ import {
   Megaphone,
   MonitorSmartphone,
   Percent,
+  Receipt,
   ShieldCheck,
   Store,
   Users,
@@ -91,6 +92,7 @@ export function adminNavGroups(
       items: [
         { href: "/admin/monedas", label: "Monedas", icon: Coins },
         { href: "/admin/tasas", label: "Tasas", icon: Percent },
+        { href: "/admin/tarifas", label: "Tarifas", icon: Receipt },
         { href: "/admin/alertas", label: "Alertas", icon: Bell },
         { href: "/admin/promociones", label: "Promociones", icon: Megaphone },
         { href: "/admin/reportes", label: "Reportes", icon: ChartColumn },

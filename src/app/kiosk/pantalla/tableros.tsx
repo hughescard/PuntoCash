@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import type { TasaPublica } from "@/features/network/rates";
+import type { TarifaPublica } from "@/features/network/tarifas";
 
 /**
  * Los tableros de tasas que la pantalla puede necesitar, uno por sede.
@@ -61,10 +62,13 @@ export interface PromocionPublica {
 
 const Promociones = React.createContext<Readonly<Record<string, readonly PromocionPublica[]>>>({});
 
+const Tarifas = React.createContext<Readonly<Record<string, readonly TarifaPublica[]>>>({});
+
 export function TablerosProvider({
   tableros,
   sedes,
   promociones,
+  tarifas,
   children,
 }: {
   tableros: Readonly<Record<string, readonly TasaPublica[]>>;
@@ -72,6 +76,8 @@ export function TablerosProvider({
   sedes: readonly SedePublica[];
   /** Las vigentes de cada sede, ya filtradas por el servidor. */
   promociones: Readonly<Record<string, readonly PromocionPublica[]>>;
+  /** Las tarifas de giro que anuncia cada sede (`tarifasPublicas`); vacío si no envía giros. */
+  tarifas: Readonly<Record<string, readonly TarifaPublica[]>>;
   children: React.ReactNode;
 }): React.JSX.Element {
   const router = useRouter();
@@ -84,7 +90,9 @@ export function TablerosProvider({
   return (
     <Tableros.Provider value={tableros}>
       <Sedes.Provider value={sedes}>
-        <Promociones.Provider value={promociones}>{children}</Promociones.Provider>
+        <Promociones.Provider value={promociones}>
+          <Tarifas.Provider value={tarifas}>{children}</Tarifas.Provider>
+        </Promociones.Provider>
       </Sedes.Provider>
     </Tableros.Provider>
   );
@@ -103,4 +111,9 @@ export function useSedes(): readonly SedePublica[] {
 /** Las promociones vigentes de una sede; vacío si no anuncia ninguna. */
 export function usePromociones(branchId: string): readonly PromocionPublica[] {
   return React.useContext(Promociones)[branchId] ?? [];
+}
+
+/** Las tarifas de giro de una sede; vacío si no envía giros o no tiene ninguna. */
+export function useTarifas(branchId: string): readonly TarifaPublica[] {
+  return React.useContext(Tarifas)[branchId] ?? [];
 }

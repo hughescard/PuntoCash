@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { ArrowRightLeft, HandCoins, RefreshCw, TrendingUp } from "lucide-react";
+import { ArrowRightLeft, HandCoins, Receipt, RefreshCw, TrendingUp } from "lucide-react";
 
 /**
  * The self-service catalog shown on `/kiosk/autoservicio`.
@@ -68,6 +68,17 @@ export const KIOSK_RATES_TILE = {
   name: "Consultar tasas",
   description: "Revisa las tasas de cambio vigentes hoy.",
   icon: TrendingUp,
+} as const;
+
+/**
+ * The fifth tile — consultation only, like the rates one. Appears when the sede
+ * offers a service that carries a tarifa (today only Giros).
+ */
+export const KIOSK_TARIFAS_TILE = {
+  slug: "tarifas",
+  name: "Consultar tarifas",
+  description: "Revisa lo que cuesta enviar un giro.",
+  icon: Receipt,
 } as const;
 
 export function findKioskService(slug: string): KioskService | undefined {

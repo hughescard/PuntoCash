@@ -83,14 +83,15 @@ test.describe("worker home", () => {
     // made accessible solely for testability (§4) — the currency code text is
     // what a screen reader announces.
     const flags = main.locator("svg[data-currency-flag]");
-    await expect(flags).toHaveCount(9);
+    await expect(flags).toHaveCount(12);
 
     const currencies = await flags.evaluateAll((els) =>
       els.map((el) => el.getAttribute("data-currency-flag")),
     );
     // 4 en Mi caja (CUP, USD, EUR y GBP, en cero) + 3 en Tasas vigentes (USD, EUR, GBP)
-    // + 2 que la sede maneja sin tasa (CHF, MXN), en «No se cambian hoy».
-    expect(currencies).toEqual(["CUP", "USD", "EUR", "GBP", "USD", "EUR", "GBP", "CHF", "MXN"]);
+    // + 2 que la sede maneja sin tasa (CHF, MXN), en «No se cambian hoy»
+    // + 3 con tarifa de giros (CUP, USD, EUR) en «Tarifas vigentes»; la libra no tiene.
+    expect(currencies).toEqual(["CUP", "USD", "EUR", "GBP", "USD", "EUR", "GBP", "CHF", "MXN", "CUP", "USD", "EUR"]);
 
     // Every flag is aria-hidden, so it never duplicates the currency code
     // announcement, and the flag never stands in as the sole identifier.
@@ -119,6 +120,27 @@ test.describe("worker home", () => {
     await expect(main.getByRole("link", { name: "Ver todas", exact: true })).toHaveCount(0);
     /* La sección Alertas de Worker ya no existe: las alertas están en el aviso de la caja. */
     await expect(main.getByRole("link", { name: "Ver todas las alertas" })).toHaveCount(0);
+  });
+
+  test("la tarjeta de tarifas dice, por servicio, lo que paga el cliente y desde cuándo", async ({ page }) => {
+    /* Decisión del 24/11/2026: el trabajador contesta delante del cliente sin empezar una operación. */
+    const tarjeta = page.getByRole("region", { name: "Tarifas vigentes" });
+    const giro = tarjeta.getByRole("region", { name: "Tarifa de Enviar giro" });
+    await expect(giro.getByText("La paga el remitente, al enviar.", { exact: false })).toBeVisible();
+
+    const usd = giro.getByRole("listitem", { name: "Tarifa en USD" });
+    await expect(usd.getByText(/^Desde /)).toBeVisible();
+    /* El mínimo va arriba; cada tramo dice hasta dónde llega, incluido. */
+    await expect(usd.getByText("Hasta 100,00")).toBeVisible();
+    await expect(usd.getByText("3,00 USD")).toBeVisible();
+    await expect(usd.getByText("Hasta 500,00")).toBeVisible();
+    await expect(usd.getByText("Más de 500,00")).toBeVisible();
+    await expect(usd.getByText("1,00 USD + 2 %")).toBeVisible();
+    await expect(giro.getByRole("listitem")).toHaveCount(3);
+
+    /* La libra está en la caja, pero PuntoCash no le ha puesto tarifa de giros. */
+    await expect(giro.getByText("No se envía en GBP: PuntoCash no le ha puesto tarifa.")).toBeVisible();
+    await expect(tarjeta.getByText("Sin tarifa: Cambio de moneda, Remesas, Cobrar giro.", { exact: false })).toBeVisible();
   });
 
   test("los accesos rápidos son los servicios que la sede presta, más el catálogo", async ({ page }) => {
@@ -288,3 +310,12 @@ test.describe("Tasas en Inicio · monedas que no se cambian", () => {
   });
 });
 
+test.describe("en una sede sin Giros", () => {
+  test.use({ servicios: ["cambio-moneda", "remesas"], giros: [] });
+
+  test("no hay tarjeta de tarifas: ningún servicio de la sede la lleva", async ({ page }) => {
+    await page.goto("/worker/inicio");
+    await expect(page.getByRole("main").getByText("Tasas vigentes")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Tarifas vigentes" })).toBeHidden();
+  });
+});
