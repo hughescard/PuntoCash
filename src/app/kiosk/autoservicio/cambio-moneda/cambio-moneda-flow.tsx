@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, CircleCheck } from "lucide-react";
 
 import { Button } from "@/components/ui";
+import { useIrArribaAlCambiarDePaso } from "@/lib/foco";
 import { Stepper } from "@/components/patterns/stepper";
 import { KioskCancelDialog } from "@/components/patterns/kiosk-cancel-dialog";
 import { KioskRequestTicket, TicketRow } from "@/components/patterns/kiosk-request-ticket";
@@ -41,6 +42,7 @@ export function CambioMonedaAutoservicioFlow({ cambio }: { cambio: CambioDeSede 
   const router = useRouter();
   const [state, dispatch] = React.useReducer(flowReducer, undefined, () => ({ ...INITIAL_STATE, ...parInicial(cambio) }));
   const [cancelOpen, setCancelOpen] = React.useState(false);
+  useIrArribaAlCambiarDePaso(state.step);
 
   const parsedAmount = parseAmountInput(state.amountInput);
   const pasoDeOrigen = cambio.pasos[state.sourceCurrency];

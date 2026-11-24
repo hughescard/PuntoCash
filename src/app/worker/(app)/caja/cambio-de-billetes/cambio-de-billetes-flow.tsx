@@ -16,6 +16,7 @@ import { proponerCambioDeBilletesAction, registrarCambioDeBilletesAction, type M
 import { aBilletes, aUnidades, ConteoPorBilletes, type Unidades } from "../conteo-por-billetes";
 import { RecuentoDeMoneda } from "../recuento-de-moneda";
 import { CAJA_ROUTE, ElegirMoneda, ElegirSupervisor, ElegirUno, errorDe, Linea, Observaciones, Registrado } from "../fondos/partes";
+import { enfocarPrimerError, useIrArribaAlCambiarDePaso } from "@/lib/foco";
 
 type Con = "cliente" | "supervisor";
 
@@ -83,6 +84,7 @@ export function CambioDeBilletesFlow(): React.JSX.Element {
   const ver = (x: string | undefined) => (enviado ? x : undefined);
   const supervisor = vista.supervisores.find((x) => x.id === supervisorId)?.nombre ?? "";
   const bloqueada = (!caja.jornadaAbierta || vista.bloqueo !== null) && registrado === null;
+  useIrArribaAlCambiarDePaso(registrado ? "hecho" : recontando ? "recuento" : revisar ? "revisar" : "datos");
   const cambiarEntran = (c: string, k: string, v: string) => setEntran((prev) => ({ ...prev, [c]: { ...prev[c], [k]: v } }));
   const cambiarSalen = (c: string, k: string, v: string) => setSalen((prev) => ({ ...prev, [c]: { ...prev[c], [k]: v } }));
 
@@ -107,7 +109,7 @@ export function CambioDeBilletesFlow(): React.JSX.Element {
     event.preventDefault();
     setEnviado(true);
     setError(undefined);
-    if (Object.values(errores).some(Boolean) || Object.keys(e.errores).length > 0 || Object.keys(s.errores).length > 0) return;
+    if (Object.values(errores).some(Boolean) || Object.keys(e.errores).length > 0 || Object.keys(s.errores).length > 0) return enfocarPrimerError(event.currentTarget as HTMLElement);
     setRevisar({ entran: bEntran, salen: bSalen });
   }
 

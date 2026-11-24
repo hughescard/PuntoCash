@@ -18,6 +18,7 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { forzarCierreAction, type ResultadoForzar } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 const MOTIVO: FieldSpec = { id: "forzar-motivo", label: "Motivo", required: true };
 
@@ -44,6 +45,8 @@ export function ForzarCierre({
 }): React.JSX.Element {
   const [abierto, setAbierto] = React.useState(false);
   const [estado, accion, enviando] = React.useActionState<ResultadoForzar, FormData>(forzarCierreAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const [motivo, setMotivo] = React.useState("");
   const corto = motivo.trim().length < motivoMin;
   const error = estado && !estado.ok ? estado.error : undefined;
@@ -70,7 +73,7 @@ export function ForzarCierre({
               una jornada nueva. El cierre queda marcado como forzado, a tu nombre.
             </DialogDescription>
           </DialogHeader>
-          <form action={accion}>
+          <form ref={formulario} action={accion}>
             <input type="hidden" name="id" value={id} />
             <DialogBody className="flex flex-col gap-4">
               <Alert variant="info" title="Se cierra sin contar">

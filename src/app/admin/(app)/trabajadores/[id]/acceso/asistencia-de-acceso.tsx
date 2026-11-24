@@ -15,6 +15,7 @@ import {
 } from "@/components/ui";
 import { Section } from "@/components/shell/app-shell";
 import { cambiarCorreoAction, type ResultadoAsistencia } from "../../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Asistencia de acceso — **FR-AD-TRAB-10**, con **FR-AD-TRAB-11** encima.
@@ -93,11 +94,13 @@ function CambiarCorreo({
     cambiarCorreoAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   return (
     <Card>
       <CardContent className="pt-6">
-        <form action={accion} className="flex flex-col gap-5" noValidate>
+        <form ref={formulario} action={accion} className="flex flex-col gap-5" noValidate>
           <input type="hidden" name="trabajador" value={trabajador.id} />
 
           {estado?.ok ? (

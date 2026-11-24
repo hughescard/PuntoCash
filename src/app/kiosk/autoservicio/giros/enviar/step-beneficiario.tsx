@@ -21,6 +21,7 @@ import {
 } from "@/components/ui";
 import { PROVINCE_CATALOG, getMunicipalitiesForProvince } from "@/features/geography/cuba-provinces";
 import type { KioskBeneficiaryInput } from "@/features/kiosk/self-service-request";
+import { enfocarPrimerError } from "@/lib/foco";
 
 const FIELDS = {
   receiverName: { id: "giro-beneficiario-nombre", label: "Nombre completo", required: true },
@@ -82,6 +83,7 @@ export function StepBeneficiario({
     }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length === 0) onContinue();
+    else enfocarPrimerError(event.currentTarget);
   }
 
   return (

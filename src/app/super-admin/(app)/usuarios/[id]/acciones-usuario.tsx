@@ -31,6 +31,7 @@ import {
   type ResultadoCredencialSuperAdmin,
 } from "../_actions";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Lo que la ficha de un usuario permite hacer (FR-SA-USR).
@@ -146,6 +147,8 @@ function CambiarCorreoSA({
     cambiarCorreoUsuarioSuperAdminAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -168,7 +171,7 @@ function CambiarCorreoSA({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
@@ -219,6 +222,8 @@ function CredencialSA({
     regenerarCredencialUsuarioSuperAdminAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   return (
     <Dialog open onOpenChange={(valor) => (valor ? undefined : onCerrar())}>
@@ -246,7 +251,7 @@ function CredencialSA({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
@@ -285,6 +290,8 @@ function EstadoSA({
     accionDelServidor,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
   const titulo = modo === "desactivar" ? `Desactivar a ${usuario.nombre}` : `Reactivar a ${usuario.nombre}`;
 
@@ -312,7 +319,7 @@ function EstadoSA({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
@@ -355,6 +362,8 @@ function TraspasarSA({
     transferirPrincipalSuperAdminAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -380,7 +389,7 @@ function TraspasarSA({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
                 <Alert variant="error" title="No se pudo traspasar">

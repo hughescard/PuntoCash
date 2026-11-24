@@ -26,6 +26,7 @@ import { useHydrated } from "@/lib/use-hydrated";
 import { MOTIVO_MIN_LENGTH } from "@/features/network/sedes";
 import type { JornadaDeCaja } from "../jornadas/formato";
 import { reactivarCajaAction, retirarCajaAction, type ResultadoAccion } from "./_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Las cajas de una sede, con sus dos acciones — **FR-AD-CAJA-8 a 13**.
@@ -228,6 +229,8 @@ function DialogoRetirar({
     retirarCajaAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   const hecho = estado?.ok === true;
 
@@ -304,7 +307,7 @@ function DialogoRetirar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form ref={formulario} action={accion}>
             <input type="hidden" name="caja" value={caja.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -352,6 +355,8 @@ function DialogoReactivar({
     reactivarCajaAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   const hecho = estado?.ok === true;
 
@@ -378,7 +383,7 @@ function DialogoReactivar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form ref={formulario} action={accion}>
             <input type="hidden" name="caja" value={caja.id} />
 
             {estado && !estado.ok ? (

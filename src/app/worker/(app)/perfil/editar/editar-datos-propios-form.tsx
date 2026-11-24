@@ -7,6 +7,7 @@ import { Save } from "lucide-react";
 import { Alert, Button, Card, CardContent, Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
 import { IDENTIFICADOR_MAX, IDENTIFICADOR_MIN } from "@/features/auth/identificador";
 import { editarDatosPropiosAction, type ResultadoDatosPropios, type ValoresDeDatosPropios } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 const USUARIO: FieldSpec = {
   id: "perfil-usuario",
@@ -17,10 +18,12 @@ const TELEFONO: FieldSpec = { id: "perfil-telefono", label: "Teléfono" };
 
 export function EditarDatosPropiosForm({ inicial }: { inicial: ValoresDeDatosPropios }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoDatosPropios, FormData>(editarDatosPropiosAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const valores = estado?.valores ?? inicial;
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form ref={formulario} action={accion} className="max-w-form-max">
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {estado && !estado.ok ? (

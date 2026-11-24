@@ -23,6 +23,7 @@ import { useHydrated } from "@/lib/use-hydrated";
 import type { MonedaCatalogo } from "@/features/network/currencies";
 import { anadirMonedaAction, retirarMonedaAction, type ResultadoMoneda } from "./_actions";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * La lista de monedas de una sede, con sus dos acciones.
@@ -199,6 +200,8 @@ function DialogoAnadir({
     anadirMonedaAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -225,7 +228,7 @@ function DialogoAnadir({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="sede" value={sede.id} />
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
@@ -285,6 +288,8 @@ function DialogoRetirar({
     retirarMonedaAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   /* Lo que impide retirarla se sabe antes de abrir, y se dice en vez de
@@ -333,7 +338,7 @@ function DialogoRetirar({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="sede" value={sede.id} />
             <input type="hidden" name="moneda" value={fila.code} />
             {(estado && !estado.ok) || enCero.length > 0 || fila.tasas.length > 0 ? (

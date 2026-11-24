@@ -31,6 +31,7 @@ import {
   type ResultadoCredencialUsuario,
 } from "../_actions";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Lo que la ficha de un usuario permite hacer — **FR-AD-USR-6** a
@@ -193,6 +194,8 @@ function CambiarCorreo({
     cambiarCorreoUsuarioAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -219,7 +222,7 @@ function CambiarCorreo({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -278,6 +281,8 @@ function Credencial({
     regenerarCredencialUsuarioAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -323,7 +328,7 @@ function Credencial({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -382,6 +387,8 @@ function Desactivar({
     desactivarUsuarioAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -406,7 +413,7 @@ function Desactivar({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -449,6 +456,8 @@ function Reactivar({
     reactivarUsuarioAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -473,7 +482,7 @@ function Reactivar({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -530,6 +539,8 @@ function Traspasar({
     transferirPrincipalAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   /* Cerrar el diálogo después de un traspaso tampoco puede dejar la pantalla
@@ -573,7 +584,7 @@ function Traspasar({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="usuario" value={usuario.id} />
 
             <DialogBody className="flex flex-col gap-4">

@@ -24,6 +24,7 @@ import { liquidacionComoLineas } from "../liquidacion";
 import type { OperationLiquidation } from "@/features/operations/operations-history";
 import { DELIVERY_METHOD_LABEL, REMITTANCE_STATUS_LABEL, remittanceProvider, type RemittanceSnapshot, type RemittanceStatus } from "@/features/remittances/remittance-provider";
 import { clearPendingWorkerHandoff, readPendingWorkerHandoff } from "@/features/kiosk/self-service-request";
+import { useIrArribaAlCambiarDePaso } from "@/lib/foco";
 
 type Step = "codigo" | "revision" | "efectivo" | "confirmar" | "resultado";
 interface Completed { remittance: RemittanceSnapshot; operationCode: string; completedAt: string; liquidacion?: OperationLiquidation; }
@@ -77,6 +78,7 @@ export function RemesasFlow(): React.JSX.Element {
    * eso diría que no hay jornada para siempre.
    */
   const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
+  useIrArribaAlCambiarDePaso(recontando ? "recuento" : step);
 
   const payable = remittance?.status === "READY";
 

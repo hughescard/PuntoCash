@@ -18,6 +18,7 @@ import {
 import { DOCUMENT_TYPES } from "@/features/customers/customers";
 import { crearTrabajadorAction, type CampoDelAlta, type ResultadoAlta, type ValoresDelAlta } from "../_actions";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Alta de un trabajador — **FR-AD-TRAB-3** a **FR-AD-TRAB-8**.
@@ -77,6 +78,8 @@ export function NuevoTrabajadorForm({
     crearTrabajadorAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   if (estado?.ok) return <CredencialInicial resultado={estado} />;
 
@@ -90,7 +93,7 @@ export function NuevoTrabajadorForm({
   const previo: ValoresDelAlta | undefined = estado && !estado.ok ? estado.valores : undefined;
 
   return (
-    <form onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max" noValidate>
+    <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max" noValidate>
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {/* Un rechazo que no pertenece a ningún campo concreto se dice

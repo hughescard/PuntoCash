@@ -157,6 +157,36 @@ test.describe("un kiosco vinculado a su sede", () => {
       }
     }
   });
+
+  test("al seguir con errores va al primer campo; al cambiar de paso, vuelve arriba", async ({ page }) => {
+    await page.goto("/kiosk/autoservicio/giros/enviar");
+    const main = page.getByRole("main");
+    const documento = page.getByRole("textbox", { name: "Número de documento" });
+    const continuar = page.getByRole("button", { name: "Continuar", exact: true });
+    const alFondo = () => main.evaluate((el) => (el.scrollTop = el.scrollHeight));
+
+    /* El formulario vacío: la vista va al primer campo con error, no se queda
+       donde estaba el botón. Se reintenta hasta que la pantalla hidrata. */
+    await expect(async () => {
+      await alFondo();
+      await continuar.click();
+      await expect(documento).toBeFocused({ timeout: 1_000 });
+    }).toPass();
+    await expect(documento).toHaveAttribute("aria-invalid", "true");
+    await expect(documento).toBeInViewport();
+
+    /* Con todo rellenado, el paso siguiente empieza arriba, con el foco en el
+       título. */
+    await documento.fill("90010112345");
+    await page.getByRole("textbox", { name: "Nombre" }).fill("Carlos");
+    await page.getByRole("textbox", { name: "Primer apellido" }).fill("Pérez");
+    await page.getByRole("textbox", { name: "Teléfono" }).fill("+53 5 123 4567");
+    await alFondo();
+    await continuar.click();
+    await expect(page.getByRole("heading", { name: "¿Quién va a cobrar este giro?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Enviar giro", level: 1 })).toBeFocused();
+    expect(await main.evaluate((el) => el.scrollTop)).toBe(0);
+  });
 });
 
 /* -------------------------------------------------------------------------

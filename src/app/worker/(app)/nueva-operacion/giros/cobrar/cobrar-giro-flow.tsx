@@ -28,6 +28,7 @@ import { confirmGiroPayout, type GiroPayoutCompleted } from "./confirm-payout";
 import { FotoDelCarne } from "../../foto-del-carne";
 import type { CapturaAbierta } from "../../../../_foto-del-carne-actions";
 import type { MotivoDeCaptura } from "@/features/network/fotos-del-carne";
+import { useIrArribaAlCambiarDePaso } from "@/lib/foco";
 
 type Step = "codigo" | "revisar" | "efectivo" | "confirmar" | "resultado";
 
@@ -89,6 +90,7 @@ export function CobrarGiroFlow(): React.JSX.Element {
    * eso diría que no hay jornada para siempre.
    */
   const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
+  useIrArribaAlCambiarDePaso(recontando ? "recuento" : step);
 
   // Only READY authorises a physical payout: COMPLETED was already paid once
   // and must never produce a second delivery of cash.

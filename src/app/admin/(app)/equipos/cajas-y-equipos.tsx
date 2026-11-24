@@ -23,6 +23,7 @@ import { useHydrated } from "@/lib/use-hydrated";
 import { JornadaCelda } from "../cajas/cajas-de-sede";
 import type { JornadaDeCaja } from "../jornadas/formato";
 import { desvincularEquipoAction, type ResultadoAccion } from "./_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 import {
   DialogoEtiqueta,
   type EquipoRenombrable,
@@ -201,6 +202,8 @@ function DialogoDesvincular({
     desvincularEquipoAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   const hecho = estado?.ok === true;
 
@@ -228,7 +231,7 @@ function DialogoDesvincular({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form ref={formulario} action={accion}>
             <input type="hidden" name="equipo" value={equipo.id} />
 
             <DialogBody className="flex flex-col gap-4">

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui";
 import { useHydrated } from "@/lib/use-hydrated";
 import type { RetoPresentado, TerminalKind } from "@/features/network/devices";
+import { useIrArribaAlCambiarDePaso } from "@/lib/foco";
 import {
   identificarRetoAction,
   vincularEquipoAction,
@@ -125,6 +126,7 @@ export function VincularFlow({
 }): React.JSX.Element {
   const hydrated = useHydrated();
   const [paso, setPaso] = React.useState<Paso>({ nombre: "identificar" });
+  useIrArribaAlCambiarDePaso(paso.nombre);
   const [codigo, setCodigo] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [enviando, setEnviando] = React.useState(false);

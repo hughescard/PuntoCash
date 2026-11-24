@@ -7,6 +7,7 @@ import { Save } from "lucide-react";
 
 import { Alert, Button, Card, CardContent, Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
 import { editarUsuarioSuperAdminAction, type ResultadoEdicionSuperAdmin } from "../../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Datos personales: nombre, apellidos y teléfono. No el identificador (con lo que
@@ -38,13 +39,15 @@ export function EditarUsuarioSuperAdminForm({
     editarUsuarioSuperAdminAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   /* Tras un rechazo manda lo tecleado; en la primera pintura, lo guardado. */
   const previo = estado && !estado.ok ? estado.valores : undefined;
   const errorDe = (nombre: Campo) => (estado && !estado.ok && estado.campo === nombre ? estado.error : undefined);
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form ref={formulario} action={accion} className="max-w-form-max">
       <input type="hidden" name="usuario" value={usuario.id} />
 
       <Card>

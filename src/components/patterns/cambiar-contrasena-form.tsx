@@ -16,6 +16,7 @@ import {
 } from "@/components/ui";
 import type { Route } from "next";
 import { LARGO_MINIMO } from "@/features/auth/password-recovery";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 export type CampoContrasena = "actual" | "nueva" | "repetida";
 
@@ -60,6 +61,8 @@ export function CambiarContrasenaForm({
     accionDelServidor,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   const [valores, setValores] = React.useState<Record<CampoContrasena, string>>({
     actual: "",
@@ -92,7 +95,7 @@ export function CambiarContrasenaForm({
   };
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form ref={formulario} action={accion} className="max-w-form-max">
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {estado && !estado.ok && !estado.campo ? (

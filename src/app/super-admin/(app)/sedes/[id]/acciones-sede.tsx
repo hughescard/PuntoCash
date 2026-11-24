@@ -20,6 +20,7 @@ import {
 } from "@/components/ui";
 import { useHydrated } from "@/lib/use-hydrated";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 import {
   asignarSedeAction,
   cerrarSedeAction,
@@ -99,6 +100,8 @@ function DialogoServicios({
   onCerrar: () => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoAccionSede, FormData>(fijarServiciosAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const [marcados, setMarcados] = React.useState<Set<string>>(() => new Set(habilitados));
   const quita = habilitados.some((h) => !marcados.has(h));
 
@@ -109,7 +112,7 @@ function DialogoServicios({
           <DialogTitle>Servicios de la sede</DialogTitle>
           <DialogDescription>Lo que la sede puede ofrecer. El cambio vale desde ahora.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="sede" value={sedeId} />
           <DialogBody className="flex flex-col gap-4">
             {estado ? (
@@ -211,6 +214,8 @@ function DialogoAsignar({
   onCerrar: () => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoAccionSede, FormData>(asignarSedeAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const [operador, setOperador] = React.useState("");
   const elegido = operadores.find((o) => o.id === operador);
 
@@ -221,7 +226,7 @@ function DialogoAsignar({
           <DialogTitle>Asignar {sedeNombre}</DialogTitle>
           <DialogDescription>Entregar la sede a un operador para que la ponga en marcha.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="sede" value={sedeId} />
           <DialogBody className="flex flex-col gap-4">
             {estado ? (
@@ -461,6 +466,8 @@ function DialogoConMotivo({
   children?: React.ReactNode;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoAccionSede, FormData>(accionDelServidor, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   return (
     <Dialog open onOpenChange={(v) => (v ? undefined : onCerrar())}>
@@ -477,7 +484,7 @@ function DialogoConMotivo({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="sede" value={sedeId} />
             <DialogBody className="flex flex-col gap-4">
               {estado ? (

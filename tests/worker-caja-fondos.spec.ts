@@ -119,3 +119,17 @@ test.describe("Cambio de billetes", () => {
     await expect(page.getByText(/Queda pendiente de que .+ lo confirme/)).toBeVisible();
   });
 });
+
+test.describe("Foco al seguir con errores", () => {
+  test.use({ fondos: { USD: 200 } });
+
+  test("sin datos, «Revisar» lleva la vista al primer campo con error", async ({ page }) => {
+    await page.goto("/worker/caja/fondos");
+    await esperarBotonVivo(page, "Revisar", "reposición o retiro");
+    await page.getByRole("main").evaluate((el) => (el.scrollTop = el.scrollHeight));
+    await page.getByRole("button", { name: "Revisar" }).click();
+    const enfocado = page.locator(":focus");
+    await expect(enfocado).toHaveAttribute("aria-invalid", "true");
+    await expect(enfocado).toBeInViewport();
+  });
+});

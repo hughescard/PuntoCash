@@ -29,6 +29,7 @@ import {
   type ResultadoCredencial,
 } from "../_actions";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Lo que la ficha permite hacer — **FR-AD-TRAB-12** a **FR-AD-TRAB-15**.
@@ -212,6 +213,8 @@ function Desactivar({
     desactivarTrabajadorAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -239,7 +242,7 @@ function Desactivar({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="trabajador" value={trabajador.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -294,6 +297,8 @@ function Reactivar({
     reactivarTrabajadorAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -318,7 +323,7 @@ function Reactivar({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="trabajador" value={trabajador.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -368,6 +373,8 @@ function Reasignar({
     reasignarTrabajadorAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   /* **La sede de partida se congela al abrir.** `trabajador.sedeName` viene del
@@ -401,7 +408,7 @@ function Reasignar({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="trabajador" value={trabajador.id} />
 
             <DialogBody className="flex flex-col gap-4">
@@ -473,6 +480,8 @@ function Credencial({
     regenerarCredencialAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -516,7 +525,7 @@ function Credencial({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)}>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
             <input type="hidden" name="trabajador" value={trabajador.id} />
 
             <DialogBody className="flex flex-col gap-4">

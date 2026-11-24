@@ -16,6 +16,7 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { editarUsuarioAction, type ResultadoEdicionUsuario } from "../../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Los datos personales de un usuario administrador — **FR-AD-USR-6**.
@@ -56,6 +57,8 @@ export function EditarUsuarioForm({
     editarUsuarioAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   /* Tras un rechazo manda lo tecleado; en la primera pintura, lo guardado.
      React reinicia los campos no controlados cuando la acción termina, y aquí
@@ -66,7 +69,7 @@ export function EditarUsuarioForm({
     estado && !estado.ok && estado.campo === nombre ? estado.error : undefined;
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form ref={formulario} action={accion} className="max-w-form-max">
       <input type="hidden" name="usuario" value={usuario.id} />
 
       <Card>

@@ -32,6 +32,7 @@ import { useCaja } from "@/features/caja/use-caja";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
 import type { ComparacionDeApertura } from "@/features/network/caja-operativa";
 import { abrirJornadaAction, declararAperturaAction } from "../../../_actions";
+import { enfocarPrimerError, useIrArribaAlCambiarDePaso } from "@/lib/foco";
 import {
   aBilletes,
   aUnidades,
@@ -110,6 +111,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
   /* Una jornada abierta antes de entrar bloquea la pantalla; la que acaba de
      abrir este flujo, no: su pantalla de éxito no puede quedar tapada. */
   const blocked = caja.jornada !== null && openedAt === null;
+  useIrArribaAlCambiarDePaso(step);
 
   function setUnidad(currency: string, k: string, value: string) {
     setUnidades((prev) => ({ ...prev, [currency]: { ...prev[currency], [k]: value } }));
@@ -127,7 +129,7 @@ export function FondeoInicialFlow(): React.JSX.Element {
     const { conteos, errores } = aBilletes(monedas, unidades);
     if (Object.keys(errores).length > 0) {
       setErrors(errores);
-      return;
+      return enfocarPrimerError(event.currentTarget as HTMLElement);
     }
     setPorDeclarar(conteos);
   }

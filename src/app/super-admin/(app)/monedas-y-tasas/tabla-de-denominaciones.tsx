@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { useHydrated } from "@/lib/use-hydrated";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { formatoDeDenominacion } from "@/features/caja/billetes";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 import {
   anadirDenominacionAction,
   reincorporarDenominacionAction,
@@ -226,6 +227,8 @@ function AnadirDenominacion({
   onHecho: (m: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoDenominacion, FormData>(anadirDenominacionAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   React.useEffect(() => {
     if (estado?.ok) onHecho(estado.mensaje);
   }, [estado, onHecho]);
@@ -238,7 +241,7 @@ function AnadirDenominacion({
           <DialogTitle>Añadir una denominación al {fila.code}</DialogTitle>
           <DialogDescription>Desde que la añadas, todas las cajas con {fila.code} la aceptan del cliente y la entregan.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="moneda" value={fila.code} />
           <input type="hidden" name="tipo" value={tipo} />
           <DialogBody className="flex flex-col gap-5">
@@ -288,6 +291,8 @@ function RetirarDenominacion({
   onHecho: (m: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoDenominacion, FormData>(retirarDenominacionAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   React.useEffect(() => {
     if (estado?.ok) onHecho(estado.mensaje);
   }, [estado, onHecho]);
@@ -339,7 +344,7 @@ function RetirarDenominacion({
           <DialogTitle>Retirar {nombreDe(d, fila.code)}</DialogTitle>
           <DialogDescription>Las cajas dejan de aceptarla del cliente y el sistema deja de proponerla para pagar.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="moneda" value={fila.code} />
           <input type="hidden" name="valor" value={String(d.valor)} />
           <DialogBody className="flex flex-col gap-4">
@@ -394,6 +399,8 @@ function ReincorporarDenominacion({
   onHecho: (m: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoDenominacion, FormData>(reincorporarDenominacionAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   React.useEffect(() => {
     if (estado?.ok) onHecho(estado.mensaje);
   }, [estado, onHecho]);
@@ -406,7 +413,7 @@ function ReincorporarDenominacion({
             Las cajas vuelven a aceptarla y el sistema vuelve a proponerla para pagar. Retirada el {d.retirada}.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="moneda" value={fila.code} />
           <input type="hidden" name="valor" value={String(d.valor)} />
           <DialogBody>

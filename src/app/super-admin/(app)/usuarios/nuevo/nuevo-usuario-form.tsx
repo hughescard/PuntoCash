@@ -7,6 +7,7 @@ import { CircleCheck, UserPlus } from "lucide-react";
 
 import { Alert, Button, Card, CardContent, Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
 import { crearUsuarioSuperAdminAction, type ResultadoAltaSuperAdmin } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Alta de un super administrador. Lo que nace con esta cuenta es toda la consola
@@ -39,6 +40,8 @@ export function NuevoUsuarioSuperAdminForm(): React.JSX.Element {
     crearUsuarioSuperAdminAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   if (estado?.ok) return <CredencialInicialSA resultado={estado} />;
 
@@ -46,7 +49,7 @@ export function NuevoUsuarioSuperAdminForm(): React.JSX.Element {
   const errorDe = (nombre: Campo) => (estado && !estado.ok && estado.campo === nombre ? estado.error : undefined);
 
   return (
-    <form action={accion} className="max-w-form-max" noValidate>
+    <form ref={formulario} action={accion} className="max-w-form-max" noValidate>
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {estado && !estado.ok && !estado.campo ? (

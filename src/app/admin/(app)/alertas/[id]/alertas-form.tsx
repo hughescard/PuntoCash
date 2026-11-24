@@ -8,6 +8,7 @@ import { Alert, Button, Card, CardContent, Field, fieldAria, Input, type FieldSp
 import { clave, formatoDeDenominacion } from "@/features/caja/billetes";
 import type { ReglaDeMoneda } from "@/features/network/alertas";
 import { guardarAlertasAction, type ResultadoDeAlertas } from "./actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 interface MonedaDelFormulario {
   code: string;
@@ -25,9 +26,11 @@ export function AlertasForm({
   monedas: readonly MonedaDelFormulario[];
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoDeAlertas, FormData>(guardarAlertasAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form ref={formulario} action={accion} className="max-w-form-max">
       <input type="hidden" name="sede" value={sede.id} />
       <div className="flex flex-col gap-6">
         <Alert variant="info" title="Cómo funcionan">

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { retirarPromocionRedAction, type ResultadoRetirarRed } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Retirar una promoción de red — **FR-SA-PROM-8**. Efecto inmediato en las
@@ -47,6 +48,8 @@ export function RetirarPromocionRed({
     description: "Al menos 10 caracteres. Queda en la auditoría con tu nombre.",
   };
   const [estado, accion, enviando] = React.useActionState<ResultadoRetirarRed, FormData>(retirarPromocionRedAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   return (
     <>
@@ -65,7 +68,7 @@ export function RetirarPromocionRed({
               Ningún administrador de sede podrá volver a ponerla. Queda en Vencidas, con la fecha en que se retiró.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="id" value={id} />
             <DialogBody className="flex flex-col gap-4">
               {estado && !estado.ok ? (
