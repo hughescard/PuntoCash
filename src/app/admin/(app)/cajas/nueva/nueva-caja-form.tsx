@@ -15,6 +15,7 @@ import {
 } from "@/components/ui";
 import { crearCajaAction, type ResultadoAccion } from "../_actions";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * El formulario de alta. El desenlace lo decide el dominio y llega por
@@ -53,11 +54,13 @@ export function NuevaCajaForm({
     crearCajaAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   const unica = sedes.length === 1 ? sedes[0] : undefined;
 
   return (
-    <form onSubmit={enviarSinReiniciar(accion)}>
+    <form ref={formulario} onSubmit={enviarSinReiniciar(accion)}>
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {estado && !estado.ok ? (

@@ -46,7 +46,18 @@ El kiosco de autoservicio y la pantalla informativa, puestos al día con Worker 
 
 ---
 
-## 4. Demostración
+## 4. Pautas de interacción
+
+Son de diseño, no requisitos funcionales: la demo las aplica en toda la aplicación (kiosco, Worker, Admin de sede y Super Admin), y la implementación debe hacer lo mismo.
+
+- **Al cambiar de paso** en un flujo, hacia adelante o hacia atrás, la vista vuelve arriba y el foco va al título de la pantalla. El aviso que acompañe al paso, como el de la tasa cambiada, queda a la vista.
+- **Al intentar seguir con errores**, la vista va al primer campo con error, centrado, y lo enfoca. Si el rechazo no es de un campo, va al aviso de error. Mientras se escribe, nada se mueve.
+- Solo las acciones del usuario mueven la vista, nunca un refresco automático. El cambio es instantáneo, sin animación.
+- En la demo están en `src/lib/foco.ts`.
+
+---
+
+## 5. Demostración
 
 - **Kiosco:** en un navegador sin vincular, abrir `/kiosk/autoservicio` y elegir un kiosco en «Demostración · usar un kiosco ya vinculado» (dos en Vedado, uno en Obispo). Para vincular uno de verdad: Admin, `marta@malecon-sf.cu` → Equipos → Vincular un equipo.
 - **Caja:** Worker, `jperez` (Vedado) o `mrivas` (Obispo). **Super Admin:** `emarrero@puntocash.com`. La contraseña y el código, los de siempre.

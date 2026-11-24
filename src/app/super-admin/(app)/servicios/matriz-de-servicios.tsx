@@ -28,6 +28,7 @@ import { useFiltrosEnUrl } from "@/lib/filtros-en-url";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { cambiarServicioAction, type ResultadoServicio } from "./_actions";
 import { sinTildes } from "@/lib/buscar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * La matriz de sedes por servicios.
@@ -291,6 +292,8 @@ function DialogoDeServicio({
   onHecho: (mensaje: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoServicio, FormData>(cambiarServicioAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const habilitar = !fila.servicios.includes(servicio.id);
   const ultimo = !habilitar && fila.activa && fila.servicios.length === 1;
   const esCambio = servicio.id === "cambio-moneda";
@@ -330,7 +333,7 @@ function DialogoDeServicio({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+          <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
             <input type="hidden" name="sede" value={fila.id} />
             <input type="hidden" name="servicio" value={servicio.id} />
             <input type="hidden" name="habilitar" value={habilitar ? "1" : "0"} />

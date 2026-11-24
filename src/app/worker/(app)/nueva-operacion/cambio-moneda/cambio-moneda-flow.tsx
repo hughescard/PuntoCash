@@ -49,6 +49,7 @@ import { clearPendingWorkerHandoff } from "@/features/kiosk/self-service-request
 import { StepRevision } from "./step-revision";
 import { liquidacionComoLineas } from "../liquidacion";
 import { OperationComplete } from "./operation-complete";
+import { useIrArribaAlCambiarDePaso } from "@/lib/foco";
 
 const CATALOG_ROUTE = "/worker/nueva-operacion";
 
@@ -149,6 +150,7 @@ function CambioMonedaOperation(): React.JSX.Element {
   const [confirmError, setConfirmError] = React.useState<string | null>(null);
   /** Moneda que hay que contar antes de registrar (salen billetes que los libros no tienen). */
   const [recontando, setRecontando] = React.useState<string | null>(null);
+  useIrArribaAlCambiarDePaso(recontando ? "recuento" : state.step);
 
   // The kiosk prefill (if any) was read into the initial state — drop it.
   React.useEffect(() => clearPendingWorkerHandoff(), []);

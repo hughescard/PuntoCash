@@ -9,6 +9,7 @@ import { KioskRequestTicket, TicketRow } from "@/components/patterns/kiosk-reque
 import { KioskAvisoDeCaja } from "@/components/patterns/kiosk-aviso-de-caja";
 import { KioskCancelDialog } from "@/components/patterns/kiosk-cancel-dialog";
 import { formatMoney } from "@/lib/format";
+import { useIrArribaAlCambiarDePaso } from "@/lib/foco";
 import { transferProvider, type TransferPayoutSnapshot } from "@/features/transfers/transfer-provider";
 import type { KioskRequest } from "@/features/kiosk/self-service-request";
 import { registrarSolicitud } from "../../_actions";
@@ -40,6 +41,7 @@ export function CobrarGiroAutoservicioFlow(): React.JSX.Element {
   const [transfer, setTransfer] = React.useState<TransferPayoutSnapshot | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [request, setRequest] = React.useState<KioskRequest | null>(null);
+  useIrArribaAlCambiarDePaso(step);
 
   /* **FR-AS-IMP-3**: «Cancelar» de cada flujo pide confirmación cuando hay
      datos significativos introducidos. Aquí lo significativo es un código

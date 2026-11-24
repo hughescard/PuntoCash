@@ -19,6 +19,7 @@ import {
 } from "@/components/ui";
 import { useHydrated } from "@/lib/use-hydrated";
 import { resolverSolicitudAction, type ResultadoResolver } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 const MOTIVO: FieldSpec = { id: "resolver-motivo", label: "Tu motivo", required: true };
 
@@ -44,6 +45,8 @@ export function Resolver({
   const hydrated = useHydrated();
   const [decision, setDecision] = React.useState<"aprobada" | "rechazada" | null>(null);
   const [estado, accion, enviando] = React.useActionState<ResultadoResolver, FormData>(accionDelServidor, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const [motivo, setMotivo] = React.useState("");
   const corto = motivo.trim().length < motivoMin;
   const error = estado && !estado.ok ? estado.error : undefined;
@@ -77,7 +80,7 @@ export function Resolver({
                 : `Dejas constancia de que ${quien} no asume esta diferencia, y queda marcada para revisarla fuera del sistema.`}
             </DialogDescription>
           </DialogHeader>
-          <form action={accion}>
+          <form ref={formulario} action={accion}>
             <input type="hidden" name="id" value={id} />
             <input type="hidden" name="decision" value={decision ?? "aprobada"} />
             <DialogBody className="flex flex-col gap-4">

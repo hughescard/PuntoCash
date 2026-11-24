@@ -27,6 +27,7 @@ import type { Billetes } from "@/features/caja/billetes";
 import { useCaja } from "@/features/caja/use-caja";
 import { useVistaDeCaja } from "@/features/worker/caja-context";
 import { cerrarConArqueoAction, explicarCierreAction, type CierreRegistrado } from "../../../_actions";
+import { enfocarPrimerError, useIrArribaAlCambiarDePaso } from "@/lib/foco";
 import {
   aBilletes,
   ConteoPorBilletes,
@@ -99,6 +100,7 @@ export function ArqueoCierreFlow(): React.JSX.Element {
   /* Sin jornada abierta no hay nada que arquear, salvo que la haya cerrado
      este mismo flujo: su resultado no puede quedar tapado por su efecto. */
   const blocked = !caja.jornadaAbierta && result === null && cerrada === null;
+  useIrArribaAlCambiarDePaso(result ? "hecho" : "conteo");
 
   function setCounted(currency: string, k: string, value: string) {
     setUnidades((prev) => ({ ...prev, [currency]: { ...prev[currency], [k]: value } }));
@@ -115,7 +117,7 @@ export function ArqueoCierreFlow(): React.JSX.Element {
     event.preventDefault();
     const { conteos, errores } = aBilletes(MONEDAS, unidades);
     setErrors(errores);
-    if (Object.keys(errores).length > 0) return;
+    if (Object.keys(errores).length > 0) return enfocarPrimerError(event.currentTarget as HTMLElement);
     setPorDeclarar(conteos);
   }
 

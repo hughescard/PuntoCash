@@ -16,6 +16,7 @@ import { registrarFondosAction, type MovimientoRegistrado } from "../../../_acti
 import { aBilletes, ConteoPorBilletes, type Unidades } from "../conteo-por-billetes";
 import { RecuentoDeMoneda } from "../recuento-de-moneda";
 import { CAJA_ROUTE, ElegirMoneda, ElegirSupervisor, ElegirUno, errorDe, Linea, Observaciones, Registrado } from "./partes";
+import { enfocarPrimerError, useIrArribaAlCambiarDePaso } from "@/lib/foco";
 
 type Tipo = "reposicion" | "retiro";
 
@@ -64,12 +65,13 @@ export function FondosFlow(): React.JSX.Element {
   const supervisor = vista.supervisores.find((s) => s.id === supervisorId)?.nombre ?? "";
   const retiro = tipo === "retiro";
   const bloqueada = (!caja.jornadaAbierta || vista.bloqueo !== null) && registrado === null;
+  useIrArribaAlCambiarDePaso(registrado ? "hecho" : recontando ? "recuento" : revisar ? "revisar" : "datos");
 
   function continuar(event: React.FormEvent) {
     event.preventDefault();
     setEnviado(true);
     setError(undefined);
-    if (Object.values(errores).some(Boolean) || Object.keys(erroresConteo).length > 0) return;
+    if (Object.values(errores).some(Boolean) || Object.keys(erroresConteo).length > 0) return enfocarPrimerError(event.currentTarget as HTMLElement);
     setRevisar(billetes);
   }
 

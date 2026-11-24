@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui";
 import { retirarPromocionAction, type ResultadoRetirar } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Retirar — **FR-AD-PROM-9**. Efecto inmediato en las pantallas, y no borra:
@@ -37,6 +38,8 @@ export function RetirarPromocion({
     retirarPromocionAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   return (
     <>
@@ -55,7 +58,7 @@ export function RetirarPromocion({
               Queda en Vencidas, con la fecha en que se retiró.
             </DialogDescription>
           </DialogHeader>
-          <form action={accion}>
+          <form ref={formulario} action={accion}>
             <input type="hidden" name="id" value={id} />
             {estado && !estado.ok ? (
               <DialogBody>

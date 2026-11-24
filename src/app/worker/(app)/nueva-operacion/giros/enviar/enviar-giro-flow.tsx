@@ -74,6 +74,7 @@ import { confirmGiro } from "./confirm-giro";
 import type { EfectivoRegistrado } from "@/features/network/caja-operativa";
 import { RecuentoDeMoneda } from "../../../caja/recuento-de-moneda";
 import { EfectivoDeOperacion } from "../../efectivo-de-operacion";
+import { enfocarPrimerError, useIrArribaAlCambiarDePaso } from "@/lib/foco";
 
 const CATALOG_ROUTE = "/worker/nueva-operacion";
 
@@ -187,6 +188,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
    * eso diría que no hay jornada para siempre.
    */
   const blocked = (!caja.jornadaAbierta || vista.bloqueo !== null) && completed === null;
+  useIrArribaAlCambiarDePaso(recontando ? "recuento" : step);
 
   /* Solo las monedas con tarifa de giros: en las demás no se envían giros. */
   const paraCotizar: ParaCotizar = { tarifas: vista.tarifasDeGiro, denominaciones: vista.denominaciones };
@@ -242,7 +244,7 @@ export function EnviarGiroFlow(): React.JSX.Element {
     event.preventDefault();
     const result = validateGiroForm(values, enabledCurrencies, paraCotizar);
     setErrors(result.errors);
-    if (!result.draft) return;
+    if (!result.draft) return enfocarPrimerError(event.currentTarget as HTMLElement);
     setDraft(result.draft);
     setStep("revisar");
   }

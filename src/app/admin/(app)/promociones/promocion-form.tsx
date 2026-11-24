@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { enPantallaALaVez } from "@/features/network/promotion-coincidence";
 import { CampoImagen } from "./campo-imagen";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 import {
   crearPromocionAction,
   editarPromocionAction,
@@ -81,6 +82,8 @@ export function PromocionForm({
     editando ? editarPromocionAction : crearPromocionAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   /* Controlado entero: la vista previa, los contadores y las coincidencias
      dependen de lo que se teclea, y tras un rechazo nada debe vaciarse. */
@@ -115,7 +118,7 @@ export function PromocionForm({
   const demasiadas = coincidencias.filter((c) => c.n + 1 > maxEnRotacion);
 
   return (
-    <form onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max">
+    <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max">
       {datos.id ? <input type="hidden" name="id" value={datos.id} /> : null}
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">

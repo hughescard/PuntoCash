@@ -17,6 +17,7 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { renombrarEquipoAction, type ResultadoAccion } from "./_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Cambiar el rótulo de un equipo — **FR-AD-EQ-30**.
@@ -53,6 +54,8 @@ export function DialogoEtiqueta({
     renombrarEquipoAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const [etiqueta, setEtiqueta] = React.useState(equipo.label);
   const hecho = estado?.ok === true;
   const vacia = etiqueta.trim().length === 0;
@@ -80,7 +83,7 @@ export function DialogoEtiqueta({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form ref={formulario} action={accion}>
             <input type="hidden" name="equipo" value={equipo.id} />
 
             <DialogBody className="flex flex-col gap-4">

@@ -23,6 +23,7 @@ import {
 import { DOCUMENT_TYPES, type DocumentType } from "@/features/customers/customers";
 import { simulateIdentityCardScan } from "@/features/customers/document-scan";
 import type { KioskClientInput } from "@/features/kiosk/self-service-request";
+import { enfocarPrimerError } from "@/lib/foco";
 
 /**
  * Self-entry contact form shared by every kiosk flow that needs to know who
@@ -135,6 +136,7 @@ export function KioskClientForm({
     }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length === 0) onContinue();
+    else enfocarPrimerError(event.currentTarget);
   }
 
   return (

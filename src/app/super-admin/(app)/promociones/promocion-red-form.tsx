@@ -11,6 +11,7 @@ import { composicionDe, enPantallaALaVez } from "@/features/network/promotion-co
 import { CampoImagen } from "@/app/admin/(app)/promociones/campo-imagen";
 import { VistaPrevia } from "@/app/admin/(app)/promociones/promocion-form";
 import { SELECT } from "../equipos/controles";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 import {
   crearPromocionRedAction,
   editarPromocionRedAction,
@@ -97,6 +98,8 @@ export function PromocionRedForm({
     editando ? editarPromocionRedAction : crearPromocionRedAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   /* Controlado entero: la vista previa, los contadores y las coincidencias
      dependen de lo que se teclea, y tras un rechazo nada debe vaciarse. */
@@ -137,7 +140,7 @@ export function PromocionRedForm({
   );
 
   return (
-    <form onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max">
+    <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max">
       {datos.id ? <input type="hidden" name="id" value={datos.id} /> : null}
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">

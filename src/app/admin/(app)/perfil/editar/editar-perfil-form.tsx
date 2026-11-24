@@ -15,6 +15,7 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { editarPerfilAction, type ResultadoEdicionPerfil } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Nombre, apellidos y teléfono propios — **FR-AD-PERF-3**.
@@ -46,6 +47,8 @@ export function EditarPerfilForm({
     editarPerfilAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   /* Tras un rechazo manda lo tecleado: React vacía los campos no controlados
      al terminar la acción, y sin esto un campo vacío borraría los otros tres. */
@@ -54,7 +57,7 @@ export function EditarPerfilForm({
     estado && !estado.ok && estado.campo === nombre ? estado.error : undefined;
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form ref={formulario} action={accion} className="max-w-form-max">
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {estado && !estado.ok && !estado.campo ? (

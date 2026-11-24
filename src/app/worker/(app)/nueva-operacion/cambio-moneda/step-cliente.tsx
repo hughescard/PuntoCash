@@ -46,6 +46,7 @@ import {
 } from "@/features/customers/customers";
 import { SCAN_SCENARIOS, simulateDocumentScan } from "@/features/customers/document-scan";
 import { birthDateFromCubanId, type KioskClientInput } from "@/features/kiosk/self-service-request";
+import { enfocarPrimerError } from "@/lib/foco";
 
 type SearchMode = "manual" | "qr";
 type LookupState =
@@ -541,7 +542,7 @@ function RegisterCustomer({
       if (!values[key].trim()) nextErrors[key] = "Este dato es obligatorio.";
     }
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) return enfocarPrimerError(event.currentTarget);
 
     const input: NewCustomerInput = {
       documentType: values.documentType as DocumentType,

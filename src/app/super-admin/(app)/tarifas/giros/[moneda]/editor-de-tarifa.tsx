@@ -11,6 +11,7 @@ import { redondeoQuePesa, validarTarifaDeGiro, type TramoDeTarifa, type TarifaWr
 import { guardarTarifaDeGiroAction, type ResultadoTarifa } from "../../_actions";
 import { mensajeDeTarifa } from "../../mensajes";
 import { importe, textoDelTramo } from "../../formato";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * El giro mínimo y la tabla de tramos de una moneda.
@@ -61,6 +62,8 @@ export function EditorDeTarifa({
   inicial: { minimo: number; tramos: readonly TramoDeTarifa[] } | null;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoTarifa, FormData>(guardarTarifaDeGiroAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const [minimo, setMinimo] = React.useState(inicial ? texto(inicial.minimo) : "");
   const [tramos, setTramos] = React.useState<TramoEscrito[]>(() =>
     inicial ? inicial.tramos.map((t) => nuevoTramo(t)) : [nuevoTramo()],
@@ -134,7 +137,7 @@ export function EditorDeTarifa({
   const enviar = enviarSinReiniciar(accion);
 
   return (
-    <form
+    <form ref={formulario}
       noValidate
       onSubmit={(e) => {
         if (error || faltaMotivo) {

@@ -11,6 +11,7 @@ import { PROVINCIAS_DE_CUBA } from "@/features/geography/provincias-de-cuba";
 import type { HorarioSemanal } from "@/features/network/horario";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { editarSedeAction, type CampoDeAlta, type ResultadoEdicionSede } from "../../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 const campo = (id: string, label: string, extra: Partial<FieldSpec> = {}): FieldSpec => ({
   id: `editar-sede-${id}`,
@@ -48,11 +49,13 @@ export function EditarSedeForm({
   operador: string | null;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoEdicionSede, FormData>(editarSedeAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const enviar = enviarSinReiniciar(accion);
   const errorDe = (c: CampoDeAlta) => (estado && estado.campo === c ? estado.error : undefined);
 
   return (
-    <form onSubmit={enviar} className="max-w-form-max" noValidate>
+    <form ref={formulario} onSubmit={enviar} className="max-w-form-max" noValidate>
       <input type="hidden" name="sede" value={sede.id} />
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">

@@ -25,6 +25,7 @@ import { CurrencyFlag } from "@/components/patterns/currency-flag";
 import { ResponsiveTable, type AccionesDeFila, type ResponsiveColumn } from "@/components/patterns/responsive-table";
 import { formatAmount } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 import {
   confirmarTasaAjustadaAction,
   fijarTasaAction,
@@ -331,6 +332,8 @@ function AvisoDeAjuste({
     },
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const ajustes = ajustesDe(fila);
   const valorActual =
     ajustes.length === 1 ? cifra(ajustes[0]!.ahora) : `${cifra(fila.compra)} / ${cifra(fila.venta)}`;
@@ -352,7 +355,7 @@ function AvisoDeAjuste({
         Confírmala o elige otra.
       </p>
       {estado && !estado.ok ? <p className="mt-2 font-semibold">{estado.error}</p> : null}
-      <form action={accion} className="pc-botonera mt-3">
+      <form ref={formulario} action={accion} className="pc-botonera mt-3">
         <input type="hidden" name="sede" value={sede.id} />
         <input type="hidden" name="moneda" value={fila.code} />
         <Button type="submit" size="sm" loading={enviando} disabled={!hydrated}>
@@ -403,6 +406,8 @@ function DialogoFijar({
     fijarTasaAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const [compra, setCompra] = React.useState(actual ? String(actual.compra) : "");
   const [venta, setVenta] = React.useState(actual ? String(actual.venta) : "");
   const [revisando, setRevisando] = React.useState(false);
@@ -459,7 +464,7 @@ function DialogoFijar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form ref={formulario} action={accion}>
             <input type="hidden" name="sede" value={sede.id} />
             <input type="hidden" name="moneda" value={code} />
             <input type="hidden" name="version" value={rango.version} />
@@ -587,6 +592,8 @@ function DialogoRetirar({
     retirarTasaAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const hecho = estado?.ok === true;
 
   return (
@@ -615,7 +622,7 @@ function DialogoRetirar({
             </DialogFooter>
           </>
         ) : (
-          <form action={accion}>
+          <form ref={formulario} action={accion}>
             <input type="hidden" name="sede" value={sede.id} />
             <input type="hidden" name="moneda" value={fila.code} />
             {estado && !estado.ok ? (

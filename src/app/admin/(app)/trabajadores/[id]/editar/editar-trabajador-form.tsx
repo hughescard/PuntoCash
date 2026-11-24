@@ -22,6 +22,7 @@ import {
   type ResultadoEdicion,
 } from "../../_actions";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Los datos personales de un trabajador — **FR-AD-TRAB-9**.
@@ -80,6 +81,8 @@ export function EditarTrabajadorForm({
     editarTrabajadorAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   /* Tras un rechazo manda lo tecleado; en la primera pintura, lo guardado. */
   const previo = estado && !estado.ok ? estado.valores : undefined;
@@ -87,7 +90,7 @@ export function EditarTrabajadorForm({
     estado && !estado.ok && estado.campo === campo ? estado.error : undefined;
 
   return (
-    <form onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max">
+    <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} className="max-w-form-max">
       <input type="hidden" name="trabajador" value={trabajador.id} />
 
       <Card>

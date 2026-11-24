@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, CircleCheck } from "lucide-react";
 
 import { Button } from "@/components/ui";
+import { useIrArribaAlCambiarDePaso } from "@/lib/foco";
 import { Stepper } from "@/components/patterns/stepper";
 import { KioskCancelDialog } from "@/components/patterns/kiosk-cancel-dialog";
 import { KioskClientForm } from "@/components/patterns/kiosk-client-form";
@@ -36,6 +37,7 @@ export function EnviarGiroAutoservicioFlow({ giros }: { giros: GiroDeSede }): Re
     senderCurrency: monedaInicial(giros),
   }));
   const [cancelOpen, setCancelOpen] = React.useState(false);
+  useIrArribaAlCambiarDePaso(state.step);
 
   const parsedAmount = parseAmountInput(state.amountInput);
 

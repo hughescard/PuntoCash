@@ -28,6 +28,7 @@ import { ResponsiveTable, type ResponsiveColumn } from "@/components/patterns/re
 import { cifraDeTablero } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 import {
   anadirMonedaAlCatalogoAction,
   definirRangoAction,
@@ -251,6 +252,8 @@ function EditorDeRango({
   onHecho: (mensaje: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(definirRangoAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   /* Cambiar un rango ya definido se explica; definir el primero, no. */
   const MOTIVO_DEL_CAMBIO: FieldSpec = {
     id: "rango-cambio-motivo",
@@ -310,7 +313,7 @@ function EditorDeRango({
             En pesos cubanos por cada unidad de {fila.nombre.toLowerCase()}. Cada sede fija su tasa dentro de este rango.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="moneda" value={fila.code} />
           <DialogBody className="flex flex-col gap-5">
             {estado && !estado.ok ? (
@@ -421,6 +424,8 @@ function RetirarRango({
   onHecho: (mensaje: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(retirarRangoAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   React.useEffect(() => {
     if (estado?.ok) onHecho(estado.mensaje);
   }, [estado, onHecho]);
@@ -439,7 +444,7 @@ function RetirarRango({
           <DialogTitle>Retirar el rango del {fila.code}</DialogTitle>
           <DialogDescription>Ninguna sede podrá cotizar {fila.nombre.toLowerCase()} hasta que se defina de nuevo.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="moneda" value={fila.code} />
           <DialogBody className="flex flex-col gap-4">
             {estado && !estado.ok ? (
@@ -540,6 +545,8 @@ function AnadirMonedaAlCatalogo({
   onHecho: (m: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(anadirMonedaAlCatalogoAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   React.useEffect(() => {
     if (estado?.ok) onHecho(estado.mensaje);
   }, [estado, onHecho]);
@@ -556,7 +563,7 @@ function AnadirMonedaAlCatalogo({
             Queda a disposición de toda la red. No se activa en ninguna sede: cada mercante la añade a las suyas.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <DialogBody className="flex flex-col gap-5">
             {estado && !estado.ok ? (
               <Alert variant="error" title="No se pudo añadir">
@@ -625,6 +632,8 @@ function RetirarMonedaDelCatalogo({
   onHecho: (m: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(retirarMonedaDelCatalogoAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   React.useEffect(() => {
     if (estado?.ok) onHecho(estado.mensaje);
   }, [estado, onHecho]);
@@ -645,7 +654,7 @@ function RetirarMonedaDelCatalogo({
             Ningún mercante podrá añadir {fila.nombre.toLowerCase()} a una sede. Solo cambia lo que viene.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="moneda" value={fila.code} />
           <DialogBody className="flex flex-col gap-4">
             {estado && !estado.ok ? (
@@ -697,6 +706,8 @@ function ReincorporarMoneda({
   onHecho: (m: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoRango, FormData>(reincorporarMonedaAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   React.useEffect(() => {
     if (estado?.ok) onHecho(estado.mensaje);
   }, [estado, onHecho]);
@@ -709,7 +720,7 @@ function ReincorporarMoneda({
             Los mercantes podrán volver a añadir {fila.nombre.toLowerCase()} a sus sedes. Retirada el {fila.retirada}.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="moneda" value={fila.code} />
           <DialogBody>
             {estado && !estado.ok ? (

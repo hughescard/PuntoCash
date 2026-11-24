@@ -34,6 +34,7 @@ import { useHydrated } from "@/lib/use-hydrated";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { retirarTarifaDeGiroAction, type ResultadoTarifa } from "../_actions";
 import { importe, porcentaje, textoDelTramo } from "../formato";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 export interface TramoMostrado extends TramoDeTarifa {
   desde: number;
@@ -269,6 +270,8 @@ function RetirarTarifa({
   onHecho: (m: string) => void;
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoTarifa, FormData>(retirarTarifaDeGiroAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   React.useEffect(() => {
     if (estado?.ok) onHecho(estado.mensaje);
   }, [estado, onHecho]);
@@ -282,7 +285,7 @@ function RetirarTarifa({
             Desde ese momento ninguna sede podrá enviar giros en {moneda.nombre.toLowerCase()} hasta que se defina de nuevo.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={enviarSinReiniciar(accion)} noValidate>
+        <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} noValidate>
           <input type="hidden" name="moneda" value={moneda.code} />
           <DialogBody className="flex flex-col gap-4">
             {estado && !estado.ok ? (

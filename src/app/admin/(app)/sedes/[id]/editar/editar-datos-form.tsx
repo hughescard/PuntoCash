@@ -17,6 +17,7 @@ import {
 import { HorarioEditor } from "@/components/patterns/horario-editor";
 import type { HorarioSemanal } from "@/features/network/horario";
 import { editarDatosDeSedeAction, type ResultadoDatosDeSede } from "../../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Dirección, teléfono y horario de una sede — **FR-AD-SEDE-14**.
@@ -46,6 +47,8 @@ export function EditarDatosForm({
     editarDatosDeSedeAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   const previo = estado && !estado.ok ? estado.valores : undefined;
   const errorDe = (campo: "direccion" | "municipio" | "telefono") =>
@@ -54,7 +57,7 @@ export function EditarDatosForm({
   const diaConError = estado && !estado.ok ? estado.dia : undefined;
 
   return (
-    <form action={accion} className="max-w-form-max">
+    <form ref={formulario} action={accion} className="max-w-form-max">
       <input type="hidden" name="sede" value={sede.id} />
       <Card>
         <CardContent className="flex flex-col gap-8 pt-6">

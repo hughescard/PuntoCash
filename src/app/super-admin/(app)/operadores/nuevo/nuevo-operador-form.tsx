@@ -8,6 +8,7 @@ import { Building2, CircleCheck } from "lucide-react";
 import { Alert, Button, Card, CardContent, Field, fieldAria, Input, type FieldSpec } from "@/components/ui";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { crearOperadorAction, type CampoAltaOperador, type ResultadoAltaOperador } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 const campo = (id: string, label: string, extra: Partial<FieldSpec> = {}): FieldSpec => ({
   id: `operador-${id}`,
@@ -39,6 +40,8 @@ const SELECT =
 
 export function NuevoOperadorForm(): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoAltaOperador, FormData>(crearOperadorAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   if (estado?.ok) return <OperadorCreado resultado={estado} />;
 
   const errorDe = (c: CampoAltaOperador) => (estado && !estado.ok && estado.campo === c ? estado.error : undefined);
@@ -52,7 +55,7 @@ export function NuevoOperadorForm(): React.JSX.Element {
   };
 
   return (
-    <form onSubmit={enviarSinReiniciar(accion)} className="flex max-w-form-max flex-col gap-6" noValidate>
+    <form ref={formulario} onSubmit={enviarSinReiniciar(accion)} className="flex max-w-form-max flex-col gap-6" noValidate>
       {estado && !estado.ok && !estado.campo ? (
         <Alert variant="error" title="No se pudo dar de alta">
           {estado.error}

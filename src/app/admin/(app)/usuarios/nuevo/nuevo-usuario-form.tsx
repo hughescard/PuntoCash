@@ -16,6 +16,7 @@ import {
   type FieldSpec,
 } from "@/components/ui";
 import { crearUsuarioAction, type ResultadoAltaUsuario } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * Alta de un usuario administrador — **FR-AD-USR-2** a **FR-AD-USR-5**.
@@ -57,6 +58,8 @@ export function NuevoUsuarioForm(): React.JSX.Element {
     crearUsuarioAction,
     null,
   );
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
 
   if (estado?.ok) return <CredencialInicial resultado={estado} />;
 
@@ -65,7 +68,7 @@ export function NuevoUsuarioForm(): React.JSX.Element {
     estado && !estado.ok && estado.campo === nombre ? estado.error : undefined;
 
   return (
-    <form action={accion} className="max-w-form-max" noValidate>
+    <form ref={formulario} action={accion} className="max-w-form-max" noValidate>
       <Card>
         <CardContent className="flex flex-col gap-6 pt-6">
           {estado && !estado.ok && !estado.campo ? (

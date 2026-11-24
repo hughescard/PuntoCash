@@ -11,6 +11,7 @@ import { PROVINCIAS_DE_CUBA } from "@/features/geography/provincias-de-cuba";
 import { horarioDe, LUNES_A_SABADO } from "@/features/network/horario";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { crearSedeAction, type CampoDeAlta, type ResultadoAltaSede } from "../_actions";
+import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
 /**
  * El formulario de alta de una sede, en tres secciones.
@@ -56,6 +57,8 @@ export function NuevaSedeForm({
   operadores: readonly { id: string; nombre: string }[];
 }): React.JSX.Element {
   const [estado, accion, enviando] = React.useActionState<ResultadoAltaSede, FormData>(crearSedeAction, null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  useEnfocarErrorAlResponder(estado, formulario);
   const previo = estado && !estado.ok ? estado.valores : undefined;
   const [operador, setOperador] = React.useState(previo?.operador ?? "");
 
@@ -71,7 +74,7 @@ export function NuevaSedeForm({
   const marcados = previo ? new Set(previo.servicios) : new Set(servicios.map((s) => s.id));
 
   return (
-    <form onSubmit={enviar} className="flex max-w-form-max flex-col gap-6" noValidate>
+    <form ref={formulario} onSubmit={enviar} className="flex max-w-form-max flex-col gap-6" noValidate>
       {estado && !estado.ok && !estado.campo ? (
         <Alert variant="error" title="No se pudo crear la sede">
           {estado.error}

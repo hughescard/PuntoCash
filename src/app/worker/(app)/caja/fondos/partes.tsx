@@ -80,6 +80,7 @@ export function ElegirUno<T extends string>({
               name={nombre}
               value={o.valor}
               checked={valor === o.valor}
+              aria-invalid={error && valor === null ? true : undefined}
               onChange={() => onChange(o.valor)}
               className="mt-1 size-4 accent-primary"
             />
