@@ -42,6 +42,7 @@ const MENSAJE_DE_BILLETES: Readonly<Record<string, string>> = {
   "propuesta-vencida": "Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Revísalos.",
   "sin-esos-billetes": "Contada la caja, esos billetes no están. No se registró nada: vuelve a marcar con qué billetes se entrega.",
   "falta-foto-del-carne": "Faltan las fotos del carné del beneficiario. No se registró nada: haz las dos fotos con el móvil.",
+  "falta-firma": "Falta la firma del beneficiario de lo que recibe. No se registró nada: pásale el móvil para que firme.",
 };
 
 
@@ -122,7 +123,7 @@ export async function confirmGiroPayout(params: {
     return {
       ok: false,
       message: mensaje ?? "No se pudo comprobar la entrega. Vuelve a los billetes y revísalos.",
-      revisarBilletes: previa.reason !== "cierre-forzado" && previa.reason !== "falta-foto-del-carne",
+      revisarBilletes: previa.reason !== "cierre-forzado" && previa.reason !== "falta-foto-del-carne" && previa.reason !== "falta-firma",
     };
   }
 

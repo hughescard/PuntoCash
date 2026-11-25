@@ -62,7 +62,7 @@ import {
 } from "@/features/worker/sesion";
 import { getContextoDeTrabajo } from "@/features/worker/sesion-servidor";
 import { registroDeWorker } from "@/features/worker/vista";
-import { capturaLista, consumirCaptura, requiereFotoDelCarne } from "@/features/network/fotos-del-carne";
+import { consumirCaptura, loQueRecibe, queFaltaEnLaCaptura, requiereFotoDelCarne, type FaltaEnLaEntrega } from "@/features/network/fotos-del-carne";
 import {
   canjearSolicitudDeKiosco,
   consultarSolicitudDeKiosco,
@@ -217,8 +217,11 @@ export type AccionDeCaja<T> =
   | { ok: true; value: T }
   | {
       ok: false;
-      /** `falta-foto-del-carne`: una remesa o un giro cobrado sin las dos fotos del carné del beneficiario. */
-      reason: CajaDenial | "sin-sesion" | "falta-foto-del-carne";
+      /**
+       * `falta-foto-del-carne`: una remesa o un giro cobrado sin las dos fotos del carné del beneficiario.
+       * `falta-firma`: con las fotos, pero sin la firma del beneficiario de lo que se le entrega.
+       */
+      reason: CajaDenial | "sin-sesion" | FaltaEnLaEntrega;
       currency?: string;
       cotizacion?: Cotizacion;
     };
@@ -357,15 +360,17 @@ export async function registrarCambioAction(input: {
 
 /**
  * `fotoDelCarne` es la captura abierta en la confirmación: una remesa o un
- * giro cobrado no se registran sin las dos fotos del carné de quien cobra.
- * Al registrar, las fotos pasan a la operación y la captura queda usada.
+ * giro cobrado no se registran sin las dos fotos del carné de quien cobra ni
+ * sin su firma de lo que recibe. Al registrar, las fotos y la firma pasan a la
+ * operación y la captura queda usada.
  */
 export async function registrarOperacionAction(
   op: OperacionPorRegistrar,
   fotoDelCarne?: string,
 ): Promise<AccionDeCaja<OperationRecord>> {
   return conCaja((ctx) => {
-    if (faltaFotoDelCarne(ctx, op, fotoDelCarne)) return { ok: false, reason: "falta-foto-del-carne" };
+    const falta = queFaltaEnLaEntrega(ctx, op, fotoDelCarne);
+    if (falta) return { ok: false, reason: falta };
     const r = registrarOperacionSimple(ctx, op);
     if (!r.ok) return r;
     if (fotoDelCarne && requiereFotoDelCarne(op)) consumirCaptura(fotoDelCarne, ctx.worker.id, r.value.codigo);
@@ -373,8 +378,13 @@ export async function registrarOperacionAction(
   });
 }
 
-function faltaFotoDelCarne(ctx: ContextoDeCaja, op: OperacionPorRegistrar, fotoDelCarne: string | undefined): boolean {
-  return requiereFotoDelCarne(op) && !capturaLista(fotoDelCarne, ctx.worker.id, { documento: op.cliente.documentNumber });
+/** La frase de la firma la calcula el servidor con lo que se va a registrar, no la toma de la pantalla. */
+function queFaltaEnLaEntrega(ctx: ContextoDeCaja, op: OperacionPorRegistrar, fotoDelCarne: string | undefined): FaltaEnLaEntrega | null {
+  if (!requiereFotoDelCarne(op)) return null;
+  return queFaltaEnLaCaptura(fotoDelCarne, ctx.worker.id, {
+    documento: op.cliente.documentNumber,
+    recibe: loQueRecibe(op.tramo.currency, Math.abs(op.tramo.delta), op.efectivo),
+  });
 }
 
 /* -- Propuestas de billetes (bloque 4): no registran nada ------------------ */
@@ -413,8 +423,9 @@ export async function proponerPagoAction(input: { currency: string; importe: num
 export async function comprobarOperacionAction(op: OperacionPorRegistrar, fotoDelCarne?: string): Promise<AccionDeCaja<null>> {
   const ctx = await getContextoDeTrabajo();
   if (!ctx) return { ok: false, reason: "sin-sesion" };
-  /* Antes de dar nada por hecho en el proveedor: sin las fotos, la entrega no sigue. */
-  if (faltaFotoDelCarne(ctx, op, fotoDelCarne)) return { ok: false, reason: "falta-foto-del-carne" };
+  /* Antes de dar nada por hecho en el proveedor: sin las fotos y la firma, la entrega no sigue. */
+  const falta = queFaltaEnLaEntrega(ctx, op, fotoDelCarne);
+  if (falta) return { ok: false, reason: falta };
   return comprobarOperacionSimple(ctx, op);
 }
 

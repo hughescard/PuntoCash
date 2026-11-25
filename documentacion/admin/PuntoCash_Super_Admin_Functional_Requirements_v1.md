@@ -1,5 +1,5 @@
 # PuntoCash — Super administración
-## Documento de Requisitos Funcionales (FRD) · v7.1
+## Documento de Requisitos Funcionales (FRD) · v7.2
 
 **Alcance:** la consola de PuntoCash sobre su red, `/super-admin`. No cubre la consola del mercante (`/admin`).
 
@@ -31,6 +31,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 7.2 | 25/11/2026 | **Firma de quien cobra.** En una remesa entregada o un giro pagado, el detalle de la operación muestra también la firma del beneficiario con la frase que firmó, como en Admin (**FR-SA-OPS-2**; FRD de Admin **FR-AD-OPS-11**) |
 | 7.1 | 24/11/2026 | **Quién resuelve una diferencia sin dueño.** PuntoCash resuelve una diferencia pendiente solo cuando **nadie del operador que la originó** puede resolverla: la sede no tenía operador al abrirse la jornada, la sede ya no es de ese operador, o el operador sigue con ella pero está suspendido o dado de baja, o no le queda ningún administrador activo en la sede. Antes solo se contemplaba el traspaso de la sede. Con el administrador principal desactivado y otros activos, la resuelven ellos. El detalle dice cuál de los tres casos es (**FR-SA-APR-1**, **APR-3**, **APR-4**) |
 | 7.0 | 19/11/2026 | **Tarifas de servicios.** Sección nueva **Tarifas** en el bloque Oferta (§10, **FR-SA-TAR-1 a TAR-12**, nuevos): qué servicio lleva tarifa, y la **tarifa de giros** de cada moneda —giro mínimo y tramos con fijo y porcentaje—, que PuntoCash define, cambia con motivo y retira con motivo; sin tarifa no se envían giros en esa moneda. Lo cobrado se redondea al alza a la denominación más pequeña que circula. No se retira una denominación que la tarifa necesita (**FR-SA-DEN-10**, nuevo; código `la-usa-una-tarifa`). Auditoría: `tarifa-giro.definida`, `.cambiada` y `.retirada`, área «Tarifas» (**FR-SA-AUD-2**). El detalle de una operación se lee como una **cuenta**: lo que se debía, lo que cambió de manos y el total, y debajo lo que entró o salió de la caja (**FR-SA-OPS-2**). En Reportes, la tarifa de un giro enviado no es volumen (**FR-SA-REP-3**). Navegación y rutas (**FR-SA-SHELL-2**, **FR-SA-NAV-1**); qué puede cada rol (Apéndice A); mensajes (Apéndice C). **Las secciones 10 a 17 pasan a ser 11 a 18** |
 | 6.1 | 16/11/2026 | **Foto del carné de quien cobra.** El detalle de una remesa entregada o de un giro pagado muestra las dos fotos del carné del beneficiario, como en Admin (**FR-SA-OPS-2**; FRD de Admin **FR-AD-OPS-11**; FRD de Worker §6.8). Además, el detalle de una operación enseña de verdad la liquidación y los billetes, que el requisito ya pedía y la pantalla no mostraba, y la ficha del trabajador avisa de que su usuario y su teléfono los puede cambiar él (**FR-SA-TRAB-3**) |
@@ -1119,7 +1120,7 @@ Filtros: búsqueda (código, cliente o documento), desde y hasta (por defecto, l
 
 ### 13.2 Detalle — `/super-admin/operaciones/[codigo]`
 
-**FR-SA-OPS-2 · Contexto.** Sede, **operador responsable** —el de ese día, y si hoy la administra otro, quién—, caja y equipo, trabajador, jornada y origen (mostrador o solicitud de kiosco). Debajo, el detalle de Worker según el servicio (**FR-OPD-12**): la **cuenta del efectivo** —lo que se debía o costó, con la tarifa en un giro enviado; el vuelto, lo pagado en CUP y el redondeo a favor de la casa; el total— y debajo lo que **entró o salió de la caja**, con sus billetes. En una remesa entregada o un giro pagado, además, las **dos fotos del carné** de quien cobró, como en Admin (FRD de Admin **FR-AD-OPS-11**).
+**FR-SA-OPS-2 · Contexto.** Sede, **operador responsable** —el de ese día, y si hoy la administra otro, quién—, caja y equipo, trabajador, jornada y origen (mostrador o solicitud de kiosco). Debajo, el detalle de Worker según el servicio (**FR-OPD-12**): la **cuenta del efectivo** —lo que se debía o costó, con la tarifa en un giro enviado; el vuelto, lo pagado en CUP y el redondeo a favor de la casa; el total— y debajo lo que **entró o salió de la caja**, con sus billetes. En una remesa entregada o un giro pagado, además, las **dos fotos del carné** de quien cobró y su **firma** con la frase que firmó, como en Admin (FRD de Admin **FR-AD-OPS-11**).
 
 **FR-SA-OPS-3 · Por qué.** Es lo que da sentido al historial de asignaciones: una operación de junio en Miramar es de Atlántico, aunque hoy la sede sea de Caribe **[RP-20]**, **[RP-27]**.
 

@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v9.3
+## Documento de Requisitos Funcionales (FRD) · v9.4
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 9.4 | 25/11/2026 | **Firma de quien cobra.** El bloque del detalle de una remesa entregada o un giro pagado pasa a «Carné y firma de quien cobró»: además de las dos fotos, la firma del beneficiario con la frase que firmó y cuándo (**FR-AD-OPS-11**; FRD de Worker §6.8) |
 | 9.3 | 24/11/2026 | **Tarifas de giros: la administración de sede las ve.** Sección nueva **§21 Tarifas** (`/admin/tarifas`, `/admin/tarifas/giros`, **FR-AD-TAR-1** a **TAR-9**), de solo lectura y con las monedas en que las sedes del alcance envían giros; **PuntoCash avisa a las sedes cuando define, cambia o retira una tarifa**, en Tarifas y en el panel de atención de Inicio (fila 12, **FR-AD-HOME-2**), hasta que alguien de la empresa pulsa «Entendido» (**FR-AD-TAR-5** a **TAR-7**). Menú: Tarifas, tras Tasas (**FR-AD-SHELL-2**: quince destinos para el administrador principal, catorce para los demás). La fila «Sede en horario sin ninguna caja abierta» de Inicio pasa de 12 a 13. Código nuevo en el Apéndice C. Lo que leen los clientes y el trabajador está en los FRD de Autoservicio **2.1**, Pantalla **2.1** y Worker **2.4** |
 | 9.2 | 19/11/2026 | **Tarifas de giros.** Enviar giro cobra al remitente la tarifa que fija PuntoCash (FRD de Super Admin §10; FRD de Worker **FR-GE-16**). El mercante no la ve ni la cambia; la ve, aplicada, en el detalle de cada giro enviado (**FR-AD-OPS-3**). El importe de un giro enviado en Operaciones es el total cobrado; en Reportes, la tarifa **no es volumen** (**FR-AD-REP-8**). El **detalle de una operación** se lee como una cuenta del efectivo, que sustituye al bloque «Liquidación» (**FR-AD-OPS-10**) |
 | 9.1 | 16/11/2026 | **Foto del carné de quien cobra.** El detalle de una remesa entregada o de un giro pagado muestra las dos fotos del carné del beneficiario que hizo el trabajador al entregar (**FR-AD-OPS-11**, nuevo; FRD de Worker §6.8) |
@@ -2711,7 +2712,7 @@ Datos de cada operación:
 
 **Ver en la demo:** `marta@malecon-sf.cu`, Operaciones, cualquier operación de hoy hecha en Worker.
 
-**FR-AD-OPS-11 · Carné de quien cobró.** En una remesa entregada o un giro pagado, el bloque «Carné de quien cobró» muestra las dos fotos del carné del beneficiario, anverso y reverso, con quién las hizo y cuándo (FRD de Worker, §6.8). Una entrega anterior a que se pidiera la foto lo dice: «Esta entrega se registró antes de que se pidiera la foto del carné.» Los demás servicios no tienen el bloque. El trabajador no ve estas fotos después de confirmar.
+**FR-AD-OPS-11 · Carné y firma de quien cobró.** En una remesa entregada o un giro pagado, el bloque «Carné y firma de quien cobró» muestra las dos fotos del carné del beneficiario, anverso y reverso, con quién las hizo y cuándo, y su firma, con la frase que firmó —«Recibo … por la remesa …»— y cuándo (FRD de Worker, §6.8). Una entrega anterior a que se pidiera la foto lo dice; una con fotos pero anterior a la firma, también: «Esta entrega se registró antes de que se pidiera la firma.» Los demás servicios no tienen el bloque. El trabajador no ve las fotos ni la firma después de confirmar.
 
 **Ver en la demo:** entregar `RM-7X82-9KLM` en Worker y abrir esa operación con `marta@malecon-sf.cu`.
 
@@ -2894,7 +2895,7 @@ Datos de cada solicitud:
 | --- | --- |
 | El supervisor nombrado es administrador activo de la empresa que opera la sede | **Solo él**. Los demás administradores lo ven con «Solo {nombre} puede confirmarlo», sin botones. Él ve «El trabajador dice que fuiste tú quien trajo el efectivo» (o «se llevó», o «cambió los billetes») |
 | El supervisor nombrado ya no es administrador activo | **Cualquier administrador de la sede**, y la solicitud lo dice: «{nombre} ya no es administrador activo» |
-| La sede cambió de operador y la solicitud quedó sin dueño | PuntoCash (**FR-SA-APR-1**) |
+| Nadie de la empresa que originó la solicitud puede resolverla: la sede no tenía operador, cambió de operador, o el operador está suspendido, dado de baja o sin administradores activos | PuntoCash (**FR-SA-APR-1**) |
 
 El servidor rechaza la resolución de otro administrador con `solo-el-supervisor`. Las demás solicitudes las resuelve cualquier administrador de la sede, como hasta ahora.
 
