@@ -1,5 +1,5 @@
 import * as React from "react";
-import { IdCard } from "lucide-react";
+import { IdCard, PenLine } from "lucide-react";
 
 import { Section } from "@/components/shell/app-shell";
 import { Card, CardContent } from "@/components/ui";
@@ -8,7 +8,8 @@ import { CARAS_DEL_CARNE, NOMBRE_DE_CARA, fotosDeOperacion } from "@/features/ne
 import { fechaYHora } from "../../jornadas/formato";
 
 /**
- * Las fotos del carné de quien cobró una remesa o un giro (16/11/2026). Las ve
+ * Las fotos del carné de quien cobró una remesa o un giro (16/11/2026) y su
+ * firma de lo que recibió, con la frase que firmó (25/11/2026). Las ve
  * la administración —Admin de sede y PuntoCash—, no el trabajador. Las
  * operaciones de otros servicios no tienen bloque.
  */
@@ -19,7 +20,7 @@ export function FotosDelCarne({ operacion: o }: { operacion: OperacionDeRed }): 
   const fotos = fotosDeOperacion(o.codigo);
 
   return (
-    <Section title="Carné de quien cobró">
+    <Section title="Carné y firma de quien cobró">
       <Card>
         <CardContent className="pt-6">
           {fotos ? (
@@ -40,11 +41,29 @@ export function FotosDelCarne({ operacion: o }: { operacion: OperacionDeRed }): 
                   </figure>
                 ))}
               </div>
+              {fotos.firma ? (
+                <figure className="flex flex-col gap-2">
+                  <figcaption className="text-label text-text-primary">Firma</figcaption>
+                  <p className="text-body text-text-primary">«{fotos.firma.frase}»</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- firma en memoria del servidor de la demostración. */}
+                  <img
+                    src={fotos.firma.dataUrl}
+                    alt={`Firma de ${o.cliente.nombre}`}
+                    className="h-32 w-full max-w-md rounded-control border border-border bg-white object-contain"
+                  />
+                  <p className="text-body-sm text-text-secondary">Firmada el {fechaYHora(fotos.firma.firmadaEn)}.</p>
+                </figure>
+              ) : (
+                <p className="flex items-center gap-2 text-body text-text-secondary">
+                  <PenLine className="size-5 shrink-0" aria-hidden="true" />
+                  Esta entrega se registró antes de que se pidiera la firma.
+                </p>
+              )}
             </div>
           ) : (
             <p className="flex items-center gap-2 text-body text-text-secondary">
               <IdCard className="size-5 shrink-0" aria-hidden="true" />
-              Esta entrega se registró antes de que se pidiera la foto del carné.
+              Esta entrega se registró antes de que se pidieran la foto del carné y la firma.
             </p>
           )}
         </CardContent>

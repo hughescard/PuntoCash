@@ -4,7 +4,7 @@ import { Logo } from "@/components/brand/logo";
 import { capturaParaElMovil } from "@/features/network/fotos-del-carne";
 import { CapturaMovil, EnlaceInservibleView } from "./captura-movil";
 
-export const metadata: Metadata = { title: "Foto del carné" };
+export const metadata: Metadata = { title: "Carné y firma" };
 
 /* Cada visita lee la captura de nuevo: puede haber vencido o haberse usado. */
 export const dynamic = "force-dynamic";

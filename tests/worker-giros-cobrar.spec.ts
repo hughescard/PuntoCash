@@ -443,8 +443,8 @@ test.describe("Cobrar giro — Confirmar entrega", () => {
     await expect(onScreen(page, "Caja 03").first()).toBeVisible();
     /* Como en la remesa, los billetes de la entrega se ven antes de confirmar. */
     await expect(page.getByRole("heading", { name: "Billetes que se entregan" })).toBeVisible();
-    /* Y, sin las dos fotos del carné, no se confirma. */
-    await expect(page.getByRole("heading", { name: "Foto del carné del beneficiario" })).toBeVisible();
+    /* Y, sin las dos fotos del carné y la firma, no se confirma. */
+    await expect(page.getByRole("heading", { name: "Carné y firma del beneficiario" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Confirmar entrega" })).toBeDisabled();
 
     await expect(onScreen(page, "Acción irreversible")).toBeVisible();

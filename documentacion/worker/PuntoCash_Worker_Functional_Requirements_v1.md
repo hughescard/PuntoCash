@@ -1,5 +1,5 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos Funcionales (FRD) · v2.4
+## Documento de Requisitos Funcionales (FRD) · v2.5
 
 **Alcance:** la aplicación del trabajador de caja, `/worker`. No cubre el kiosco de autoservicio ni las consolas de administración.
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 2.5 | 25/11/2026 | **Firma de quien cobra.** Además de las dos fotos del carné, el beneficiario firma con el dedo en el móvil del trabajador, debajo de una frase con lo que recibe; sin firma no se confirma la entrega (§6.8, **FR-CARNE-11 a 13**, nuevos; **FR-CARNE-1, 2, 3, 5, 7, 8, 9**; **FR-RM-12**, **FR-GC-12**). Código `falta-firma` y mensajes de la firma en el móvil (Apéndice C) |
 | 2.4 | 24/11/2026 | **Tarifas vigentes en Inicio.** Bloque nuevo, entre Tasas vigentes y Accesos rápidos, con la tarifa de giros de las monedas de la caja, para contestar al cliente que pregunta cuánto cobran (**FR-HOME-5**, **FR-HOME-7**, nuevo). Va **por servicio**: un servicio nuevo con tarifa es un grupo más. No es una pantalla (como Tasas, que tampoco la tiene) y no cambia ninguna regla de Enviar giro |
 | 2.3 | 23/11/2026 | **Buscar solicitud, con el kiosco sobre la red** (FRD de Autoservicio 2.0). La solicitud se busca y se canjea en el servidor; una solicitud de **otra sede** se rechaza nombrándola (**FR-SOL-3**, **FR-SOL-9**, nuevo). «Continuar» vuelve a comprobarla y la consume en el mismo acto (**FR-SOL-5**). El resumen enseña lo que vio el cliente: el modo y el importe pedido del cambio, la cuenta del giro (**FR-SOL-4**). **Cambio de moneda** llega cotizado con la tasa de ahora, en el modo del cliente, y pasa solo a «Cliente»; **Enviar giro** pasa del remitente directamente a «Efectivo», con la tarifa de ahora (**FR-SOL-6**). Si la cifra de ahora no es la que vio el cliente, se avisa con las dos (**FR-SOL-8**, nuevo). Sale de §16 el kiosco con billetes: el kiosco no toca billetes |
 | 2.2 | 19/11/2026 | **Enviar giro cobra la tarifa de giros** que fija PuntoCash (FRD de Super Admin §10). Dos formas de pedirlo —«Que llegue un importe» y «Enviar un importe»—, con la tarifa calculada sobre lo que recibe el beneficiario; giro mínimo; solo las monedas con tarifa; resumen en vivo; revisión, confirmación, resultado y comprobante con lo que llega, la tarifa y el total; el paso «Efectivo» cobra el total; el servidor recalcula la tarifa al confirmar (**FR-GE-3**, **FR-GE-9** a **GE-13**, **FR-GE-15**; **FR-GE-16** a **GE-19**, nuevos; códigos `tarifa-cambiada` y `sin-tarifa-de-giro`). **Cobrar giro** no lleva tarifa (**FR-GC-8**). El kiosco puede mandar la forma (**FR-SOL-4**, **FR-SOL-6**). El **detalle de una operación** se lee como una cuenta, en una sola tarjeta, en todos los servicios (**FR-OPD-12**, **FR-EF-20**) |
@@ -103,7 +104,7 @@
 | `/worker/caja/anadir-moneda` | Añadir moneda | §10.8 |
 | `/worker/caja/movimientos/{id}` | Detalle de un movimiento interno | §10.9 |
 | `/worker/perfil`, `/worker/perfil/editar`, `/worker/perfil/contrasena` | Perfil | §13 |
-| `/movil/carne/{id}` | Foto del carné, en el móvil del trabajador. Fuera de `/worker`: sin sesión ni menú | §6.8 |
+| `/movil/carne/{id}` | Foto del carné y firma del beneficiario, en el móvil del trabajador. Fuera de `/worker`: sin sesión ni menú | §6.8 |
 
 **FR-NAV-2 · Inexistente.** Una ruta inexistente de `/worker`, el servicio de un catálogo que la sede no tiene habilitado (**FR-CAT-6**) y un movimiento que no es de esta caja responden **404**. Un código de operación desconocido muestra «Operación no encontrada» con vuelta al listado.
 
@@ -640,39 +641,48 @@ Si el cliente no acepta, no se registra nada.
 
 ---
 
-### 6.8 Foto del carné de quien cobra
+### 6.8 Foto del carné y firma de quien cobra
 
-Cuando sale dinero hacia un beneficiario que presenta un código, la entrega guarda dos fotos de su carné, hechas con el móvil del trabajador.
+Cuando sale dinero hacia un beneficiario que presenta un código, la entrega guarda dos fotos de su carné y su firma de lo que recibe, todo hecho en el móvil del trabajador.
 
 **FR-CARNE-1 · Cuándo.** Al confirmar la entrega de una remesa (§8) y el pago de un giro (§9.3). No en el envío de un giro ni en el cambio de moneda.
 
-**FR-CARNE-2 · Obligatoria.** Sin las dos fotos, anverso y reverso, «Confirmar entrega» está deshabilitado. El servidor lo rechaza igualmente (`falta-foto-del-carne`) en la comprobación previa, **antes** de pedir nada al proveedor, y al registrar. No hay forma de saltarla: si no se puede hacer la foto, la entrega queda pendiente, como cuando la caja no puede pagar (**FR-EF-12**).
+**FR-CARNE-2 · Obligatoria.** Sin las dos fotos, anverso y reverso, y la firma (**FR-CARNE-11**), «Confirmar entrega» está deshabilitado. El servidor lo rechaza igualmente (`falta-foto-del-carne`, `falta-firma`) en la comprobación previa, **antes** de pedir nada al proveedor, y al registrar. No hay forma de saltarla: si no se pueden hacer las fotos o el beneficiario no firma, la entrega queda pendiente, como cuando la caja no puede pagar (**FR-EF-12**).
 
-**FR-CARNE-3 · El código.** La confirmación muestra el bloque «Foto del carné del beneficiario» con un QR, los tres pasos (escanear, hacer las dos fotos, esperar a que lleguen) y la hora a la que vence.
+**FR-CARNE-3 · El código.** La confirmación muestra el bloque «Carné y firma del beneficiario» con un QR, los pasos (escanear, hacer las dos fotos, pasar el móvil al beneficiario para que firme, esperar a que lleguen) y la hora a la que vence.
 
 **FR-CARNE-4 · El enlace.** El QR lleva el enlace de una **captura**:
 - opaco e imposible de adivinar; es la única credencial del móvil;
 - de quien lo abrió y de la entrega que confirma: la captura guarda el trabajador y el documento del beneficiario, y no vale para otro trabajador ni para otra entrega;
-- vence a los **10 minutos** si no se completan las dos fotos; con las dos, sigue valiendo hasta que se registra la entrega;
+- vence a los **10 minutos** si no se completan las dos fotos y la firma; completo, sigue valiendo hasta que se registra la entrega;
 - de un solo uso: al registrarse la entrega queda usado.
 
-**FR-CARNE-5 · En el móvil.** `/movil/carne/{id}`, sin sesión ni menú, pensado para el teléfono (390 px). Muestra el servicio («Entrega de remesa» o «Pago de giro»), el código de la remesa o del giro y el **nombre** del beneficiario, nunca su documento. Dos pasos, uno por cara, cada uno con un botón que abre la cámara trasera. Una cara hecha muestra su foto y «Repetir foto del …», que vale mientras la entrega no se registre. Con las dos, «Listo: las fotos ya están en la caja». El móvil reduce la foto antes de enviarla: lado mayor de 1600 px, JPEG.
+**FR-CARNE-5 · En el móvil.** `/movil/carne/{id}`, sin sesión ni menú, pensado para el teléfono (390 px). Muestra el servicio («Entrega de remesa» o «Pago de giro»), el código de la remesa o del giro y el **nombre** del beneficiario, nunca su documento. Tres pasos: uno por cara, cada uno con un botón que abre la cámara trasera, y la firma (**FR-CARNE-11**). Una cara hecha muestra su foto y «Repetir foto del …», que vale mientras la entrega no se registre. Al terminar la segunda foto, la vista baja hasta la firma. Con todo, «Listo: las fotos y la firma ya están en la caja». El móvil reduce la foto antes de enviarla: lado mayor de 1600 px, JPEG.
 
 **FR-CARNE-6 · Enlace que no sirve.** El móvil distingue tres casos: no existe, venció o la entrega ya se confirmó. Cada uno con su mensaje (Apéndice C) y sin nada más que hacer.
 
-**FR-CARNE-7 · En la caja.** La caja pregunta cada 2 segundos hasta tener las dos fotos o hasta que vence el código, y muestra cada foto al llegar, para que el trabajador compruebe que se lee y es del carné que tiene delante. Con las dos:
+**FR-CARNE-7 · En la caja.** La caja pregunta cada 2 segundos hasta tener las dos fotos y la firma o hasta que vence el código, y muestra cada foto al llegar, para que el trabajador compruebe que se lee y es del carné que tiene delante, y la firma con la frase firmada. Con todo:
 - se habilita «Confirmar entrega»;
-- «Repetir las fotos» abre otro código, y lo anterior deja de contar.
+- «Repetir fotos y firma» abre otro código, y lo anterior deja de contar.
 
-Si el código vence sin las dos fotos, «Generar otro código».
+Si el código vence sin las fotos y la firma, «Generar otro código».
 
-**FR-CARNE-8 · Dentro del flujo.** Volver a los billetes y regresar a la confirmación conserva las fotos. Buscar otra remesa o giro empieza de cero.
+**FR-CARNE-8 · Dentro del flujo.** Volver a los billetes y regresar a la confirmación conserva las fotos, y la firma si lo que se entrega no cambió (**FR-CARNE-12**). Buscar otra remesa o giro empieza de cero.
 
-**FR-CARNE-9 · Qué queda.** Al registrar la entrega, las fotos se guardan con la operación, con la hora en que se hicieron. El trabajador no vuelve a verlas: ni en el resultado, ni en el comprobante, ni en el detalle de la operación. Las ve la administración: Admin de sede (**FR-AD-OPS-11**) y PuntoCash (**FR-SA-OPS-2**).
+**FR-CARNE-9 · Qué queda.** Al registrar la entrega, las fotos y la firma se guardan con la operación, con la hora en que se hicieron y, la firma, con la frase que se firmó. El trabajador no vuelve a verlas: ni en el resultado, ni en el comprobante, ni en el detalle de la operación. Las ve la administración: Admin de sede (**FR-AD-OPS-11**) y PuntoCash (**FR-SA-OPS-2**).
 
-**FR-CARNE-10 · Producción.** Las fotos se guardan cifradas en un almacén de ficheros, con su huella, y la operación guarda la referencia. Su conservación y su borrado siguen la política de datos de clientes de PuntoCash.
+**FR-CARNE-10 · Producción.** Las fotos y la firma se guardan cifradas en un almacén de ficheros, con su huella, y la operación guarda la referencia. Su conservación y su borrado siguen la política de datos de clientes de PuntoCash.
 
-**Ver en la demo:** confirmar `RM-7X82-9KLM` en Remesas o `TR-260901-000245` en Cobrar giro. Para hacer las fotos sin móvil, ver la nota de entrega.
+**FR-CARNE-11 · La firma.** Con las dos fotos hechas, el móvil muestra la frase que firma el beneficiario y, debajo, un panel en blanco donde firma con el dedo:
+- la frase: «Recibo {lo que recibe} por la remesa {código}.» o «… por el giro {código}.»; lo que recibe es lo entregado en la moneda del servicio y, si se completó en CUP, también eso: «Recibo 480,00 USD y 6.240,00 CUP por la remesa RM-…»;
+- «Borrar» limpia el panel; «Guardar firma» se habilita cuando hay un trazo, no un toque;
+- guardada, se ve la firma y «Repetir la firma», que vale mientras la entrega no se registre.
+
+**FR-CARNE-12 · Ligada a lo que recibe.** La firma vale para su frase. Si en la caja cambia lo que se entrega con el código abierto (otros billetes, otra parte en CUP), la frase cambia, la firma anterior deja de valer, «Confirmar entrega» se deshabilita y hay que volver a firmar. Las fotos se conservan. Si el móvil intenta guardar una firma de la frase anterior, no se guarda y pide volver a cargar la página.
+
+**FR-CARNE-13 · Comprobación del servidor.** El servidor calcula la frase con los billetes que se van a registrar y exige que la firma sea de esa frase (`falta-firma`). La frase que manda la pantalla no cuenta.
+
+**Ver en la demo:** confirmar `RM-7X82-9KLM` en Remesas o `TR-260901-000245` en Cobrar giro. Para hacer las fotos y la firma sin móvil, ver la nota de entrega.
 
 ---
 
@@ -782,7 +792,7 @@ Métodos: `delivery` → Entrega, `transfer` → Transferencia, `pickup` → Rec
 
 **FR-RM-11 · Efectivo.** La caja propone lo que se entrega (**FR-EF-8**); el trabajador lo revisa y continúa cuando cuadra. Sin salida, la remesa **queda pendiente** (**FR-EF-12**).
 
-**FR-RM-12 · Confirmar entrega.** Muestra «Billetes que se entregan» y pide las dos fotos del carné del beneficiario (§6.8): sin ellas no se confirma. El servidor comprueba las fotos, los billetes y pide recuento si hace falta **antes** de pedir al proveedor que complete la remesa (**FR-EF-18**). Después:
+**FR-RM-12 · Confirmar entrega.** Muestra «Billetes que se entregan» y pide las dos fotos del carné del beneficiario y su firma (§6.8): sin ellas no se confirma. El servidor comprueba las fotos y la firma, los billetes y pide recuento si hace falta **antes** de pedir al proveedor que complete la remesa (**FR-EF-18**). Después:
 
 | Resultado del proveedor | El trabajador ve | Se registra |
 | --- | --- | --- |
@@ -873,7 +883,7 @@ Pasos: **Código → Revisar giro → Efectivo → Confirmar entrega**, y el res
 
 **FR-GC-18 · Efectivo.** La caja propone lo que se entrega; sin salida, el giro queda pendiente (**FR-EF-12**).
 
-**FR-GC-12 · Confirmar entrega.** Muestra «Billetes que se entregan» y pide las dos fotos del carné del beneficiario (§6.8): sin ellas no se confirma. El servidor revalida las fotos, la jornada, la moneda, los billetes (con recuento si hace falta) y estado **antes** de pedir al proveedor que complete el giro (**FR-EF-18**).
+**FR-GC-12 · Confirmar entrega.** Muestra «Billetes que se entregan» y pide las dos fotos del carné del beneficiario y su firma (§6.8): sin ellas no se confirma. El servidor revalida las fotos y la firma, la jornada, la moneda, los billetes (con recuento si hace falta) y estado **antes** de pedir al proveedor que complete el giro (**FR-EF-18**).
 
 **FR-GC-13** Conflicto o fallo del proveedor: no se registra nada, sin reintento automático **[R2]**.
 
@@ -1350,6 +1360,7 @@ Cada flujo dice el mensaje con las palabras de su pantalla («el cliente», «el
 | `tarifa-cambiada` | PuntoCash cambió la tarifa mientras registrabas el giro. No se registró nada: revisa el importe y la tarifa nueva con el cliente. |
 | `sin-tarifa-de-giro` | PuntoCash retiró la tarifa de giros en {moneda}: en esa moneda ya no se envían giros. No se registró nada. |
 | `falta-foto-del-carne` | Faltan las fotos del carné del beneficiario. No se registró nada: haz las dos fotos con el móvil. |
+| `falta-firma` | Falta la firma del beneficiario de lo que recibe. No se registró nada: pásale el móvil para que firme. |
 
 ### Buscar solicitud
 
@@ -1362,7 +1373,7 @@ Cada flujo dice el mensaje con las palabras de su pantalla («el cliente», «el
 | Tasa distinta de la del kiosco | **La tasa cambió desde que el cliente preparó la solicitud.** En el kiosco vio que entregaba {X} y recibía {Y}. Con la tasa de ahora entrega {X'} y recibe {Y'}. Explícaselo antes de continuar. |
 | Tarifa distinta de la del kiosco | **La tarifa cambió desde que el cliente preparó la solicitud.** En el kiosco vio que el beneficiario recibía {X} y que entregaba {Y}. Con la tarifa de ahora recibe {X'} y entrega {Y'}. Explícaselo antes de cobrar. |
 
-### Foto del carné, en el móvil
+### Foto del carné y firma, en el móvil
 
 | Caso | Mensaje |
 | --- | --- |
@@ -1371,7 +1382,11 @@ Cada flujo dice el mensaje con las palabras de su pantalla («el cliente», «el
 | Entrega ya confirmada | Esta entrega ya se confirmó en la caja. No hace falta subir nada más. |
 | Imagen ilegible | No se pudo leer la imagen. Vuelve a hacer la foto. |
 | Imagen demasiado grande | La foto es demasiado grande. Vuelve a hacerla. |
-| Sin conexión | No se pudo enviar la foto. Comprueba la conexión del móvil y vuelve a intentarlo. |
+| Sin conexión | No se pudo enviar la foto. Comprueba la conexión del móvil y vuelve a intentarlo. (Con la firma: «No se pudo enviar la firma…».) |
+| Firma ilegible | No se pudo leer la firma. Bórrala y vuelve a firmar. |
+| Firma demasiado grande | La firma es demasiado grande. Bórrala y vuelve a firmar. |
+| Firma antes de las fotos | Antes de firmar faltan las fotos del carné. |
+| Cambió lo que se entrega | En la caja cambió lo que se entrega. Vuelve a cargar la página para firmar lo nuevo. |
 
 ### Acceso de la sesión
 

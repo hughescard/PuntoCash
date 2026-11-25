@@ -236,10 +236,25 @@ export async function continuarAConfirmar(page: Page): Promise<void> {
 /** Una foto cualquiera hace de carné en las pruebas: lo que se comprueba es el recorrido, no la imagen. */
 const FOTO_DEL_CARNE = path.join(__dirname, "fixtures", "promocion.jpg");
 
+/** Firma en el panel del móvil con el ratón: un garabato de varios trazos. */
+export async function firmarEnElPanel(movil: Page): Promise<void> {
+  const panel = movil.locator("canvas[data-panel-de-firma]");
+  await panel.scrollIntoViewIfNeeded();
+  const caja = await panel.boundingBox();
+  if (!caja) throw new Error("el panel de firma no se ve");
+  await movil.mouse.move(caja.x + 30, caja.y + caja.height * 0.6);
+  await movil.mouse.down();
+  for (let i = 1; i <= 12; i++) {
+    await movil.mouse.move(caja.x + 30 + i * 20, caja.y + caja.height * (i % 2 === 0 ? 0.35 : 0.65), { steps: 3 });
+  }
+  await movil.mouse.up();
+}
+
 /**
  * En la confirmación de una remesa o de un giro cobrado: hace las dos fotos
- * del carné como las haría el móvil del trabajador —abre el enlace del QR en
- * otra pestaña y sube anverso y reverso— y espera a que la caja las reciba.
+ * del carné y la firma del beneficiario como las haría el móvil del
+ * trabajador —abre el enlace del QR en otra pestaña, sube anverso y reverso y
+ * firma en el panel— y espera a que la caja las reciba.
  */
 export async function hacerFotosDelCarne(page: Page): Promise<void> {
   const enlace = page.getByRole("link", { name: /Abrir el enlace en este equipo/ });
@@ -255,9 +270,11 @@ export async function hacerFotosDelCarne(page: Page): Promise<void> {
     await movil.locator(`input[data-cara="${cara}"]`).setInputFiles(FOTO_DEL_CARNE);
     await expect(movil.getByRole("button", { name: `Repetir foto del ${cara}` })).toBeVisible({ timeout: 15_000 });
   }
-  await expect(movil.getByText("Listo: las fotos ya están en la caja")).toBeVisible();
+  await firmarEnElPanel(movil);
+  await movil.getByRole("button", { name: "Guardar firma" }).click();
+  await expect(movil.getByText("Listo: las fotos y la firma ya están en la caja")).toBeVisible({ timeout: 15_000 });
   await movil.close();
-  await expect(page.getByRole("button", { name: "Repetir las fotos" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Repetir fotos y firma" })).toBeVisible({ timeout: 15_000 });
 }
 
 /**

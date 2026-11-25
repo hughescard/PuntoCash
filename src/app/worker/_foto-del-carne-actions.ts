@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 
 import {
   abrirCaptura,
+  actualizarLoQueRecibe,
   estadoDeCaptura,
   type EstadoDeCaptura,
   type MotivoDeCaptura,
@@ -25,6 +26,8 @@ export interface CapturaAbierta {
   /** El mismo enlace como QR, en SVG. */
   qr: string;
   vigenteHasta: string;
+  /** Lo que recibe el beneficiario según la captura: la frase que firma. */
+  recibe: string;
 }
 
 export async function abrirFotoDelCarneAction(
@@ -35,7 +38,14 @@ export async function abrirFotoDelCarneAction(
   const { id, vigenteHasta } = abrirCaptura({ workerId: ctx.worker.id, terminalId: ctx.terminal.id }, motivo);
   const url = `${await origen()}/movil/carne/${id}`;
   const qr = await QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#0B132B", light: "#FFFFFF" } });
-  return { ok: true, value: { id, url, qr, vigenteHasta } };
+  return { ok: true, value: { id, url, qr, vigenteHasta, recibe: motivo.recibe } };
+}
+
+/** Cambió lo que se entrega: la firma anterior deja de valer y el móvil enseña la frase nueva. */
+export async function actualizarLoQueRecibeAction(id: string, recibe: string): Promise<boolean> {
+  const ctx = await getContextoDeTrabajo();
+  if (!ctx) return false;
+  return actualizarLoQueRecibe(id, ctx.worker.id, recibe);
 }
 
 export async function estadoFotoDelCarneAction(id: string): Promise<EstadoDeCaptura | null> {

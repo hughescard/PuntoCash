@@ -27,7 +27,7 @@ import { EfectivoDeOperacion } from "../../efectivo-de-operacion";
 import { confirmGiroPayout, type GiroPayoutCompleted } from "./confirm-payout";
 import { FotoDelCarne } from "../../foto-del-carne";
 import type { CapturaAbierta } from "../../../../_foto-del-carne-actions";
-import type { MotivoDeCaptura } from "@/features/network/fotos-del-carne";
+import { loQueRecibe, type MotivoDeCaptura } from "@/features/network/fotos-del-carne";
 import { useIrArribaAlCambiarDePaso } from "@/lib/foco";
 
 type Step = "codigo" | "revisar" | "efectivo" | "confirmar" | "resultado";
@@ -76,8 +76,17 @@ export function CobrarGiroFlow(): React.JSX.Element {
   const [captura, setCaptura] = React.useState<CapturaAbierta | null>(null);
   const [fotoLista, setFotoLista] = React.useState<string | null>(null);
   const motivoDeFoto = React.useMemo<MotivoDeCaptura | null>(
-    () => (transfer ? { servicio: "Giros", referencia: transfer.code, beneficiario: transfer.receiverName, documento: transfer.receiverIdentification } : null),
-    [transfer],
+    () =>
+      transfer
+        ? {
+            servicio: "Giros",
+            referencia: transfer.code,
+            beneficiario: transfer.receiverName,
+            documento: transfer.receiverIdentification,
+            recibe: loQueRecibe(transfer.payoutCurrency, transfer.deliveryAmount, efectivo ?? undefined),
+          }
+        : null,
+    [transfer, efectivo],
   );
 
   /*

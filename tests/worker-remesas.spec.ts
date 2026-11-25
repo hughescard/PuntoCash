@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import { test, expect } from "./worker-fixture";
-import { continuarAConfirmar, hacerFotosDelCarne } from "./worker-helpers";
+import { continuarAConfirmar, firmarEnElPanel, hacerFotosDelCarne } from "./worker-helpers";
 import { type Page } from "@playwright/test";
 
 
@@ -64,10 +64,10 @@ test.describe("Remesas", () => {
     await expect(page.getByText("Remesa", { exact: true }).locator("visible=true").first()).toBeVisible();
   });
 
-  test("the delivery cannot be confirmed without both photos of the carné", async ({ page }) => {
+  test("the delivery cannot be confirmed without both photos of the carné and the signature", async ({ page }) => {
     await searchReadyRemittance(page);
     await continuarAConfirmar(page);
-    await expect(page.getByRole("heading", { name: "Foto del carné del beneficiario" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Carné y firma del beneficiario" })).toBeVisible();
     await expect(page.getByRole("img", { name: /Código QR para hacer la foto del carné/ })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("button", { name: "Confirmar entrega" })).toBeDisabled();
 
@@ -75,7 +75,7 @@ test.describe("Remesas", () => {
     const url = await page.getByRole("link", { name: /Abrir el enlace en este equipo/ }).getAttribute("href");
     const movil = await page.context().newPage();
     await movil.goto(url!);
-    await expect(movil.getByText("María Pérez García")).toBeVisible();
+    await expect(movil.getByText("María Pérez García", { exact: true })).toBeVisible();
     /* El móvil no enseña el documento del beneficiario. */
     await expect(movil.getByText("85010112345")).toHaveCount(0);
     await expect(movil.getByRole("button", { name: "Hacer foto del anverso" })).toBeEnabled();
@@ -84,9 +84,19 @@ test.describe("Remesas", () => {
     await expect(page.getByRole("img", { name: "Anverso del carné del beneficiario" })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("button", { name: "Confirmar entrega" })).toBeDisabled();
 
-    /* Con el reverso, sí. */
+    /* Con el reverso, las fotos están, pero falta la firma: tampoco. */
     await movil.locator('input[data-cara="reverso"]').setInputFiles(path.join(__dirname, "fixtures", "promocion.jpg"));
-    await expect(movil.getByText("Listo: las fotos ya están en la caja")).toBeVisible();
+    await expect(page.getByRole("img", { name: "Reverso del carné del beneficiario" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Confirmar entrega" })).toBeDisabled();
+
+    /* El beneficiario firma una frase con lo que recibe; un toque no basta. */
+    await expect(movil.locator("[data-frase-de-firma]")).toHaveText("Recibo 500,00 CUP por la remesa RM-7X82-9KLM.");
+    await expect(movil.getByRole("button", { name: "Guardar firma" })).toBeDisabled();
+    await firmarEnElPanel(movil);
+    await movil.getByRole("button", { name: "Guardar firma" }).click();
+    await expect(movil.getByText("Listo: las fotos y la firma ya están en la caja")).toBeVisible();
+    await expect(page.getByRole("img", { name: "Firma del beneficiario" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("[data-frase-en-caja]")).toHaveText("Recibo 500,00 CUP por la remesa RM-7X82-9KLM.");
     await expect(page.getByRole("button", { name: "Confirmar entrega" })).toBeEnabled({ timeout: 15_000 });
     await page.getByRole("button", { name: "Confirmar entrega" }).click();
     await expect(page.getByRole("heading", { name: "Remesa completada" })).toBeVisible();

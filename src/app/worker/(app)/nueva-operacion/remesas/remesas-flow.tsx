@@ -18,7 +18,7 @@ import { RecuentoDeMoneda } from "../../caja/recuento-de-moneda";
 import { EfectivoDeOperacion } from "../efectivo-de-operacion";
 import { FotoDelCarne } from "../foto-del-carne";
 import type { CapturaAbierta } from "../../../_foto-del-carne-actions";
-import type { MotivoDeCaptura } from "@/features/network/fotos-del-carne";
+import { loQueRecibe, type MotivoDeCaptura } from "@/features/network/fotos-del-carne";
 import { entregadoAlCliente, difiereDeLoDebido } from "@/features/operations/entregado";
 import { liquidacionComoLineas } from "../liquidacion";
 import type { OperationLiquidation } from "@/features/operations/operations-history";
@@ -37,6 +37,7 @@ const MENSAJE_DE_BILLETES: Readonly<Record<string, string>> = {
   "propuesta-vencida": "Los billetes ya no cuadran con lo que toca, quizá porque cambió la caja. Revísalos.",
   "sin-esos-billetes": "Contada la caja, esos billetes no están. No se registró nada: vuelve a marcar con qué billetes se entrega.",
   "falta-foto-del-carne": "Faltan las fotos del carné del beneficiario. No se registró nada: haz las dos fotos con el móvil.",
+  "falta-firma": "Falta la firma del beneficiario de lo que recibe. No se registró nada: pásale el móvil para que firme.",
 };
 
 export function RemesasFlow(): React.JSX.Element {
@@ -64,8 +65,17 @@ export function RemesasFlow(): React.JSX.Element {
   const [captura, setCaptura] = React.useState<CapturaAbierta | null>(null);
   const [fotoLista, setFotoLista] = React.useState<string | null>(null);
   const motivoDeFoto = React.useMemo<MotivoDeCaptura | null>(
-    () => (remittance ? { servicio: "Remesa", referencia: remittance.code, beneficiario: remittance.receiverName, documento: remittance.receiverIdentification } : null),
-    [remittance],
+    () =>
+      remittance
+        ? {
+            servicio: "Remesa",
+            referencia: remittance.code,
+            beneficiario: remittance.receiverName,
+            documento: remittance.receiverIdentification,
+            recibe: loQueRecibe(remittance.payoutCurrency, remittance.deliveryAmount, efectivo ?? undefined),
+          }
+        : null,
+    [remittance, efectivo],
   );
 
   /*
@@ -139,7 +149,7 @@ export function RemesasFlow(): React.JSX.Element {
         setSubmitting(false);
         if (previa.reason === "recuento-necesario" && previa.currency) { setRecontando(previa.currency); return; }
         setError(MENSAJE_DE_BILLETES[previa.reason] ?? "No se pudo comprobar la entrega. Vuelve a los billetes y revísalos.");
-        if (previa.reason in MENSAJE_DE_BILLETES && previa.reason !== "cierre-forzado" && previa.reason !== "falta-foto-del-carne") { setRecarga((n) => n + 1); setStep("efectivo"); }
+        if (previa.reason in MENSAJE_DE_BILLETES && previa.reason !== "cierre-forzado" && previa.reason !== "falta-foto-del-carne" && previa.reason !== "falta-firma") { setRecarga((n) => n + 1); setStep("efectivo"); }
         return;
       }
       const external = await remittanceProvider.complete(remittance.id);
