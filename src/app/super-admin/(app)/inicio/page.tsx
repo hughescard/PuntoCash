@@ -144,7 +144,10 @@ function textoDePendiente(p: PendienteDePuntoCash): Texto {
           p.total === 1
             ? "Una diferencia de efectivo no tiene quien la resuelva"
             : `${p.total} diferencias de efectivo no tienen quien las resuelva`,
-        detail: `Quedaron pendientes cuando la sede cambió de manos (${p.sedes.join(", ")}): la empresa de entonces ya no la tiene y la de ahora no ve lo anterior. Las resuelve PuntoCash.`,
+        detail:
+          p.total === 1
+            ? `Nadie del operador que la originó puede resolverla (${p.sedes.join(", ")}): la sede no tenía operador, cambió de manos o su operador está suspendido, dado de baja o sin administradores activos. La resuelve PuntoCash.`
+            : `Nadie del operador que las originó puede resolverlas (${p.sedes.join(", ")}): la sede no tenía operador, cambió de manos o su operador está suspendido, dado de baja o sin administradores activos. Las resuelve PuntoCash.`,
         href: "/super-admin/aprobaciones",
         action: "Resolverlas",
       };

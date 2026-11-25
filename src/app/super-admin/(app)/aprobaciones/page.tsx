@@ -110,7 +110,7 @@ export default async function SuperAdminAprobacionesPage() {
     <>
       <PageHeader
         title="Aprobaciones"
-        description="Las diferencias de efectivo que nadie de la sede puede resolver: la sede cambió de manos con ellas pendientes. Las demás las resuelve cada mercante."
+        description="Las diferencias de efectivo que nadie del operador puede resolver: la sede no tenía operador, cambió de manos o su operador está suspendido, dado de baja o sin administradores activos. Las demás las resuelve cada mercante."
       />
 
       <Section
@@ -123,8 +123,8 @@ export default async function SuperAdminAprobacionesPage() {
       >
         {pendientes.length === 0 ? (
           <Alert variant="info" title="No hay ninguna diferencia sin quien la resuelva">
-            Cada mercante resuelve las de su etapa en sus sedes. Aquí solo llegan las que quedan pendientes cuando una
-            sede cambia de manos.
+            Cada mercante resuelve las de su etapa en sus sedes. Aquí solo llegan las que nadie del operador puede
+            resolver.
           </Alert>
         ) : (
           <ResponsiveTable

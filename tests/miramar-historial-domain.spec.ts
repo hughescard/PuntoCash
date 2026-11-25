@@ -2,16 +2,26 @@ import { expect, test } from "@playwright/test";
 
 import {
   esHuerfana,
+  motivoDePuntoCash,
   operadorDeLaSolicitud,
   resolverSolicitud,
   solicitudesDePuntoCash,
+  solicitudesDeSede,
   solicitudPorId,
 } from "../src/features/network/aprobaciones";
 import { operadorVigenteEn } from "../src/features/network/assignments";
 import { jornadasDeSede } from "../src/features/network/jornadas";
 import { operacionesDeSede } from "../src/features/network/operaciones";
+import {
+  activeAdminUsersOf,
+  findAdminUserById,
+  findOperatorById,
+  reactivarOperador,
+  suspenderOperador,
+} from "../src/features/network/operators";
 import { GLOBAL_SCOPE, operatorScope } from "../src/features/network/scope";
 import { redEnAlcance } from "../src/features/network/scoped-reads";
+import { SEDES } from "../src/features/network/sedes";
 
 /**
  * PuntoCash Miramar cambió de mercante el 30 de junio. La siembra trae unas
@@ -78,3 +88,53 @@ test("las diferencias que quedaron pendientes al traspasar Miramar las resuelve 
     expect(resolverSolicitud(GLOBAL_SCOPE, deCaribe.id, "aprobada", "No le corresponde a PuntoCash", "Elena")).toMatchObject({ reason: "no-es-huerfana" });
   }
 });
+
+/**
+ * **FR-SA-APR-1** (decisión del 24/11/2026): una diferencia pasa a PuntoCash
+ * solo si nadie del operador que la originó puede resolverla. Si el operador
+ * sigue con la sede, eso es que está suspendido o dado de baja, o que no le
+ * queda ningún administrador activo; con el principal desactivado y otros
+ * activos, la resuelven ellos.
+ */
+test("una diferencia pasa a PuntoCash solo si nadie de su operador puede resolverla", () => {
+  const s = solicitudesPendientesDeOperadorActivo().find((x) => activeAdminUsersOf(operadorDeLaSolicitud(x)!).length >= 2);
+  expect(s, "hace falta una pendiente de un operador con dos administradores activos").toBeTruthy();
+  const op = operadorDeLaSolicitud(s!)!;
+  expect(motivoDePuntoCash(s!)).toBeNull();
+  expect(esHuerfana(s!)).toBe(false);
+
+  /* Operador suspendido: pasa a PuntoCash; al reactivarlo, vuelve a ser suya. */
+  expect(suspenderOperador(GLOBAL_SCOPE, op, "Prueba de diferencias sin dueño", "QA")).toMatchObject({ ok: true });
+  try {
+    expect(motivoDePuntoCash(s!)).toBe("operador-inactivo");
+    expect(esHuerfana(s!)).toBe(true);
+  } finally {
+    expect(reactivarOperador(GLOBAL_SCOPE, op, "Fin de la prueba de diferencias sin dueño")).toMatchObject({ ok: true });
+  }
+  expect(esHuerfana(s!)).toBe(false);
+
+  /* Principal desactivado y otros activos: la siguen resolviendo ellos. */
+  const admins = activeAdminUsersOf(op).map((u) => findAdminUserById(u.id)!);
+  const principal = admins.find((u) => u.isPrincipal) ?? admins[0]!;
+  principal.status = "desactivado";
+  try {
+    expect(activeAdminUsersOf(op).length).toBeGreaterThan(0);
+    expect(motivoDePuntoCash(s!)).toBeNull();
+
+    /* Ningún administrador activo: pasa a PuntoCash. */
+    for (const u of admins) u.status = "desactivado";
+    expect(motivoDePuntoCash(s!)).toBe("operador-inactivo");
+    expect(esHuerfana(s!)).toBe(true);
+  } finally {
+    for (const u of admins) u.status = "activo";
+  }
+  expect(esHuerfana(s!)).toBe(false);
+});
+
+/** Pendientes cuya sede sigue con el operador que las originó, y ese operador está activo. */
+function solicitudesPendientesDeOperadorActivo() {
+  return SEDES.flatMap((sede) => solicitudesDeSede(sede.id)).filter((x) => {
+    const op = operadorDeLaSolicitud(x);
+    return x.estado === "pendiente" && op !== null && findOperatorById(op)?.status === "activo" && motivoDePuntoCash(x) === null;
+  });
+}

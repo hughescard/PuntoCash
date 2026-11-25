@@ -1,5 +1,5 @@
 # PuntoCash — Super administración
-## Documento de Requisitos de Producto (PRD) · v1.2
+## Documento de Requisitos de Producto (PRD) · v1.3
 
 **Estado:** Describe la consola de PuntoCash sobre su red **completa**, tal como se entrega. Lo que queda fuera se nombra en §6; no se da por hecho en ningún punto de este documento.
 
@@ -7,7 +7,9 @@
 
 **Alcance:** Únicamente la consola **Super administración** (`/super-admin`), la que usa PuntoCash para gobernar su red. **No cubre la consola del mercante** (`/admin`), que tiene su propio PRD.
 
-**Control de cambios — v1.2 (03/11/2026).** PuntoCash resuelve las diferencias de efectivo que quedan sin dueño al traspasar una sede (§5.3, **Aprobaciones**).
+**Control de cambios — v1.3 (24/11/2026).** Una diferencia pasa a PuntoCash solo cuando nadie del operador que la originó puede resolverla: también si ese operador está suspendido, dado de baja o sin administradores activos (§5.3, **Aprobaciones**).
+
+**Control de cambios — v1.2 (03/11/2026). PuntoCash resuelve las diferencias de efectivo que quedan sin dueño al traspasar una sede (§5.3, **Aprobaciones**).
 
 **Control de cambios — v1.1 (03/11/2026).** Un mercante ve cada sede solo desde que es suya (§4, **RP-27**); PuntoCash, el historial entero.
 
@@ -117,7 +119,7 @@ Una segunda vista, **Tasas por sede**, enseña lo que publica cada sucursal: de 
 
 **Jornadas** responde *¿qué ha pasado en cada caja de la red?*: quién la abrió, cuánto movió y cómo cerró, con el mismo detalle que ve el mercante. Una caja que sigue abierta se ve siempre, aunque se abriera antes del periodo que se consulta. **Forzar un cierre es del mercante**: PuntoCash no cierra cajas ajenas.
 
-**Aprobaciones** existe por una consecuencia de lo anterior. Cuando una sede cambia de manos con diferencias de efectivo pendientes de aprobar, nadie de la sede puede resolverlas: la empresa de entonces ya no tiene la sede, y la de ahora no ve lo que pasó antes de recibirla. Esas —y solo esas— las resuelve **PuntoCash**, con el mismo acto que el mercante: aprobar o rechazar con motivo, dejando constancia y sin tocar la caja. Inicio y el menú avisan cuando hay alguna.
+**Aprobaciones** existe por una consecuencia de lo anterior. Una diferencia de efectivo pendiente la resuelve la empresa que administraba la sede cuando se abrió la jornada. A veces nadie de esa empresa puede: la sede cambió de manos (la empresa de entonces ya no la tiene, y la de ahora no ve lo que pasó antes de recibirla), la sede no tenía operador, o la empresa sigue con ella pero está suspendida, dada de baja o sin ningún administrador activo. Esas —y solo esas— las resuelve **PuntoCash**, con el mismo acto que el mercante: aprobar o rechazar con motivo, dejando constancia y sin tocar la caja. Inicio y el menú avisan cuando hay alguna.
 
 **Operaciones** responde *¿qué ha hecho la red con cada cliente?*: todas, completadas o no, con su cliente, su importe, la sede y **el operador que la administraba ese día**. El detalle es el de Worker con el contexto que PuntoCash necesita. De solo lectura **[A6]**, **[A7]**.
 

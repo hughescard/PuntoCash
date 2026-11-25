@@ -31,7 +31,7 @@
 import type { Billetes } from "@/features/caja/billetes";
 import { estaEnAlcance, operadorVigente, operadorVigenteEn } from "./assignments";
 import { jornadaPorId, jornadasDeSede, MOTIVOS_DE_FONDOS, SUPERVISOR_CAMBIO_BILLETES, type Jornada } from "./jornadas";
-import { activeAdminUsersOf, adminUsersOf } from "./operators";
+import { activeAdminUsersOf, adminUsersOf, findOperatorById } from "./operators";
 import { isGlobal, requireOperatorScope, type Scope, type ScopeDenial } from "./scope";
 import { SEDES } from "./sedes";
 
@@ -333,12 +333,38 @@ export function operadorDeLaSolicitud(s: Solicitud): string | null {
 }
 
 /**
- * Pendiente y sin nadie en la sede que pueda resolverla: la empresa que tenía
- * la sede ese día ya no la tiene, y la que la tiene ahora no ve lo anterior
- * (**FR-AD-SCOPE-7**). Las resuelve PuntoCash (decisión del 3/11/2026).
+ * Por qué nadie de la empresa que originó la solicitud puede resolverla
+ * (**FR-AD-SCOPE-7**, decisiones del 3/11/2026 y del 24/11/2026):
+ * - `sin-operador`: la jornada se abrió cuando la sede no tenía operador;
+ * - `cambio-de-operador`: la sede ya no es de esa empresa (sin asignar o de
+ *   otra, que solo ve su propia etapa);
+ * - `operador-inactivo`: la empresa sigue con la sede, pero está suspendida o
+ *   dada de baja, o no le queda ningún administrador activo.
+ */
+export type MotivoDePuntoCash = "sin-operador" | "cambio-de-operador" | "operador-inactivo";
+
+/**
+ * `null` cuando la resuelve la empresa que la originó; si no, por qué la
+ * resuelve PuntoCash. Se calcula en cada lectura: si la sede vuelve a esa
+ * empresa, o la empresa se reactiva o vuelve a tener un administrador activo,
+ * la solicitud vuelve a ser suya.
+ */
+export function motivoDePuntoCash(s: Solicitud): MotivoDePuntoCash | null {
+  const entonces = operadorDeLaSolicitud(s);
+  if (!entonces) return "sin-operador";
+  if (operadorVigente(s.sedeId) !== entonces) return "cambio-de-operador";
+  if (findOperatorById(entonces)?.status !== "activo" || activeAdminUsersOf(entonces).length === 0) {
+    return "operador-inactivo";
+  }
+  return null;
+}
+
+/**
+ * Pendiente y sin nadie de la empresa que la originó que pueda resolverla
+ * (**FR-SA-APR-1**). Las resuelve PuntoCash.
  */
 export function esHuerfana(s: Solicitud): boolean {
-  return s.estado === "pendiente" && operadorDeLaSolicitud(s) !== operadorVigente(s.sedeId);
+  return s.estado === "pendiente" && motivoDePuntoCash(s) !== null;
 }
 
 /** Las huérfanas pendientes y las que ya resolvió PuntoCash, de la más antigua a la más reciente. */

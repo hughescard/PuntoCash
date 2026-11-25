@@ -12,7 +12,9 @@ import { formatAmount } from "@/lib/format";
 import {
   esHuerfana,
   MOTIVO_RESOLUCION_MIN,
+  motivoDePuntoCash,
   operadorDeLaSolicitud,
+  type MotivoDePuntoCash,
   solicitudPorId,
   TIPO_DE_SOLICITUD,
   type Solicitud,
@@ -39,6 +41,37 @@ const REFERENCIA: Readonly<Record<Solicitud["tipo"], string>> = {
   fondos: "Antes del movimiento",
   recuento: "Saldo en libros",
 };
+
+/**
+ * Por qué nadie de la empresa que la originó puede resolverla (**FR-SA-APR-1**,
+ * **FR-SA-APR-3**). `motivo` es `null` cuando esa empresa ya podría, en una que
+ * PuntoCash resolvió antes.
+ */
+function porQue(
+  motivo: MotivoDePuntoCash | null,
+  entonces: string | null,
+  hoy: string | null,
+  entoncesId: string | null,
+): string {
+  switch (motivo) {
+    case "sin-operador":
+      return "Se registró cuando la sede no tenía operador: no hay ninguna empresa que pueda resolverla.";
+    case "cambio-de-operador":
+      return `Se registró cuando la sede era de ${entonces}. Hoy ${hoy ? `la administra ${hoy}` : "no tiene operador"}, que no ve lo anterior a su etapa, y ${entonces} ya no la tiene.`;
+    case "operador-inactivo": {
+      const estado = entoncesId ? findOperatorById(entoncesId)?.status : undefined;
+      const situacion =
+        estado === "suspendido"
+          ? "está suspendido"
+          : estado === "baja"
+            ? "está dado de baja"
+            : "no le queda ningún administrador activo";
+      return `Se registró cuando la sede era de ${entonces}, que sigue con ella pero ${situacion}: nadie de esa empresa puede entrar a resolverla.`;
+    }
+    default:
+      return `La resolvió PuntoCash cuando nadie de ${entonces ?? "la empresa de entonces"} podía hacerlo.`;
+  }
+}
 
 /**
  * Una diferencia sin quien la resuelva — **FR-SA-APR-2** a **FR-SA-APR-4**.
@@ -99,15 +132,12 @@ export default async function SuperAdminSolicitudPage({
       ) : null}
       {aviso.yaTieneQuien === "1" ? (
         <Alert variant="info" title="Ya la puede resolver su mercante" className="mb-8">
-          La sede volvió a la empresa que la tenía ese día, así que la resuelve su administración. Tu decisión no se ha
-          guardado.
+          La empresa que la originó vuelve a poder resolverla: la sede volvió a ella, o se reactivó, o volvió a tener un
+          administrador activo. Tu decisión no se ha guardado.
         </Alert>
       ) : null}
 
-      <Section
-        title="Por qué la resuelve PuntoCash"
-        description={`Se registró cuando la sede era de ${nombre(entonces) ?? "nadie"}. Hoy ${hoy ? `la administra ${nombre(hoy)}` : "no tiene operador"}, que no ve lo anterior a su etapa, y ${nombre(entonces) ?? "la empresa de entonces"} ya no la tiene.`}
-      >
+      <Section title="Por qué la resuelve PuntoCash" description={porQue(motivoDePuntoCash(s), nombre(entonces), nombre(hoy), entonces)}>
         <Card>
           <CardContent className="pt-6">
             <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
