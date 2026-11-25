@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v9.2
+## Documento de Requisitos Funcionales (FRD) · v9.3
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -12,7 +12,7 @@
 | `PuntoCash_Admin_Sede_PRD_v1.md` | El producto, sus conceptos y las reglas **A1–A14**, citadas aquí como **[A#]** |
 | `../PuntoCash_PRD_v2.md` | Las reglas de producto **R1–R13** y los requisitos **RP-***, citados como **[R#]** y **[RP-#]** |
 | `../worker/PuntoCash_Worker_Functional_Requirements_v1.md` (v2.0) | El acceso y la recuperación de contraseña, que esta consola reutiliza (**FR-AUTH-***, **FR-REC-***), y lo que hace el trabajador y aquí se consulta o se resuelve: jornadas, conteos billete a billete, movimientos de fondos, cambios de billetes, recuentos, operaciones con billetes, cierre forzado y alertas |
-| `PuntoCash_Super_Admin_Functional_Requirements_v1.md` | Lo que hace PuntoCash: sedes, operadores, servicios, catálogo de monedas, rangos de tasas y promociones de red (**FR-SA-***) |
+| `PuntoCash_Super_Admin_Functional_Requirements_v1.md` | Lo que hace PuntoCash: sedes, operadores, servicios, catálogo de monedas, rangos de tasas, tarifas de giros y promociones de red (**FR-SA-***) |
 | `../kiosko/…` | El kiosco de autoservicio (**FR-AS-***) y la pantalla informativa (**FR-PANT-***), que leen de esta consola el contenido público de cada sede |
 
 ## Cómo leer este documento
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 9.3 | 24/11/2026 | **Tarifas de giros: la administración de sede las ve.** Sección nueva **§21 Tarifas** (`/admin/tarifas`, `/admin/tarifas/giros`, **FR-AD-TAR-1** a **TAR-9**), de solo lectura y con las monedas en que las sedes del alcance envían giros; **PuntoCash avisa a las sedes cuando define, cambia o retira una tarifa**, en Tarifas y en el panel de atención de Inicio (fila 12, **FR-AD-HOME-2**), hasta que alguien de la empresa pulsa «Entendido» (**FR-AD-TAR-5** a **TAR-7**). Menú: Tarifas, tras Tasas (**FR-AD-SHELL-2**: quince destinos para el administrador principal, catorce para los demás). La fila «Sede en horario sin ninguna caja abierta» de Inicio pasa de 12 a 13. Código nuevo en el Apéndice C. Lo que leen los clientes y el trabajador está en los FRD de Autoservicio **2.1**, Pantalla **2.1** y Worker **2.4** |
 | 9.2 | 19/11/2026 | **Tarifas de giros.** Enviar giro cobra al remitente la tarifa que fija PuntoCash (FRD de Super Admin §10; FRD de Worker **FR-GE-16**). El mercante no la ve ni la cambia; la ve, aplicada, en el detalle de cada giro enviado (**FR-AD-OPS-3**). El importe de un giro enviado en Operaciones es el total cobrado; en Reportes, la tarifa **no es volumen** (**FR-AD-REP-8**). El **detalle de una operación** se lee como una cuenta del efectivo, que sustituye al bloque «Liquidación» (**FR-AD-OPS-10**) |
 | 9.1 | 16/11/2026 | **Foto del carné de quien cobra.** El detalle de una remesa entregada o de un giro pagado muestra las dos fotos del carné del beneficiario que hizo el trabajador al entregar (**FR-AD-OPS-11**, nuevo; FRD de Worker §6.8) |
 | 9.0 | 13/11/2026 | **Segunda iteración de Worker: lo que cambia en esta consola.** (1) **La caja lleva billetes**: inventario por denominación en la ficha de caja, la jornada, el movimiento y la operación (**FR-AD-CAJA-15** a **-19**, **FR-AD-JOR-4**, **-17**, **-21**, **FR-AD-OPS-10**). (2) **Ficha de caja** nueva, `/admin/cajas/[id]`: estado en tiempo real, efectivo, pendientes, movimientos, jornadas, alertas; Retirar y Reactivar pasan aquí; Cajas enseña el efectivo de cada caja (§4.6, **FR-AD-CAJA-1**). (3) **Aprobaciones**: sale «Ajuste de efectivo»; entran **Diferencia de composición**, **Movimiento de fondos** y **Diferencia en recuento**; un movimiento de fondos **solo lo confirma el supervisor que nombró el trabajador**, código `solo-el-supervisor`; un rechazo queda como **incidencia** del trabajador; «Sin explicar» (**FR-AD-APR-1**, **-17**, **-18**). (4) **Incidencias** en la ficha y la lista de Trabajadores (**FR-AD-TRAB-18**). (5) **Alertas de caja**, sección nueva en Configuración, `/admin/alertas`; Inicio, ficha de caja y ficha de sede las enseñan (§20, **FR-AD-HOME-2**, **FR-AD-SEDE-17**). (6) **Tablas**: la fila con detalle se abre entera y sus acciones van en la ficha o en «⋯»; **botones** uno al lado del otro (**FR-AD-SHELL-18**, **-19**). (7) En Sedes el **selector de la cabecera** aparece desactivado (**FR-AD-SCOPE-8**). (8) El **cierre forzado** se le avisa al trabajador al instante (**FR-AD-JOR-14**). (9) Los avisos que enumeran cajas o tasas ponen **una por línea**. (10) El trabajador **cambia él mismo** su nombre de usuario y su teléfono (**FR-AD-TRAB-19**). (11) Códigos de operación en **hora de Cuba**. |
@@ -131,12 +132,12 @@ Donde este documento dice de una lista «con enlace a» la ficha de la fila, se 
 | --- | --- |
 | Operación | Inicio, Jornadas, Aprobaciones, Operaciones |
 | Sucursal | Sedes, Cajas, Equipos, Trabajadores, Administradores |
-| Configuración | Monedas, Tasas, **Alertas** (§20), Promociones, Reportes |
+| Configuración | Monedas, Tasas, **Tarifas** (§21), **Alertas** (§20), Promociones, Reportes |
 
-- **Administradores** solo existe para el administrador principal (**FR-AD-USR-11**): catorce destinos para él, trece para los demás.
+- **Administradores** solo existe para el administrador principal (**FR-AD-USR-11**): quince destinos para él, catorce para los demás.
 - El servidor decide si incluye Administradores al armar el menú. La entrada no llega al navegador de quien no es principal.
 
-**Ver en la demo:** `marta@malecon-sf.cu` (catorce destinos) y `dcastro@malecon-sf.cu` (trece, sin Administradores).
+**Ver en la demo:** `marta@malecon-sf.cu` (quince destinos) y `dcastro@malecon-sf.cu` (catorce, sin Administradores).
 
 **FR-AD-SHELL-3 · Indicadores.** Tres destinos llevan un número cuando es mayor que cero:
 
@@ -194,7 +195,7 @@ Donde este documento dice de una lista «con enlace a» la ficha de la fila, se 
 
 | Filtran por la sede elegida | Muestran siempre todo el alcance |
 | --- | --- |
-| Inicio, Cajas, Equipos, Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Alertas, Promociones, Reportes, y los indicadores del menú (**FR-AD-SHELL-3**) | Sedes, Trabajadores y Administradores, con la sede como columna cuando aplica |
+| Inicio, Cajas, Equipos, Jornadas, Aprobaciones, Operaciones, Monedas, Tasas, Tarifas, Alertas, Promociones, Reportes, y los indicadores del menú (**FR-AD-SHELL-3**) | Sedes, Trabajadores y Administradores, con la sede como columna cuando aplica |
 
 - La selección se conserva durante la navegación.
 - Una sesión nueva empieza en «Todas mis sedes».
@@ -264,6 +265,8 @@ No se puede ver en la demo.
 | `/admin/monedas` | Monedas que maneja cada sede |
 | `/admin/tasas` | Tabla de tasas de las sedes del alcance |
 | `/admin/tasas/[sedeId]` | Tasas de una sede, con su edición |
+| `/admin/tarifas` | Tarifas por servicio, en solo lectura (§21) |
+| `/admin/tarifas/giros` | Tarifa de giros de cada moneda en que las sedes del alcance envían giros, en solo lectura (§21.2) |
 | `/admin/alertas` | Alertas de caja: activas, reglas de cada sede e historial (§20) |
 | `/admin/alertas/[sedeId]` | Definir las alertas de una sede (§20.3) |
 | `/admin/promociones` | Promociones de las sedes administradas |
@@ -828,7 +831,8 @@ El volumen se consulta en Reportes (**FR-AD-REP-12**).
 | 9 | **Caja con alertas** (§20) | Caja con la jornada abierta y alguna alerta encendida. Con una: «Caja 02 de PuntoCash Vedado: quedan pocos billetes de 10 USD»; con varias: «… tiene 3 alertas», y debajo sus títulos | Caja | `/admin/cajas/{id}` | Depende de la hora del día: alguna caja de PuntoCash Vedado |
 | 10 | Tasa ajustada por PuntoCash (**FR-AD-TASA-12**) | Tasa que el sistema llevó al límite de un rango nuevo y que nadie de la empresa ha confirmado | Sede y moneda | `/admin/tasas/{sedeId}` | EUR de PuntoCash Obispo |
 | 11 | Tasa cuyo rango retiró PuntoCash (**FR-AD-TASA-15**) | Tasa definida en la sede cuya moneda no tiene rango de PuntoCash | Sede y moneda | `/admin/tasas/{sedeId}` | Con `abarrios@bahiacambios.cu`: CAD de PuntoCash Trinidad |
-| 12 | Sede en horario sin ninguna caja abierta | La sede está activa, tiene al menos una caja activa con equipo, ninguna caja tiene jornada abierta y la hora actual está dentro de la franja de hoy en su horario | Sede | `/admin/sedes/{id}` | Entre lunes y sábado de 9:00 a 18:00, forzar el cierre de la Caja 01 de PuntoCash Obispo y volver a Inicio |
+| 12 | **Tarifa de giros que PuntoCash definió, cambió o retiró** (**FR-AD-TAR-5**) | Aviso de tarifa sin «Entendido» en alguna sede visible. Una entrada por moneda y por tipo de aviso, con las sedes a las que afecta | Moneda y tipo | `/admin/tarifas/giros` | Entrar en Super Admin como `emarrero@puntocash.com`, Tarifas → Giros → MXN → Definir; después, `marta@malecon-sf.cu`, Inicio |
+| 13 | Sede en horario sin ninguna caja abierta | La sede está activa, tiene al menos una caja activa con equipo, ninguna caja tiene jornada abierta y la hora actual está dentro de la franja de hoy en su horario | Sede | `/admin/sedes/{id}` | Entre lunes y sábado de 9:00 a 18:00, forzar el cierre de la Caja 01 de PuntoCash Obispo y volver a Inicio |
 
 «Dentro de la franja»: la hora de apertura del día es menor o igual que la actual, y la actual es menor que la de cierre. Un día cerrado no tiene franja.
 
@@ -3164,6 +3168,7 @@ El volumen de lo operado por las sedes en un periodo. **Solo lectura.**
 | `Denominacion` | Valor de un billete o moneda metálica de una moneda del catálogo, mantenido por PuntoCash para toda la red, con su retirada si la tiene (**FR-SA-DEN-***) |
 | `Billetes` | En cada movimiento de jornada, cuántos de cada denominación entran (positivo) o salen (negativo). El inventario de una caja es su suma |
 | `ReglasDeAlerta` | Por sede y por versión (desde cuándo rigen): por moneda, efectivo mínimo, máximo y billetes mínimos por denominación (§20) |
+| `AvisoDeTarifa` | Por sede y moneda: tipo (definida, cambiada o retirada), cuándo y la tarifa que la sede conocía antes del primer cambio sin ver (§21) |
 | `SolicitudAprobacion` | Tipo (diferencia de apertura, de cierre, de composición, movimiento de fondos, diferencia en recuento), supervisor nombrado, jornada, moneda, diferencia con signo, motivo y observaciones del trabajador, estado y resolución (decisión, autor, fecha, motivo) |
 | `EventoAuditoria` | Tipo, autor y su papel, fecha, sede y operador, sujeto, antes y después, motivo |
 
@@ -3271,6 +3276,8 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 | Que un movimiento de fondos se resuelva | Que su supervisor siga siendo administrador activo; si no, lo resuelve cualquier administrador de la sede (**FR-AD-APR-17**) |
 | Definir las alertas de una sede | Una sede del alcance no cerrada (§20) |
 | Que una caja tenga alertas | Reglas definidas en su sede y la jornada abierta (§20) |
+| Que una moneda salga en Tarifas de giros | Una sede del alcance no cerrada, con Giros habilitado y esa moneda en su lista (§21) |
+| Que un aviso de tarifa llegue a una sede | La misma condición, cuando PuntoCash define, cambia o retira la tarifa (**FR-AD-TAR-5**) |
 
 ---
 
@@ -3399,6 +3406,82 @@ Vedado tiene CUP 20.000–900.000, USD 50–6.000 con mínimo de 5 billetes de 1
 
 ---
 
+## 21. Tarifas
+
+Lo que paga el cliente por un servicio, además del importe de la operación. **Las fija PuntoCash** para toda la red (FRD de Super Admin §10): aquí solo se leen **[A3]**. Hoy solo Enviar giro lleva tarifa; la sección va **por servicio**, de modo que un servicio nuevo con tarifa es una fila más.
+
+### 21.1 Tarifas — `/admin/tarifas`
+
+**FR-AD-TAR-1 · Solo lectura.** La consola no define, cambia ni retira ninguna tarifa. Lo único que escribe esta sección es dar por visto un aviso (**FR-AD-TAR-6**).
+
+**FR-AD-TAR-2 · Servicios.** Una fila por servicio disponible, igual que la de Super Admin (**FR-SA-TAR-1**):
+
+| Servicio | Contenido |
+| --- | --- |
+| Cambio de moneda | **Sin tarifa**, con la razón |
+| Remesas | **Sin tarifa**, con la razón |
+| Giros | **Enviar giro**: por tramos, la paga el remitente; en cuántas monedas **de las sedes del alcance** se envían giros; enlace a Tarifas de giros. **Cobrar giro**: sin tarifa. Si ninguna sede del alcance ofrece Giros, la fila lo dice y no enlaza |
+
+- Se aplica el selector de la cabecera (**FR-AD-SCOPE-4**): el recuento de monedas y el texto («de esta sede» o «de tus sedes») son los del alcance vigente.
+- Arriba, los avisos de tarifa sin ver (**FR-AD-TAR-5**).
+
+**Ver en la demo:** `marta@malecon-sf.cu`, Tarifas. Con PuntoCash Vedado elegido: 3 monedas.
+
+### 21.2 Tarifas de giros — `/admin/tarifas/giros`
+
+**FR-AD-TAR-3 · Qué monedas.** Solo las monedas **en que las sedes del alcance envían giros**: las de la lista de cada sede (**FR-AD-MON-2**) que no esté cerrada y tenga Giros habilitado. No se muestran las monedas de la red que ninguna de esas sedes maneja.
+
+**FR-AD-TAR-4 · Pantalla.**
+
+| Bloque | Contenido |
+| --- | --- |
+| Con tarifa | Una tarjeta por moneda: bandera, código y nombre; **giro mínimo**; **en vigor desde** (fecha y hora de lo último que hizo PuntoCash con ella); con varias sedes en el alcance, **en cuáles se envían giros**; y los tramos, cada uno por lo que recibe el beneficiario, con su fijo y su porcentaje (**FR-SA-TAR-3**) |
+| Sin tarifa | Las monedas de las sedes del alcance en las que PuntoCash no ha definido tarifa. **En ellas no se envían giros** (**FR-SA-TAR-2**); con varias sedes, dice cuáles las manejan |
+
+- Si hay sedes con Giros pero ninguna moneda con tarifa, lo dice como advertencia: no se puede enviar giros en ninguna moneda.
+- Si ninguna sede del alcance ofrece Giros, lo dice y no enseña tarjetas.
+- Sin acciones de «Cambiar», «Definir» ni «Retirar».
+
+**Ver en la demo:** `marta@malecon-sf.cu`, Tarifas → Ver tarifas de giros: CUP, EUR y USD con tarifa; CHF, GBP y MXN en «Sin tarifa».
+
+### 21.3 Avisos de PuntoCash
+
+**FR-AD-TAR-5 · Cuándo se avisa.** Cuando PuntoCash, en Tarifas de giros (**FR-SA-TAR-9** a **TAR-11**):
+
+| Hace | Aviso | Qué significa para la sede |
+| --- | --- | --- |
+| Define la tarifa de una moneda | «PuntoCash definió la tarifa de giros en {moneda}» | Ya puede enviar giros en ella |
+| Cambia una tarifa | «PuntoCash cambió la tarifa de giros en {moneda}» | Los giros nuevos pagan la tarifa nueva; los ya enviados no cambian. Dice **la tarifa de antes** |
+| La retira | «PuntoCash retiró la tarifa de giros en {moneda}» | Ya no puede enviar giros en ella hasta que se defina de nuevo |
+
+- Se avisa a **cada sede abierta con Giros habilitado y esa moneda en su lista**, y a ninguna otra.
+- El aviso es **uno por moneda y tipo**, con las sedes del alcance a las que afecta, y dice desde cuándo.
+- Sin «Entendido», el aviso sigue **arriba de Tarifas y de Tarifas de giros**, y en el **panel de atención de Inicio** (fila 12 de **FR-AD-HOME-2**), que enlaza a Tarifas de giros.
+
+**FR-AD-TAR-6 · «Entendido».** Cierra el aviso de esa moneda para las sedes que cubre. **Basta con que lo pulse un administrador** de la empresa: deja de aparecerles a todos. Una tasa ajustada por PuntoCash (**FR-AD-TASA-12**) se cierra de otra manera —confirmándola o cambiándola— porque pide una decisión de la sede; una tarifa es de PuntoCash y solo hay que enterarse.
+
+| Condición | Código |
+| --- | --- |
+| Una sede que no existe o está fuera del alcance de la sesión | `no-encontrada` |
+| Cualquier otro fallo | `error-inesperado` |
+
+Dar por visto un aviso que ya estaba visto no es un error: no hay nada que hacer.
+
+**FR-AD-TAR-7 · Varios cambios sin ver.** Un aviso se compara siempre con la tarifa que **la sede conocía** antes del primer cambio sin ver, no con el paso intermedio.
+
+- Si al final la sede queda como la conocía (se deshizo un cambio, se guardó sin cambiar nada, o se definió y se retiró sin que nadie lo viera), **no hay aviso**.
+- Un aviso de una moneda que la sede ya no maneja, o de una sede que ya no tiene Giros, **no se muestra**.
+
+### 21.4 Lo que leen los demás
+
+**FR-AD-TAR-8 · Misma fuente.** La tarifa que ve la administración es la que cobra la caja y la que ven los clientes: Worker (FRD de Worker **FR-HOME-7**), el kiosco (FRD de Autoservicio **FR-AS-TAR-1**) y la pantalla informativa (FRD de Pantalla **FR-PANT-TARIFAS-1**) la leen del mismo origen **[A12]**.
+
+### 21.5 Auditoría
+
+**FR-AD-TAR-9** **[RP-21]** Dar por visto un aviso **no se audita**: no cambia ningún dato. Lo que PuntoCash hace con una tarifa queda en su propia auditoría (FRD de Super Admin §10.6).
+
+---
+
 ## Apéndice A · Terminología
 
 Amplía el Apéndice A del FRD de Worker.
@@ -3447,7 +3530,7 @@ Amplía el Apéndice A del FRD de Worker.
 | --- | --- |
 | **A1** Aislamiento por alcance | FR-AD-NAV-2, FR-AD-NAV-3, FR-AD-SCOPE-1 a 6, FR-AD-EQ-1, FR-AD-EQ-7, FR-AD-CAJA-5, FR-AD-TRAB-5, FR-AD-SEDE-12, FR-AD-DOM-5 |
 | **A2** Una asignación vigente | FR-AD-SEDE-12 (lectura) |
-| **A3** Solo PuntoCash decide qué sedes existen y sus límites | FR-AD-SEDE-2, FR-AD-SEDE-4, FR-AD-SEDE-5, FR-AD-SEDE-6, FR-AD-STATE-6, FR-AD-MON-3, FR-AD-TASA-2, FR-AD-TASA-4 |
+| **A3** Solo PuntoCash decide qué sedes existen y sus límites | FR-AD-TAR-1, FR-AD-SEDE-2, FR-AD-SEDE-4, FR-AD-SEDE-5, FR-AD-SEDE-6, FR-AD-STATE-6, FR-AD-MON-3, FR-AD-TASA-2, FR-AD-TASA-4 |
 | **A4** El mercante gobierna lo de dentro | FR-AD-CAJA-1 a 14, FR-AD-EQ-3, FR-AD-TRAB-3 a 16, FR-AD-USR-1 a 14, FR-AD-PERF-3, FR-AD-MON-1 a 10, FR-AD-TASA-1 a 18, FR-AD-SEDE-14, FR-AD-PROM-1 a 12, FR-AD-JOR-1 a 20, FR-AD-APR-1 a 16, FR-AD-REP-1 a 13 |
 | **A5** Tasa dentro del rango, sobre monedas propias y servicio habilitado | FR-AD-TASA-2, 5, 7, 8, 11, 12, 15 |
 | **A6** Supervisa y desbloquea, no opera | FR-AD-SEDE-7, FR-AD-TRAB-11, FR-AD-JOR-7 a 9, FR-AD-OPS-5, FR-AD-APR-9, FR-AD-APR-10 |
@@ -3456,7 +3539,7 @@ Amplía el Apéndice A del FRD de Worker.
 | **A9** PuntoCash es la marca visible | FR-AD-SHELL-4, FR-AD-SHELL-5 |
 | **A10** Los equipos los vincula el Admin | FR-AD-EQ-3, FR-AD-EQ-7, FR-AD-EQ-13, FR-AD-EQ-17, FR-AD-EQ-25, FR-AD-FMT-4 |
 | **A11** Un equipo, un puesto | FR-AD-EQ-8, FR-AD-EQ-10, FR-AD-EQ-14, FR-AD-JOR-13 |
-| **A12** Fuente única del contenido de sede | FR-AD-SEDE-5, FR-AD-SEDE-11, FR-AD-SEDE-16, FR-AD-DOM-7, FR-AD-MON-2, FR-AD-TASA-6, FR-AD-TASA-18, FR-AD-PROM-6 |
+| **A12** Fuente única del contenido de sede | FR-AD-TAR-8, FR-AD-SEDE-5, FR-AD-SEDE-11, FR-AD-SEDE-16, FR-AD-DOM-7, FR-AD-MON-2, FR-AD-TASA-6, FR-AD-TASA-18, FR-AD-PROM-6 |
 | **A13** El trabajador es de una sede | FR-AD-TRAB-1, FR-AD-TRAB-4, FR-AD-TRAB-14, FR-AD-SEDE-9, FR-AD-DOM-3 |
 | **A14** PuntoCash observa y actúa solo sobre la sede entera | FR-AD-EQ-3, FR-AD-TRAB-15, FR-AD-TRAB-16, FR-AD-SEDE-13, FR-AD-ACC-6, FR-AD-DOM-6, FR-AD-STATE-6 |
 | **R3** Revalidación al confirmar | FR-AD-EQ-22, FR-AD-TASA-11, FR-AD-JOR-11, FR-AD-APR-11 |
@@ -3641,3 +3724,10 @@ El mensaje que ve el usuario para cada código de rechazo. Un código se busca p
 | `importe-invalido` | {Moneda}: los importes no pueden ser negativos. (Un importe que no se entiende: «{Moneda}: escribe un importe válido, por ejemplo 1.500,00.») |
 | `cantidad-invalida` | {Moneda}: los billetes mínimos son números enteros, de cero en adelante. |
 | `sede-cerrada` | El mensaje común de sede cerrada |
+
+### Tarifas — §21
+
+| Código | Mensaje |
+| --- | --- |
+| `error-inesperado` | No se pudo marcar el aviso. Vuelve a intentarlo. |
+| `no-encontrada` | El mensaje común de «no encontrada» |

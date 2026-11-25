@@ -7,7 +7,6 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import {
   Alert,
-  Badge,
   Button,
   Card,
   Dialog,
@@ -20,26 +19,16 @@ import {
   Field,
   fieldAria,
   Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   type FieldSpec,
 } from "@/components/ui";
-import { CurrencyFlag } from "@/components/patterns/currency-flag";
-import type { TramoDeTarifa } from "@/features/network/tarifas-reglas";
+import { MonedaDeTarifa, TramosDeTarifa, type TramoMostrado } from "@/components/patterns/tarifa-de-giro";
 import { useHydrated } from "@/lib/use-hydrated";
 import { enviarSinReiniciar } from "@/lib/enviar-sin-reiniciar";
 import { retirarTarifaDeGiroAction, type ResultadoTarifa } from "../_actions";
-import { importe, porcentaje, textoDelTramo } from "../formato";
+import { importe } from "../formato";
 import { useEnfocarErrorAlResponder } from "@/lib/foco";
 
-export interface TramoMostrado extends TramoDeTarifa {
-  desde: number;
-  incluido: boolean;
-}
+export type { TramoMostrado };
 
 export interface MonedaConTarifa {
   code: string;
@@ -118,7 +107,7 @@ export function TarifasDeGiros({
             <ul className="divide-y divide-border">
               {sin.map((m) => (
                 <li key={m.code} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
-                  <Moneda code={m.code} nombre={m.nombre} />
+                  <MonedaDeTarifa code={m.code} nombre={m.nombre} />
                   {m.sinDenominaciones ? (
                     <span className="text-body-sm text-text-secondary">No circula ninguna denominación</span>
                   ) : (
@@ -141,25 +130,6 @@ export function TarifasDeGiros({
   );
 }
 
-function Moneda({ code, nombre, retirada = false }: { code: string; nombre: string; retirada?: boolean }): React.JSX.Element {
-  return (
-    <span className="inline-flex items-center gap-2.5">
-      <CurrencyFlag currency={code} />
-      <span className="flex flex-col leading-tight">
-        <span className="pc-numeric font-semibold text-text-primary">
-          {code}
-          {retirada ? (
-            <span className="ml-2 align-middle">
-              <Badge variant="warning">Retirada del catálogo</Badge>
-            </span>
-          ) : null}
-        </span>
-        <span className="text-caption text-text-secondary">{nombre}</span>
-      </span>
-    </span>
-  );
-}
-
 function TarjetaDeTarifa({
   moneda: m,
   deshabilitado,
@@ -172,7 +142,7 @@ function TarjetaDeTarifa({
   return (
     <Card>
       <div className="flex flex-wrap items-start justify-between gap-4 px-6 pt-6 pb-4">
-        <Moneda code={m.code} nombre={m.nombre} retirada={m.retirada} />
+        <MonedaDeTarifa code={m.code} nombre={m.nombre} retirada={m.retirada} />
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" asChild>
             <Link href={`/super-admin/tarifas/giros/${m.code}` as Route} aria-label={`Cambiar la tarifa de giros en ${m.code}`}>
@@ -209,46 +179,7 @@ function TarjetaDeTarifa({
         </div>
       </dl>
 
-      {/* En el teléfono, una lista: tres columnas con cabeceras largas no caben en 390. */}
-      <ul className="divide-y divide-border border-t border-border sm:hidden">
-        {m.tramos.map((t, i) => (
-          <li key={i} className="px-6 py-3">
-            <p className="pc-numeric text-body-sm font-medium text-text-primary">{textoDelTramo(t)}</p>
-            <p className="pc-numeric mt-0.5 text-body-sm text-text-secondary">
-              Tarifa: {t.fijo > 0 ? `${importe(t.fijo)} ${m.code}` : ""}
-              {t.fijo > 0 && t.porcentaje > 0 ? " + " : ""}
-              {t.porcentaje > 0 ? porcentaje(t.porcentaje) : ""}
-            </p>
-          </li>
-        ))}
-      </ul>
-
-      <div className="hidden overflow-x-auto border-t border-border sm:block">
-        <Table aria-label={`Tramos de la tarifa de giros en ${m.code}`}>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="pl-6">Lo que recibe el beneficiario ({m.code})</TableHead>
-              <TableHead numeric>Fijo ({m.code})</TableHead>
-              <TableHead numeric className="pr-6">
-                Porcentaje
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {m.tramos.map((t, i) => (
-              <TableRow key={i}>
-                <TableCell className="pc-numeric pl-6 text-text-primary">{textoDelTramo(t)}</TableCell>
-                <TableCell numeric className="pc-numeric">
-                  {t.fijo > 0 ? importe(t.fijo) : <span className="text-text-secondary">—</span>}
-                </TableCell>
-                <TableCell numeric className="pc-numeric pr-6">
-                  {t.porcentaje > 0 ? porcentaje(t.porcentaje) : <span className="text-text-secondary">—</span>}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <TramosDeTarifa code={m.code} tramos={m.tramos} />
     </Card>
   );
 }

@@ -115,6 +115,9 @@ export const MENSAJES = {
     "rango-cambiado": "PuntoCash cambió el rango permitido. Revisa el valor.",
     "sin-tasa": "{moneda} ya no tenía tasa en esta sede.",
   },
+  tarifas: {
+    "error-inesperado": "No se pudo marcar el aviso. Vuelve a intentarlo.",
+  },
   promociones: {
     "titulo-vacio": "Escribe el título.",
     "titulo-largo": "El título no puede pasar de {max} caracteres.",

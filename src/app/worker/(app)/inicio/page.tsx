@@ -49,6 +49,7 @@ import { getVistaDeCaja } from "@/features/worker/sesion-servidor";
 import { WORKER_SERVICES } from "@/features/operations/services";
 import { AvisoDeCaja } from "../aviso-de-caja";
 import { AlertasDeCaja } from "../alertas-de-caja";
+import { TarifasVigentes } from "./tarifas-vigentes";
 
 export const metadata: Metadata = {
   title: "Inicio",
@@ -235,6 +236,12 @@ export default async function WorkerHomePage() {
             </CardFooter>
           </Card>
         </div>
+
+        {/* ---- Tarifas vigentes ------------------------------------------- */}
+        {/* Junto a las tasas: es la misma pregunta del cliente, «¿cuánto me
+            cobran?». Los accesos rápidos repiten «Nueva operación», que ya
+            está arriba y en el menú, así que pueden bajar. */}
+        <TarifasVigentes vista={vista} glyph={CardGlyph} desdeCuando={desdeCuando} />
 
         {/* ---- Accesos rápidos -------------------------------------------- */}
         <Card>

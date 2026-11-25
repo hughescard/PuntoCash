@@ -35,10 +35,11 @@
  */
 
 import { almacen } from "./almacen";
-import { monedaDelCatalogo } from "./currencies";
+import { estaEnAlcance } from "./assignments";
+import { monedaDelCatalogo, monedasDeSede, sedeManejaMoneda } from "./currencies";
 import { denominacionesDe } from "./denominaciones";
-import { isMotivoValido } from "./sedes";
-import { isGlobal, type Scope } from "./scope";
+import { findSedeById, isMotivoValido, SEDES } from "./sedes";
+import { isGlobal, requireOperatorScope, type Scope } from "./scope";
 import type { GuardaDeRetiroDeDenominacion } from "./denominaciones";
 import {
   TARIFAS_SEMBRADAS,
@@ -115,6 +116,46 @@ export function seEnvianGirosEn(moneda: string): boolean {
 }
 
 /* -------------------------------------------------------------------------
+ * Lo que se le enseña al cliente
+ * ---------------------------------------------------------------------- */
+
+/** La tarifa de giros de una moneda, tal como la ve el cliente en el kiosco o en la pantalla. */
+export interface TarifaPublica {
+  moneda: string;
+  nombre: string;
+  minimo: number;
+  tramos: readonly TramoDeTarifa[];
+  /** Desde cuándo está en vigor. */
+  desde: string;
+}
+
+/**
+ * Las tarifas de giro que una sede anuncia: las monedas de su lista en las que
+ * PuntoCash definió política, solo si la sede ofrece Giros y no está cerrada.
+ * Es lo mismo que puede cobrar su caja, y por eso lo lee el kiosco y la
+ * pantalla: una moneda sin política no se envía y no sale. Sede sin Giros o sin
+ * ninguna política devuelve una lista vacía, y quien la pinta decide cómo
+ * decirlo (o si no existe).
+ */
+export function tarifasPublicas(sedeId: string): readonly TarifaPublica[] {
+  const sede = findSedeById(sedeId);
+  if (!sede || sede.status === "cerrada" || !sede.services.includes(SERVICIO_GIROS)) return [];
+  return monedasDeSede(sedeId).flatMap((m) => {
+    const t = politicas.get(m.code);
+    if (!t) return [];
+    return [
+      {
+        moneda: m.code,
+        nombre: monedaDelCatalogo(m.code)?.name ?? m.code,
+        minimo: t.minimo,
+        tramos: t.tramos.map((x) => ({ ...x })),
+        desde: t.updatedAt,
+      },
+    ];
+  });
+}
+
+/* -------------------------------------------------------------------------
  * Qué circula de cada moneda
  * ---------------------------------------------------------------------- */
 
@@ -183,6 +224,7 @@ export function definirTarifaDeGiro(
     updatedBy: input.autor,
   };
   politicas.set(input.moneda, tarifa);
+  avisarALasSedes(input.moneda, anterior ? "cambiada" : "definida", anterior, now);
   return { ok: true, value: { tarifa: copiar(tarifa), anterior: anterior ? copiar(anterior) : null } };
 }
 
@@ -193,5 +235,123 @@ export function retirarTarifaDeGiro(scope: Scope, moneda: string, motivo: string
   if (!actual) return { ok: false, error: { reason: "sin-tarifa" } };
   if (!isMotivoValido(motivo)) return { ok: false, error: { reason: "motivo-requerido" } };
   politicas.delete(moneda);
+  avisarALasSedes(moneda, "retirada", actual, new Date());
   return { ok: true, value: copiar(actual) };
+}
+
+/* -------------------------------------------------------------------------
+ * Avisos a las sedes (decisión del 24/11/2026)
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Lo que PuntoCash hizo con la tarifa de una moneda, contado a cada sede que
+ * envía giros en ella. El mercante no puede hacer nada con el cambio, pero
+ * sus clientes lo van a notar, y es mejor que se entere antes que ellos.
+ *
+ *   · **definida**: la sede empieza a poder enviar giros en esa moneda.
+ *   · **cambiada**: los giros que envíe desde ese momento pagan otra tarifa.
+ *   · **retirada**: la sede deja de poder enviar giros en esa moneda.
+ *
+ * Funciona como la tasa que ajustó PuntoCash al mover un rango: el aviso
+ * sigue en pie hasta que alguien de la empresa dice que se ha enterado, y
+ * basta con uno para toda la sede.
+ */
+export type TipoDeAvisoDeTarifa = "definida" | "cambiada" | "retirada";
+
+export interface AvisoDeTarifa {
+  sedeId: string;
+  moneda: string;
+  tipo: TipoDeAvisoDeTarifa;
+  /** Cuándo lo hizo PuntoCash (el último cambio, si hubo varios sin ver). */
+  at: string;
+  /**
+   * La tarifa que la sede conocía antes del primer cambio sin ver: con dos
+   * cambios seguidos, lo que interesa comparar es contra lo que se sabía, no
+   * contra el paso intermedio. `null` si no había ninguna.
+   */
+  anterior: TarifaDeGiro | null;
+}
+
+const avisos = almacen("avisos-de-tarifa", () => new Map<string, AvisoDeTarifa>());
+const claveDeAviso = (sedeId: string, moneda: string) => `${sedeId}|${moneda}`;
+
+/** Las sedes a las que les toca: abiertas, con Giros y con esa moneda en su lista. */
+function sedesQueEnvianEn(moneda: string): readonly string[] {
+  return SEDES.filter((s) => s.status !== "cerrada" && s.services.includes(SERVICIO_GIROS) && sedeManejaMoneda(s.id, moneda)).map(
+    (s) => s.id,
+  );
+}
+
+/** Las monedas con aviso en esa sede que todavía le dicen algo: las sigue manejando y sigue con Giros. */
+function monedasConAvisoVigente(sedeId: string): readonly string[] {
+  const sede = findSedeById(sedeId);
+  if (!sede || sede.status === "cerrada" || !sede.services.includes(SERVICIO_GIROS)) return [];
+  return [...avisos.values()].filter((a) => a.sedeId === sedeId && sedeManejaMoneda(sedeId, a.moneda)).map((a) => a.moneda);
+}
+
+function avisarALasSedes(moneda: string, tipo: TipoDeAvisoDeTarifa, anterior: TarifaDeGiro | null, now: Date): void {
+  for (const sedeId of sedesQueEnvianEn(moneda)) {
+    const clave = claveDeAviso(sedeId, moneda);
+    const previo = avisos.get(clave);
+    const conocida = previo ? previo.anterior : anterior;
+    const ahora = tipo === "retirada" ? null : politicas.get(moneda) ?? null;
+    /* Si al final la sede queda como la conocía (se guardó sin cambiar nada,
+       se deshizo un cambio, o se definió y se retiró sin que nadie lo viera),
+       no hay nada que contar. */
+    if (mismaTarifa(conocida, ahora)) {
+      avisos.delete(clave);
+      continue;
+    }
+    const tipoFinal: TipoDeAvisoDeTarifa = ahora === null ? "retirada" : conocida === null ? "definida" : "cambiada";
+    avisos.set(clave, { sedeId, moneda, tipo: tipoFinal, at: now.toISOString(), anterior: conocida ? copiar(conocida) : null });
+  }
+}
+
+function mismaTarifa(a: TarifaDeGiro | null, b: TarifaDeGiro | null): boolean {
+  if (!a || !b) return a === b;
+  return (
+    a.minimo === b.minimo &&
+    a.tramos.length === b.tramos.length &&
+    a.tramos.every((t, i) => {
+      const o = b.tramos[i]!;
+      return t.hasta === o.hasta && t.fijo === o.fijo && t.porcentaje === o.porcentaje;
+    })
+  );
+}
+
+/**
+ * Los avisos sin ver de una sede, el más reciente primero. Si la sede dejó de
+ * enviar giros en esa moneda (la quitó de su lista, o perdió Giros), el aviso
+ * ya no le dice nada y no se enseña.
+ */
+export function avisosDeTarifa(sedeId: string): readonly AvisoDeTarifa[] {
+  const sigue = new Set(monedasConAvisoVigente(sedeId));
+  return [...avisos.values()]
+    .filter((a) => a.sedeId === sedeId && sigue.has(a.moneda))
+    .sort((x, y) => y.at.localeCompare(x.at))
+    .map((a) => ({ ...a, anterior: a.anterior ? copiar(a.anterior) : null }));
+}
+
+export type AvisoDeTarifaDenial = "alcance-global-prohibido" | "fuera-de-alcance" | "sede-no-encontrada";
+
+/**
+ * Alguien de la empresa se ha enterado del aviso de una moneda en sus sedes.
+ * Lo da por visto en todas las que nombra (la pantalla agrupa por moneda); las
+ * que no son de su alcance se rechazan enteras. Ver un aviso que ya no está no
+ * es un error: otro de la empresa se adelantó.
+ */
+export function darPorVistoAvisoDeTarifa(
+  scope: Scope,
+  sedeIds: readonly string[],
+  moneda: string,
+): { ok: true; vistos: number } | { ok: false; reason: AvisoDeTarifaDenial } {
+  const operador = requireOperatorScope(scope);
+  if (!operador.ok) return { ok: false, reason: "alcance-global-prohibido" };
+  for (const id of sedeIds) {
+    if (!findSedeById(id)) return { ok: false, reason: "sede-no-encontrada" };
+    if (!estaEnAlcance(scope, id)) return { ok: false, reason: "fuera-de-alcance" };
+  }
+  let vistos = 0;
+  for (const id of sedeIds) if (avisos.delete(claveDeAviso(id, moneda))) vistos++;
+  return { ok: true, vistos };
 }

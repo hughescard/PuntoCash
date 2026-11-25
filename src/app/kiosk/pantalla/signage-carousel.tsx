@@ -2,9 +2,10 @@
 
 import * as React from "react";
 
-import { usePromociones, useTablero, type SedePublica } from "./tableros";
+import { usePromociones, useTablero, useTarifas, type SedePublica } from "./tableros";
 
 import { SlideTasas } from "./slides/slide-tasas";
+import { SlideTarifas } from "./slides/slide-tarifas";
 import { SlideSucursal } from "./slides/slide-sucursal";
 import { SlidePromocion } from "./slides/slide-promociones";
 
@@ -40,8 +41,12 @@ export function SignageCarousel({ sede }: { sede: SedePublica }): React.JSX.Elem
      ninguna, no hay diapositiva de promociones. */
   const conTasas = useTablero(sede.id).length > 0;
   const promociones = usePromociones(sede.id);
+  /* Igual con las tarifas: una sede sin Giros, o sin ninguna política en sus
+     monedas, no tiene diapositiva de tarifas. Va justo después de las tasas. */
+  const conTarifas = useTarifas(sede.id).length > 0;
   const slides: Slide[] = [
     ...(conTasas ? [{ id: "tasas", label: "Tasas del día", render: () => <SlideTasas sede={sede} /> }] : []),
+    ...(conTarifas ? [{ id: "tarifas", label: "Tarifas de giros", render: () => <SlideTarifas sede={sede} /> }] : []),
     { id: "sucursal", label: "Info de la sucursal", render: () => <SlideSucursal sede={sede} /> },
     ...promociones.map((promo) => ({
       id: `promo-${promo.id}`,

@@ -5,6 +5,7 @@ import { lineasDeHorario } from "@/features/network/horario";
 import { promocionesPublicas } from "@/features/network/promotions";
 import { tableroPublico } from "@/features/network/rates";
 import { SEDES } from "@/features/network/sedes";
+import { tarifasPublicas } from "@/features/network/tarifas";
 import { SignageScreen } from "./signage-screen";
 import { TablerosProvider } from "./tableros";
 
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/* Las tasas cambian cuando el mercante las cambia: esta página no puede
+/* Las tasas (y las tarifas) cambian cuando el mercante o PuntoCash las cambian: esta página no puede
    generarse una vez y servirse para siempre. */
 export const dynamic = "force-dynamic";
 
@@ -38,8 +39,10 @@ export default function KioskPantallaPage() {
   /* Solo las vigentes hoy, y de cada sede las suyas: las de su operador
      mientras la administre y las de red (FR-AD-PROM-6). */
   const promociones = Object.fromEntries(abiertas.map((s) => [s.id, promocionesPublicas(s.id)]));
+  /* Las tarifas de giro de cada sede, las mismas que enseña su kiosco. */
+  const tarifas = Object.fromEntries(abiertas.map((s) => [s.id, tarifasPublicas(s.id)]));
   return (
-    <TablerosProvider tableros={tableros} sedes={sedes} promociones={promociones}>
+    <TablerosProvider tableros={tableros} sedes={sedes} promociones={promociones} tarifas={tarifas}>
       <SignageScreen />
     </TablerosProvider>
   );

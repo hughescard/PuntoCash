@@ -1,5 +1,5 @@
 # PuntoCash — Kiosco de autoservicio
-## Documento de Requisitos Funcionales (FRD) · v2.0
+## Documento de Requisitos Funcionales (FRD) · v2.1
 
 **Alcance:** el kiosco táctil de autoservicio de una sede, `/kiosk/autoservicio`. No cubre la pantalla informativa (`/kiosk/pantalla`), que tiene su propio documento, ni la caja que termina lo que el kiosco prepara, que está en el FRD de Worker.
 
@@ -13,7 +13,7 @@
 | `../worker/PuntoCash_Worker_Functional_Requirements_v1.md` (2.3) | **Buscar solicitud** (§5.3, **FR-SOL-***) y los flujos de caja que terminan lo que el kiosco prepara |
 | `PuntoCash_Kiosk_Pantalla_Functional_Requirements_v1.md` (2.0) | La pantalla informativa de la sede, que lee las mismas tasas |
 | `../admin/PuntoCash_Admin_Sede_Functional_Requirements_v1.md` | Vincular y desvincular el kiosco (**FR-AD-EQ-***) y las tasas de la sede (**FR-AD-TASA-***) |
-| `../admin/PuntoCash_Super_Admin_Functional_Requirements_v1.md` | Los servicios de cada sede, el catálogo de monedas y denominaciones y la tarifa de giros (**FR-SA-TAR-***) |
+| `../admin/PuntoCash_Super_Admin_Functional_Requirements_v1.md` | Los servicios de cada sede, el catálogo de monedas y denominaciones y la tarifa de giros (**FR-SA-TAR-***), que este kiosco muestra (**FR-AS-TAR-1**) |
 
 ## Cómo leer este documento
 
@@ -27,6 +27,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 2.1 | 24/11/2026 | **Consultar tarifas.** Pantalla nueva `/kiosk/autoservicio/tarifas`, pareja de la consulta de tasas, con la tarifa de giros de la sede (**FR-AS-TAR-1** a **TAR-3**, nuevo). El inicio ofrece **dos consultas**, tasas y tarifas, aparte de los servicios (**FR-AS-HOME-1**, **HOME-2**, **HOME-4**, **FR-AS-NAV-1**). Sin cambios en los flujos |
 | 2.0 | 23/11/2026 | **Documento reescrito** en el formato de los FRD de Worker y de administración, describiendo el sistema y no la demostración. Lo que cambia de fondo: (1) **El kiosco opera sobre la red**: su vínculo, su sede, sus servicios, sus tasas y su tarifa los da el servidor en cada petición, y un cambio de la sede llega al kiosco sin tocarlo (§1.3, §2). (2) **La sede decide**: una sede que no atiende deja el kiosco «no disponible», y un servicio que la sede no ofrece no existe en el kiosco (**FR-AS-SEDE-1** a **SEDE-4**, nuevos). (3) **El kiosco no toca billetes**: prepara la operación y la caja la termina. Lo único de los billetes que comprueba es que lo que el cliente entrega se pueda pagar, y avisa de que la cifra final la confirma la caja (**FR-AS-CM-5**, **FR-AS-RM-6**, **FR-AS-GC-2**). (4) **Cambio de moneda con dos modos**, «Sé cuánto voy a entregar» y «Sé cuánto quiero recibir», con las tasas de la sede (**FR-AS-CM-1** a **CM-4**). (5) **Enviar giro con su tarifa**: el cliente ve lo que recibe el beneficiario, la tarifa y el total antes de recibir su código (**FR-AS-GE-4**, **GE-8**, **GE-9**). (6) **El servidor vuelve a cotizar** el cambio y el giro al registrar, y si la cifra ya no es la que vio el cliente no registra nada (**FR-AS-CM-8**, **FR-AS-GE-6**). (7) **Las solicitudes son de la red**: código único, vigencia con el reloj del servidor, canje en el servidor y solo en una caja de la misma sede (§9). (8) **Carné en caja**: los cobros avisan antes del código de que hay que presentar el carné (**FR-AS-RM-6**, **FR-AS-GC-2**). Sale el simulador `/kiosk/simulador-admin`: el kiosco se vincula desde la consola de la sede |
 | 1.3 | 22/09/2026 | Sesión de dispositivo vinculada por el administrador; impresión del código |
 | 1.2 | 22/09/2026 | Separación entre la demostración y el producto; almacén compartido, código único, consumo atómico y vigencia en el servidor |
@@ -69,13 +70,14 @@ El kiosco nunca:
 
 | Ruta | Pantalla | Sección |
 | --- | --- | --- |
-| `/kiosk/autoservicio` | Inicio: los servicios de la sede y la consulta de tasas | §3 |
+| `/kiosk/autoservicio` | Inicio: los servicios de la sede y las consultas de tasas y de tarifas | §3 |
 | `/kiosk/autoservicio/cambio-moneda` | Preparar un cambio de moneda | §4 |
 | `/kiosk/autoservicio/remesas` | Preparar el cobro de una remesa | §5 |
 | `/kiosk/autoservicio/giros` | Enviar o cobrar un giro | §6.1 |
 | `/kiosk/autoservicio/giros/enviar` | Preparar el envío de un giro | §6.2 |
 | `/kiosk/autoservicio/giros/cobrar` | Preparar el cobro de un giro | §6.3 |
 | `/kiosk/autoservicio/tasas` | Tasas del día de la sede, solo consulta | **FR-AS-NAV-2** |
+| `/kiosk/autoservicio/tarifas` | Tarifas de la sede, solo consulta | **FR-AS-TAR-1** |
 
 Toda ruta muestra la pantalla de vinculación mientras el kiosco no esté vinculado (**FR-AS-LINK-1**) y «no disponible» si su sede no atiende (**FR-AS-SEDE-2**). La de un servicio que la sede no ofrece responde «no encontrada» (**FR-AS-SEDE-3**).
 
@@ -121,15 +123,23 @@ El cliente nunca se identifica, pero el equipo sí tiene sesión, y sin ella no 
 
 ## 3. Inicio — `/kiosk/autoservicio`
 
-**FR-AS-HOME-1** Solo información pública: los servicios de la sede y la consulta de tasas. Ningún saldo, historial ni dato de cliente.
+**FR-AS-HOME-1** Solo información pública: los servicios de la sede y las consultas de tasas y de tarifas. Ningún saldo, historial ni dato de cliente.
 
-**FR-AS-HOME-2** Cada servicio lleva a su flujo. «Consultar tasas» tiene un tratamiento distinto, más sutil, porque no produce solicitud.
+**FR-AS-HOME-2** Cada servicio lleva a su flujo. «Consultar tasas» y «Consultar tarifas» tienen un tratamiento distinto, más sutil, y van **aparte de los servicios**, porque no producen solicitud.
 
 **FR-AS-HOME-3** El catálogo del kiosco es fijo, Cambio de moneda, Cobrar remesa y Giros, y no crece con el de Worker.
 
-**FR-AS-HOME-4 · Por sede.** De esos tres, solo los habilitados en la sede (**FR-AS-SEDE-3**). «Consultar tasas» aparece solo con Cambio de moneda.
+**FR-AS-HOME-4 · Por sede.** De esos tres, solo los habilitados en la sede (**FR-AS-SEDE-3**). «Consultar tasas» aparece solo con Cambio de moneda, y «Consultar tarifas» solo con Giros.
 
-**Ver en la demo:** el kiosco de Vedado ofrece los tres servicios; uno vinculado a PuntoCash Matanzas, que no cambia moneda, ofrece Remesas y Giros, sin tasas (vincularlo desde Admin como `rortega@caribecambios.cu`).
+**Ver en la demo:** el kiosco de Vedado ofrece los tres servicios y las dos consultas; uno vinculado a PuntoCash Matanzas, que no cambia moneda, ofrece Remesas y Giros, con tarifas y sin tasas (vincularlo desde Admin como `rortega@caribecambios.cu`).
+
+**FR-AS-TAR-1 · Tarifas — `/kiosk/autoservicio/tarifas`.** Consulta pura: no produce solicitud ni lleva a ningún flujo. Muestra lo que cuesta cada servicio **de la sede del kiosco** además del importe, **por servicio**: hoy, **Enviar un giro**, con quién la paga (el remitente, al enviar) y sobre qué se calcula (lo que recibe quien cobra), y la indicación de que cobrar un giro no tiene tarifa. Por cada moneda **de la sede con tarifa**: bandera, código y nombre; el **giro mínimo**; y los tramos, cada uno con lo que recibe quien cobra y lo que se paga de tarifa («3,00 USD», «1,00 USD + 2 %», «1,5 %»). Un pie dice que las fija PuntoCash, que son iguales en todas las sucursales y que el cambio de moneda no tiene tarifa (su precio es la tasa).
+
+**FR-AS-TAR-2 · Qué monedas.** Las monedas de la lista de la sede en las que PuntoCash definió tarifa (**FR-SA-TAR-2**): las mismas en que su caja puede enviar giros. Una moneda sin tarifa no aparece. Si la sede no tiene ninguna, lo dice en lugar de enseñar una lista vacía.
+
+**FR-AS-TAR-3 · Solo con Giros.** La pantalla y su mosaico solo existen si PuntoCash habilitó Giros en la sede: sin Giros, la ruta responde «no encontrada» (**FR-AS-SEDE-3**). Las tarifas de la sede se leen de la red en cada petición, como las tasas (**FR-AS-SEDE-1**).
+
+**Ver en la demo:** el kiosco de Vedado, «Consultar tarifas»: CUP, USD y EUR. Cambiar la tarifa del USD en Super Admin (`emarrero@puntocash.com`, Tarifas → Giros → USD → Cambiar) y recargar la pantalla.
 
 ---
 
@@ -388,6 +398,7 @@ Lo que ve el cliente. Los textos exactos de cada pantalla están en la demostrac
 | Desvinculado | **Este kiosco fue desvinculado.** El administrador lo desvinculó de {sede}. Para volver a usarlo, debe vincularlo de nuevo. |
 | Sede que no atiende, o sin servicios | **El autoservicio no está disponible.** En este momento no se pueden preparar operaciones desde este kiosco. Consulta al personal de la sucursal. |
 | Sede sin tasas en vigor (tasas) | Esta sucursal no publica tasas de cambio en este momento. |
+| Sede sin tarifas de giros (tarifas) | Esta sucursal no publica tarifas de giros en este momento. |
 
 ### Importes
 
