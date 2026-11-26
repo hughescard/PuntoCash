@@ -1,5 +1,5 @@
 # PuntoCash — Super administración
-## Documento de Requisitos Funcionales (FRD) · v7.2
+## Documento de Requisitos Funcionales (FRD) · v7.3
 
 **Alcance:** la consola de PuntoCash sobre su red, `/super-admin`. No cubre la consola del mercante (`/admin`).
 
@@ -31,6 +31,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 7.3 | 26/11/2026 | **Operador que se quedó sin sedes.** El pendiente «Operador sin sedes» distingue al operador al que nunca se le entregó una sede del que las tuvo y se le retiraron: este último dice cuál fue la última que se le retiró y cuándo, en lugar de «todavía no se le ha entregado ninguna» (**FR-SA-HOME-3**) |
 | 7.2 | 25/11/2026 | **Firma de quien cobra.** En una remesa entregada o un giro pagado, el detalle de la operación muestra también la firma del beneficiario con la frase que firmó, como en Admin (**FR-SA-OPS-2**; FRD de Admin **FR-AD-OPS-11**) |
 | 7.1 | 24/11/2026 | **Quién resuelve una diferencia sin dueño.** PuntoCash resuelve una diferencia pendiente solo cuando **nadie del operador que la originó** puede resolverla: la sede no tenía operador al abrirse la jornada, la sede ya no es de ese operador, o el operador sigue con ella pero está suspendido o dado de baja, o no le queda ningún administrador activo en la sede. Antes solo se contemplaba el traspaso de la sede. Con el administrador principal desactivado y otros activos, la resuelven ellos. El detalle dice cuál de los tres casos es (**FR-SA-APR-1**, **APR-3**, **APR-4**) |
 | 7.0 | 19/11/2026 | **Tarifas de servicios.** Sección nueva **Tarifas** en el bloque Oferta (§10, **FR-SA-TAR-1 a TAR-12**, nuevos): qué servicio lleva tarifa, y la **tarifa de giros** de cada moneda —giro mínimo y tramos con fijo y porcentaje—, que PuntoCash define, cambia con motivo y retira con motivo; sin tarifa no se envían giros en esa moneda. Lo cobrado se redondea al alza a la denominación más pequeña que circula. No se retira una denominación que la tarifa necesita (**FR-SA-DEN-10**, nuevo; código `la-usa-una-tarifa`). Auditoría: `tarifa-giro.definida`, `.cambiada` y `.retirada`, área «Tarifas» (**FR-SA-AUD-2**). El detalle de una operación se lee como una **cuenta**: lo que se debía, lo que cambió de manos y el total, y debajo lo que entró o salió de la caja (**FR-SA-OPS-2**). En Reportes, la tarifa de un giro enviado no es volumen (**FR-SA-REP-3**). Navegación y rutas (**FR-SA-SHELL-2**, **FR-SA-NAV-1**); qué puede cada rol (Apéndice A); mensajes (Apéndice C). **Las secciones 10 a 17 pasan a ser 11 a 18** |
@@ -186,7 +187,7 @@ Responde «¿cómo está la red hoy?». **No ejecuta nada**: orienta y enlaza.
 | Pendiente | Cuándo | Enlace |
 | --- | --- | --- |
 | Sede sin operador | Sede no cerrada sin asignar. Dice desde cuándo | Ficha de la sede |
-| Operador sin sedes | Operador activo sin ningún tramo vigente. Dice desde cuándo está de alta | Ficha del operador |
+| Operador sin sedes | Operador activo sin ningún tramo vigente. Si nunca tuvo ninguna, dice desde cuándo está de alta («Está dado de alta desde el … y todavía no se le ha entregado ninguna»). Si las tuvo, dice cuál fue la última que se le retiró y cuándo («Se le retiró PuntoCash Trinidad el … y no le queda ninguna») | Ficha del operador |
 | Moneda que no se puede cotizar | Moneda del catálogo, no retirada, sin rango, que tienen en su lista sedes no cerradas, con operador y con Cambio de moneda. Nombra esas sedes | Monedas y tasas |
 | Diferencias sin quien las resuelva | Hay alguna (**FR-SA-APR-1**). Dice cuántas y de qué sedes | Aprobaciones |
 

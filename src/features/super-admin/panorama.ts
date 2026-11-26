@@ -11,7 +11,8 @@
  *
  * Lo único que el Inicio señala son los asuntos que **solo PuntoCash** puede
  * resolver, y todos tienen que ver con entregar la red y fijar sus límites:
- * una sede sin operador, un operador al que no se le ha entregado ninguna sede
+ * una sede sin operador, un operador que no tiene ninguna sede (nunca se le
+ * entregó o se le retiraron todas)
  * y una moneda que las sedes tienen y nadie puede cotizar porque falta su rango.
  * Las suspensiones no están: son un estado, no algo pendiente, y se ven en la
  * tabla.
@@ -25,6 +26,7 @@ import { OPERATORS, type Operator } from "@/features/network/operators";
 import {
   asignacionVigente,
   estadoDeSede,
+  historialDeOperador,
   historialDeSede,
   sedesDeOperador,
   type EstadoDeSede,
@@ -39,7 +41,12 @@ import { diaEnCuba } from "@/features/network/jornadas";
 
 export type PendienteDePuntoCash =
   | { kind: "sede-sin-asignar"; sede: Sede; desde: string }
-  | { kind: "operador-sin-sedes"; operador: Operator }
+  /**
+   * `ultimaRetirada`: la sede que tuvo más recientemente, si tuvo alguna. Un
+   * operador al que se le revocaron todas no es uno al que nunca se le entregó
+   * nada, y el aviso no puede decir lo mismo de los dos.
+   */
+  | { kind: "operador-sin-sedes"; operador: Operator; ultimaRetirada: { sede: string; el: string } | null }
   | { kind: "moneda-sin-rango"; code: string; nombre: string; sedes: readonly Sede[] }
   /** Diferencias de efectivo que nadie de la sede puede resolver (**FR-SA-APR-1**). */
   | { kind: "aprobaciones-sin-dueno"; total: number; sedes: readonly string[] };
@@ -83,6 +90,15 @@ export interface PanoramaDeRed {
   filas: readonly FilaDeRed[];
 }
 
+/** La última sede que se le retiró a un operador, o `null` si nunca tuvo ninguna. */
+function ultimaSedeRetirada(operatorId: string): { sede: string; el: string } | null {
+  const cerrados = historialDeOperador(operatorId).filter((a) => a.endedAt);
+  const ultimo = cerrados.sort((a, b) => b.endedAt!.localeCompare(a.endedAt!))[0];
+  if (!ultimo) return null;
+  const sede = SEDES.find((s) => s.id === ultimo.branchId);
+  return { sede: sede?.name ?? ultimo.branchId, el: ultimo.endedAt! };
+}
+
 export function panoramaDeRed(ahora: Date = new Date()): PanoramaDeRed {
   const red = redEnAlcance(GLOBAL_SCOPE);
   const hoy = diaEnCuba(ahora);
@@ -97,7 +113,7 @@ export function panoramaDeRed(ahora: Date = new Date()): PanoramaDeRed {
   }
   for (const operador of OPERATORS) {
     if (operador.status === "activo" && sedesDeOperador(operador.id).length === 0) {
-      pendientes.push({ kind: "operador-sin-sedes", operador });
+      pendientes.push({ kind: "operador-sin-sedes", operador, ultimaRetirada: ultimaSedeRetirada(operador.id) });
     }
   }
   for (const m of CATALOGO_MONEDAS) {

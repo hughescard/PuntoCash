@@ -124,7 +124,9 @@ function textoDePendiente(p: PendienteDePuntoCash): Texto {
     case "operador-sin-sedes":
       return {
         title: `${p.operador.name} no tiene ninguna sede`,
-        detail: `Está dado de alta desde el ${fechaCorta(p.operador.createdAt)} y todavía no se le ha entregado ninguna.`,
+        detail: p.ultimaRetirada
+          ? `Se le retiró ${p.ultimaRetirada.sede} el ${fechaCorta(p.ultimaRetirada.el)} y no le queda ninguna.`
+          : `Está dado de alta desde el ${fechaCorta(p.operador.createdAt)} y todavía no se le ha entregado ninguna.`,
         href: `/super-admin/operadores/${p.operador.id}`,
         action: "Ver el operador",
       };
