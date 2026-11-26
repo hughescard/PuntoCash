@@ -1,11 +1,13 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos de Producto (PRD) · v1.19
+## Documento de Requisitos de Producto (PRD) · v1.20
 
 **Estado:** Describe la consola de administración de sede **completa**. Lo que queda fuera de la capa se nombra en §6; no se da por hecho en ningún punto de este documento.
 
 **Destinatarios:** Producto, negocio, liderazgo técnico, jefatura de proyecto, desarrollo y QA.
 
 **Alcance:** Únicamente la consola **Admin de sede** (`/admin`), la del mercante que administra una o varias sedes. **No cubre Super Admin** (`/super-admin`), la consola de PuntoCash sobre su red: esa consola tiene su propio PRD, `PuntoCash_Super_Admin_PRD_v1.md`.
+
+**Control de cambios — v1.20 (26/11/2026).** **Vinculación de equipos.** El código que muestra un equipo sin vincular lo genera el propio equipo, tiene seis caracteres hexadecimales y no caduca; al vincularlo, el servidor le da su identificador (`CA-` una caja, `KI-` un kiosco, y ocho caracteres hexadecimales), único entre cajas y kioscos. El concepto «Reto de vinculación» pasa a «Código de vinculación».
 
 **Control de cambios — v1.19 (03/11/2026).** **Una sede se ve desde que es del mercante.** Quien recibe una sede no ve las jornadas, aprobaciones ni operaciones del operador anterior; hereda la sucursal montada.
 
@@ -119,7 +121,7 @@ El dominio de la Fase 1 llegaba hasta la Caja y se detenía ahí: una Caja no pe
 | **Administrador principal** | El usuario que gobierna el grupo de usuarios de su empresa. Es el único que da de alta, edita, desactiva y reactiva administradores; para los demás esa sección **no existe**. El papel **se traspasa** a otro usuario activo, en un solo acto, y **a su titular no lo desactiva nadie**. | El mercante (el propio titular, al traspasarlo) |
 | **Caja** | Un puesto de mostrador de una sede, con sus saldos por moneda. Es el objeto al que se vincula un equipo. Sin cajas una sede no opera; sin equipo vinculado, una caja tampoco. | El mercante **[A4]** |
 | **Equipo** | Un dispositivo que el producto reconoce porque un administrador lo declaró. Dos clases, mismo mecanismo, objetos distintos: el **equipo de caja**, atado a una sede y a una de sus cajas, y el **kiosco de autoservicio**, atado a una sede. Un equipo sin vincular no es nada. | El mercante **[A10]** |
-| **Reto de vinculación** | Lo que un equipo sin vincular muestra para poder ser declarado: un QR y un código de seis cifras, dos formas de lo mismo, válidos diez minutos, renovados por el propio equipo y **de un solo uso**. | El equipo lo muestra; el mercante lo canjea |
+| **Código de vinculación** | Lo que un equipo sin vincular muestra para poder ser declarado: un QR y un código de seis caracteres hexadecimales, dos formas de lo mismo. Lo genera el propio equipo y **no caduca**; vincula una sola vez. Al vincular, el servidor da al equipo su **identificador** (`CA-` una caja, `KI-` un kiosco, y ocho caracteres hexadecimales). | El equipo lo muestra; el mercante lo escribe |
 | **Trabajador** | El empleado que opera en el mostrador. **Pertenece a una sede, no a una caja**: la caja la determina el equipo en el que inicia sesión, y solo puede iniciar sesión en equipos de su propia sede **[A13]**. | El mercante **[A4]** |
 | **Evento de auditoría** | Transversal. Todo acto de gobierno con consecuencias deja un registro inmutable con quién, qué, cuándo, sobre qué y por qué. De solo lectura incluso para PuntoCash. | — |
 
@@ -177,7 +179,7 @@ Es lo que el mercante hace los primeros días con una sede que acaba de recibir,
 
 **Cajas.** Crea los mostradores que la sede va a tener, y los retira cuando dejan de existir. Una sede sin ninguna caja aparece como tal, no como una ausencia: es el estado en que llega toda sede recién asignada y quien abre la pantalla por primera vez tiene que entender qué le falta. Retirar una caja exige motivo y **no borra nada**: su histórico de jornadas, movimientos y operaciones permanece íntegro **[R9]**, y la caja sigue apareciendo en los listados históricos marcada como retirada.
 
-**Equipos.** Vincula el ordenador de cada puesto a una caja concreta, y cada kiosco a su sede, escaneando el QR que el equipo muestra o escribiendo su código de seis cifras. Las dos vías están siempre disponibles a la vez. Una caja tiene **como máximo un equipo** a la vez **[A11]**; una sede puede tener varios kioscos. Desvincular corta la sesión del dispositivo al instante y, si había un trabajador operando, también la suya — pero **nunca cierra una Jornada**, porque la Jornada es de la caja y no del equipo. El producto avisa de eso antes de desvincular, y de lo que **no** ocurre: las solicitudes que un kiosco ya generó siguen siendo válidas en caja.
+**Equipos.** Vincula el ordenador de cada puesto a una caja concreta, y cada kiosco a su sede, escaneando el QR que el equipo muestra o escribiendo su código de vinculación, de seis caracteres. Las dos vías están siempre disponibles a la vez. Una caja tiene **como máximo un equipo** a la vez **[A11]**; una sede puede tener varios kioscos. Desvincular corta la sesión del dispositivo al instante y, si había un trabajador operando, también la suya — pero **nunca cierra una Jornada**, porque la Jornada es de la caja y no del equipo. El producto avisa de eso antes de desvincular, y de lo que **no** ocurre: las solicitudes que un kiosco ya generó siguen siendo válidas en caja.
 
 La credencial del dispositivo **la emite y la revoca el sistema**, nunca el terminal, y esta consola no la muestra, no la copia y no permite exportarla **[A10]**.
 
@@ -305,7 +307,7 @@ Amplía el Apéndice A de `PuntoCash_Worker_Functional_Requirements_v1.md` y el 
 | **Asignación** | El vínculo histórico Sede↔Operador durante un periodo, con inicio, fin y motivo. |
 | **Caja** | Un puesto de mostrador de una sede, creado y retirado por su mercante, y objeto al que se vincula un equipo. |
 | **Equipo** | Un dispositivo declarado por un administrador: el equipo de una caja, o un kiosco de autoservicio. |
-| **Reto de vinculación** | El QR y el código de seis cifras que un equipo sin vincular muestra; válidos diez minutos, renovados solos, de un solo uso. |
+| **Código de vinculación** | El QR y el código de seis caracteres hexadecimales que un equipo sin vincular muestra. Lo genera el propio equipo y no caduca. |
 | **Credencial inicial** | La contraseña que el Admin entrega a un trabajador o a un administrador al darlo de alta. Se muestra una sola vez y sirve indefinidamente hasta que su dueño la cambia. |
 | **Catálogo de monedas** | Las monedas que la plataforma soporta, mantenido por PuntoCash. |
 | **Lista de monedas de una sede** | Las monedas que esa sucursal maneja, elegidas del catálogo por su mercante. Es lo que un Worker puede añadir a su caja. |

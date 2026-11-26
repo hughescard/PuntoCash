@@ -22,7 +22,7 @@ test("la pestaña de cajas dice de qué sede y de qué operador es cada una", as
     await expect(tabla.getByRole("columnheader", { name: columna, exact: true })).toBeVisible();
   }
   /* Una caja montada de verdad: la 03 del Vedado tiene equipo y jornadas. */
-  const fila = tabla.getByRole("row").filter({ hasText: "CAJ-0001-0003" });
+  const fila = tabla.getByRole("row").filter({ hasText: "CA-1A0E7C03" });
   await expect(fila).toHaveCount(1);
   await expect(fila.getByRole("link", { name: "PuntoCash Vedado", exact: true })).toBeVisible();
   await expect(fila.getByRole("link", { name: "Malecón Servicios Financieros S.R.L.", exact: true })).toBeVisible();
@@ -51,10 +51,10 @@ test("el filtro de vínculo aísla las cajas sin equipo", async ({ page }) => {
   const tabla = page.getByRole("table");
   await page.getByLabel("Vínculo").selectOption("sin");
   await expect(tabla.getByRole("cell", { name: "Sin equipo", exact: true }).first()).toBeVisible();
-  await expect(tabla.getByRole("cell", { name: /^CAJ-/ })).toHaveCount(0);
+  await expect(tabla.getByRole("cell", { name: /^CA-/ })).toHaveCount(0);
 
   await page.getByLabel("Vínculo").selectOption("con");
-  await expect(tabla.getByRole("cell", { name: /^CAJ-/ }).first()).toBeVisible();
+  await expect(tabla.getByRole("cell", { name: /^CA-/ }).first()).toBeVisible();
   await expect(tabla.getByRole("cell", { name: "Sin equipo", exact: true })).toHaveCount(0);
 });
 
@@ -74,7 +74,7 @@ test("los kioscos cuentan lo que generan, y se dice que las pantallas no se inve
   await expect(page.getByText("Las pantallas informativas no se inventarían aquí")).toBeVisible();
   const tabla = page.getByRole("table");
   await expect(tabla.getByRole("columnheader", { name: /^Operaciones \(30 días\)$/ })).toBeVisible();
-  const fila = tabla.getByRole("row").filter({ hasText: "KIO-0001-0001" });
+  const fila = tabla.getByRole("row").filter({ hasText: "KI-1A0E4B01" });
   await expect(fila).toHaveCount(1);
   await expect(fila.getByRole("link", { name: "PuntoCash Vedado", exact: true })).toBeVisible();
 });

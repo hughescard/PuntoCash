@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { emitirReto, findTerminalById, marcarActividad } from "@/features/network/devices";
+import { CODIGO_DE_VINCULACION, emitirReto, findTerminalById, marcarActividad } from "@/features/network/devices";
 import { registrarSolicitudDeKiosco } from "@/features/network/solicitudes-de-kiosco";
 import type { KioskServiceId } from "@/features/kiosk/kiosk-catalog";
 import type { KioskRequest, KioskRequestInput } from "@/features/kiosk/self-service-request";
@@ -13,7 +13,7 @@ import {
   KIOSK_DEVICE_COOKIE,
   KIOSK_DEVICE_MAX_AGE_SECONDS,
   KIOSK_LAST_BRANCH_COOKIE,
-  nuevoIdDeKiosco,
+  nuevoCodigoDeKiosco,
 } from "@/features/kiosk/sesion";
 import { cambioDeSede, getKiosco, giroDeSede, huellaDeKiosco } from "@/features/kiosk/sesion-servidor";
 import { cotizarGiroEnKiosco, resumenDeGiro } from "@/features/kiosk/giro";
@@ -21,7 +21,7 @@ import { cotizarEnKiosco, noSePuedeCobrar } from "@/features/kiosk/cambio";
 
 /**
  * Las escrituras del kiosco de autoservicio, todas en el servidor. Mismo
- * reparto que `/worker`: el equipo se nombra con una cookie, y lo que es —a
+ * reparto que `/worker`: el equipo se presenta con el código de su cookie, y lo que es —a
  * qué sede pertenece, si opera, qué servicios ofrece— lo contesta la red.
  */
 
@@ -33,24 +33,25 @@ const COOKIE = { path: KIOSK_COOKIE_PATH, httpOnly: true, sameSite: "lax" as con
 
 export type EstadoDeKiosco =
   | { vinculado: true }
-  | { vinculado: false; deviceId: string; codigo: string; expiresAt: string };
+  | { vinculado: false; codigo: string };
 
 /**
  * Lo que pide la pantalla de vinculación: si este navegador todavía no es un
- * equipo, se le da un identificador; si no está vinculado, se emite (o
- * renueva) su reto de seis cifras, el que teclea el administrador en
- * `/admin/equipos/vincular`.
+ * equipo, genera su código de vinculación —seis caracteres hexadecimales que
+ * ya no cambian—; si no está vinculado, se anuncia con él, y ese código es el
+ * que teclea el administrador en `/admin/equipos/vincular`.
  */
 export async function prepararKiosco(): Promise<EstadoDeKiosco> {
   const store = await cookies();
-  let deviceId = store.get(KIOSK_DEVICE_COOKIE)?.value ?? null;
-  if (!deviceId) {
-    deviceId = nuevoIdDeKiosco();
-    store.set(KIOSK_DEVICE_COOKIE, deviceId, COOKIE);
+  let codigo = store.get(KIOSK_DEVICE_COOKIE)?.value ?? null;
+  /* Una cookie de antes de la decisión del 26/11 no es un código: se genera uno. */
+  if (!codigo || !CODIGO_DE_VINCULACION.test(codigo)) {
+    codigo = nuevoCodigoDeKiosco();
+    store.set(KIOSK_DEVICE_COOKIE, codigo, COOKIE);
   }
-  const reto = emitirReto("kiosco", deviceId);
+  const reto = emitirReto("kiosco", codigo);
   if (!reto) return { vinculado: true };
-  return { vinculado: false, deviceId, codigo: reto.code, expiresAt: reto.expiresAt };
+  return { vinculado: false, codigo: reto.code };
 }
 
 /**
@@ -81,7 +82,7 @@ export async function usarKioscoDeDemostracion(terminalId: string): Promise<void
   const terminal = findTerminalById(terminalId);
   if (!terminal || terminal.kind !== "kiosco") return;
   const store = await cookies();
-  store.set(KIOSK_DEVICE_COOKIE, terminal.id, COOKIE);
+  store.set(KIOSK_DEVICE_COOKIE, terminal.codigo, COOKIE);
   store.set(KIOSK_LAST_BRANCH_COOKIE, terminal.branchId, COOKIE);
   revalidatePath("/kiosk/autoservicio", "layout");
   redirect("/kiosk/autoservicio");

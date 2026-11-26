@@ -46,12 +46,12 @@ import {
 } from "@/features/network/caja-operativa";
 import type { Cotizacion } from "@/features/exchange/cotizacion";
 import type { MovimientoDeJornada } from "@/features/network/jornadas";
-import { emitirReto, findTerminalById, resolverTerminal } from "@/features/network/devices";
+import { CODIGO_DE_VINCULACION, emitirReto, findTerminalById, idDeEquipo, resolverTerminal } from "@/features/network/devices";
 import { jornadaAbiertaDeCaja, type Jornada } from "@/features/network/jornadas";
 import type { OperationClienteSnapshot, OperationRecord } from "@/features/operations/operations-history";
 import { registrarContrasenaDeTrabajador, verificarCredencialesTrabajador } from "@/features/worker/acceso";
 import {
-  nuevoIdDeEquipo,
+  nuevoCodigoDeEquipo,
   WORKER_COOKIE_PATH,
   WORKER_DEVICE_COOKIE,
   WORKER_DEVICE_MAX_AGE_SECONDS,
@@ -86,29 +86,30 @@ import type { KioskRequest } from "@/features/kiosk/self-service-request";
 
 export type EstadoDeEquipo =
   | { vinculado: true }
-  | { vinculado: false; deviceId: string; codigo: string; expiresAt: string };
+  | { vinculado: false; codigo: string };
 
 /**
  * Lo que pide la pantalla de vinculación: si este navegador todavía no es un
- * equipo, se le da un identificador; si no está vinculado, se emite (o
- * renueva) su reto de seis cifras, que es lo que teclea el administrador en
- * `/admin/equipos/vincular`.
+ * equipo, genera su código de vinculación —seis caracteres hexadecimales que
+ * ya no cambian—; si no está vinculado, se anuncia con él, y ese código es lo
+ * que teclea el administrador en `/admin/equipos/vincular`.
  */
 export async function prepararEquipo(): Promise<EstadoDeEquipo> {
   const store = await cookies();
-  let deviceId = store.get(WORKER_DEVICE_COOKIE)?.value ?? null;
-  if (!deviceId) {
-    deviceId = nuevoIdDeEquipo();
-    store.set(WORKER_DEVICE_COOKIE, deviceId, {
+  let codigo = store.get(WORKER_DEVICE_COOKIE)?.value ?? null;
+  /* Una cookie de antes de la decisión del 26/11 no es un código: se genera uno. */
+  if (!codigo || !CODIGO_DE_VINCULACION.test(codigo)) {
+    codigo = nuevoCodigoDeEquipo();
+    store.set(WORKER_DEVICE_COOKIE, codigo, {
       path: WORKER_COOKIE_PATH,
       httpOnly: true,
       sameSite: "lax",
       maxAge: WORKER_DEVICE_MAX_AGE_SECONDS,
     });
   }
-  const reto = emitirReto("caja", deviceId);
+  const reto = emitirReto("caja", codigo);
   if (!reto) return { vinculado: true };
-  return { vinculado: false, deviceId, codigo: reto.code, expiresAt: reto.expiresAt };
+  return { vinculado: false, codigo: reto.code };
 }
 
 /** Pregunta, sin escribir nada, si el administrador ya vinculó este equipo. */
@@ -127,7 +128,7 @@ export async function usarEquipoDeDemostracion(terminalId: string): Promise<void
   const terminal = findTerminalById(terminalId);
   if (!terminal || terminal.kind !== "caja") return;
   const store = await cookies();
-  store.set(WORKER_DEVICE_COOKIE, terminal.id, {
+  store.set(WORKER_DEVICE_COOKIE, terminal.codigo, {
     path: WORKER_COOKIE_PATH,
     httpOnly: true,
     sameSite: "lax",
@@ -156,7 +157,7 @@ export async function iniciarAccesoTrabajador(credentials: {
   password: string;
 }): Promise<WorkerLoginResult> {
   const store = await cookies();
-  const check = await verificarCredencialesTrabajador(credentials, store.get(WORKER_DEVICE_COOKIE)?.value ?? null);
+  const check = await verificarCredencialesTrabajador(credentials, idDeEquipo("caja", store.get(WORKER_DEVICE_COOKIE)?.value));
   if (check.status !== "ok") return { status: check.status };
 
   const id = registrarAccesoPendiente(check.workerId, DEMO_CODE);
@@ -171,7 +172,7 @@ export async function abrirSesionTrabajador(code: string): Promise<void> {
   if (!workerId) return;
   store.delete({ name: WORKER_PENDING_COOKIE, path: WORKER_COOKIE_PATH });
 
-  const terminalId = store.get(WORKER_DEVICE_COOKIE)?.value;
+  const terminalId = idDeEquipo("caja", store.get(WORKER_DEVICE_COOKIE)?.value);
   if (!terminalId || !contextoDe({ workerId, terminalId }).ok) return;
 
   store.set(WORKER_SESSION_COOKIE, serializeWorkerSession({ workerId, terminalId }), {

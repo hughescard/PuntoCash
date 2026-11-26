@@ -15,13 +15,14 @@ import { test, expect } from "./worker-fixture";
  * otra sede» es el de la entrada de la Vedado de verdad.
  */
 
-const KIOSCO_DE_OTRA_SEDE = "KIO-0001-0001";
+/** El código de vinculación del kiosco de la entrada de Vedado (`KI-1A0E4B01`). */
+const KIOSCO_DE_OTRA_SEDE = "4B1A01";
 
-async function serKiosco(context: BrowserContext, terminalId: string): Promise<void> {
+async function serKiosco(context: BrowserContext, codigo: string): Promise<void> {
   await context.addCookies([
     {
       name: "pc_kiosco_device",
-      value: terminalId,
+      value: codigo,
       domain: "localhost",
       path: "/kiosk/autoservicio",
       httpOnly: true,
@@ -64,7 +65,7 @@ test.describe("una solicitud del kiosco en la caja de su sede", () => {
   test.use({ kiosco: true });
 
   test("se encuentra, se continúa con ella y ya no se puede volver a usar", async ({ page, context, puesto }) => {
-    await serKiosco(context, puesto.kioscoId!);
+    await serKiosco(context, puesto.kioscoCodigo!);
     const codigo = await prepararRemesaEnKiosco(page);
 
     await buscarEnCaja(page, codigo);
@@ -114,7 +115,7 @@ test.describe("un cambio de moneda preparado en el kiosco", () => {
   test.use({ kiosco: true, fondos: { CUP: 200_000, USD: 2_000 } });
 
   test("cotiza con la tasa de compra de la sede", async ({ page, context, puesto }) => {
-    await serKiosco(context, puesto.kioscoId!);
+    await serKiosco(context, puesto.kioscoCodigo!);
     await page.goto("/kiosk/autoservicio/cambio-moneda");
     await rellenarImporte(page, "Monto a entregar", "100");
     /* Vedado compra el dólar a 318: 100 USD son 31.800 CUP. */
@@ -123,7 +124,7 @@ test.describe("un cambio de moneda preparado en el kiosco", () => {
   });
 
   test("no deja entregar fracciones que no existen en billetes", async ({ page, context, puesto }) => {
-    await serKiosco(context, puesto.kioscoId!);
+    await serKiosco(context, puesto.kioscoCodigo!);
     await page.goto("/kiosk/autoservicio/cambio-moneda");
     await page.getByRole("button", { name: /Intercambiar monedas/ }).click();
     await page.getByRole("textbox", { name: "Monto a entregar" }).fill("1000,50");
@@ -132,7 +133,7 @@ test.describe("un cambio de moneda preparado en el kiosco", () => {
   });
 
   test("con «recibir», dice cuánto hay que entregar", async ({ page, context, puesto }) => {
-    await serKiosco(context, puesto.kioscoId!);
+    await serKiosco(context, puesto.kioscoCodigo!);
     await page.goto("/kiosk/autoservicio/cambio-moneda");
     await page.getByText("Sé cuánto quiero recibir").click();
     await rellenarImporte(page, "Monto a recibir", "10000");
@@ -141,7 +142,7 @@ test.describe("un cambio de moneda preparado en el kiosco", () => {
   });
 
   test("en caja se pasa directo a identificar al cliente", async ({ page, context, puesto }) => {
-    await serKiosco(context, puesto.kioscoId!);
+    await serKiosco(context, puesto.kioscoCodigo!);
     await page.goto("/kiosk/autoservicio/cambio-moneda");
     await rellenarImporte(page, "Monto a entregar", "100");
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
@@ -196,7 +197,7 @@ test.describe("un giro preparado en el kiosco", () => {
   test.use({ kiosco: true, fondos: { CUP: 200_000 } });
 
   test("enseña la tarifa y el total antes del código", async ({ page, context, puesto }) => {
-    await serKiosco(context, puesto.kioscoId!);
+    await serKiosco(context, puesto.kioscoCodigo!);
     await hastaElMontoDelGiro(page);
 
     await page.getByRole("textbox", { name: "Monto que recibe el beneficiario" }).fill("20000");
@@ -210,7 +211,7 @@ test.describe("un giro preparado en el kiosco", () => {
   });
 
   test("con «entregar», descuenta la tarifa y dice lo que sobra", async ({ page, context, puesto }) => {
-    await serKiosco(context, puesto.kioscoId!);
+    await serKiosco(context, puesto.kioscoCodigo!);
     await hastaElMontoDelGiro(page);
 
     await page.getByText("Sé cuánto voy a entregar").click();
@@ -221,7 +222,7 @@ test.describe("un giro preparado en el kiosco", () => {
   });
 
   test("en caja se pasa del remitente directo al efectivo", async ({ page, context, puesto }) => {
-    await serKiosco(context, puesto.kioscoId!);
+    await serKiosco(context, puesto.kioscoCodigo!);
     await hastaElMontoDelGiro(page);
     await page.getByRole("textbox", { name: "Monto que recibe el beneficiario" }).fill("5000");
     await page.getByRole("button", { name: "Continuar a revisión" }).click();

@@ -21,7 +21,7 @@ test.describe("Jornadas", () => {
     await page.waitForURL(/\/admin\/jornadas\/J-habana-vieja-01-\d{8}$/);
 
     /* FR-AD-JOR-4: equipo, saldos y movimientos. */
-    await expect(main.getByText("Mostrador 1 · Obispo · CAJ-0002-0001")).toBeVisible();
+    await expect(main.getByText("Mostrador 1 · Obispo · CA-2B4F9D01")).toBeVisible();
     await expect(main.getByRole("heading", { name: "Movimientos" })).toBeVisible();
 
     /* FR-AD-JOR-8 a 10: la advertencia, y sin motivo no se puede. */

@@ -1,28 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { Clock, KeyRound, QrCode } from "lucide-react";
+import { KeyRound, QrCode } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui";
 import { PairingQr } from "./pairing-qr";
 
-/** "482913" → "482 913": la agrupación que muestra el terminal y teclea el administrador. */
+/** "49214C" → "492 14C": la agrupación que muestra el terminal y teclea el administrador. */
 function formatPairingCode(code: string): string {
   return `${code.slice(0, 3)} ${code.slice(3)}`;
 }
 
-/** Lo que el panel necesita del equipo sin vincular: su identificador y su reto vigente. */
+/** Lo que el panel necesita del equipo sin vincular: su código de vinculación. */
 export interface EquipoPorVincular {
-  deviceId: string;
-  pairing: { code: string; expiresAt: string };
-}
-
-/** "09:41" — minutes and seconds left on the current pairing challenge. */
-function formatRemaining(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  /** Seis caracteres hexadecimales que generó el propio equipo. No caduca. */
+  codigo: string;
 }
 
 /**
@@ -30,9 +22,9 @@ function formatRemaining(ms: number): string {
  * every pairing screen (self-service kiosk, Worker caja). Both are always on
  * screen, because the admin may be at the terminal with a phone (scan the QR)
  * or at a desk with only the web panel (type the code): the WhatsApp/Telegram
- * linked-device pattern. The challenge renews itself when it expires, so a
- * terminal left on this screen overnight still shows a valid code in the
- * morning.
+ * linked-device pattern. The code is the terminal's own and never changes
+ * (decision of 26/11/2026), so a terminal left on this screen overnight shows
+ * the same code in the morning.
  *
  * Each screen supplies its own heading and surroundings; this panel is only
  * the part that has to be identical wherever a device is linked.
@@ -40,31 +32,15 @@ function formatRemaining(ms: number): string {
 export function DevicePairingPanel({
   device,
   qrPayload,
-  onExpired,
   demoNote,
   className,
 }: {
   device: EquipoPorVincular;
   qrPayload: string;
-  /** Called once the current challenge has expired — the caller renews it. */
-  onExpired: () => void;
-  /** Demo-only footnote, rendered under the countdown. */
+  /** Demo-only footnote, rendered under the panel. */
   demoNote?: React.ReactNode;
   className?: string;
 }): React.JSX.Element {
-  const [now, setNow] = React.useState(() => Date.now());
-
-  React.useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1_000);
-    return () => clearInterval(id);
-  }, []);
-
-  const remaining = new Date(device.pairing.expiresAt).getTime() - now;
-
-  React.useEffect(() => {
-    if (remaining <= 0) onExpired();
-  }, [remaining, onExpired]);
-
   return (
     <div className={className}>
       <Card className="w-full">
@@ -90,15 +66,13 @@ export function DevicePairingPanel({
             <div className="flex flex-1 flex-col items-center justify-center gap-3">
               <Card tone="accent" className="px-10 py-6 shadow-none">
                 <span
-                  aria-label={`Código de vinculación ${device.pairing.code.split("").join(" ")}`}
+                  aria-label={`Código de vinculación ${device.codigo.split("").join(" ")}`}
                   className="pc-numeric block whitespace-nowrap text-[3rem] leading-none font-bold tracking-[0.08em] text-text-primary"
                 >
-                  {formatPairingCode(device.pairing.code)}
+                  {formatPairingCode(device.codigo)}
                 </span>
               </Card>
-              <p className="text-caption text-text-secondary">
-                Identificador del equipo <span className="pc-numeric font-semibold">{device.deviceId}</span>
-              </p>
+              <p className="text-caption text-text-secondary">Este código no cambia: es el de este equipo.</p>
             </div>
             <p className="max-w-64 text-body-sm text-text-secondary">
               En el panel web del administrador, desde cualquier equipo.
@@ -107,11 +81,7 @@ export function DevicePairingPanel({
         </CardContent>
       </Card>
 
-      <p className="mt-5 flex items-center justify-center gap-2 text-body-sm text-text-secondary">
-        <Clock className="size-4 shrink-0" aria-hidden="true" />
-        El código se renueva automáticamente en{" "}
-        <span className="pc-numeric font-semibold text-text-primary">{formatRemaining(remaining)}</span>
-      </p>
+      <p className="mt-5 text-body-sm text-text-secondary">Esperando la vinculación… esta pantalla cambiará sola.</p>
 
       {demoNote ? <p className="mx-auto mt-10 max-w-2xl text-center text-caption text-text-secondary">{demoNote}</p> : null}
     </div>

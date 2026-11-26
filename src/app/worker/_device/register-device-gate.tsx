@@ -36,8 +36,8 @@ const SONDEO_MS = 3_000;
  * A pantalla completa y fuera del shell (FR-SHELL-3): hasta que el equipo no
  * es una caja no hay sede, ni caja, ni trabajador que mostrar.
  *
- * El reto lo emite el servidor, y es el mismo que encuentra el administrador
- * en `/admin/equipos/vincular`. Mientras tanto, el equipo pregunta cada pocos
+ * El código lo genera el propio equipo, y es el que teclea el administrador en
+ * `/admin/equipos/vincular`. Mientras tanto, el equipo pregunta cada pocos
  * segundos si ya lo vincularon y, en cuanto sí, entra al inicio de sesión.
  */
 export function RegisterPairingScreen({
@@ -48,7 +48,7 @@ export function RegisterPairingScreen({
   const router = useRouter();
   const [estado, setEstado] = React.useState<EstadoDeEquipo | null>(null);
 
-  const renovar = React.useCallback(() => {
+  const anunciar = React.useCallback(() => {
     void prepararEquipo().then((e) => {
       if (e.vinculado) router.refresh();
       else setEstado(e);
@@ -56,8 +56,8 @@ export function RegisterPairingScreen({
   }, [router]);
 
   React.useEffect(() => {
-    renovar();
-  }, [renovar]);
+    anunciar();
+  }, [anunciar]);
 
   React.useEffect(() => {
     const id = setInterval(() => {
@@ -70,7 +70,7 @@ export function RegisterPairingScreen({
 
   const device =
     estado && !estado.vinculado
-      ? { status: "unlinked" as const, deviceId: estado.deviceId, pairing: { code: estado.codigo, expiresAt: estado.expiresAt } }
+      ? { codigo: estado.codigo }
       : null;
 
   return (
@@ -92,9 +92,8 @@ export function RegisterPairingScreen({
           <DevicePairingPanel
             className="mt-8 w-full"
             device={device}
-            qrPayload={`puntocash:caja-link:v1:${device.deviceId}:${device.pairing.code}`}
-            onExpired={renovar}
-            demoNote={
+            qrPayload={`puntocash:caja-link:v1:${device.codigo}`}
+              demoNote={
               <>
                 Versión de demostración: el QR es ilustrativo y no se puede escanear. Para vincular, entra en
                 la consola de administración de la sede y teclea el código en Equipos → Vincular equipo.

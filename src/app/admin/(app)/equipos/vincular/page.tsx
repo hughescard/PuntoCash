@@ -34,8 +34,8 @@ export const metadata: Metadata = {
  *     del dominio a pelo.
  *
  * Que la pantalla no ofrezca una sede ajena es comodidad: el control está en
- * `vincularEquipo`, que comprueba el alcance **antes** que el propio reto,
- * para que un reto válido presentado contra una sede ajena no se distinga de
+ * `vincularEquipo`, que comprueba el alcance **antes** que el propio código,
+ * para que un código válido presentado contra una sede ajena no se distinga de
  * uno inválido.
  */
 export default async function AdminVincularEquipoPage() {
@@ -59,9 +59,8 @@ export default async function AdminVincularEquipoPage() {
 
   /* Atajo de la demostración, no del producto: dos equipos esperando, para
      recorrer esta pantalla sin abrir antes una caja o un kiosco en otra
-     pestaña. Los retos de los terminales de verdad también llegan aquí. */
+     pestaña. Los códigos de los terminales de verdad también sirven aquí. */
   const retosDemo = retosDeDemostracion().map((reto) => ({
-    deviceId: reto.deviceId,
     kind: reto.kind,
     codigo: formatPairingCode(reto.code),
   }));
@@ -70,7 +69,7 @@ export default async function AdminVincularEquipoPage() {
     <>
       <PageHeader
         title="Vincular un equipo"
-        description="Identifica el equipo por su QR o su código de seis cifras, y elige a qué se ata."
+        description="Identifica el equipo por su QR o su código de seis caracteres, y elige a qué se ata."
         actions={
           <Button variant="secondary" asChild>
             <Link href="/admin/equipos">

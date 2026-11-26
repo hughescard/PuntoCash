@@ -56,8 +56,8 @@ test("las cajas sin equipo van primero y se dicen con todas las letras", async (
 test("una caja con equipo muestra su identificador y quién lo vinculó", async ({ page }) => {
   /* **FR-AD-EQ-5** pide el identificador del equipo, no solo su rótulo: es el
      dato por el que se reconoce una máquina cuando hay dos iguales en la misma
-     sala. `CAJ-0001-0003` es la caja con datos simulados de Vedado. */
-  const fila = page.getByRole("row").filter({ hasText: "CAJ-0001-0003" });
+     sala. `CA-1A0E7C03` es la caja con datos simulados de Vedado. */
+  const fila = page.getByRole("row").filter({ hasText: "CA-1A0E7C03" });
   await expect(fila).toContainText("Mostrador 3 · Vedado");
   await expect(fila).toContainText("Marta Sánchez");
 });
@@ -66,7 +66,7 @@ test("no se ve ni un equipo de otra empresa", async ({ page }) => {
   /* **A1**: Miramar y Matanzas son de Caribe, y sus equipos están sembrados.
      Que no aparezcan aquí no es cosmético. */
   await expect(page.getByText("PuntoCash Matanzas")).toHaveCount(0);
-  await expect(page.getByText("CAJ-0003-0001")).toHaveCount(0);
+  await expect(page.getByText("CA-3C8A2E01")).toHaveCount(0);
 });
 
 test("el diálogo de desvincular dice lo que pasa, lo que no pasa, y la alternativa", async ({
@@ -137,8 +137,8 @@ test("una sede puede tener varios kioscos, y cada uno lleva su identificador", a
   /* **FR-AD-EQ-14**: aquí no rige el límite de uno por objeto que sí rige para
      las cajas, y Vedado tiene dos sembrados a propósito. **FR-AD-EQ-12** pide
      el identificador además del rótulo. */
-  const entrada = page.getByRole("row").filter({ hasText: "KIO-0001-0001" });
-  const sala = page.getByRole("row").filter({ hasText: "KIO-0001-0002" });
+  const entrada = page.getByRole("row").filter({ hasText: "KI-1A0E4B01" });
+  const sala = page.getByRole("row").filter({ hasText: "KI-1A0E4B02" });
 
   await expect(entrada).toContainText("Kiosco entrada · Vedado");
   await expect(entrada).toContainText("Marta Sánchez");
@@ -148,7 +148,7 @@ test("una sede puede tener varios kioscos, y cada uno lleva su identificador", a
 test("el diálogo de desvincular un kiosco dice también lo que no ocurre", async ({ page }) => {
   await irAKioscos(page);
 
-  const fila = page.getByRole("row").filter({ hasText: "KIO-0001-0001" });
+  const fila = page.getByRole("row").filter({ hasText: "KI-1A0E4B01" });
   await fila.getByRole("button", { name: /^Acciones de/ }).click();
   await page.getByRole("menuitem", { name: "Desvincular" }).click();
 
@@ -170,7 +170,7 @@ test("el diálogo de desvincular un kiosco dice también lo que no ocurre", asyn
 
   await dialogo.getByRole("button", { name: "Cancelar" }).click();
   await expect(dialogo).toBeHidden();
-  await expect(page.getByRole("row").filter({ hasText: "KIO-0001-0001" })).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "KI-1A0E4B01" })).toBeVisible();
 });
 
 test("vincular ofrece las dos vías y no pide el objeto hasta saber qué equipo es", async ({
@@ -188,16 +188,17 @@ test("vincular ofrece las dos vías y no pide el objeto hasta saber qué equipo 
      propio equipo (nota de entrega, §8.3). Leerlo de ahí, y no de `devices.ts`,
      mantiene esta prueba en lo que ve el administrador. */
   const equipoCaja = page.getByRole("listitem").filter({ hasText: "Equipo de caja" });
-  const codigo = (await equipoCaja.innerText()).match(/(\d{3})\s(\d{3})/);
+  const codigo = (await equipoCaja.innerText()).match(/([0-9A-F]{3})\s([0-9A-F]{3})/);
   expect(codigo, "la nota de demostración no ofrece ninguna caja esperando").not.toBeNull();
 
-  await page.getByLabel("Código de seis cifras").fill(`${codigo![1]}${codigo![2]}`);
+  await page.getByLabel("Código del equipo").fill(`${codigo![1]}${codigo![2]}`);
 
   /* **FR-AD-EQ-18**: antes de pedir la sede dice qué está vinculando — la
-     clase y el identificador—, y solo para una caja aparece el selector de
-     caja (**FR-AD-EQ-7**, **FR-AD-EQ-13**). */
+     clase y el código del equipo—, y solo para una caja aparece el selector de
+     caja (**FR-AD-EQ-7**, **FR-AD-EQ-13**). El identificador todavía no
+     existe: lo da el servidor al vincular. */
   await expect(page.getByRole("heading", { name: "Equipo de caja" })).toBeVisible();
-  await expect(page.getByText(/^CAJ-\d{4}-\d{4}$/)).toBeVisible();
+  await expect(page.getByText(`Código ${codigo![1]} ${codigo![2]}`)).toBeVisible();
   /* Por identificador y no por etiqueta: la cabecera pinta su selector de
      alcance **dos veces** —escritorio y móvil— y las dos se llaman «Sede que
      estás viendo», así que `getByLabel("Sede")` encuentra tres cosas y

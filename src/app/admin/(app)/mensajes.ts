@@ -20,8 +20,6 @@ export const MENSAJES = {
   },
   equipos: {
     "codigo-no-coincide": "El código no coincide con ningún equipo pendiente. Revisa el código que muestra el equipo.",
-    "codigo-caducado": "Ese código caducó. El equipo ya muestra uno nuevo.",
-    "codigo-caducado-al-vincular": "Ese código caducó mientras elegías. El {equipo} ya muestra uno nuevo.",
     "equipo-ya-vinculado": "Ese equipo ya está vinculado. Desvincúlalo antes de volver a vincularlo.",
     "caja-ya-vinculada": "{caja} ya tiene un equipo vinculado. Desvincúlalo antes de vincular otro.",
     "caja-requerida": "Elige la caja a la que pertenece este equipo.",

@@ -12,7 +12,7 @@ import {
  * cuándo vencen y que no se canjean dos veces.
  */
 
-const ORIGEN = { branchId: "sede-vedado", deviceId: "KIO-0001-0001" };
+const ORIGEN = { branchId: "sede-vedado", deviceId: "KI-1A0E4B01" };
 const REMESA = {
   service: "remesas" as const,
   data: {
@@ -32,7 +32,7 @@ test.describe("solicitudes del kiosco", () => {
     const a = registrarSolicitudDeKiosco(ORIGEN, REMESA);
     const b = registrarSolicitudDeKiosco(ORIGEN, REMESA);
     expect(a.branchId).toBe("sede-vedado");
-    expect(a.deviceId).toBe("KIO-0001-0001");
+    expect(a.deviceId).toBe("KI-1A0E4B01");
     expect(a.code).toMatch(/^KS-\d{6}-\d{6}$/);
     expect(b.code).not.toBe(a.code);
   });
