@@ -182,8 +182,8 @@ servidor de desarrollo.
 comprueban reglas, no pantallas: no usan `page`.
 
 `equipos-domain` es la entrega del dominio de §3 (Equipos). Lo que comprueba
-es el acto de vincular ahora que la verdad vive en el servidor: que un reto es
-de un solo uso, que caduca mientras alguien elige la sede, que una caja ajena
+es el acto de vincular ahora que la verdad vive en el servidor: que un código
+no vincula dos veces, que cada vinculación da un identificador nuevo, que una caja ajena
 no se puede nombrar aunque se pase junto a una sede propia, que una caja tiene
 un equipo y una sede puede tener varios kioscos, y que el alcance global no
 vincula nada. Trabaja **sobre Caribe y `sede-matanzas`**, y toda prueba que

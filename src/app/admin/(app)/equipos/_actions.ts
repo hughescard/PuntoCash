@@ -126,16 +126,11 @@ export async function renombrarEquipoAction(
  * ---------------------------------------------------------------------- */
 
 /**
- * Paso 1: qué equipo es. No canjea el reto (ver `identificarReto`), así que
- * un administrador que se equivoca de código no gasta nada.
+ * Paso 1: qué equipo es. No vincula nada (ver `identificarReto`).
  *
- * Los textos de los rechazos son los que el kiosco y Worker ya especifican
- * (**FR-AD-EQ-20**). Con una diferencia que el documento no podía anticipar:
- * cuando el código **no coincide con nada** no se sabe si quien lo teclea
- * tiene delante una caja o un kiosco, porque no hay reto del que leer la
- * clase. Así que ese caso usa la redacción neutra —«ningún equipo
- * pendiente»—, y la variante del kiosco se reserva para cuando el reto sí se
- * encontró y lo que falló fue su vigencia.
+ * Cuando el código **no coincide con nada** no se sabe si quien lo teclea
+ * tiene delante una caja o un kiosco, así que el texto es neutro —«ningún
+ * equipo pendiente»— (**FR-AD-EQ-20**).
  */
 export type ResultadoIdentificacion =
   | { ok: true; reto: RetoIdentificado }
@@ -152,13 +147,6 @@ export async function identificarRetoAction(
   const resultado = identificarReto(reto);
   if (resultado.ok) return { ok: true, reto: resultado.value };
 
-  if (resultado.reason === "codigo-caducado") {
-    /* Aquí sí se conoce la clase: el reto se encontró, solo estaba vencido.
-       Pero `identificarReto` no la devuelve en el rechazo, y añadirla sería
-       decirle a quien prueba códigos qué clase de equipo acertó. Redacción
-       neutra. */
-    return { ok: false, error: mensaje("equipos", "codigo-caducado") };
-  }
   if (resultado.reason === "equipo-ya-vinculado") {
     return { ok: false, error: mensaje("equipos", "equipo-ya-vinculado") };
   }
@@ -166,10 +154,10 @@ export async function identificarRetoAction(
 }
 
 /**
- * Paso 2: a qué objeto. El dominio **revalida el reto aquí**, no en el paso 1
- * (**FR-AD-EQ-22**): los diez minutos pueden haberse agotado mientras el
- * administrador elegía la sede, y entonces esto se rechaza en vez de
- * aplicarse. Al acertar, el reto se consume (**FR-AD-EQ-23**).
+ * Paso 2: a qué objeto. El dominio **revalida el equipo aquí**, no en el paso
+ * 1 (**FR-AD-EQ-22**): mientras el administrador elegía la sede pueden
+ * haberlo vinculado por otra vía, y entonces esto se rechaza en vez de
+ * aplicarse. Al vincular, el servidor le da al equipo su identificador.
  *
  * El alcance lo comprueba el dominio aunque la pantalla solo haya ofrecido
  * sedes propias (**A1**, **FR-AD-EQ-7**), y cada vinculación deja su evento
@@ -198,14 +186,10 @@ export async function vincularEquipoAction(entrada: {
     by: session.user.fullName,
   });
 
-  /* Cada rechazo se dice con su código del catálogo (`mensajes.ts`). Dos se
-     precisan con lo que en este
-     paso ya se sabe: qué clase de equipo es (**FR-AD-EQ-20**) y qué caja
-     tiene ya equipo (**FR-AD-EQ-8**). */
+  /* Cada rechazo se dice con su código del catálogo (`mensajes.ts`). Uno se
+     precisa con lo que en este paso ya se sabe: qué caja tiene ya equipo
+     (**FR-AD-EQ-8**). */
   if (!resultado.ok) {
-    if (resultado.reason === "codigo-caducado" && !entrada.registerId) {
-      return { ok: false, error: mensaje("equipos", "codigo-caducado-al-vincular", { equipo: "kiosco" }) };
-    }
     if (resultado.reason === "caja-ya-vinculada" && entrada.registerId) {
       const caja = redEnAlcance(session.scope)
         .cajasConHistorico(entrada.branchId)
@@ -218,7 +202,7 @@ export async function vincularEquipoAction(entrada: {
       ok: false,
       error: mensaje(
         "equipos",
-        resultado.reason === "codigo-caducado" ? "codigo-caducado-al-vincular" : resultado.reason,
+        resultado.reason,
         { equipo: "equipo", caja: "Esa caja" },
       ),
     };

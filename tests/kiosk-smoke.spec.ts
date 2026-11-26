@@ -93,7 +93,8 @@ test.describe("un kiosco sin vincular", () => {
  * navegador solo guarda su identificador; a qué sede pertenece lo contesta la
  * red, igual que con las cajas de Worker.
  */
-const KIOSCO_VINCULADO = "KIO-0001-0001";
+/** El código de vinculación del kiosco de la entrada de Vedado (`KI-1A0E4B01`). */
+const KIOSCO_VINCULADO = "4B1A01";
 
 test.describe("un kiosco vinculado a su sede", () => {
   test.use({

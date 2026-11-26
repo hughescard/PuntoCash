@@ -1,5 +1,5 @@
 # PuntoCash — Aplicación Worker
-## Documento de Requisitos Funcionales (FRD) · v2.5
+## Documento de Requisitos Funcionales (FRD) · v2.6
 
 **Alcance:** la aplicación del trabajador de caja, `/worker`. No cubre el kiosco de autoservicio ni las consolas de administración.
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 2.6 | 26/11/2026 | **Vinculación del equipo de caja.** El código de la pantalla de vinculación lo genera el propio equipo: **seis caracteres hexadecimales** («492 14C»), sin cuenta atrás y sin renovarse, porque es el de ese equipo. Al vincularlo, el servidor le da su identificador, `CA-` y ocho caracteres hexadecimales (**FR-DEV-2**, **FR-DEV-7**; FRD de Admin de sede **FR-AD-FMT-2**) |
 | 2.5 | 25/11/2026 | **Firma de quien cobra.** Además de las dos fotos del carné, el beneficiario firma con el dedo en el móvil del trabajador, debajo de una frase con lo que recibe; sin firma no se confirma la entrega (§6.8, **FR-CARNE-11 a 13**, nuevos; **FR-CARNE-1, 2, 3, 5, 7, 8, 9**; **FR-RM-12**, **FR-GC-12**). Código `falta-firma` y mensajes de la firma en el móvil (Apéndice C) |
 | 2.4 | 24/11/2026 | **Tarifas vigentes en Inicio.** Bloque nuevo, entre Tasas vigentes y Accesos rápidos, con la tarifa de giros de las monedas de la caja, para contestar al cliente que pregunta cuánto cobran (**FR-HOME-5**, **FR-HOME-7**, nuevo). Va **por servicio**: un servicio nuevo con tarifa es un grupo más. No es una pantalla (como Tasas, que tampoco la tiene) y no cambia ninguna regla de Enviar giro |
 | 2.3 | 23/11/2026 | **Buscar solicitud, con el kiosco sobre la red** (FRD de Autoservicio 2.0). La solicitud se busca y se canjea en el servidor; una solicitud de **otra sede** se rechaza nombrándola (**FR-SOL-3**, **FR-SOL-9**, nuevo). «Continuar» vuelve a comprobarla y la consume en el mismo acto (**FR-SOL-5**). El resumen enseña lo que vio el cliente: el modo y el importe pedido del cambio, la cuenta del giro (**FR-SOL-4**). **Cambio de moneda** llega cotizado con la tasa de ahora, en el modo del cliente, y pasa solo a «Cliente»; **Enviar giro** pasa del remitente directamente a «Efectivo», con la tarifa de ahora (**FR-SOL-6**). Si la cifra de ahora no es la que vio el cliente, se avisa con las dos (**FR-SOL-8**, nuevo). Sale de §16 el kiosco con billetes: el kiosco no toca billetes |
@@ -190,7 +191,7 @@ Antes del acceso está el **equipo**: Worker solo se usa en un ordenador vincula
 
 **FR-DEV-1 · Sin vincular.** Mientras el equipo no es la caja de ninguna sede, cualquier ruta de `/worker` muestra la **pantalla de vinculación**. Nadie inicia sesión en un equipo sin vincular **[RP-16]**.
 
-**FR-DEV-2 · Pantalla de vinculación.** Fuera del shell, sin sede, caja ni trabajador. Muestra un **código QR** y un **código de seis cifras** («482 913») con su cuenta atrás, y el identificador del equipo. Dice que el administrador lo vincula desde **Equipos → Vincular un equipo** de su consola. Se renueva sola al caducar.
+**FR-DEV-2 · Pantalla de vinculación.** Fuera del shell, sin sede, caja ni trabajador. Muestra un **código QR** y el **código de vinculación** del equipo: seis caracteres hexadecimales agrupados de tres en tres («492 14C»). Lo genera el propio equipo la primera vez que se abre y **no cambia**: no caduca, no tiene cuenta atrás y sigue siendo el mismo después de desvincularlo. Dice que el administrador lo vincula desde **Equipos → Vincular un equipo** de su consola, y que la pantalla cambia sola en cuanto lo vincula.
 
 **FR-DEV-3 · Quién vincula.** El **administrador de la sede**, eligiendo la sede, la caja y, si quiere, el rótulo del equipo (**FR-AD-EQ-7**, **FR-AD-EQ-30**). Una caja tiene a lo sumo un equipo.
 
@@ -200,7 +201,7 @@ Antes del acceso está el **equipo**: Worker solo se usa en un ordenador vincula
 
 **FR-DEV-6 · Desvincular.** El administrador puede desvincular el equipo desde su consola. Desde la siguiente petición el equipo vuelve a la pantalla de vinculación y la sesión del trabajador termina. Lo que no se confirmó se descarta; lo confirmado se conserva. **Desvincular no cierra la jornada**, que es de la caja.
 
-**FR-DEV-7 · Credencial.** La identidad del equipo la emite el servidor al vincular y la revoca al desvincular; viaja en una cookie `httpOnly` que el navegador no puede leer ni escribir. Toda petición de Worker lleva la del equipo y la del trabajador; la sesión del trabajador solo vale en el equipo en el que se abrió. Que el equipo esté vinculado **no** es un «equipo de confianza» para el segundo factor **[R13]**.
+**FR-DEV-7 · Credencial.** La identidad del equipo la emite el servidor al vincular y la revoca al desvincular: con ella, el equipo recibe su **identificador**, `CA-` y ocho caracteres hexadecimales, único entre cajas y kioscos y nuevo en cada vinculación (**FR-AD-FMT-2**). La credencial viaja en una cookie `httpOnly` que el navegador no puede leer ni escribir. Toda petición de Worker lleva la del equipo y la del trabajador; la sesión del trabajador solo vale en el equipo en el que se abrió. Que el equipo esté vinculado **no** es un «equipo de confianza» para el segundo factor **[R13]**.
 
 **Ver en la demo:** en un navegador sin vincular, abrir `/worker`. Para no tener que vincular, la pantalla ofrece **«Demostración · usar un equipo ya vinculado»**, con los equipos de caja que ya tiene la red. Para vincular de verdad: en otra pestaña, entrar en Admin como `marta@malecon-sf.cu` → Equipos → Vincular un equipo, y escribir el código. El QR de la demostración es ilustrativo.
 

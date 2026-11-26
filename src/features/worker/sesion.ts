@@ -2,7 +2,7 @@
  * LA SESIÓN DE WORKER — dos cookies que escribe el servidor.
  *
  *   · **El equipo** (`pc_caja_device`): qué máquina es esta. Guarda solo su
- *     identificador; si es una caja y de cuál lo dice la red
+ *     código de vinculación; si es una caja y de cuál lo dice la red
  *     (`resolverTerminal`), no la cookie. Dura un año: el vínculo sobrevive a
  *     reinicios y cambios de turno (**FR-DEV-4**).
  *   · **La persona** (`pc_worker_session`): quién opera ahora y en qué equipo.
@@ -49,8 +49,13 @@ export function parseWorkerSession(raw: string | undefined): WorkerSessionPayloa
   }
 }
 
-/** El identificador de un equipo nuevo: opaco, y con la forma de los que muestra la red. */
-export function nuevoIdDeEquipo(): string {
-  const n = () => String(Math.floor(Math.random() * 10_000)).padStart(4, "0");
-  return `CAJ-${n()}-${n()}`;
+/**
+ * El código de vinculación de un equipo nuevo: seis caracteres hexadecimales
+ * al azar. Lo genera el propio equipo una vez y no cambia mientras conserve
+ * la cookie (decisión del 26/11/2026).
+ */
+export function nuevoCodigoDeEquipo(): string {
+  let hex = "";
+  for (let i = 0; i < 6; i += 1) hex += Math.floor(Math.random() * 16).toString(16);
+  return hex.toUpperCase();
 }

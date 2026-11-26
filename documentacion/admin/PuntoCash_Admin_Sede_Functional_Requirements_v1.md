@@ -1,5 +1,5 @@
 # PuntoCash — Administración de sede
-## Documento de Requisitos Funcionales (FRD) · v9.4
+## Documento de Requisitos Funcionales (FRD) · v9.5
 
 **Alcance:** la consola de administración de sede, `/admin`. No cubre la consola de PuntoCash (`/super-admin`).
 
@@ -29,6 +29,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 9.5 | 26/11/2026 | **Vinculación de equipos: código fijo del equipo e identificador que da el servidor.** El código que muestra un equipo sin vincular lo genera el propio equipo, tiene **seis caracteres hexadecimales** (cifras y letras de la A a la F, «492 14C») y **no caduca**: es el de ese equipo. Al vincularlo, el servidor le da su **identificador**: `CA-` y ocho caracteres hexadecimales una caja, `KI-` y ocho un kiosco, únicos entre cajas y kioscos y nuevos en cada vinculación; desvincular lo retira (**FR-AD-FMT-2**, **FR-AD-EQ-17**, **-18**, **-22** a **-24**, **FR-AD-DOM-4**). Salen los rechazos `codigo-caducado` y `codigo-caducado-al-vincular` (Apéndice C). El concepto «Reto de vinculación» pasa a «Código de vinculación» (Apéndice A) |
 | 9.4 | 25/11/2026 | **Firma de quien cobra.** El bloque del detalle de una remesa entregada o un giro pagado pasa a «Carné y firma de quien cobró»: además de las dos fotos, la firma del beneficiario con la frase que firmó y cuándo (**FR-AD-OPS-11**; FRD de Worker §6.8) |
 | 9.3 | 24/11/2026 | **Tarifas de giros: la administración de sede las ve.** Sección nueva **§21 Tarifas** (`/admin/tarifas`, `/admin/tarifas/giros`, **FR-AD-TAR-1** a **TAR-9**), de solo lectura y con las monedas en que las sedes del alcance envían giros; **PuntoCash avisa a las sedes cuando define, cambia o retira una tarifa**, en Tarifas y en el panel de atención de Inicio (fila 12, **FR-AD-HOME-2**), hasta que alguien de la empresa pulsa «Entendido» (**FR-AD-TAR-5** a **TAR-7**). Menú: Tarifas, tras Tasas (**FR-AD-SHELL-2**: quince destinos para el administrador principal, catorce para los demás). La fila «Sede en horario sin ninguna caja abierta» de Inicio pasa de 12 a 13. Código nuevo en el Apéndice C. Lo que leen los clientes y el trabajador está en los FRD de Autoservicio **2.1**, Pantalla **2.1** y Worker **2.4** |
 | 9.2 | 19/11/2026 | **Tarifas de giros.** Enviar giro cobra al remitente la tarifa que fija PuntoCash (FRD de Super Admin §10; FRD de Worker **FR-GE-16**). El mercante no la ve ni la cambia; la ve, aplicada, en el detalle de cada giro enviado (**FR-AD-OPS-3**). El importe de un giro enviado en Operaciones es el total cobrado; en Reportes, la tarifa **no es volumen** (**FR-AD-REP-8**). El **detalle de una operación** se lee como una cuenta del efectivo, que sustituye al bloque «Liquidación» (**FR-AD-OPS-10**) |
@@ -307,9 +308,12 @@ Rigen **FR-FMT-1 a FR-FMT-5** de `PuntoCash_Worker_Functional_Requirements_v1.md
 
 | Dato | Formato |
 | --- | --- |
-| Equipo de caja | `CAJ-NNNN-NNNN` |
-| Kiosco | `KIO-NNNN-NNNN` |
-| Código del reto de vinculación | Seis cifras. Se muestra y se admite agrupado de tres en tres («482 913»); al leerlo se ignoran los espacios |
+| Equipo de caja | `CA-` y ocho caracteres hexadecimales en mayúsculas: `CA-1A0E7C03` |
+| Kiosco | `KI-` y ocho caracteres hexadecimales en mayúsculas: `KI-1A0E4B01` |
+| Código de vinculación | Seis caracteres hexadecimales (cifras y letras de la A a la F). Se muestra agrupado de tres en tres («492 14C»); al leerlo se ignoran los espacios y no se distinguen mayúsculas de minúsculas |
+
+- El **identificador** lo asigna el servidor al vincular el equipo. Los ocho caracteres no se repiten entre cajas y kioscos, ni con los de equipos dados de baja. Desvincular lo retira, y una nueva vinculación del mismo equipo recibe otro.
+- El **código de vinculación** lo genera el propio equipo la primera vez que se abre y no cambia mientras siga siendo el mismo equipo, también después de desvincularlo. No es una credencial: sin un administrador que lo escriba en esta consola no vincula nada.
 
 **FR-AD-FMT-3 · Correo de verificación.** El correo de verificación de un trabajador o de un administrador se muestra **enmascarado** en todo listado y en toda ficha. Excepciones, que lo muestran entero: la asistencia de acceso de un trabajador (**FR-AD-TRAB-10**) y el diálogo «Cambiar correo» de un administrador (**FR-AD-USR-6**).
 
@@ -433,7 +437,7 @@ Lo propio de esta consola: la ayuda, cuando el correo registrado ya no sirve, re
 | Sede | Nombre |
 | Caja | Identificador |
 | Estado del vínculo | «Vinculada» o «Sin equipo» |
-| Equipo | Rótulo e identificador (`CAJ-NNNN-NNNN`) del equipo vinculado |
+| Equipo | Rótulo e identificador (`CA-XXXXXXXX`) del equipo vinculado |
 | Vinculado | Fecha de vinculación y quién la vinculó |
 | Última actividad | Fecha y hora de la última señal del equipo |
 | Jornada | Como en Cajas (**FR-AD-CAJA-1**): si tiene una abierta, trabajador, desde cuándo, si está en sesión y enlace a `/admin/jornadas/{id}`; si no, cerrada |
@@ -452,7 +456,7 @@ Lo propio de esta consola: la ayuda, cuando el correo registrado ya no sirve, re
 | Dato | Contenido |
 | --- | --- |
 | Sede | Nombre |
-| Kiosco | Rótulo e identificador (`KIO-NNNN-NNNN`) |
+| Kiosco | Rótulo e identificador (`KI-XXXXXXXX`) |
 | Vinculado | Fecha de vinculación y quién lo vinculó |
 | Última actividad | Fecha y hora de la última señal del kiosco |
 | Solicitudes | Solicitudes generadas en el periodo (pendiente de dependencia, §18) |
@@ -495,7 +499,7 @@ Se inicia con «Desvincular» en una caja con equipo y se confirma en un diálog
 
 - El vínculo se elimina; la caja queda sin equipo.
 - La jornada de la caja no se modifica.
-- El terminal vuelve a su pantalla de vinculación; el reto nuevo lo pide el propio terminal.
+- El terminal vuelve a su pantalla de vinculación, con su mismo código de vinculación. El identificador del equipo se retira.
 
 ---
 
@@ -518,7 +522,7 @@ Se inicia con «Desvincular» en un kiosco y se confirma en un diálogo, sin mot
 **FR-AD-EQ-17 · Paso 1: identificar el equipo.** Las dos vías a la vez, sin obligar a elegir **[FR-DEV-2]**, **[FR-AS-LINK-2]**:
 
 - **Escanear el QR** que muestra el equipo, con la cámara del dispositivo donde está abierta la consola.
-- **Escribir el código** de seis cifras (**FR-AD-FMT-2**).
+- **Escribir el código** de vinculación, de seis caracteres (**FR-AD-FMT-2**).
 
 **FR-AD-EQ-19 · Cámara.**
 
@@ -527,26 +531,24 @@ Se inicia con «Desvincular» en un kiosco y se confirma en un diálogo, sin mot
 
 **FR-AD-EQ-21 · Reintento.** Tras un error, el campo del código conserva lo escrito.
 
-**Rechazos al identificar.** Identificar no consume el reto.
+**Rechazos al identificar.** Identificar no vincula nada.
 
 | Condición | Código |
 | --- | --- |
 | El código no coincide con ningún equipo pendiente | `codigo-no-coincide` |
-| El reto caducó | `codigo-caducado` |
 | El equipo ya está vinculado | `equipo-ya-vinculado` |
 | La sesión terminó | `sesion-terminada` |
 
-**FR-AD-EQ-20 · Textos.** Los mensajes de `codigo-no-coincide` y `codigo-caducado` son los que ya especifican Kiosco y Worker **[FR-AS-LINK-4]**. El de `codigo-no-coincide` no nombra la clase de equipo, porque con un código que no coincide no se sabe si es una caja o un kiosco.
+**FR-AD-EQ-20 · Textos.** El mensaje de `codigo-no-coincide` no nombra la clase de equipo, porque con un código que no coincide no se sabe si es una caja o un kiosco.
 
 **Ver en la demo** (`marta@malecon-sf.cu`, **Equipos** → «Vincular un equipo»; la pantalla muestra los códigos de un equipo de caja y un kiosco pendientes):
 
 - Identificar: escribir cualquiera de los dos códigos.
 - No coincide: escribir `000000`.
-- Caducado: dejar la pantalla abierta más de diez minutos sin recargar y escribir el código mostrado.
 - Sin cámara o permiso denegado: «Usar la cámara» en un dispositivo sin cámara, o denegar el permiso.
 - La lectura del QR no se puede ver en la demo.
 
-**FR-AD-EQ-18 · Paso 2: elegir el objeto.** Solo tras identificar un reto válido, la pantalla muestra la clase de equipo (caja o kiosco), su identificador y la hora a la que caduca el código, y pide el objeto. Este paso es la confirmación (**FR-AD-STATE-3**).
+**FR-AD-EQ-18 · Paso 2: elegir el objeto.** Solo tras identificar un equipo pendiente, la pantalla muestra su clase (caja o kiosco) y su código de vinculación, y pide el objeto. El identificador todavía no existe: lo da el servidor al vincular. Este paso es la confirmación (**FR-AD-STATE-3**).
 
 **FR-AD-EQ-7 / FR-AD-EQ-8 / FR-AD-EQ-13 / FR-AD-EQ-14 · Campos.**
 
@@ -570,14 +572,13 @@ Si el usuario no tiene ninguna sede donde vincular un equipo, la pantalla muestr
 - Kiosco: identificar el código del kiosco; solo pide sede.
 - Sin sedes: `lperez@cienfuegoscambio.cu`, entrar en `/admin/equipos/vincular`.
 
-**FR-AD-EQ-22 / FR-AD-EQ-23 · Rechazos al vincular.** El servidor revalida todo al confirmar **[R3]**, **[R6]**: el alcance primero, después el reto (vigente y sin usar) y por último el objeto (sigue disponible). Un reto es de un solo uso: no puede vincular dos equipos.
+**FR-AD-EQ-22 / FR-AD-EQ-23 · Rechazos al vincular.** El servidor revalida todo al confirmar **[R3]**, **[R6]**: el alcance primero, después el equipo (sigue pendiente) y por último el objeto (sigue disponible). Un código vincula una sola vez: tras vincular, el equipo deja de estar pendiente.
 
 | Condición | Código |
 | --- | --- |
 | La sede no existe o está fuera del alcance | `no-encontrada` |
 | La sede está cerrada | `sede-cerrada` |
-| El código no coincide con ningún reto pendiente (también si ya se usó) | `codigo-no-coincide` |
-| El reto caducó mientras se elegía el objeto | `codigo-caducado-al-vincular` |
+| El código no coincide con ningún equipo pendiente (también si ya se vinculó) | `codigo-no-coincide` |
 | El equipo ya está vinculado | `equipo-ya-vinculado` |
 | Equipo de caja sin caja elegida | `caja-requerida` |
 | La caja no existe o no es de esa sede | `no-encontrada` |
@@ -586,12 +587,11 @@ Si el usuario no tiene ninguna sede donde vincular un equipo, la pantalla muestr
 | La sesión tiene alcance de toda la red (PuntoCash) | `alcance-global-prohibido` |
 | La sesión terminó | `sesion-terminada` |
 
-**Ver en la demo:** caducado al vincular: identificar un código, elegir el objeto, esperar más de diez minutos y pulsar «Vincular el equipo».
-
 **FR-AD-EQ-24 · Al vincular.**
 
-- Se crea el vínculo con el equipo, la sede, la caja (si es de caja), la fecha, quién lo vinculó y la vía (QR o código).
-- El reto se consume.
+- El servidor asigna al equipo su **identificador** (**FR-AD-FMT-2**).
+- Se crea el vínculo con el equipo, su identificador, la sede, la caja (si es de caja), la fecha, quién lo vinculó y la vía (QR o código).
+- El equipo deja de estar pendiente. Recibe su identificador y su credencial la siguiente vez que consulta el servidor; la credencial no se muestra en ninguna pantalla (**FR-AD-EQ-25**).
 - La pantalla confirma qué quedó vinculado a qué: clase de equipo, caja si la hay, sede e identificador del equipo.
 - Advierte que el equipo cambia solo, sin que nadie lo toque **[FR-DEV-4]**, **[FR-AS-LINK-5]**.
 - Ofrece «Vincular otro equipo» y volver a `/admin/equipos`.
@@ -3159,7 +3159,7 @@ El volumen de lo operado por las sedes en un periodo. **Solo lectura.**
 | `ServiciosSede` | Los servicios que PuntoCash habilitó en la sede: cambio de moneda, remesas, giros |
 | `Asignacion` | Sede ↔ Operador por periodos: inicio, fin y motivo de cada uno |
 | `Caja` | Sede, identificador, estado (activa, retirada), alta con su autor, retirada con fecha y motivo |
-| Equipo | El dispositivo vinculado a una caja (`CAJ-NNNN-NNNN`) o a una sede (kiosco, `KIO-NNNN-NNNN`): rótulo, quién y cuándo lo vinculó, última actividad |
+| Equipo | El dispositivo vinculado a una caja (`CA-XXXXXXXX`) o a una sede (kiosco, `KI-XXXXXXXX`), con su código de vinculación: rótulo, quién y cuándo lo vinculó, última actividad |
 | Trabajador | Sede, identificador de acceso, nombre, documento (tipo y número), teléfono, correo de verificación, estado, desactivación con fecha, motivo y autor |
 | `CatalogoMonedas` | Las monedas de la plataforma, mantenidas por PuntoCash |
 | `MonedasSede` | La lista de monedas de una sede, con su fecha de alta |
@@ -3183,8 +3183,8 @@ Las consultas se acotan por alcance (**FR-AD-DOM-5**). Las escrituras son las qu
 
 **FR-AD-DOM-4 · Vinculación de equipos.** Es un único mecanismo para el equipo de caja de Worker, para el kiosco y para esta consola:
 
-- el reto que muestra el equipo es el que el administrador canjea;
-- el vínculo resultante es el que el equipo consulta en el servidor.
+- el código de vinculación que muestra el equipo es el que el administrador escribe;
+- el vínculo resultante, con el identificador que da el servidor, es el que el equipo consulta en el servidor.
 
 **FR-AD-DOM-5 · Alcance en el servidor.** Toda consulta recibe el alcance de la sesión y nunca devuelve registros fuera de él **[A1]**, **[RP-19]**.
 
@@ -3249,8 +3249,8 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 | Cualquier pantalla del shell | Un usuario activo, de un operador activo **[A14]** |
 | Que una pantalla muestre algo | Al menos una sede en el alcance; sin ninguna, las pantallas se muestran vacías por ausencia, no por filtro (**FR-AD-ACC-7**, **FR-AD-HOME-8**) |
 | Ver la sección de Administradores (§8) | Ser el **administrador principal** del operador de la sesión (**FR-AD-USR-11**) |
-| Vincular un equipo de caja | Una sede del alcance **con al menos una caja activa y sin equipo vinculado**, y un reto vigente y no usado |
-| Vincular un kiosco | Una sede del alcance y un reto vigente y no usado |
+| Vincular un equipo de caja | Una sede del alcance **con al menos una caja activa y sin equipo vinculado**, y un equipo de caja pendiente de vinculación |
+| Vincular un kiosco | Una sede del alcance y un kiosco pendiente de vinculación |
 | Desvincular un equipo | Nada más que el vínculo. No exige que la jornada esté cerrada **[A11]**, **[FR-DEV-7]** |
 | Crear una caja | Una sede del alcance, y un identificador libre dentro de esa sede |
 | Retirar una caja | Sin jornada abierta, sin equipo vinculado, y que no sea la última activa de una sede activa |
@@ -3291,7 +3291,7 @@ Vincular un equipo no lleva diálogo: su paso 2 muestra el equipo, la sede y la 
 3. **Un único rechazo en el acceso** para cuenta inexistente, contraseña incorrecta, usuario desactivado y operador suspendido (**FR-AD-ACC-5**, **FR-AD-ACC-6**).
 4. **§8.1 no existe para quien no es el principal**: ni en el menú del HTML entregado ni como ruta, que responde 404 (**FR-AD-USR-11**).
 5. **Siempre hay exactamente un administrador principal**, y a él no lo desactiva nadie (**FR-AD-USR-12**, **FR-AD-USR-13**).
-6. **Una caja, un equipo**, y el reto de vinculación es de un solo uso (**FR-AD-EQ-8**, **FR-AD-EQ-23**).
+6. **Una caja, un equipo**, y un código de vinculación vincula una sola vez (**FR-AD-EQ-8**, **FR-AD-EQ-23**).
 7. **Desvincular no cierra la jornada**, y la confirmación lo advierte antes (**FR-AD-EQ-10**).
 8. **Retirar una caja no borra nada** y la deja visible en los listados históricos (**FR-AD-CAJA-11**).
 9. **Desactivar a un trabajador no altera nada de lo que operó** (**FR-AD-TRAB-12**).
@@ -3498,8 +3498,8 @@ Amplía el Apéndice A del FRD de Worker.
 | **Alcance** | Las sedes que una sesión puede ver. Se deriva de la sesión; el selector de la cabecera solo filtra dentro de él |
 | **Asignación** | El vínculo Sede ↔ Operador durante un periodo |
 | **Caja** | Un puesto de mostrador de una sede, al que se vincula un equipo |
-| **Equipo** | El dispositivo de una caja (`CAJ-…`) o un kiosco de autoservicio (`KIO-…`) |
-| **Reto de vinculación** | El QR y el código de seis cifras que muestra un equipo sin vincular. Válido diez minutos, de un solo uso |
+| **Equipo** | El dispositivo de una caja (`CA-…`) o un kiosco de autoservicio (`KI-…`) |
+| **Código de vinculación** | El QR y el código de seis caracteres hexadecimales que muestra un equipo sin vincular. Lo genera el propio equipo y no caduca |
 | **Vincular** / **desvincular** | Atar un equipo a su caja o a su sede, y deshacerlo. Desvincular corta la sesión del dispositivo y no cierra la jornada |
 | **Trabajador** | El empleado de mostrador. Pertenece a una sede, no a una caja |
 | **Credencial inicial** | La contraseña que se entrega al dar de alta a un trabajador o un usuario. Se muestra una sola vez. Regenerarla es un restablecimiento |
@@ -3572,8 +3572,6 @@ El mensaje que ve el usuario para cada código de rechazo. Un código se busca p
 | Código | Mensaje |
 | --- | --- |
 | `codigo-no-coincide` | El código no coincide con ningún equipo pendiente. Revisa el código que muestra el equipo. |
-| `codigo-caducado` | Ese código caducó. El equipo ya muestra uno nuevo. |
-| `codigo-caducado-al-vincular` | Ese código caducó mientras elegías. El {equipo} ya muestra uno nuevo. |
 | `equipo-ya-vinculado` | Ese equipo ya está vinculado. Desvincúlalo antes de volver a vincularlo. |
 | `caja-ya-vinculada` | {caja} ya tiene un equipo vinculado. Desvincúlalo antes de vincular otro. |
 | `caja-requerida` | Elige la caja a la que pertenece este equipo. |

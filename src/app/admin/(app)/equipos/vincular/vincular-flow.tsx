@@ -7,7 +7,6 @@ import { Camera, CameraOff, CheckCircle2, KeyRound, MonitorSmartphone, QrCode, R
 
 import {
   Alert,
-  Badge,
   Button,
   Card,
   CardContent,
@@ -36,7 +35,7 @@ import {
  * identifica el equipo y solo después se le pregunta a qué se ata.
  *
  * Las **dos vías conviven** en el primer paso, sin obligar a elegir
- * (**FR-AD-EQ-17**): la cámara y el código de seis cifras. Si no hay cámara o
+ * (**FR-AD-EQ-17**): la cámara y el código de seis caracteres. Si no hay cámara o
  * se deniega el permiso, la del código sigue ahí mismo (**FR-AD-EQ-19**) — la
  * degradación no manda a nadie a otra pantalla.
  *
@@ -44,7 +43,8 @@ import {
  * conserva y se puede reintentar sin volver a teclearlo (**FR-AD-EQ-21**). El
  * campo es el `CodeInput` del sistema, que es el mismo de la verificación en
  * dos pasos: un `<input>` real sobre seis casillas, con la agrupación 3+3 que
- * el documento pide y que el terminal muestra.
+ * el documento pide y que el terminal muestra, aquí admitiendo cifras y las
+ * letras de la A a la F, porque el código del equipo es hexadecimal.
  *
  * Esta consola **no muestra ninguna credencial de dispositivo**
  * (**FR-AD-EQ-25**): la emite y la revoca el sistema, y aquí no hay nada que
@@ -59,7 +59,6 @@ export interface SedeParaVincular {
 }
 
 export interface RetoDeDemostracion {
-  deviceId: string;
   kind: TerminalKind;
   /** Agrupado de tres en tres, como lo muestra el terminal. */
   codigo: string;
@@ -67,8 +66,8 @@ export interface RetoDeDemostracion {
 
 const CODIGO: FieldSpec = {
   id: "vincular-codigo",
-  label: "Código de seis cifras",
-  description: "El que muestra la pantalla del equipo.",
+  label: "Código del equipo",
+  description: "Los seis caracteres, cifras y letras, que muestra la pantalla del equipo.",
   required: true,
 };
 
@@ -111,9 +110,8 @@ type Paso =
       nombre: "objeto";
       reto: RetoPresentado;
       kind: TerminalKind;
-      deviceId: string;
-      /** Hora local a la que vence el reto, ya formateada. */
-      caducaA: string;
+      /** El código del equipo, agrupado como lo muestra. */
+      codigo: string;
     }
   | { nombre: "listo"; resultado: Extract<ResultadoVinculacion, { ok: true }> };
 
@@ -157,11 +155,7 @@ export function VincularFlow({
       nombre: "objeto",
       reto: { method: "codigo", code },
       kind: resultado.reto.kind,
-      deviceId: resultado.reto.deviceId,
-      caducaA: new Date(resultado.reto.expiresAt).toLocaleTimeString("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      codigo: `${resultado.reto.codigo.slice(0, 3)} ${resultado.reto.codigo.slice(3)}`,
     });
   }
 
@@ -299,6 +293,7 @@ function Identificar({
                   value={codigo}
                   onChange={onCodigo}
                   onComplete={onEnviar}
+                  caracteres="hexadecimal"
                   disabled={enviando}
                   invalid={Boolean(error)}
                   aria-invalid={error ? true : undefined}
@@ -403,7 +398,7 @@ function Escanear({ disabled }: { disabled: boolean }): React.JSX.Element {
             {estado === "sin-camara" ? (
               <Alert variant="warning" title="No pudimos usar la cámara">
                 No hay cámara disponible o se denegó el permiso. Puedes vincular el equipo
-                escribiendo su código de seis cifras.
+                escribiendo su código.
               </Alert>
             ) : null}
 
@@ -444,15 +439,14 @@ function NotaDeDemostracion({
   return (
     <Alert variant="info" title="Versión de demostración">
       <p>
-        En el producto, estas seis cifras se leen de la pantalla del equipo que tienes delante.
+        En el producto, el código se lee de la pantalla del equipo que tienes delante.
         Aquí hay dos equipos esperando, para que puedas recorrer las dos ramas: una caja pide sede
         y caja, un kiosco solo sede.
       </p>
       <ul className="mt-3 flex flex-col gap-1">
         {retos.map((reto) => (
-          <li key={reto.deviceId} className="flex flex-wrap items-center gap-2">
+          <li key={reto.codigo} className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-text-primary">{CLASE[reto.kind]}</span>
-            <span className="pc-numeric text-text-secondary">{reto.deviceId}</span>
             <span aria-hidden="true" className="text-text-secondary">
               ·
             </span>
@@ -504,11 +498,10 @@ function ElegirObjeto({
               <div>
                 <CardTitle>{CLASE[paso.kind]}</CardTitle>
                 <p className="pc-numeric mt-0.5 text-caption text-text-secondary">
-                  {paso.deviceId}
+                  Código {paso.codigo}
                 </p>
               </div>
             </div>
-            <Badge variant="info">El código caduca a las {paso.caducaA}</Badge>
           </div>
         </CardHeader>
 

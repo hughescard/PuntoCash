@@ -2,7 +2,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 
 import { contextoDe, estadoDeCaja, type ContextoDeCaja } from "@/features/network/caja-operativa";
-import { resolverTerminal, type TerminalSession } from "@/features/network/devices";
+import { idDeEquipo, resolverTerminal, type TerminalSession } from "@/features/network/devices";
 import { parseWorkerSession, WORKER_DEVICE_COOKIE, WORKER_SESSION_COOKIE } from "./sesion";
 import { armarVista, type VistaDeCaja } from "./vista";
 
@@ -14,12 +14,12 @@ import { armarVista, type VistaDeCaja } from "./vista";
 
 /** Qué equipo es este navegador, y si la red lo tiene vinculado como caja. */
 export const getEquipo = cache(async function getEquipo(): Promise<{
-  deviceId: string | null;
+  codigo: string | null;
   sesion: TerminalSession | null;
 }> {
   const store = await cookies();
-  const deviceId = store.get(WORKER_DEVICE_COOKIE)?.value ?? null;
-  return { deviceId, sesion: resolverTerminal("caja", deviceId) };
+  const codigo = store.get(WORKER_DEVICE_COOKIE)?.value ?? null;
+  return { codigo, sesion: resolverTerminal("caja", codigo) };
 });
 
 /** Quién opera y en qué caja, o `null` si no hay sesión válida. */
@@ -28,7 +28,7 @@ export const getContextoDeTrabajo = cache(async function getContextoDeTrabajo():
   const payload = parseWorkerSession(store.get(WORKER_SESSION_COOKIE)?.value);
   if (!payload) return null;
   /* La sesión es de un equipo: si este navegador ya es otro equipo, no vale. */
-  if (store.get(WORKER_DEVICE_COOKIE)?.value !== payload.terminalId) return null;
+  if (idDeEquipo("caja", store.get(WORKER_DEVICE_COOKIE)?.value) !== payload.terminalId) return null;
   const ctx = contextoDe(payload);
   return ctx.ok ? ctx.value : null;
 });

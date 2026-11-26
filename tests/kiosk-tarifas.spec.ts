@@ -9,7 +9,8 @@ import { tarifasPublicas } from "../src/features/network/tarifas";
  * pantalla informativa de la sede. Las dos leen `tarifasPublicas`.
  */
 
-const KIOSCO_DE_VEDADO = "KIO-0001-0001";
+/** El código de vinculación del kiosco de la entrada de Vedado (`KI-1A0E4B01`). */
+const KIOSCO_DE_VEDADO = "4B1A01";
 
 test("tarifasPublicas: las monedas de la sede con política, y nada para una sede que no existe", () => {
   const vedado = tarifasPublicas("sede-vedado");

@@ -21,6 +21,10 @@ import { cn } from "@/lib/utils";
  *
  * El agrupamiento visual 3+3 solo separa la lectura; el valor nunca contiene
  * separadores.
+ *
+ * `caracteres="hexadecimal"` acepta además las letras de la A a la F, en
+ * mayúsculas: es el código de vinculación de un equipo («492 14C»), que lo
+ * genera el propio equipo y no es un código de un solo uso.
  */
 export interface CodeInputProps {
   id: string;
@@ -30,6 +34,8 @@ export interface CodeInputProps {
   /** Se invoca cuando el último dígito entra, con el código completo. */
   onComplete?: (value: string) => void;
   length?: number;
+  /** Qué admite: solo cifras (por defecto) o cifras y letras de la A a la F. */
+  caracteres?: "cifras" | "hexadecimal";
   disabled?: boolean;
   invalid?: boolean;
   autoFocus?: boolean;
@@ -46,6 +52,7 @@ const CodeInput = React.forwardRef<HTMLInputElement, CodeInputProps>(function Co
     onChange,
     onComplete,
     length = 6,
+    caracteres = "cifras",
     disabled = false,
     invalid = false,
     autoFocus = false,
@@ -69,8 +76,11 @@ const CodeInput = React.forwardRef<HTMLInputElement, CodeInputProps>(function Co
 
   function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     // Un pegado con espacios, guiones o el texto entero del correo se reduce a
-    // sus dígitos, en vez de rechazarse.
-    const digits = event.target.value.replace(/\D/g, "").slice(0, length);
+    // sus caracteres válidos, en vez de rechazarse.
+    const digits =
+      caracteres === "hexadecimal"
+        ? event.target.value.replace(/[^0-9a-f]/gi, "").toUpperCase().slice(0, length)
+        : event.target.value.replace(/\D/g, "").slice(0, length);
 
     onChange(digits);
 
@@ -123,8 +133,9 @@ const CodeInput = React.forwardRef<HTMLInputElement, CodeInputProps>(function Co
         ref={innerRef}
         id={id}
         type="text"
-        inputMode="numeric"
-        autoComplete="one-time-code"
+        inputMode={caracteres === "hexadecimal" ? "text" : "numeric"}
+        autoComplete={caracteres === "hexadecimal" ? "off" : "one-time-code"}
+        autoCapitalize={caracteres === "hexadecimal" ? "characters" : undefined}
         // Un gestor de contraseñas no debe guardar un código de un solo uso.
         data-1p-ignore
         spellCheck={false}

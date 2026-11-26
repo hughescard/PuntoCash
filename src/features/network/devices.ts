@@ -19,23 +19,25 @@
  * (**FR-AD-EQ-25**, **FR-DEV-8**, **FR-AS-LINK-7**): **la credencial la emite
  * y la revoca el sistema, nunca el terminal**. El reparto queda así:
  *
- *   · El terminal se nombra a sí mismo con un identificador opaco que guarda
- *     en una cookie, y no es ninguna credencial: es el «quién pregunta».
- *   · El **reto de vinculación** lo emite este módulo, en el servidor
- *     (`emitirReto`). El terminal lo muestra; no se lo inventa.
+ *   · El terminal genera **su código de vinculación**: seis caracteres
+ *     hexadecimales al azar que guarda en una cookie y no cambian mientras
+ *     siga siendo el mismo equipo (decisión del 26/11/2026). No es ninguna
+ *     credencial: es el «quién pregunta», y lo que teclea el administrador.
+ *   · Al vincular, el servidor le da al equipo su **identificador**
+ *     (`CA-XXXXXXXX` una caja, `KI-XXXXXXXX` un kiosco): único entre cajas y
+ *     kioscos, nuevo en cada vinculación y retirado al desvincular.
  *   · **Vincular y desvincular** son actos del administrador de la sede
  *     (**A10**, **FR-AD-EQ-3**), reciben alcance y lo comprueban.
  *   · `resolverTerminal` es la respuesta del servidor a «quién soy». Worker y
  *     Kiosco preguntan aquí en cada petición y pintan lo que les contesten.
  *
  * ── Lo que esto todavía no es ─────────────────────────────────────────────
- * El identificador del equipo lo escribe el propio navegador, así que es
- * **autodeclarado**: un terminal podría afirmar ser otro. En el producto real
- * la credencial va firmada y la emite el servidor al vincular. Lo que ya está
- * en su sitio definitivo es **quién decide**: el reto y el vínculo no se pueden
- * fabricar desde el cliente, y eso es lo que convierte la vinculación en un
- * control y no en una declaración. Quien implemente el backend firma la
- * credencial y no tiene que mover nada más.
+ * La cookie del equipo guarda su código, así que en la demostración el
+ * terminal se presenta con él en cada petición. En el producto, al vincular
+ * el servidor entrega al equipo una sola vez su credencial firmada junto con
+ * su identificador, y es la credencial lo que presenta después. Lo que ya está
+ * en su sitio definitivo es **quién decide**: el identificador y el vínculo
+ * los da el servidor, no se pueden fabricar desde el cliente.
  */
 
 import { requireOperatorScope, type Scope } from "./scope";
@@ -48,8 +50,14 @@ export type TerminalKind = "caja" | "kiosco";
 export type LinkMethod = "qr" | "codigo";
 
 export interface Terminal {
-  /** Identificador visible del equipo, el que aparece en su pantalla de vinculación. */
+  /**
+   * Identificador del equipo: `CA-` una caja, `KI-` un kiosco, y ocho
+   * caracteres hexadecimales. Lo da el servidor al vincular; es único entre
+   * cajas y kioscos y una nueva vinculación recibe otro.
+   */
   id: string;
+  /** El código de vinculación que generó el propio equipo y que tecleó el administrador. */
+  codigo: string;
   kind: TerminalKind;
   branchId: string;
   /** Solo los equipos de caja: un kiosco se ata a la sede, no a un mostrador (**A11**). */
@@ -72,7 +80,8 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
   {
     /* La caja con datos operativos simulados, y la misma que el simulador de
        la demostración deja elegir (FR-DEV-9). */
-    id: "CAJ-0001-0003",
+    id: "CA-1A0E7C03",
+    codigo: "7C1A03",
     kind: "caja",
     branchId: "sede-vedado",
     registerId: "sede-vedado:caja-03",
@@ -83,7 +92,8 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
     lastSeenAt: "2026-09-29T18:40:00.000Z",
   },
   {
-    id: "CAJ-0001-0001",
+    id: "CA-1A0E7C01",
+    codigo: "7C1A01",
     kind: "caja",
     branchId: "sede-vedado",
     registerId: "sede-vedado:caja-01",
@@ -94,7 +104,8 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
     lastSeenAt: "2026-09-29T18:12:00.000Z",
   },
   {
-    id: "CAJ-0001-0002",
+    id: "CA-1A0E7C02",
+    codigo: "7C1A02",
     kind: "caja",
     branchId: "sede-vedado",
     registerId: "sede-vedado:caja-02",
@@ -108,7 +119,8 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
      FR-AD-CAJA-2 exige poder ver de un vistazo, y el que **FR-AD-EQ-6** manda
      poner primero en el listado. */
   {
-    id: "CAJ-0002-0001",
+    id: "CA-2B4F9D01",
+    codigo: "9D2B01",
     kind: "caja",
     branchId: "sede-habana-vieja",
     registerId: "sede-habana-vieja:caja-01",
@@ -119,7 +131,8 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
     lastSeenAt: "2026-09-29T17:55:00.000Z",
   },
   {
-    id: "CAJ-0002-0003",
+    id: "CA-2B4F9D03",
+    codigo: "9D2B03",
     kind: "caja",
     branchId: "sede-habana-vieja",
     registerId: "sede-habana-vieja:caja-03",
@@ -130,7 +143,8 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
     lastSeenAt: "2026-09-29T16:30:00.000Z",
   },
   {
-    id: "CAJ-0003-0001",
+    id: "CA-3C8A2E01",
+    codigo: "2E3C01",
     kind: "caja",
     branchId: "sede-miramar",
     registerId: "sede-miramar:caja-01",
@@ -141,7 +155,8 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
     lastSeenAt: "2026-09-29T15:20:00.000Z",
   },
   {
-    id: "CAJ-0005-0001",
+    id: "CA-5E1D6F01",
+    codigo: "6F5E01",
     kind: "caja",
     branchId: "sede-santa-clara",
     registerId: "sede-santa-clara:caja-01",
@@ -152,11 +167,12 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
     lastSeenAt: "2026-09-29T14:02:00.000Z",
   },
   // ---- Kioscos: atados a la sede, nunca a un mostrador (A11) --------------
-  /* El identificador es `KIO-NNNN-NNNN`, el formato que especifican los tres
-     FRD que lo nombran: Admin FR-AD-EQ-12, Super Admin FR-SA-EQ-3 y Kiosco
-     FR-AS-LINK-2. Las cajas usan `CAJ-NNNN-NNNN` por el mismo criterio. */
+  /* El identificador es `KI-` y ocho caracteres hexadecimales; el de una caja,
+     `CA-` y ocho. Los da el servidor al vincular y nunca se repiten los ocho
+     caracteres entre cajas y kioscos (decisión del 26/11/2026). */
   {
-    id: "KIO-0001-0001",
+    id: "KI-1A0E4B01",
+    codigo: "4B1A01",
     kind: "kiosco",
     branchId: "sede-vedado",
     label: "Kiosco entrada · Vedado",
@@ -168,7 +184,8 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
   {
     /* Dos en la misma sede: **FR-AD-EQ-14** dice que aquí no rige el límite
        de uno por objeto que sí rige para las cajas. */
-    id: "KIO-0001-0002",
+    id: "KI-1A0E4B02",
+    codigo: "4B1A02",
     kind: "kiosco",
     branchId: "sede-vedado",
     label: "Kiosco sala de espera · Vedado",
@@ -178,7 +195,8 @@ const mutableTerminals: Terminal[] = almacen("equipos", () => [
     lastSeenAt: "2026-09-29T18:41:00.000Z",
   },
   {
-    id: "KIO-0002-0001",
+    id: "KI-2B4F5A01",
+    codigo: "5A2B01",
     kind: "kiosco",
     branchId: "sede-habana-vieja",
     label: "Kiosco entrada · Obispo",
@@ -213,92 +231,91 @@ export function findTerminalById(id: string | null | undefined): Terminal | null
   return mutableTerminals.find((t) => t.id === id) ?? null;
 }
 
-/* -------------------------------------------------------------------------
- * Los retos de vinculación — los emite el servidor, no el terminal
- * ---------------------------------------------------------------------- */
-
-/** Lo que dura un reto antes de que el terminal muestre uno nuevo (**FR-DEV-2**). */
-export const PAIRING_VALIDITY_MINUTES = 10;
-
-export interface PairingChallenge {
-  /** El equipo que lo está mostrando. */
-  deviceId: string;
-  kind: TerminalKind;
-  /** Seis cifras. Se muestran agrupadas de tres en tres: "482 913". */
-  code: string;
-  expiresAt: string;
+/** El equipo vinculado que se presenta con este código de vinculación, o `null`. */
+export function findTerminalByCodigo(codigo: string | null | undefined): Terminal | null {
+  const c = normalizarCodigo(codigo ?? "");
+  if (!c) return null;
+  return mutableTerminals.find((t) => t.codigo === c) ?? null;
 }
 
-/**
- * Un reto por equipo pendiente. En memoria, como el resto del dominio: una
- * recarga completa del servidor los olvida, y el terminal pedirá otro.
- */
-/* En `globalThis`: el equipo pide su reto desde `/worker` y el administrador
-   lo canjea desde `/admin`, y los dos tienen que ver el mismo. */
-const ALMACEN_RETOS = globalThis as typeof globalThis & { __puntocashRetosDeEquipo?: Map<string, PairingChallenge> };
-const pendingChallenges = (ALMACEN_RETOS.__puntocashRetosDeEquipo ??= new Map<string, PairingChallenge>());
+/* -------------------------------------------------------------------------
+ * El código de vinculación — lo genera el equipo y no caduca
+ * ---------------------------------------------------------------------- */
 
-/** "482913" → "482 913", la agrupación que muestra el terminal y teclea el admin. */
+/** Seis caracteres hexadecimales, en mayúsculas (decisión del 26/11/2026). */
+export const CODIGO_DE_VINCULACION = /^[0-9A-F]{6}$/;
+
+/** Lo que se teclea, sin espacios ni guiones y en mayúsculas: "492 14c" → "49214C". */
+export function normalizarCodigo(valor: string): string {
+  return valor.replace(/[\s-]/g, "").toUpperCase();
+}
+
+/** "49214C" → "492 14C", la agrupación que muestra el equipo y teclea el administrador. */
 export function formatPairingCode(code: string): string {
   return `${code.slice(0, 3)} ${code.slice(3)}`;
 }
 
-function randomDigits(length: number): string {
-  let out = "";
-  for (let i = 0; i < length; i += 1) out += String(Math.floor(Math.random() * 10));
-  return out;
-}
-
-function caducado(challenge: PairingChallenge, now: Date): boolean {
-  return new Date(challenge.expiresAt).getTime() <= now.getTime();
+/** Un equipo que muestra su código y espera a que lo vinculen. */
+export interface PairingChallenge {
+  /** Su código de vinculación. No caduca: es el de ese equipo. */
+  code: string;
+  kind: TerminalKind;
 }
 
 /**
- * Emite —o renueva— el reto de un equipo que todavía no está vinculado.
+ * Los equipos que esperan vinculación, por su código. En memoria, como el
+ * resto del dominio: el terminal se vuelve a anunciar al arrancar.
+ */
+/* En `globalThis`: el equipo se anuncia desde `/worker` o el kiosco y el
+   administrador lo identifica desde `/admin`, y los dos tienen que ver el mismo. */
+const ALMACEN_PENDIENTES = globalThis as typeof globalThis & { __puntocashEquiposPendientes?: Map<string, PairingChallenge> };
+const pendingChallenges = (ALMACEN_PENDIENTES.__puntocashEquiposPendientes ??= new Map<string, PairingChallenge>());
+
+/**
+ * Anuncia un equipo que todavía no está vinculado y devuelve lo que muestra
+ * su pantalla.
  *
- * Lo llama el terminal al arrancar y cada vez que el suyo caduca. Es una
- * escritura y no recibe alcance **a propósito**: quien la pide es una máquina
- * sin dueño todavía, que es precisamente lo que el reto viene a resolver. Lo
- * único que puede provocar es un código de seis cifras que no sirve para nada
- * hasta que un administrador lo teclea.
+ * Lo llama el terminal al arrancar. Es una escritura y no recibe alcance **a
+ * propósito**: quien la pide es una máquina sin dueño todavía. Lo único que
+ * puede provocar es un código que no sirve para nada hasta que un
+ * administrador lo teclea. Es idempotente: el código es siempre el mismo.
  *
- * Un equipo **ya vinculado** no obtiene reto: devuelve `null`, y el terminal
+ * Un equipo **ya vinculado** no se anuncia: devuelve `null`, y el terminal
  * que pregunte verá que su respuesta es un vínculo, no un código.
  */
-export function emitirReto(
-  kind: TerminalKind,
-  deviceId: string,
-  now = new Date(),
-): PairingChallenge | null {
-  const vinculado = findTerminalById(deviceId);
-  if (vinculado) return null;
-
-  const existente = pendingChallenges.get(deviceId);
-  if (existente && !caducado(existente, now)) return existente;
-
-  const challenge: PairingChallenge = {
-    deviceId,
-    kind,
-    code: randomDigits(6),
-    expiresAt: new Date(now.getTime() + PAIRING_VALIDITY_MINUTES * 60_000).toISOString(),
-  };
-  pendingChallenges.set(deviceId, challenge);
+export function emitirReto(kind: TerminalKind, codigo: string): PairingChallenge | null {
+  const code = normalizarCodigo(codigo);
+  if (!CODIGO_DE_VINCULACION.test(code)) return null;
+  if (findTerminalByCodigo(code)) return null;
+  const existente = pendingChallenges.get(code);
+  if (existente && existente.kind === kind) return existente;
+  const challenge: PairingChallenge = { code, kind };
+  pendingChallenges.set(code, challenge);
   return challenge;
 }
 
-/** El reto vigente de un equipo, sin emitir ninguno. */
-export function retoVigente(deviceId: string, now = new Date()): PairingChallenge | null {
-  const challenge = pendingChallenges.get(deviceId);
-  if (!challenge || caducado(challenge, now)) return null;
-  return challenge;
+/** El equipo pendiente que muestra este código, sin anunciar ninguno. */
+export function retoVigente(codigo: string): PairingChallenge | null {
+  return pendingChallenges.get(normalizarCodigo(codigo)) ?? null;
+}
+
+/** Lo que lleva el QR que muestra el equipo: su clase y su código. */
+export function pairingQrPayload(challenge: PairingChallenge): string {
+  return `puntocash:${challenge.kind}-link:v1:${challenge.code}`;
 }
 
 /**
- * Lo que un reto lleva dentro del QR. En el producto va un token firmado y de
- * un solo uso; aquí la forma es la misma y el contenido es el reto.
+ * Un identificador nuevo para un equipo: `CA-` o `KI-` y ocho caracteres
+ * hexadecimales, sin repetir ninguno que ya tenga una caja **o** un kiosco.
  */
-export function pairingQrPayload(challenge: PairingChallenge): string {
-  return `puntocash:${challenge.kind}-link:v1:${challenge.deviceId}:${challenge.code}`;
+function nuevoIdentificador(kind: TerminalKind): string {
+  const prefijo = kind === "caja" ? "CA-" : "KI-";
+  for (;;) {
+    let hex = "";
+    for (let i = 0; i < 8; i += 1) hex += Math.floor(Math.random() * 16).toString(16);
+    const ocho = hex.toUpperCase();
+    if (!mutableTerminals.some((t) => t.id.slice(3) === ocho)) return `${prefijo}${ocho}`;
+  }
 }
 
 /* -------------------------------------------------------------------------
@@ -307,7 +324,7 @@ export function pairingQrPayload(challenge: PairingChallenge): string {
 
 export type TerminalSession =
   | { status: "vinculado"; terminal: Terminal }
-  | { status: "sin-vincular"; deviceId: string; pairing: PairingChallenge | null };
+  | { status: "sin-vincular"; codigo: string; pairing: PairingChallenge | null };
 
 /**
  * La respuesta del servidor a un terminal que pregunta quién es. **Lectura**:
@@ -315,22 +332,26 @@ export type TerminalSession =
  * el dominio.
  *
  * `kind` importa: un mismo navegador es caja y kiosco a la vez en la
- * demostración, con una cookie por clase, y un identificador de caja no debe
+ * demostración, con una cookie por clase, y el código de una caja no debe
  * resolver como kiosco ni al contrario.
  */
-export function resolverTerminal(
-  kind: TerminalKind,
-  deviceId: string | null | undefined,
-  now = new Date(),
-): TerminalSession | null {
-  if (!deviceId) return null;
+export function resolverTerminal(kind: TerminalKind, codigo: string | null | undefined): TerminalSession | null {
+  if (!codigo) return null;
 
-  const terminal = findTerminalById(deviceId);
+  const terminal = findTerminalByCodigo(codigo);
   if (terminal && terminal.kind === kind) return { status: "vinculado", terminal };
 
-  /* Un identificador de otra clase se trata como desconocido: no se filtra
-     que existe, y el terminal sigue su camino de vinculación. */
-  return { status: "sin-vincular", deviceId, pairing: retoVigente(deviceId, now) };
+  /* Un código de otra clase se trata como desconocido: no se filtra que
+     existe, y el terminal sigue su camino de vinculación. */
+  const c = normalizarCodigo(codigo);
+  const pendiente = retoVigente(c);
+  return { status: "sin-vincular", codigo: c, pairing: pendiente && pendiente.kind === kind ? pendiente : null };
+}
+
+/** El identificador del equipo que se presenta con este código, si está vinculado como `kind`. */
+export function idDeEquipo(kind: TerminalKind, codigo: string | null | undefined): string | null {
+  const sesion = resolverTerminal(kind, codigo);
+  return sesion?.status === "vinculado" ? sesion.terminal.id : null;
 }
 
 /* -------------------------------------------------------------------------
@@ -350,7 +371,6 @@ export type TerminalWriteDenial =
   | "alcance-global-prohibido"
   | "fuera-de-alcance"
   | "codigo-no-coincide"
-  | "codigo-caducado"
   | "sede-no-encontrada"
   | "sede-cerrada"
   | "caja-requerida"
@@ -391,8 +411,9 @@ export interface VincularInput {
 }
 
 /**
- * Busca el reto que corresponde a lo presentado. Un código se compara
- * ignorando los espacios, porque se teclea agrupado (**FR-AD-EQ-17**).
+ * Busca el equipo pendiente que corresponde a lo presentado. Un código se
+ * compara sin espacios y sin distinguir mayúsculas, porque se teclea agrupado
+ * (**FR-AD-EQ-17**).
  */
 function buscarReto(reto: RetoPresentado): PairingChallenge | null {
   if (reto.method === "qr") {
@@ -402,12 +423,9 @@ function buscarReto(reto: RetoPresentado): PairingChallenge | null {
     return null;
   }
 
-  const code = reto.code.replace(/\D/g, "");
-  if (code.length === 0) return null;
-  for (const challenge of pendingChallenges.values()) {
-    if (challenge.code === code) return challenge;
-  }
-  return null;
+  const code = normalizarCodigo(reto.code);
+  if (!CODIGO_DE_VINCULACION.test(code)) return null;
+  return pendingChallenges.get(code) ?? null;
 }
 
 function etiquetaPorDefecto(challenge: PairingChallenge, branchName: string, registerName?: string): string {
@@ -424,11 +442,11 @@ function etiquetaPorDefecto(challenge: PairingChallenge, branchName: string, reg
  * un reto inválido, porque si se distinguiera, probar identificadores de sede
  * diría qué administra otra empresa (**A1**).
  *
- * Y el reto se **revalida aquí**, no al leerlo: los diez minutos pueden
- * caducar mientras el administrador elige la sede, y entonces la vinculación
- * se rechaza en vez de aplicarse (**FR-AD-EQ-22**, **R3**). Al acertar se
- * consume, así que un reto no puede vincular dos equipos (**FR-AD-EQ-23**,
- * **R6**).
+ * Y el equipo se **revalida aquí**, no al leerlo: mientras el administrador
+ * elige la sede pueden haberlo vinculado por otra vía, y entonces la
+ * vinculación se rechaza en vez de aplicarse (**FR-AD-EQ-22**, **R3**). Al
+ * vincular deja de estar pendiente, así que un código no puede vincular dos
+ * veces (**FR-AD-EQ-23**, **R6**).
  */
 export function vincularEquipo(
   scope: Scope,
@@ -445,9 +463,9 @@ export function vincularEquipo(
 
   const challenge = buscarReto(input.reto);
   if (!challenge) return { ok: false, reason: "codigo-no-coincide" };
-  if (caducado(challenge, now)) return { ok: false, reason: "codigo-caducado" };
-  /* Entre emitir el reto y canjearlo puede haberse vinculado por otra vía. */
-  if (findTerminalById(challenge.deviceId)) return { ok: false, reason: "equipo-ya-vinculado" };
+  /* Entre que el equipo se anunció y el administrador lo vincula puede haberse
+     vinculado por otra vía. */
+  if (findTerminalByCodigo(challenge.code)) return { ok: false, reason: "equipo-ya-vinculado" };
 
   let registerName: string | undefined;
 
@@ -465,7 +483,8 @@ export function vincularEquipo(
   }
 
   const terminal: Terminal = {
-    id: challenge.deviceId,
+    id: nuevoIdentificador(challenge.kind),
+    codigo: challenge.code,
     kind: challenge.kind,
     branchId: input.branchId,
     ...(challenge.kind === "caja" ? { registerId: input.registerId } : {}),
@@ -477,7 +496,7 @@ export function vincularEquipo(
   };
 
   mutableTerminals.push(terminal);
-  pendingChallenges.delete(challenge.deviceId);
+  pendingChallenges.delete(challenge.code);
   return { ok: true, value: terminal };
 }
 
@@ -490,8 +509,9 @@ export function vincularEquipo(
  * la jornada sigue abierta hasta su arqueo. Quién advierte de eso es la
  * pantalla; el dominio no lo impide.
  *
- * Tampoco emite un reto nuevo: lo pedirá el propio terminal. Así desvincular
- * no deja un código vivo esperando a nadie.
+ * El identificador se retira con el vínculo: si el equipo se vuelve a
+ * vincular, recibe otro. Su código de vinculación sigue siendo el mismo, y
+ * vuelve a quedar pendiente cuando el terminal se anuncie otra vez.
  */
 export function desvincularEquipo(
   scope: Scope,
@@ -552,41 +572,28 @@ export function marcarActividad(terminalId: string, now = new Date()): void {
  * ---------------------------------------------------------------------- */
 
 export interface RetoIdentificado {
-  deviceId: string;
+  /** El código de vinculación del equipo. */
+  codigo: string;
   kind: TerminalKind;
-  expiresAt: string;
 }
 
 /**
- * Identifica el equipo que presentó este reto, **sin consumirlo** y sin
- * vincular nada.
+ * Identifica el equipo que presentó este código, **sin vincular nada**.
  *
  * `/admin/equipos/vincular` no puede pedir la sede antes de saber qué está
  * vinculando (**FR-AD-EQ-18**): una caja necesita además elegir la caja, un
- * kiosco no. Así que el reto se lee en un paso y se canjea en otro, y los
- * diez minutos se vuelven a comprobar al canjear (**FR-AD-EQ-22**) — leerlo
- * aquí no reserva nada ni lo gasta.
+ * kiosco no. Así que el código se lee en un paso y se usa en otro, y el
+ * equipo se vuelve a comprobar al vincular (**FR-AD-EQ-22**).
  *
- * No recibe alcance, y no le hace falta: un reto pertenece a una máquina que
- * todavía no es de ninguna sede, así que no hay nada de otro operador que
- * este resultado pueda filtrar. El alcance lo comprueba `vincularEquipo`, y
- * lo comprueba **antes** que el propio reto.
+ * No recibe alcance, y no le hace falta: un equipo pendiente todavía no es de
+ * ninguna sede, así que no hay nada de otro operador que este resultado pueda
+ * filtrar. El alcance lo comprueba `vincularEquipo`, y **antes** que el código.
  */
-export function identificarReto(
-  reto: RetoPresentado,
-  now = new Date(),
-): TerminalWriteResult<RetoIdentificado> {
+export function identificarReto(reto: RetoPresentado): TerminalWriteResult<RetoIdentificado> {
   const challenge = buscarReto(reto);
   if (!challenge) return { ok: false, reason: "codigo-no-coincide" };
-  if (caducado(challenge, now)) return { ok: false, reason: "codigo-caducado" };
-  /* Entre que el terminal mostró su código y el administrador lo teclea, el
-     equipo puede haber quedado vinculado por otra vía. */
-  if (findTerminalById(challenge.deviceId)) return { ok: false, reason: "equipo-ya-vinculado" };
-
-  return {
-    ok: true,
-    value: { deviceId: challenge.deviceId, kind: challenge.kind, expiresAt: challenge.expiresAt },
-  };
+  if (findTerminalByCodigo(challenge.code)) return { ok: false, reason: "equipo-ya-vinculado" };
+  return { ok: true, value: { codigo: challenge.code, kind: challenge.kind } };
 }
 
 /* -------------------------------------------------------------------------
@@ -596,43 +603,29 @@ export function identificarReto(
 /**
  * Los equipos que, **en la demostración**, esperan que alguien los vincule.
  *
- * El reto lo emite el propio terminal al arrancar —una caja de Worker o un
- * kiosco sin vincular—, y el administrador lee las seis cifras de la pantalla
- * del equipo que tiene delante. Estos dos son un atajo para recorrer
- * `/admin/equipos/vincular` sin abrir antes un terminal en otra pestaña.
- *
- * Los identificadores no coinciden con ningún equipo ya vinculado, a
- * propósito: uno es una caja y el otro un kiosco, para que las dos ramas de
- * §3.4 —elegir caja, o solo sede— se puedan ver.
- *
- * Los retos de los terminales de verdad también están aquí; estos solo se
- * suman a ellos.
+ * El código lo genera el propio terminal al arrancar —una caja de Worker o un
+ * kiosco sin vincular—, y el administrador lo lee de la pantalla del equipo
+ * que tiene delante. Estos dos son un atajo para recorrer
+ * `/admin/equipos/vincular` sin abrir antes un terminal en otra pestaña: uno
+ * es una caja y el otro un kiosco, para que las dos ramas de §3.4 —elegir
+ * caja, o solo sede— se puedan ver.
  */
 const PREFIJO_DEMO: Record<TerminalKind, string> = {
-  caja: "CAJ-0007-",
-  kiosco: "KIO-0007-",
+  caja: "C0DE",
+  kiosco: "D0CE",
 };
 
 /**
  * Asegura que haya **siempre** un equipo de cada clase esperando, y los
- * devuelve.
- *
- * Busca hacia arriba el primer identificador que no esté ya vinculado, en vez
- * de nombrar dos fijos. La diferencia importa: con dos fijos, el primero que
- * alguien vincula desaparece para siempre y la pantalla se queda sin nada que
- * demostrar a la segunda pasada — que es justo lo que le pasó a quien la probó
- * a mano. Así cada vinculación deja sitio a la siguiente.
- *
- * Emitir desde aquí es lo mismo que hace el terminal al arrancar, y es
- * idempotente mientras el reto siga vigente: dos cargas de la pantalla
- * devuelven el mismo código, no dos.
+ * devuelve. Busca el primer código que no esté ya vinculado, así cada
+ * vinculación deja sitio a la siguiente.
  */
-export function retosDeDemostracion(now = new Date()): readonly PairingChallenge[] {
+export function retosDeDemostracion(): readonly PairingChallenge[] {
   const retos: PairingChallenge[] = [];
 
   for (const kind of ["caja", "kiosco"] as const) {
-    for (let n = 1; n <= 99; n += 1) {
-      const reto = emitirReto(kind, `${PREFIJO_DEMO[kind]}${String(n).padStart(4, "0")}`, now);
+    for (let n = 1; n <= 255; n += 1) {
+      const reto = emitirReto(kind, `${PREFIJO_DEMO[kind]}${n.toString(16).toUpperCase().padStart(2, "0")}`);
       if (reto) {
         retos.push(reto);
         break;

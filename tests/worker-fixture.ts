@@ -19,6 +19,8 @@ import { WORKER_BASE_URL } from "./storage-state";
  */
 export interface Puesto {
   terminalId: string;
+  /** El código de vinculación del equipo: lo que guarda la cookie `pc_caja_device`. */
+  terminalCodigo: string;
   workerId: string;
   identifier: string;
   registerId: string;
@@ -26,6 +28,8 @@ export interface Puesto {
   caja: string;
   /** Con `kiosco`: el kiosco de autoservicio de la misma sede. */
   kioscoId?: string;
+  /** El código de vinculación de ese kiosco: lo que guarda la cookie `pc_kiosco_device`. */
+  kioscoCodigo?: string;
 }
 
 interface Opciones {
@@ -87,7 +91,7 @@ export const test = base.extend<Opciones & { puesto: Puesto }>({
         expires: -1,
       });
       await context.addCookies([
-        cookie("pc_caja_device", puesto.terminalId),
+        cookie("pc_caja_device", puesto.terminalCodigo),
         ...(conSesion
           ? [cookie("pc_worker_session", encodeURIComponent(JSON.stringify({ workerId: puesto.workerId, terminalId: puesto.terminalId })))]
           : []),

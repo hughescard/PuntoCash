@@ -91,32 +91,30 @@ era un descuido reparable con un puente: son dos navegadores distintos, así que
 mientras la verdad viviera en el terminal, vincular desde `/admin/equipos` no
 podía ser más que una fachada.
 
-Ahora el reparto es el del producto real (FR-AD-EQ-25, FR-DEV-8): el terminal
-se nombra con un identificador opaco que guarda en una cookie —el «quién
-pregunta», no una credencial—, el **reto lo emite el servidor**
-(`emitirReto`), **vincular y desvincular** son actos del administrador que
-reciben alcance, y `resolverTerminal` contesta al terminal quién es.
-
-En la demostración, Worker y Kiosco **todavía leen su propio almacenamiento**
-para saber si están vinculados (nota de entrega, §8.3): la parte del servidor está hecha,
-la del terminal no se ha recableado. En el producto real el terminal pregunta
-aquí y pinta lo que le contesten.
+Ahora el reparto es el del producto real (FR-AD-EQ-25, FR-DEV-8, decisión
+del 26/11/2026): el terminal genera **su código de vinculación** —seis
+caracteres hexadecimales, fijo para ese equipo— y lo guarda en una cookie; se
+anuncia con él (`emitirReto`); el administrador lo teclea y **vincular y
+desvincular** son actos suyos que reciben alcance; al vincular, el servidor da
+al equipo su **identificador** (`CA-XXXXXXXX` una caja, `KI-XXXXXXXX` un
+kiosco), único entre cajas y kioscos y nuevo en cada vinculación; y
+`resolverTerminal` contesta al terminal quién es.
 
 ```ts
-emitirReto("kiosco", deviceId);              // el terminal pide su código
-vincularEquipo(scope, SCOPE_CONTEXT, {       // el administrador lo canjea
-  reto: { method: "codigo", code: "482 913" },
+emitirReto("kiosco", "49214C");              // el terminal se anuncia con su código
+vincularEquipo(scope, SCOPE_CONTEXT, {       // el administrador lo teclea
+  reto: { method: "codigo", code: "492 14C" },
   branchId: "sede-vedado",
   by: "Marta Sánchez",
-});
-resolverTerminal("kiosco", deviceId);        // → { status: "vinculado", terminal }
+});                                          // → terminal.id === "KI-…" (ocho hexadecimales)
+resolverTerminal("kiosco", "49214C");        // → { status: "vinculado", terminal }
 ```
 
-El identificador sigue siendo autodeclarado: un terminal podría afirmar ser
-otro, y en el producto la credencial va firmada. Lo que ya está en su sitio es
-**quién decide** — el reto y el vínculo no se pueden fabricar desde el
-cliente—, y eso es lo que convierte la vinculación en un control y no en una
-declaración.
+En la demostración el terminal se presenta con su código en cada petición; en
+el producto, al vincular el servidor le entrega una sola vez su credencial
+firmada junto con su identificador. Lo que ya está en su sitio es **quién
+decide** — el identificador y el vínculo no se pueden fabricar desde el
+cliente.
 
 ## Los módulos
 
@@ -124,7 +122,7 @@ declaración.
 | --- | --- |
 | `scope.ts` | Tipos y guardas de alcance. Sin datos, a propósito: evita un ciclo de imports. |
 | `scoped-reads.ts` | `redEnAlcance(scope)`: las lecturas por sede ya acotadas. Es por donde lee `/admin`. |
-| `devices.ts` | Los equipos, **y los retos de vinculación**. La verdad del vínculo vive aquí, no en el terminal. |
+| `devices.ts` | Los equipos, **los que esperan vinculación** y sus identificadores. La verdad del vínculo vive aquí, no en el terminal. |
 | `sedes.ts` | El registro de sedes. `Branch` es su cara pública; `Sede` añade estado y servicios. Escribe solo PuntoCash. |
 | `registers.ts` | Las cajas de cada sede. Las crea y retira el mercante. |
 | `operators.ts` | Mercantes y sus usuarios administradores. |

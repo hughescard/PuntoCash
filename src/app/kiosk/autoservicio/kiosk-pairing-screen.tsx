@@ -16,8 +16,8 @@ export interface KioscoDeDemostracion {
  * Lo que muestra un kiosco sin vincular en lugar del catálogo.
  *
  * Nada que un cliente pueda hacer aquí: ni catálogo, ni «Inicio», ni forma de
- * saltarse el vínculo. El reto lo emite la red y es el mismo que encuentra el
- * administrador en `/admin/equipos/vincular`; en cuanto lo canjea, el
+ * saltarse el vínculo. El código lo genera el propio kiosco y es el que teclea
+ * el administrador en `/admin/equipos/vincular`; en cuanto lo vincula, el
  * vigilante del layout lo nota y el kiosco pasa al catálogo de su sede.
  */
 export function KioskPairingScreen({
@@ -29,17 +29,17 @@ export function KioskPairingScreen({
 }): React.JSX.Element {
   const [equipo, setEquipo] = React.useState<EquipoPorVincular | null>(null);
 
-  const renovar = React.useCallback(() => {
+  const anunciar = React.useCallback(() => {
     void prepararKiosco().then((estado) => {
       if (!estado.vinculado) {
-        setEquipo({ deviceId: estado.deviceId, pairing: { code: estado.codigo, expiresAt: estado.expiresAt } });
+        setEquipo({ codigo: estado.codigo });
       }
     });
   }, []);
 
   React.useEffect(() => {
-    renovar();
-  }, [renovar]);
+    anunciar();
+  }, [anunciar]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col items-center py-8 text-center">
@@ -61,8 +61,7 @@ export function KioskPairingScreen({
         <DevicePairingPanel
           className="mt-8 w-full"
           device={equipo}
-          qrPayload={`puntocash:kiosco-link:v1:${equipo.deviceId}:${equipo.pairing.code}`}
-          onExpired={renovar}
+          qrPayload={`puntocash:kiosco-link:v1:${equipo.codigo}`}
           demoNote={
             <>
               Versión de demostración: el QR es ilustrativo y no se puede escanear. Para vincular, entra en la

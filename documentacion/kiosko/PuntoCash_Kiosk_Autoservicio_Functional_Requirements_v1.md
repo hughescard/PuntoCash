@@ -1,5 +1,5 @@
 # PuntoCash — Kiosco de autoservicio
-## Documento de Requisitos Funcionales (FRD) · v2.1
+## Documento de Requisitos Funcionales (FRD) · v2.2
 
 **Alcance:** el kiosco táctil de autoservicio de una sede, `/kiosk/autoservicio`. No cubre la pantalla informativa (`/kiosk/pantalla`), que tiene su propio documento, ni la caja que termina lo que el kiosco prepara, que está en el FRD de Worker.
 
@@ -27,6 +27,7 @@
 
 | Versión | Fecha | Cambio |
 | --- | --- | --- |
+| 2.2 | 26/11/2026 | **Vinculación del kiosco.** El código de la pantalla de vinculación lo genera el propio kiosco: **seis caracteres hexadecimales** («492 14C»), sin cuenta atrás y sin renovarse. Al vincularlo, el servidor le da su identificador, `KI-` y ocho caracteres hexadecimales, único entre cajas y kioscos (**FR-AS-LINK-2**, **FR-AS-LINK-3**, **FR-AS-LINK-7**; FRD de Admin de sede **FR-AD-FMT-2**) |
 | 2.1 | 24/11/2026 | **Consultar tarifas.** Pantalla nueva `/kiosk/autoservicio/tarifas`, pareja de la consulta de tasas, con la tarifa de giros de la sede (**FR-AS-TAR-1** a **TAR-3**, nuevo). El inicio ofrece **dos consultas**, tasas y tarifas, aparte de los servicios (**FR-AS-HOME-1**, **HOME-2**, **HOME-4**, **FR-AS-NAV-1**). Sin cambios en los flujos |
 | 2.0 | 23/11/2026 | **Documento reescrito** en el formato de los FRD de Worker y de administración, describiendo el sistema y no la demostración. Lo que cambia de fondo: (1) **El kiosco opera sobre la red**: su vínculo, su sede, sus servicios, sus tasas y su tarifa los da el servidor en cada petición, y un cambio de la sede llega al kiosco sin tocarlo (§1.3, §2). (2) **La sede decide**: una sede que no atiende deja el kiosco «no disponible», y un servicio que la sede no ofrece no existe en el kiosco (**FR-AS-SEDE-1** a **SEDE-4**, nuevos). (3) **El kiosco no toca billetes**: prepara la operación y la caja la termina. Lo único de los billetes que comprueba es que lo que el cliente entrega se pueda pagar, y avisa de que la cifra final la confirma la caja (**FR-AS-CM-5**, **FR-AS-RM-6**, **FR-AS-GC-2**). (4) **Cambio de moneda con dos modos**, «Sé cuánto voy a entregar» y «Sé cuánto quiero recibir», con las tasas de la sede (**FR-AS-CM-1** a **CM-4**). (5) **Enviar giro con su tarifa**: el cliente ve lo que recibe el beneficiario, la tarifa y el total antes de recibir su código (**FR-AS-GE-4**, **GE-8**, **GE-9**). (6) **El servidor vuelve a cotizar** el cambio y el giro al registrar, y si la cifra ya no es la que vio el cliente no registra nada (**FR-AS-CM-8**, **FR-AS-GE-6**). (7) **Las solicitudes son de la red**: código único, vigencia con el reloj del servidor, canje en el servidor y solo en una caja de la misma sede (§9). (8) **Carné en caja**: los cobros avisan antes del código de que hay que presentar el carné (**FR-AS-RM-6**, **FR-AS-GC-2**). Sale el simulador `/kiosk/simulador-admin`: el kiosco se vincula desde la consola de la sede |
 | 1.3 | 22/09/2026 | Sesión de dispositivo vinculada por el administrador; impresión del código |
@@ -103,9 +104,9 @@ El cliente nunca se identifica, pero el equipo sí tiene sesión, y sin ella no 
 
 **FR-AS-LINK-1 · Sin vincular.** Mientras el kiosco no tiene sesión de equipo, cualquier ruta muestra la **pantalla de vinculación**: ni catálogo, ni «Inicio», ni forma de preparar una solicitud **[RP-15]**.
 
-**FR-AS-LINK-2 · Pantalla de vinculación.** Dice que el kiosco todavía no pertenece a ninguna sede y que el administrador de la sede lo vincula desde **Equipos** en su consola. Muestra a la vez un **código QR** y un **código de seis cifras** agrupado de tres en tres («482 913»), el identificador del kiosco (`KIO-NNNN-NNNN`) y la cuenta atrás de renovación.
+**FR-AS-LINK-2 · Pantalla de vinculación.** Dice que el kiosco todavía no pertenece a ninguna sede y que el administrador de la sede lo vincula desde **Equipos** en su consola. Muestra a la vez un **código QR** y el **código de vinculación** del kiosco, seis caracteres hexadecimales agrupados de tres en tres («492 14C»), y dice que la pantalla cambia sola en cuanto lo vinculen.
 
-**FR-AS-LINK-3 · Reto.** El QR y el código son dos formas del mismo **reto de vinculación**, que emite el servidor y vale 10 minutos. Al caducar, el kiosco pide otro sin intervención de nadie. Un reto caducado o ya usado no vincula; la caducidad se comprueba otra vez al canjearlo (**FR-AD-EQ-22**).
+**FR-AS-LINK-3 · Código de vinculación.** El QR y el código son dos formas del mismo **código de vinculación**, que genera el propio kiosco la primera vez que se abre. **No caduca**: es el de ese kiosco, y sigue siendo el mismo después de desvincularlo. El código de un kiosco ya vinculado no vincula nada; el servidor lo comprueba otra vez al vincular (**FR-AD-EQ-22**).
 
 **FR-AS-LINK-4 · Quién vincula.** El **administrador de la sede**, desde **Equipos → Vincular un equipo**: escribe el código o escanea el QR y elige a cuál de sus sedes pertenece el kiosco. Solo puede vincularlo a sedes que administra (**FR-AD-EQ-7**, **FR-AD-EQ-17** a **EQ-24**). PuntoCash ve los kioscos de toda la red, pero no los vincula ni los desvincula.
 
@@ -113,7 +114,7 @@ El cliente nunca se identifica, pero el equipo sí tiene sesión, y sin ella no 
 
 **FR-AS-LINK-6 · Desvincular.** El administrador puede desvincularlo desde su consola en cualquier momento. En la siguiente comprobación (**FR-AS-SEDE-4**), el kiosco descarta lo que el cliente estuviera preparando, sin generar código, y vuelve a la pantalla de vinculación con el aviso **«Este kiosco fue desvinculado»**, que nombra la sede anterior. Las solicitudes ya generadas siguen siendo válidas en caja.
 
-**FR-AS-LINK-7 · Credencial.** La identidad del equipo la emite el servidor al vincular y la revoca al desvincular; viaja en una cookie `httpOnly`, limitada a `/kiosk/autoservicio`, que el navegador no puede leer ni escribir. El terminal nunca se vincula a sí mismo ni elige su sede. Una petición con una credencial revocada se trata como la de un kiosco sin vincular.
+**FR-AS-LINK-7 · Credencial.** La identidad del equipo la emite el servidor al vincular y la revoca al desvincular: con ella, el kiosco recibe su **identificador**, `KI-` y ocho caracteres hexadecimales, único entre cajas y kioscos y nuevo en cada vinculación (**FR-AD-FMT-2**). La credencial viaja en una cookie `httpOnly`, limitada a `/kiosk/autoservicio`, que el navegador no puede leer ni escribir. El terminal nunca se vincula a sí mismo ni elige su sede. Una petición con una credencial revocada se trata como la de un kiosco sin vincular.
 
 **FR-AS-LINK-8 · No es una sesión de persona.** No identifica a nadie, no tiene cierre de sesión ni segundo factor **[R13]**. La protege que solo un administrador autenticado puede crearla o revocarla.
 
@@ -361,7 +362,7 @@ Pasos: **Código → Revisar**, y la solicitud. Las mismas reglas que Cobrar rem
 | --- | --- |
 | Kiosco | La terminal táctil de autoservicio de una sede, vinculada a ella |
 | Vincular | Lo que hace el administrador de la sede para que un kiosco pertenezca a una de sus sedes |
-| Reto de vinculación | El QR y el código de seis cifras que muestra un kiosco sin vincular |
+| Código de vinculación | El QR y el código de seis caracteres hexadecimales que muestra un kiosco sin vincular. Lo genera el propio kiosco y no caduca |
 | Solicitud | Lo que el cliente prepara en el kiosco; no es una operación |
 | Código de solicitud | `KS-AAMMDD-NNNNNN`, lo que el cliente presenta en caja |
 | Canjear | Recuperar una solicitud en caja; la consume |

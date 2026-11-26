@@ -105,7 +105,8 @@ test.describe("Tasas", () => {
 });
 
 /** El kiosco de la entrada de PuntoCash Vedado, que la red ya tiene vinculado. */
-const KIOSCO_DE_VEDADO = "KIO-0001-0001";
+/** El código de vinculación del kiosco de la entrada de Vedado (`KI-1A0E4B01`). */
+const KIOSCO_DE_VEDADO = "4B1A01";
 
 /**
  * Un navegador que es ese kiosco, como en `kiosk-smoke.spec.ts`: solo guarda

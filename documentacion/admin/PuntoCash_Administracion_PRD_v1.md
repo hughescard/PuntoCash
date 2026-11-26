@@ -1,5 +1,5 @@
 # PuntoCash — Capa de Administración
-## Documento de Requisitos de Producto (PRD) · v3.3
+## Documento de Requisitos de Producto (PRD) · v3.4
 
 **Estado:** **Documento de la capa, no de una consola.** Conserva el mapa de las dos consolas y las reglas comunes. **Cada consola tiene ya su propio PRD**, que manda sobre lo que aquí se diga de ella: `PuntoCash_Admin_Sede_PRD_v1.md` para `/admin` y, desde el 03/11/2026, `PuntoCash_Super_Admin_PRD_v1.md` para `/super-admin`, construida y entregada. Lo que este documento describe de Super Admin es su diseño original y no se mantiene.
 
@@ -15,6 +15,7 @@
 
 ## Control de cambios
 
+- **v3.4 (2026-11-26):** **vinculación de equipos.** El código que muestra un equipo sin vincular lo genera el propio equipo, tiene seis caracteres hexadecimales y no caduca; al vincularlo, el servidor le da su identificador, único entre cajas y kioscos. El concepto «Reto de vinculación» pasa a «Código de vinculación».
 - **v3.3 (2026-11-03):** Super Admin pasa a tener PRD propio, `PuntoCash_Super_Admin_PRD_v1.md`, que describe la consola construida. Este documento deja de ser su especificación.
 - **v3.2 (2026-10-14):** **se extrae el PRD de Admin de sede, y este documento deja de ser el único.** `/admin` está construida en buena parte y se entrega a desarrollo, así que necesita un PRD propio que diga qué existe hoy — como lo tiene Worker. Nace `PuntoCash_Admin_Sede_PRD_v1.md` a partir de §5.1 y de todo lo que rige esa consola; este documento conserva el modelo de la capa, el reparto de potestades y **§5.2 Super Admin**, que sigue siendo especificación sin construir. **Ningún concepto, regla ni requisito de resultado cambia ni se renumera:** **A1–A14** y **RP-17 a RP-26** son de la capa entera y se citan con su número de siempre desde los dos documentos. Se corrige además el estado del documento, que afirmaba que nada de lo descrito estaba implementado, y lo que §9 decía sobre la recuperación de acceso, que dejó de ser cierto.
 - **v3.1 (2026-09-23):** **separación de monedas y pares.** La v3.0 trataba "las monedas de una sede" y "los pares que cotiza" como una sola cosa. Son dos, con dueños y condiciones distintas, y la cadena completa tiene cuatro eslabones: PuntoCash mantiene el **catálogo de monedas** de la plataforma y define un **rango** por par; el mercante declara la **lista de monedas** que maneja su sede —que es exactamente lo que un Worker puede añadir a su caja, y lo que sustituye al catálogo constante de FR-CAJA-13— y después **define los pares** que cotiza, a partir de esas monedas y solo donde PuntoCash tenga rango y le haya habilitado el servicio de Cambio de moneda. Se reescriben el concepto **Política de tasas**, la regla **A5** y las tablas de §5; **RP-22** se ajusta. Queda además matizado, y pendiente de confirmación del negocio, que la lista de monedas **no** depende del servicio de Cambio de moneda, porque una caja necesita monedas para remesas y giros igualmente.
@@ -87,7 +88,7 @@ El dominio actual llega hasta la Caja y se detiene ahí. Esta capa añade siete 
 
 - **Equipo.** Un dispositivo físico que el producto reconoce porque un administrador lo declaró. Dos clases, mismo mecanismo, objetos distintos: el **equipo de caja**, atado a una sede y a una de sus cajas (FRD Worker §2.1), y el **kiosco de autoservicio**, atado a una sede (FRD Autoservicio §1.1). Un equipo sin vincular no es nada: muestra su pantalla de vinculación y ninguna ruta de su producto responde. La **Pantalla** informativa es la excepción deliberada — no se vincula ni tiene sesión, y se asigna a su sede en el propio equipo (FR-PANT-SEDE-1 a 7); esta capa no la administra, solo le provee el registro de sedes del que elige.
 
-- **Reto de vinculación.** Lo que un equipo sin vincular muestra para poder ser declarado: un código QR y un código numérico de seis cifras, dos formas de lo mismo, válidos diez minutos y renovados por el propio equipo al caducar. Las dos vías están siempre disponibles.
+- **Código de vinculación.** Lo que un equipo sin vincular muestra para poder ser declarado: un código QR y un código de seis caracteres hexadecimales, dos formas de lo mismo. Lo genera el propio equipo y no caduca. Las dos vías están siempre disponibles. Al vincular, el servidor da al equipo su identificador (`CA-` una caja, `KI-` un kiosco, y ocho caracteres hexadecimales), único entre cajas y kioscos.
 
 - **Monedas y política de tasas.** Una cadena de cuatro eslabones, cada uno decidido por quien corresponde y condición del siguiente.
 
@@ -267,7 +268,7 @@ Amplía el Apéndice A de `PuntoCash_Worker_Functional_Requirements_v1.md` y el 
 | **Asignación** | El vínculo histórico Sede↔Operador durante un periodo, con inicio, fin y motivo. |
 | **Caja** | Un puesto de mostrador de una sede, creado y retirado por su mercante, y objeto al que se vincula un equipo. |
 | **Equipo** | Un dispositivo declarado por un administrador: el equipo de una caja, o un kiosco de autoservicio. |
-| **Reto de vinculación** | El QR y el código de seis cifras que un equipo sin vincular muestra; válidos diez minutos, renovados solos, de un solo uso. |
+| **Código de vinculación** | El QR y el código de seis caracteres hexadecimales que un equipo sin vincular muestra. Lo genera el propio equipo y no caduca. |
 | **Catálogo de monedas** | Las monedas que la plataforma soporta, mantenido por PuntoCash. |
 | **Lista de monedas de una sede** | Las monedas que esa sucursal maneja, elegidas del catálogo por su mercante. Es lo que un Worker puede añadir a su caja. |
 | **Par** | Dos monedas de la lista de una sede que esa sede cotiza, con su tasa de compra y de venta. Lo define el mercante; exige rango de PuntoCash. |

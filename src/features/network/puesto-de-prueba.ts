@@ -2,7 +2,7 @@ import { definirReglas, type ReglaDeMoneda } from "./alertas";
 import { asignarSede, operadorVigente, sedesEnAlcance as sedesDelAlcance } from "./assignments";
 import { abrirJornada, billetesDeImporte, cerrarJornada, conteoDeLoQueHay, contextoDe, registrarOperacionSimple } from "./caja-operativa";
 import { anadirMonedaASede, habilitarMonedaEnCaja, monedasDeSede } from "./currencies";
-import { emitirReto, vincularEquipo } from "./devices";
+import { emitirReto, findTerminalByCodigo, retoVigente, vincularEquipo } from "./devices";
 import { fijarTasa, rangoDe, tasasDeSede } from "./rates";
 import { crearCaja } from "./registers";
 import { GLOBAL_SCOPE, operatorScope } from "./scope";
@@ -38,6 +38,8 @@ function fondoEnBilletes(currency: string, importe: number) {
  */
 export interface PuestoDePrueba {
   terminalId: string;
+  /** El código de vinculación del equipo de caja: lo que guarda su cookie. */
+  terminalCodigo: string;
   workerId: string;
   identifier: string;
   registerId: string;
@@ -45,6 +47,8 @@ export interface PuestoDePrueba {
   caja: string;
   /** Con `kiosco`: el kiosco de autoservicio vinculado a la misma sede. */
   kioscoId?: string;
+  /** El código de vinculación de ese kiosco. */
+  kioscoCodigo?: string;
 }
 
 export interface OpcionesDePuesto {
@@ -119,8 +123,7 @@ export function crearPuestoDePrueba(
   const caja = crearCaja(scope, ctx, { branchId: sede.value.id, name: existente ? `Caja P${n}` : "Caja 03" });
   if (!caja.ok) return { ok: false, error: `caja: ${caja.reason}` };
 
-  const deviceId = `CAJ-P${n}`;
-  const reto = emitirReto("caja", deviceId);
+  const reto = emitirReto("caja", codigoDePrueba());
   if (!reto) return { ok: false, error: "reto" };
   const equipo = vincularEquipo(scope, ctx, {
     reto: { method: "codigo", code: reto.code },
@@ -132,8 +135,9 @@ export function crearPuestoDePrueba(
   if (!equipo.ok) return { ok: false, error: `equipo: ${equipo.reason}` };
 
   let kioscoId: string | undefined;
+  let kioscoCodigo: string | undefined;
   if (opciones.kiosco) {
-    const retoKiosco = emitirReto("kiosco", `KIO-P${n}`);
+    const retoKiosco = emitirReto("kiosco", codigoDePrueba());
     if (!retoKiosco) return { ok: false, error: "reto-kiosco" };
     const kiosco = vincularEquipo(scope, ctx, {
       reto: { method: "codigo", code: retoKiosco.code },
@@ -143,6 +147,7 @@ export function crearPuestoDePrueba(
     });
     if (!kiosco.ok) return { ok: false, error: `kiosco: ${kiosco.reason}` };
     kioscoId = kiosco.value.id;
+    kioscoCodigo = kiosco.value.codigo;
   }
 
   const identifier = `p${n.toLowerCase()}`.slice(0, 30);
@@ -209,12 +214,14 @@ export function crearPuestoDePrueba(
     ok: true,
     value: {
       terminalId: equipo.value.id,
+      terminalCodigo: equipo.value.codigo,
       workerId: trabajador.value.id,
       identifier,
       registerId: caja.value.id,
       sedeId: sede.value.id,
       caja: caja.value.name,
       ...(kioscoId ? { kioscoId } : {}),
+      ...(kioscoCodigo ? { kioscoCodigo } : {}),
     },
   };
 }
@@ -268,4 +275,14 @@ export function definirAlertasDePrueba(sedeId: string, reglas: readonly ReglaDeM
   if (!operador) return { ok: false, reason: "sin-operador" };
   const r = definirReglas(operatorScope(operador), sedeId, reglas);
   return r.ok ? { ok: true } : { ok: false, reason: r.reason };
+}
+
+/** Un código de vinculación libre para el equipo de un puesto de prueba. */
+function codigoDePrueba(): string {
+  for (;;) {
+    let hex = "";
+    for (let i = 0; i < 6; i += 1) hex += Math.floor(Math.random() * 16).toString(16);
+    const codigo = hex.toUpperCase();
+    if (!findTerminalByCodigo(codigo) && !retoVigente(codigo)) return codigo;
+  }
 }
