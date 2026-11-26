@@ -277,7 +277,7 @@ export function StepCambio({
           </CardContent>
         </Card>
 
-        {quote ? <ExchangeSummaryCard quote={quote} className="self-start" /> : null}
+        <ExchangeSummaryCard quote={quote} className="self-start" />
       </div>
     </div>
   );

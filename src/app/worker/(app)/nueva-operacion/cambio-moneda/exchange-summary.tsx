@@ -31,7 +31,8 @@ function AmountRow({
   currencyName,
 }: {
   label: string;
-  amount: number;
+  /** Null while there is nothing to quote yet: the row reads «—». */
+  amount: number | null;
   currency: string;
   currencyName?: string;
 }) {
@@ -39,9 +40,9 @@ function AmountRow({
     <div className="flex flex-col gap-1">
       <span className="text-caption text-text-secondary">{label}</span>
       <span className="flex items-center gap-2">
-        <CurrencyFlag currency={currency} />
+        {amount === null ? null : <CurrencyFlag currency={currency} />}
         <span className="pc-numeric text-section-title text-text-primary">
-          {formatMoney({ amount, currency })}
+          {amount === null ? "—" : formatMoney({ amount, currency })}
         </span>
         {currencyName ? (
           <span className="ml-auto truncate text-caption text-text-secondary">{currencyName}</span>
@@ -51,12 +52,17 @@ function AmountRow({
   );
 }
 
+/**
+ * The summary of the exchange. With no quote yet (the amount is still empty or
+ * invalid) every figure reads «—», so the card is in place from the start
+ * and never shows numbers nobody entered.
+ */
 export function ExchangeSummaryCard({
   quote,
   className,
   showCurrencyNames = false,
 }: {
-  quote: ExchangeQuote;
+  quote: ExchangeQuote | null;
   className?: string;
   showCurrencyNames?: boolean;
 }): React.JSX.Element {
@@ -72,18 +78,18 @@ export function ExchangeSummaryCard({
       <CardContent className="flex flex-col gap-4">
         <AmountRow
           label="Cliente entrega"
-          amount={quote.sourceAmount}
-          currency={quote.sourceCurrency}
-          {...(showCurrencyNames ? { currencyName: currencyNameOf(quote.sourceCurrency) } : {})}
+          amount={quote ? quote.sourceAmount : null}
+          currency={quote?.sourceCurrency ?? ""}
+          {...(showCurrencyNames && quote ? { currencyName: currencyNameOf(quote.sourceCurrency) } : {})}
         />
 
         <hr className="border-t border-dashed border-border" />
 
         <AmountRow
           label="Cliente recibe"
-          amount={quote.destinationAmount}
-          currency={quote.destinationCurrency}
-          {...(showCurrencyNames
+          amount={quote ? quote.destinationAmount : null}
+          currency={quote?.destinationCurrency ?? ""}
+          {...(showCurrencyNames && quote
             ? { currencyName: currencyNameOf(quote.destinationCurrency) }
             : {})}
         />
@@ -93,7 +99,7 @@ export function ExchangeSummaryCard({
         <div className="flex flex-col gap-1">
           <span className="text-caption text-text-secondary">Tasa aplicada</span>
           <span className="pc-numeric text-body font-semibold text-text-primary">
-            {formatAppliedRate(quote)}
+            {quote ? formatAppliedRate(quote) : "—"}
           </span>
         </div>
       </CardContent>

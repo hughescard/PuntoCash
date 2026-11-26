@@ -30,12 +30,17 @@ const SEEDED_DOCUMENT = "90010112345";
  */
 test.use({ conCambio: true, fondos: { CUP: 500_000, USD: 3_850, EUR: 2_120, GBP: 950 } });
 
-/** Entra al flujo de Cambio de moneda por donde entra el trabajador. */
-async function startCambio(page: Page) {
+/**
+ * Entra al flujo de Cambio de moneda por donde entra el trabajador. El monto
+ * abre vacío; salvo que se pida lo contrario, se escribe 1.000 USD, el camino
+ * feliz de este archivo.
+ */
+async function startCambio(page: Page, { conImporte = true }: { conImporte?: boolean } = {}) {
   await page.goto("/worker/caja");
   await page.getByRole("link", { name: "Nueva operación" }).click();
   await page.getByRole("link", { name: /Cambio de moneda/ }).click();
   await expect(page.getByRole("heading", { name: "Cambio de moneda", level: 1 })).toBeVisible();
+  if (conImporte) await setAmount(page, "1000");
 }
 
 async function setAmount(page: Page, value: string) {
@@ -100,6 +105,21 @@ test.describe("sin jornada abierta", () => {
         true,
       );
     }
+  });
+});
+
+test.describe("step 1 · al abrir", () => {
+  test("el monto abre vacío, sin error ni cifras en el resumen, y no se puede continuar", async ({ page }) => {
+    await startCambio(page, { conImporte: false });
+
+    await expect(page.getByLabel("Monto a entregar")).toHaveValue("");
+    await expect(page.getByLabel("Monto a recibir (calculado)")).toHaveValue("—");
+    await expect(page.getByText("Introduce el monto a entregar.")).toHaveCount(0);
+
+    await expect(page.getByText("Resumen del cambio", { exact: true })).toBeVisible();
+    await expect(page.getByText("1.000,00 USD")).toHaveCount(0);
+
+    await expect(page.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
   });
 });
 
