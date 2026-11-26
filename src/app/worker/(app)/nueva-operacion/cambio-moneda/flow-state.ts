@@ -61,9 +61,9 @@ export interface FlowState {
   /** Sube cuando hay que pedir otra vez la propuesta de billetes (tras un recuento). */
   recarga: number;
   /**
-   * Whether the worker has actually touched anything. The screen opens with
-   * demo values, and prefilled defaults are not "entered data" for the purpose
-   * of warning before discarding (§17).
+   * Whether the worker has actually touched anything. Until then the empty
+   * amount is not an error to show, and the default currencies are not
+   * "entered data" for the purpose of warning before discarding (§17).
    */
   touched: boolean;
   /**
@@ -82,12 +82,16 @@ export interface FlowState {
   kioskQuote: ExchangeQuote | null;
 }
 
-/** Fallback demo starting point when no "Buscar solicitud" handoff is pending. */
+/**
+ * Starting point when no "Buscar solicitud" handoff is pending. The amount
+ * starts empty: a prefilled figure would let an exchange go ahead with an
+ * amount nobody asked for (decisión del 25/11/2026).
+ */
 const DEFAULT_STATE: FlowState = {
   step: "cambio",
   sourceCurrency: "USD",
   destinationCurrency: "CUP",
-  amountInput: "1.000,00",
+  amountInput: "",
   quote: null,
   customer: null,
   submitting: false,

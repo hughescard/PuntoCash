@@ -375,7 +375,7 @@ function CambioMonedaOperation(): React.JSX.Element {
             modo={state.modo}
             onModoChange={(modo) => dispatch({ type: "set-modo", modo })}
             quote={liveQuote}
-            amountError={amountError}
+            amountError={state.touched ? amountError : undefined}
             onSourceCurrencyChange={(currency) =>
               dispatch({ type: "set-source-currency", currency })
             }
